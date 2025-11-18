@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Documents Administratifs - {{ projet.nom }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .document-card { 
+            background: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            border-radius: 8px; 
+            padding: 1.5rem; 
+            margin-bottom: 1rem; 
+            transition: all 0.3s ease; 
+        }
+        .document-card:hover { 
+            border-color: #22d3ee; 
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
+            transform: translateY(-2px);
+        }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); border: none; color: white; }
+        .form-control { 
+            background-color: #2E2E2E; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .form-control:focus { 
+            border-color: #22d3ee; 
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); 
+            outline: none;
+        }
+        .upload-area {
+            border: 2px dashed #4B5563;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #2E2E2E;
+        }
+        .upload-area:hover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
+        }
+        .file-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .badge-type {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        .badge-pdf { background-color: #dc2626; color: white; }
+        .badge-word { background-color: #2563eb; color: white; }
+        .badge-excel { background-color: #059669; color: white; }
+        .badge-image { background-color: #d97706; color: white; }
+        .badge-other { background-color: #6b7280; color: white; }
+        
+        /* Messages flash */
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- En-tête -->
+        <div class="mb-6">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-file-contract"></i>
+                Documents Administratifs
+            </h1>
+            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-4 text-sm text-gray-400">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>Gestion des documents administratifs du projet</span>
+            </div>
+        </div>
+
+        <!-- Boutons navigation -->
+        <div class="flex gap-3 mb-6 flex-wrap">
+            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-house"></i> Accueil
+            </a>
+            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour aux projets
+            </a>
+            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-diagram-project"></i> Tableau de bord
+            </a>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Informations projet -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
+                    <p class="text-gray-400">
+                        <strong class="text-[#AECBD6]">Statut :</strong> 
+                        <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs">{{ projet.get_statut_display }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section d'ajout de documents -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
+            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-upload"></i>
+                Ajouter un document
+            </h3>
+            
+            <!-- Formulaire d'ajout de document -->
+            <form method="post" enctype="multipart/form-data" action="{% url 'projets:ajouter_document' projet.id %}" class="space-y-4">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="type_document" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Type de document *
+                        </label>
+                        <select class="form-control" id="type_document" name="type_document" required>
+                            <option value="">Sélectionner un type...</option>
+                            <option value="Attestation">Attestation</option>
+                            <option value="Attestation d'enregistrement">Attestation d'enregistrement</option>
+                            <option value="Attestation de conformité">Attestation de conformité</option>
+                            <option value="Attestation d'assurance">Attestation d'assurance</option>
+                            <option value="Assurance">Assurance</option>
+                            <option value="Caution provisoire">Caution provisoire</option>
+                            <option value="Caution définitive">Caution définitive</option>
+
+                            <option value="CPS">Cahier des prescriptions spéciales (CPS)</option>
+                            <option value="CPS avenant">CPS d'avenant</option>
+                            <option value="Cahier des charges">Cahier des charges (CDC)</option>  
+                            <option value="Contrat">Contrat</option>
+                            <option value="Cahier des clauses techniques">Cahier des clauses techniques (CCT)</option>
+                            <option value="CCTP">Cahier des clauses techniques particulières (CCTP)</option>
+                            <option value="CCAP">Cahier des clauses administratives particulières (CCAP)</option>
+                            <option value="Cahier des clauses administratives">Cahier des clauses administratives (CCA)</option>
+                            <option value="BDP">Bordereau des prix (BDP)</option>
+                                                      
+                            <option value="Contrat de garantie">Contrat de garantie</option>
+                            <option value="Convention">Convention</option>
+                            <option value="Autorisation">Autorisation</option>
+                            <option value="Rapport">Rapport</option>
+                            <option value="Procès-verbal">Procès-verbal (PV)</option>
+
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="date_remise" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date de remise
+                        </label>
+                        <input type="date" class="form-control" id="date_remise" name="date_remise">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="fichier" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Fichier *
+                    </label>
+                    <div class="upload-area" onclick="document.getElementById('fichier').click()">
+                        <i class="fas fa-cloud-upload-alt file-icon text-cyan-400"></i>
+                        <p class="mb-2 text-gray-400">Cliquez pour sélectionner un fichier ou glissez-déposez le ici</p>
+                        <p class="text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max. 20MB)</p>
+                    </div>
+                    <input type="file" class="hidden" id="fichier" name="fichier" required onchange="updateFileName(this)">
+                    <div id="file-name" class="mt-2 text-cyan-400 text-sm"></div>
+                </div>
+                
+                <button type="submit" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2 w-fit">
+                    <i class="fas fa-plus"></i> Ajouter le document
+                </button>
+            </form>
+        </div>
+
+        <!-- Liste des documents -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+                    <i class="fas fa-folder"></i>
+                    Documents existants
+                </h3>
+                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {{ documents.count }} document(s)
+                </span>
+            </div>
+            
+            {% if documents %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for document in documents %}
+                        <div class="document-card">
+                            <div class="text-center">
+                                {% with document.fichier.name|slice:"-4:"|lower as file_ext %}
+                                    {% if file_ext == '.pdf' %}
+                                        <i class="fas fa-file-pdf file-icon text-red-500"></i>
+                                        <span class="badge-type badge-pdf">PDF</span>
+                                    {% elif file_ext == '.doc' or file_ext == 'docx' %}
+                                        <i class="fas fa-file-word file-icon text-blue-500"></i>
+                                        <span class="badge-type badge-word">WORD</span>
+                                    {% elif file_ext == '.xls' or file_ext == 'xlsx' %}
+                                        <i class="fas fa-file-excel file-icon text-green-500"></i>
+                                        <span class="badge-type badge-excel">EXCEL</span>
+                                    {% elif file_ext == '.jpg' or file_ext == '.jpeg' or file_ext == '.png' or file_ext == '.gif' %}
+                                        <i class="fas fa-file-image file-icon text-amber-500"></i>
+                                        <span class="badge-type badge-image">IMAGE</span>
+                                    {% else %}
+                                        <i class="fas fa-file file-icon text-gray-400"></i>
+                                        <span class="badge-type badge-other">{{ file_ext|upper }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                                
+                                <h4 class="text-lg font-semibold text-cyan-300 mt-2">{{ document.type_document }}</h4>
+                                
+                                <p class="text-sm text-gray-400 mt-2">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    {% if document.date_remise %}
+                                        {{ document.date_remise|date:"d/m/Y" }}
+                                    {% else %}
+                                        Date non spécifiée
+                                    {% endif %}
+                                </p>
+                                
+                                <p class="text-sm text-gray-400 truncate" title="{{ document.fichier.name }}">
+                                    {{ document.fichier.name|truncatechars:30 }}
+                                </p>
+                            </div>
+
+                            <div class="flex justify-between items-center mt-4 pt-4 border-t border-[#4B5563]">
+                                <a href="{% url 'projets:afficher_document' document.id %}" 
+                                    target="_blank" 
+                                    class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                    data-filename="{{ document.fichier.name }}">
+                                    <i class="fas fa-eye"></i> Voir
+                                </a>
+                                <a href="{{ document.fichier.url }}" download class="btn-success px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                    <i class="fas fa-download"></i> Téléch.
+                                </a>
+                                <form method="post" action="{% url 'projets:supprimer_document' projet.id document.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-danger px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce document?')">
+                                        <i class="fas fa-trash"></i> Suppr.
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-folder-open text-6xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400 text-lg">Aucun document administratif n'a été ajouté pour ce projet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        function updateFileName(input) {
+            const fileNameElement = document.getElementById('file-name');
+            if (input.files.length > 0) {
+                fileNameElement.textContent = 'Fichier sélectionné: ' + input.files[0].name;
+            } else {
+                fileNameElement.textContent = '';
+            }
+        }
+        
+        // Gestion du drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('fichier');
+        
+        if (uploadArea && fileInput) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#22d3ee';
+                uploadArea.style.backgroundColor = 'rgba(34, 211, 238, 0.1)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#4B5563';
+                uploadArea.style.backgroundColor = '#2E2E2E';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4B5563';
+                uploadArea.style.backgroundColor = '#2E2E2E';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileName(fileInput);
+                }
+            });
+        }
+
+        // Masquer automatiquement les messages après 5 secondes
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert-auto-dismiss');
+            alerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

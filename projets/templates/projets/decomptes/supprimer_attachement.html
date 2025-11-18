@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Supprimer {{ attachement.numero }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-6 rounded-lg shadow-md max-w-md w-full">
+        <div class="text-center mb-6">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span class="text-red-600 text-xl">⚠️</span>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800">Confirmer la suppression</h2>
+            <p class="text-gray-600 mt-2">
+                Supprimer l'attachement <strong>{{ attachement.numero }}</strong> ?
+            </p>
+            
+            {% if count_lignes > 0 %}
+            <p class="text-red-600 text-sm mt-2">
+                ⚠️ {{ count_lignes }} ligne(s) seront également supprimée(s)
+            </p>
+            {% endif %}
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition">
+                    Supprimer
+                </button>
+                <a href="{% url 'projets:liste_attachements' attachement.projet.id %}" 
+                   class="flex-1 bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition text-center">
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

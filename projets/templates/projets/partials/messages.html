@@ -1,0 +1,28 @@
+{% if messages %}
+<div class="fixed top-4 right-4 z-50 space-y-2 w-80">
+    {% for message in messages %}
+    <div class="p-4 rounded-lg shadow-lg border-l-4 
+               {% if message.tags == 'success' %}bg-green-50 border-green-500 text-green-700
+               {% elif message.tags == 'error' %}bg-red-50 border-red-500 text-red-700
+               {% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-500 text-yellow-700
+               {% else %}bg-blue-50 border-blue-500 text-blue-700{% endif %}">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                {% if message.tags == 'success' %}
+                <i class="fas fa-check-circle text-green-500"></i>
+                {% elif message.tags == 'error' %}
+                <i class="fas fa-times-circle text-red-500"></i>
+                {% elif message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle text-yellow-500"></i>
+                {% else %}
+                <i class="fas fa-info-circle text-blue-500"></i>
+                {% endif %}
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium">{{ message }}</p>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

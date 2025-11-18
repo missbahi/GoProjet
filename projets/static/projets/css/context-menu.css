@@ -1,0 +1,77 @@
+/* Styles pour le menu contextuel */
+.context-menu {
+    position: fixed;
+    background: #374151;
+    border: 1px solid #4B5563;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    min-width: 220px;
+    font-size: 14px;
+    animation: fadeIn 0.15s ease;
+}
+
+.context-menu.hidden {
+    display: none;
+}
+
+.context-menu-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    color: #E5E7EB;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #4B5563;
+}
+
+.context-menu-item:last-child {
+    border-bottom: none;
+}
+
+.context-menu-item:hover {
+    background-color: #22d3ee;
+    color: #1F2937;
+}
+
+.context-menu-separator {
+    height: 1px;
+    background-color: #4B5563;
+    margin: 4px 0;
+}
+
+.context-menu-submenu {
+    background: #2D3748;
+    border-radius: 0 0 6px 6px;
+}
+
+.context-menu-submenu .context-menu-item {
+    padding-left: 20px;
+    font-size: 13px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+/* Styles pour les lignes */
+.ligne-selectionnee {
+    background-color: rgba(34, 211, 238, 0.15) !important;
+    outline: 2px solid #22d3ee !important;
+}
+
+.ligne-masquee {
+    display: none !important;
+}
+
+/* Classes de hauteur */
+.hauteur-compact td {
+    padding: 4px 6px !important;
+    font-size: 11px !important;
+}
+
+.hauteur-large td {
+    padding: 16px 12px !important;
+    font-size: 13px !important;
+}

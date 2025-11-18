@@ -1,0 +1,171 @@
+<!-- projets/templates/projets/details_ordre_service.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détails OS - {{ ordre.reference }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .info-card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1.5rem; }
+        .statut-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
+        .statut-notifie { background-color: #10b981; color: white; }
+        .statut-brouillon { background-color: #6b7280; color: white; }
+        .statut-annule { background-color: #ef4444; color: white; }
+        .type-badge { background-color: #0ea5e9; color: white; padding: 0.25rem 0.75rem; border-radius: 0.375rem; font-size: 0.75rem; font-weight: 600; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- En-tête -->
+        <div class="mb-6">
+            <a href="{% url 'projets:ordres_service' projet.id %}" 
+               class="inline-flex items-center text-cyan-400 hover:text-cyan-300 mb-4">
+                <i class="fas fa-arrow-left mr-2"></i> Retour aux ordres de service
+            </a>
+            <div class="flex items-start justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-cyan-400">{{ ordre.titre }}</h1>
+                    <div class="flex items-center gap-3 mt-2">
+                        <span class="type-badge">{{ ordre.type_os.code }}</span>
+                        <span class="statut-badge 
+                            {% if ordre.statut == 'NOTIFIE' %}statut-notifie
+                            {% elif ordre.statut == 'BROUILLON' %}statut-brouillon
+                            {% else %}statut-annule{% endif %}">
+                            {{ ordre.get_statut_display }}
+                        </span>
+                        <span class="text-[#2B9C62] font-medium">{{ ordre.reference }}</span>
+                        <span class="text-sm text-gray-400">Séquence: {{ ordre.ordre_sequence }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid gap-6">
+            <!-- Informations générales -->
+            <div class="info-card">
+                <h2 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i> Informations générales
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Type d'OS</label>
+                        <p class="text-white">{{ ordre.type_os.nom }} ({{ ordre.type_os.code }})</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Date de publication</label>
+                        <p class="text-white">{{ ordre.date_publication|date:"d/m/Y" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Date limite</label>
+                        <p class="text-white">{{ ordre.date_limite|date:"d/m/Y"|default:"Non définie" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Date d'effet</label>
+                        <p class="text-white">{{ ordre.date_effet|date:"d/m/Y"|default:"Non définie" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Date de création</label>
+                        <p class="text-white">{{ ordre.created_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Dernière modification</label>
+                        <p class="text-white">{{ ordre.updated_at|date:"d/m/Y H:i" }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations spécifiques -->
+            {% if ordre.duree_extension or ordre.montant_supplementaire %}
+            <div class="info-card">
+                <h2 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                    <i class="fas fa-cog"></i> Informations spécifiques
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% if ordre.duree_extension %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Durée d'extension</label>
+                        <p class="text-amber-400 font-semibold">{{ ordre.duree_extension }} jours</p>
+                    </div>
+                    {% endif %}
+                    {% if ordre.montant_supplementaire %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-400 mb-1">Montant supplémentaire</label>
+                        <p class="text-emerald-400 font-semibold">{{ ordre.montant_supplementaire }} DH</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Description -->
+            <div class="info-card">
+                <h2 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                    <i class="fas fa-align-left"></i> Description
+                </h2>
+                <p class="text-gray-300 whitespace-pre-line">{{ ordre.description }}</p>
+            </div>
+            
+            <!-- Documents -->
+            <div class="info-card">
+                <h2 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                    <i class="fas fa-file"></i> Documents joints
+                </h2>
+                {% if ordre.documents %}
+                    <div class="flex items-center gap-3 p-3 bg-[#2E2E2E] rounded-lg">
+                        <i class="fas fa-file-pdf text-red-400 text-xl"></i>
+                        <div class="flex-1">
+                            <p class="text-white">{{ ordre.documents.name }}</p>
+                            <p class="text-sm text-gray-400">Taille: {{ ordre.documents.size|filesizeformat }}</p>
+                        </div>
+                        <a href="{{ ordre.documents.url }}" 
+                           target="_blank"
+                           class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                            <i class="fas fa-download"></i> Télécharger
+                        </a>
+                    </div>
+                {% else %}
+                    <p class="text-gray-400 italic">Aucun document joint</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="flex gap-3 mt-6">
+            {% if ordre.statut == 'BROUILLON' %}
+            <form method="POST" action="{% url 'projets:notifier_ordre_service' projet.id ordre.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                       class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+                       onclick="return confirm('Notifier cet ordre de service ? Cette action déclenchera les validations métier.')">
+                    <i class="fas fa-paper-plane"></i> Notifier l'OS
+                </button>
+            </form>
+            {% endif %}
+            
+            <a href="{% url 'projets:modifier_ordre_service' projet.id ordre.id %}" 
+               class="bg-yellow-600 hover:bg-yellow-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-edit"></i> Modifier
+            </a>
+            
+            {% if ordre.statut == 'BROUILLON' %}
+            <a href="{% url 'projets:supprimer_ordre_service' projet.id ordre.id %}" 
+               class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-trash"></i> Supprimer
+            </a>
+            {% else %}
+            <form method="POST" action="{% url 'projets:annuler_ordre_service' projet.id ordre.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" 
+                       class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2"
+                       onclick="return confirm('Annuler cet ordre de service ?')">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

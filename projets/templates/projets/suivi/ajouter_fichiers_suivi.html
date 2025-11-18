@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ajouter des fichiers - Suivi {{ suivi.titre }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .upload-area {
+      border: 2px dashed #6c757d;
+      border-radius: 12px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .upload-area:hover {
+      border-color: #0dcaf0;
+      background-color: rgba(13, 202, 240, 0.05);
+    }
+  </style>
+</head>
+<body class="bg-dark text-light p-4">
+  <div class="container">
+    <!-- En-tête -->
+    <div class="d-flex align-items-center mb-4">
+      <h1 class="text-info mb-0">
+        <i class="fa-solid fa-paperclip me-2"></i> Ajouter des fichiers au suivi
+      </h1>
+      <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn btn-outline-info ms-auto">
+        <i class="fa-solid fa-arrow-left me-1"></i> Retour
+      </a>
+    </div>
+
+    <!-- Informations sur le suivi -->
+    <div class="card bg-secondary text-light mb-4">
+      <div class="card-body">
+        <h5 class="card-title">{{ suivi.titre }}</h5>
+        <p class="card-text">{{ suivi.date|date:"d/m/Y" }} - {{ suivi.get_type_suivi_display }}</p>
+        <p class="card-text">{{ suivi.commentaire|truncatewords:20 }}</p>
+      </div>
+    </div>
+
+    <!-- Formulaire d'ajout de fichiers -->
+    <div class="card bg-dark text-light">
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+          {% csrf_token %}
+          
+          <div class="mb-3">
+            <label class="form-label">Fichiers à ajouter</label>
+            <div class="upload-area" onclick="document.getElementById('fichiers').click()">
+              <i class="fa-solid fa-cloud-upload-alt fa-2x text-info mb-3"></i>
+              <p class="mb-0">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
+              <p class="text-muted">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)</p>
+            </div>
+            <input type="file" class="form-control d-none" id="fichiers" name="fichiers" multiple onchange="updateFileList(this)">
+          </div>
+
+          <div id="file-list" class="mb-3"></div>
+
+          <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-success">
+              <i class="fa-solid fa-plus me-1"></i> Ajouter les fichiers
+            </button>
+            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn btn-secondary">
+              Annuler
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateFileList(input) {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
+      
+      if (input.files.length > 0) {
+        fileList.innerHTML = '<h6>Fichiers sélectionnés:</h6>';
+        const list = document.createElement('ul');
+        list.className = 'list-group';
+        
+        for (let i = 0; i < input.files.length; i++) {
+          const listItem = document.createElement('li');
+          listItem.className = 'list-group-item bg-secondary text-light';
+          listItem.textContent = `${input.files[i].name} (${formatFileSize(input.files[i].size)})`;
+          list.appendChild(listItem);
+        }
+        
+        fileList.appendChild(list);
+      }
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Gestion du drag and drop
+    const uploadArea = document.querySelector('.upload-area');
+    const fileInput = document.getElementById('fichiers');
+    
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#0dcaf0';
+      uploadArea.style.backgroundColor = 'rgba(13, 202, 240, 0.1)';
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.style.borderColor = '#6c757d';
+      uploadArea.style.backgroundColor = 'transparent';
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.style.borderColor = '#6c757d';
+      uploadArea.style.backgroundColor = 'transparent';
+      
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        updateFileList(fileInput);
+      }
+    });
+  </script>
+</body>
+</html>

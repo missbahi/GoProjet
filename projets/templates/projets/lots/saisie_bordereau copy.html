@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Bordereau de prix - {{ lot.nom }}</title>
+    {% load static %}
+    {% load formatters %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
+    <script src="{% static 'projets/js/nombre-lettres.js' %}"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    <style>
+        body { 
+            background-color: #2E2E2E; 
+            color: #AECBD6; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(59, 59, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-warning { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-success { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-info { 
+            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+            border: none; 
+            color: white; 
+        }
+        .form-control { 
+            background-color: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        .form-control:focus { 
+            border-color: #22d3ee; 
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2); 
+            outline: none;
+            background-color: #2E2E2E;
+        }
+        .form-control::placeholder {
+            color: #6B7280;
+        }
+        .form-group {
+            margin-bottom: 0.2rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #22d3ee;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+       
+        /* Messages */
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+
+        .main-container {
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.0rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .content-section {
+            background: rgba(59, 59, 59, 0.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #4B5563;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Total section */
+        .total-section {
+            background: linear-gradient(135deg, #1a3a1a 0%, #2d4d2d 100%);
+            border: 1px solid #10b981;
+            border-radius: 12px;
+            padding: 1.0rem;
+            margin: 1.0rem 0;
+        }
+
+        /* Toolbar styles */
+        /* .toolbar-container {
+            position: relative;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 0 2rem;
+        } */
+        .toolbar {
+            background: linear-gradient(135deg, #3B3B3B 0%, #2E2E2E 100%);
+            border: 1px solid #4B5563;
+            border-bottom: none;
+            backdrop-filter: blur(10px);
+            max-width: 1340px;
+            margin: 0 auto;
+            border-radius: 12px 12px 0 0;
+            padding: 1rem 1.5rem;
+        }
+        .total-lot {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f172a 100%);
+            border: 1px solid #22d3ee;
+            color: #22d3ee;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-size: 1rem;
+        }    
+    
+/* Styles pour la barre d'outils professionnelle */
+.btn-toolbar {
+    @apply p-3 rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center relative;
+    min-width: 44px;
+    height: 44px;
+    border: 1px solid transparent;
+}
+
+.btn-toolbar:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.btn-toolbar:active {
+    transform: translateY(0);
+}
+
+/* Couleurs des boutons */
+.btn-toolbar-primary { 
+    background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
+    color: white;
+}
+.btn-toolbar-info { 
+    background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+    color: white;
+}
+.btn-toolbar-success { 
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+    color: white;
+}
+.btn-toolbar-warning { 
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+    color: white;
+}
+.btn-toolbar-secondary { 
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+    color: white;
+}
+.btn-toolbar-danger { 
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+    color: white;
+}
+
+.btn-toolbar-primary:hover { border-color: #22d3ee; }
+.btn-toolbar-info:hover { border-color: #0ea5e9; }
+.btn-toolbar-success:hover { border-color: #10b981; }
+.btn-toolbar-warning:hover { border-color: #f59e0b; }
+.btn-toolbar-secondary:hover { border-color: #9ca3af; }
+.btn-toolbar-danger:hover { border-color: #ef4444; }
+
+/* Animation des icônes */
+.btn-toolbar i {transition: transform 0.2s ease;}
+
+.btn-toolbar:hover i {transform: scale(1.1);}
+
+/* Style pour l'affichage de la somme des cellules sélectionnées */
+.selection-sum-display {
+    position: fixed;
+    bottom: 6px;
+    right: 120px;
+    background: #2E2E2E; 
+    color: rgb(208, 208, 208);
+    padding: 6px;
+    border-radius: 10px;
+    border: 2px solid #13ebee; 
+    font-size: 16px;
+    vertical-align: middle;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: none;
+}
+@media print {
+     .navigation-buttons, .btn, .btn-toolbar, .selection-sum-display {
+        display: none;
+    }
+    .no-print {
+        display: none;
+    }
+    .menu {
+        display: hidden;
+    }
+}
+/* Responsive */
+@media (max-width: 768px) {
+    .btn-toolbar {
+        padding: 2.5px;
+        min-width: 40px;
+        height: 40px;
+    }
+    
+    .btn-toolbar i {
+        font-size: 14px;
+    }
+}
+</style>
+<style>
+/* STYLES HIÉRARCHIE AMÉLIORÉS */
+.htCore td {
+    transition: all 0.3s ease;
+}
+
+
+</style>
+</head>
+<body>
+    <div id="selectionSumDisplay" class="selection-sum-display"></div>
+    <div class="main-container">
+        <!-- En-tête -->
+        <header class="header-section">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-cyan-400 mb-4 flex items-center justify-center gap-3">
+                    <i class="fas fa-file-invoice"></i>
+                    Bordereau de Prix
+                </h1>
+                <div class="flex items-center justify-center gap-4">
+                    <span class="text-xl text-[#AECBD6]">Projet :</span>
+                    <span class="text-2xl font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1">
+                        {{ lot.projet.nom }}
+                    </span>
+                    <span class="text-xl text-[#AECBD6]">Lot :</span>
+                    <span class="text-2xl font-bold text-green-300 border-b-2 border-green-400 pb-1">
+                        {{ lot.nom }}
+                    </span>
+                </div>
+            </div>
+        </header>
+        <div class="navigation-buttons flex gap-3 mb-4">
+            <button onclick="window.location.href='{% url 'projets:lots_projet' lot.projet.id %}'" 
+                    class="btn btn-success">
+                <i class="fas fa-cubes"></i> Retour aux lots
+            </button>
+            <button onclick="window.location.href='{% url 'projets:dashboard' lot.projet.id %}'" 
+                    class="btn btn-info">
+                <i class="fa-solid fa-diagram-project"></i> Retour au projet
+            </button>
+            <button onclick="window.location.href='{% url 'home' %}'" 
+                    class="btn btn-warning">
+                <i class="fa-solid fa-house"></i> Accueil
+            </button>
+        </div>
+         <!-- Barre d'outils -->
+        <div class="menu flex justify-between p-2 rounded-lg border border-gray-600 shadow-lg mb-4">
+            <div class="flex items-center no-print">
+                <!-- Boutons navigation -->
+                <div class=" flex items-center gap-1 mr-2 pr-3 border-r border-gray-600">
+                    <div class="flex flex-wrap gap-1">
+                        <button onclick="saveData()" 
+                                id="save-button"
+                                class="btn-toolbar btn-toolbar-primary group"
+                                title="Enregistrer les modifications"
+                                tooltip="Enregistrer les modifications">
+                            <i class="fas fa-save"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Groupe Hiérarchie -->
+                <div class="flex items-center gap-1 mr-2 pr-3 border-r border-gray-600">
+                    <button onclick="addTitleLine()" 
+                            class="btn-toolbar btn-toolbar-info group"
+                            title="Ajouter un titre/section"
+                            tooltip ="Ajouter un titre/section">
+                        <i class="fas fa-heading"></i>
+                    </button>
+                    
+                    <button onclick="addChildLine()" 
+                            class="btn-toolbar btn-toolbar-warning group"
+                            title="Ajouter une ligne enfant"
+                            tooltip="Ajouter une ligne enfant">
+                        <i class="fas fa-add"></i>
+                    </button>
+                </div>
+                
+                <!-- Groupe Indentation -->
+                <div class="flex items-center gap-1 mr-2 pr-3 border-r border-gray-600">                    
+                    <button onclick="desindente()" 
+                            class="btn-toolbar btn-toolbar-secondary group"
+                            title="Désindenter (niveau -1)"
+                            tooltip="Désindenter (niveau -1)">
+                        <i class="fas fa-outdent"></i>
+                    </button>
+                    
+                    <button onclick="indente()" 
+                            class="btn-toolbar btn-toolbar-info group"
+                            title="Indenter (niveau +1)"
+                            tooltip="Indenter (niveau +1)">
+                        <i class="fas fa-indent"></i>
+                    </button>
+                    
+                    <!-- Version cascade (optionnelle) -->
+                    <!-- <button onclick="desindenteAvecEnfants()" 
+                            class="btn-toolbar btn-toolbar-warning group"
+                            title="Désindenter avec enfants"
+                            tooltip="Désindenter cascade">
+                        <i class="fas fa-level-down-alt"></i>
+                    </button>
+                    
+                    <button onclick="indenteAvecEnfants()" 
+                            class="btn-toolbar btn-toolbar-success group"
+                            title="Indenter avec enfants"
+                            tooltip="Indenter cascade">
+                        <i class="fas fa-level-up-alt"></i>
+                    </button> -->
+                </div>
+                <!-- Groupe Conversion -->
+                <div class="flex items-center gap-1 mr-2 pr-3 border-r border-gray-600">
+                    <button onclick="convertToTitle()" 
+                            class="btn-toolbar btn-toolbar-success group"
+                            title="Convertir en titre"
+                            tooltip="Convertir en titre">
+                        <i class="fas fa-tag"></i>
+                    </button>
+                    
+                    <button onclick="convertToNormal()" 
+                            class="btn-toolbar btn-toolbar-secondary group"
+                            title="Convertir en ligne normale"
+                            tooltip ="Convertir en ligne normale">
+                        <i class="fas fa-list"></i>
+                    </button>
+                </div>
+
+                <!-- Groupe Actions -->
+                <div class="flex items-center gap-1">
+                    <button onclick="exportExcel()" 
+                            class="btn-toolbar btn-toolbar-success group"
+                            title="Exporter en Excel"
+                            tooltip="Exporter en Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    
+                    <button onclick="exportPDF()" 
+                            class="btn-toolbar btn-toolbar-danger group"
+                            title="Exporter en PDF"
+                            tooltip="Exporter en PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-3 no-print">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-xl alert-{{ message.tags }} flex justify-between items-center shadow-lg">
+                        <div class="flex items-center gap-3">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle"></i>
+                            {% endif %}
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <!-- Contenu principal -->
+        <div class="content-section">
+            <!-- Tableau Handsontable -->
+            <div class="mb-4">
+                <h3 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                    <i class="fas fa-table"></i>
+                    Détail des Prix Unitaires
+                </h3>
+                <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
+            </div>
+        </div>
+        <!-- Total général -->
+        <div class="total-section">
+            <div class="flex justify-between items-center">
+                <!-- Titre à gauche -->
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-calculator text-cyan-400 text-xl"></i>
+                    <h5 class="text-cyan-300 text-lg font-bold">
+                        Total général du lot HT
+                    </h5>
+                </div>
+                
+                <!-- Total à droite -->
+                <div class="flex items-center gap-2">
+                    <span id="total-lot" class="text-white text-2xl font-bold">
+                        0.00 MAD
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+
+
+<script>
+
+    const container = document.getElementById('hot');
+    const data = JSON.parse('{{ lignes|escapejs }}');
+    // Variables globales
+    let hot;
+    let nextTempId = 1000;
+    let hiddenRowsState = [];
+    // Pour garder en mémoire l'état d'expansion des parents
+    const parentExpansionState = new Map();
+    // Afficher la somme de la sélection
+    function displaySelectionSum() {
+        const selection = hot.getSelected();
+        if (!selection) return;
+        
+        let sum = 0;
+        for (let i = selection[0]; i <= selection[2]; i++) {
+            const node = nodeManager.getNodeByRowIndex(i);
+            if (node) {
+                sum += node.amount();
+            }
+        }
+        
+        const displayElement = document.getElementById('selectionSumDisplay');
+        if (displayElement) {
+            displayElement.textContent = `Somme sélection: ${sum.toFixed(2)} DH`;
+            displayElement.style.display = 'block';
+        }
+    }
+      
+    function hierarchyRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+    
+        const rowData = instance.getSourceDataAtRow(row);
+        if (!rowData) return;
+        
+        const niveau = rowData.niveau || 0;
+        const isTitle = rowData.est_titre || false;
+       
+        if (isTitle) {
+            td.className = td.className + ' title-row';
+        }
+        
+        if (prop === 'designation') {
+            const indent = (niveau-1) * 15;
+            td.style.paddingLeft = `${indent}px`;
+            td.style.verticalAlign = 'middle';
+            
+            // Vérifier si c'est un titre avec des enfants directs
+            if (isTitle) {
+                const isExpanded = rowData._expanded !== false;
+                const triangleClass = isExpanded ? 'triangle-expanded' : 'triangle-collapsed';
+                td.innerHTML = `<span class="toggle-triangle ${triangleClass}" data-row="${row}"></span>${value}`;
+            } else {
+                td.textContent = value || '';
+                td.style.paddingLeft = `${15 + indent}px`;
+            }
+        } else if (prop === 'unite') {
+            td.className = td.className + ' htCenter';
+        }
+    }
+
+    function numericRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.NumericRenderer.apply(this, arguments);
+        const rowData = instance.getSourceDataAtRow(row);
+        const isTitle = rowData ? rowData.est_titre : false;
+        
+        if (isTitle) {
+            td.textContent = '';
+            td.className = td.className + ' title-row';
+        } else {
+            const nv = value || 0;
+            if (nv === 0) {
+                td.textContent = ''; 
+            }
+        }
+    }
+
+    function montantRenderer(instance, td, row, col, prop, value, cellProperties) {
+        const rowData = instance.getSourceDataAtRow(row);
+        if (!rowData) return;
+        
+        const isTitle = rowData.est_titre || false;
+        
+        if (isTitle) {
+            // Calculer le total des enfants
+            const id = rowData.id;
+            if (!id) return;
+            const amount = calculateChildrenTotal(instance, row);
+
+            td.textContent = amount === 0 ? '' : formatNumber(amount);
+            instance.getSourceData()[row].montant = amount;
+            td.className ='htRight title-row';
+        } else {
+            const qte = instance.getDataAtRowProp(row, 'quantite') || 0;
+            const pu = instance.getDataAtRowProp(row, 'prix_unitaire') || 0;
+            const total = parseFloat(qte) * parseFloat(pu);
+            
+            instance.getSourceData()[row].montant = total;
+            td.textContent = isNaN(total) || total === 0 ? '' : formatNumber(total);
+            td.className = 'htRight montant-cell';
+        }        
+    }
+    
+    function getDirectChildrenIds (instance, parentRow) {
+        // extraire le node parent et trouver les id des enfants
+        if (!instance || parentRow === undefined) return 0;
+        // trouver le node de l'instance
+
+        const data = instance.getSourceData();
+        
+        if (!data[parentRow]) return [];
+        
+        const parentNiveau = data[parentRow].niveau;
+        let childIds = [];
+        
+        for (let i = parentRow + 1; i < data.length; i++) {
+            if (!data[i]) break;
+            if (data[i].niveau <= parentNiveau) break;
+            if (data[i].niveau === parentNiveau + 1 && !data[i].est_titre) {
+                childIds.push(data[i].id);
+            }
+        }
+        return childIds;
+
+    }
+    
+    function calculateChildrenTotal(instance, parentRow) {
+        // extraire le node parent et sommer les montants des enfants
+        if (!instance || parentRow === undefined) return 0;
+        // trouver le node de l'instance
+
+        const data = instance.getSourceData();
+        let total = 0;
+        const parentNiveau = data[parentRow].niveau;
+        
+        for (let i = parentRow + 1; i < data.length; i++) {
+            if (!data[i]) break;
+            if (data[i].niveau <= parentNiveau) break;
+            if (data[i].niveau === parentNiveau + 1 && !data[i].est_titre) {
+                total += parseFloat(data[i].montant) || 0;
+            }
+        }
+        return total;
+    }
+
+    function recalcMontantLigne(row) {
+        const rowData = hot.getSourceDataAtRow(row);
+        if (!rowData) return;
+        
+        if (rowData.est_titre) {
+            const total = calculateChildrenTotal(hot, row);
+            hot.setDataAtRowProp(row, 'montant', total, 'recalc');
+        } else {
+            const qte = parseFloat(hot.getDataAtRowProp(row, 'quantite')) || 0;
+            const pu = parseFloat(hot.getDataAtRowProp(row, 'prix_unitaire')) || 0;
+            const montant = qte * pu;
+            hot.setDataAtRowProp(row, 'montant', montant, 'recalc');
+        }
+    }
+    
+    function formatNumber(value, decimals = 2) {
+        return value.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    function updateTotal() {
+        let total = 0;
+        const data = hot.getSourceData();
+        
+        data.forEach(row => {
+            if (row && !row.est_titre) {
+                total += parseFloat(row.montant) || 0;
+            }
+        });
+        
+        const totalFormatted = formatNumber(total, 2);
+        document.getElementById('total-lot').textContent = `${totalFormatted} MAD`;
+    }
+
+    function initializeNewRow(rowIndex) {
+        // Vérifications très strictes
+        if (typeof rowIndex !== 'number' || isNaN(rowIndex) || rowIndex < 0 || rowIndex >= hot.countRows()) {
+            console.warn('RowIndex invalide:', rowIndex);
+            return;
+        }
+            
+            // Attendre que Handsontable soit complètement prêt
+        setTimeout(() => {
+            if (!hot || typeof hot.countRows !== 'function') {
+                console.warn('Handsontable non disponible');
+                return;
+            }
+            
+            const totalRows = hot.countRows();
+            if (rowIndex >= totalRows) {
+                console.warn(`Ligne ${rowIndex} n'existe pas (total: ${totalRows} lignes)`);
+                return;
+            }
+            
+            try {
+                const rowData = hot.getSourceDataAtRow(rowIndex);
+                
+            } catch (error) {
+                console.error(`Erreur critique ligne ${rowIndex}:`, error);
+            }
+        }, 10); // Délai très court mais suffisant
+    }
+    
+    // Configuration Handsontable
+    const hotConfig = {
+        data: data,
+        columns: [
+            {data: '_expanded', type: 'checkbox', title: 'e', width: 10,
+            },
+            {data: 'numero', type: 'text', title: 'N°', width: 50,
+                    renderer: hierarchyRenderer
+            },
+            {data: 'niveau', type: 'text', title: 'N', width: 20,
+                    renderer: hierarchyRenderer
+            },
+            {data: 'est_titre', type: 'checkbox', title: 'T', width: 20, hidden: true,
+                    renderer: hierarchyRenderer
+            },
+            {data: 'designation',   type: 'text', title: 'Désignation', width: 400,
+                     renderer: hierarchyRenderer
+            },
+            {data: 'unite', type: 'text', title: 'Unité', width: 100,
+                    renderer: hierarchyRenderer
+            },
+            {data: 'quantite', type: 'numeric', numericFormat: { pattern: '0,0.000' }, title: 'Quantité', width: 120,
+                    renderer: numericRenderer
+            },
+            {data: 'prix_unitaire', type: 'numeric', numericFormat: { pattern: '0,0.00' }, title: 'PU (DH)', width: 120,
+                    renderer: numericRenderer
+            },
+            {data: 'montant', type: 'numeric', readOnly: true, numericFormat: { pattern: '0,0.00' }, title: 'Montant (DH)', width: 140,
+                    renderer: montantRenderer
+            },
+        ],
+        // stretchH: 'all',
+        rowHeaders: false,
+        colHeaders: true,
+        licenseKey: 'non-commercial-and-evaluation',
+        contextMenu: ['row_above', 'row_below', 'remove_row'],
+        hiddenColumns: {columns: [0, 3], indicators: false},
+        hiddenRows: true,
+        minSpareRows: 2,
+        height: 'auto',
+        width: 'auto',
+        rowHeights: 40,
+        manualColumnResize: true,
+        manualRowResize: false,
+        autoRowSize: false,
+        // EMPÊCHER la désélection au clic extérieur
+        outsideClickDeselects: false,
+    
+        // Garder la sélection même en cas de clic extérieur
+        persistentState: true,
+            
+        afterChange: function(changes, source) {
+            if (changes) {
+                changes.forEach(function(change) {
+                    const [row, prop, oldValue, newValue] = change;
+                    if (prop === 'est_titre' && newValue !== oldValue) {
+                        handleTitreChange(row, newValue);
+                    }
+                    if ((prop === 'quantite' || prop === 'prix_unitaire') && newValue !== oldValue) {
+                        recalcMontantLigne1(row);
+                        updateTotal();
+                    }
+                    if (prop === 'niveau' && newValue !== oldValue) {
+                    // Forcer le rendu quand le niveau change
+                        setTimeout(() => hot.render(), 10);
+                    }
+                });
+            }
+        },
+        
+        beforeChange: function(changes, source) {
+            if (!changes) return true;
+            
+            changes.forEach(function(change) {
+                const [row, prop, oldValue, newValue] = change;
+                
+                if (prop === 'quantite' || prop === 'prix_unitaire') {
+                    if (newValue !== null && parseFloat(newValue) < 0) {
+                        alert("Les valeurs négatives ne sont pas autorisées");
+                        return false;
+                    }
+                    if (newValue !== null && typeof newValue === 'string') {
+                        const cleanedValue = newValue.replace(/\s/g, '').replace(',', '.');
+                        if (newValue.trim() === '' || isNaN(cleanedValue)) {
+                            change[3] = '';
+                        } else {
+                            change[3] = cleanedValue;
+                        }
+                    }
+                }
+            });
+            return true;
+        },
+        
+        afterCreateRow: function(index, amount, source) {
+            
+            // Attendre plus longtemps pour les nouvelles créations
+            setTimeout(() => {
+                if (hot && typeof hot.countRows === 'function') {
+                    const currentRowCount = hot.countRows();
+                    if (index >= 0 && index < currentRowCount-1) {
+                        initializeNewRow(index);
+                    }
+                }
+            }, 100);
+        },
+        
+        afterSelection: displaySelectionSum,
+        
+        afterDeselect: function() {
+            const displayElement = document.getElementById('selectionSumDisplay');
+            if (displayElement) displayElement.style.display = 'none';
+        },
+    };
+    
+    // Raccourcis clavier pour l'indentation
+    function setupIndentationShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            // Tab pour indenter (comme dans la plupart des éditeurs)
+            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey) {
+                e.preventDefault();
+                if (e.shiftKey) {
+                    // Shift+Tab pour désindenter
+                    desindente();
+                } else {
+                    // Tab pour indenter
+                    indente();
+                }
+            }
+            
+            // Ctrl+→ pour indenter, Ctrl+← pour désindenter
+            if (e.ctrlKey && e.key === 'ArrowRight') {
+                e.preventDefault();
+                indente();
+            }
+            
+            if (e.ctrlKey && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                desindente();
+            }
+        });
+    }
+
+    // Initialiser les raccourcis
+    document.addEventListener('DOMContentLoaded', function() {
+        setupIndentationShortcuts();
+    });
+    
+    function displaySelectionSum() {
+        const result = showSumSelectedCells(hot);
+        const displayElement = document.getElementById('selectionSumDisplay');
+
+        if (result && result.cellCount > 1) {
+
+            const formattedSum = formatNumber(result.sum, 2);
+            displayElement.textContent = `Somme : ${formattedSum}`;
+            displayElement.style.display = 'block';
+        } else {
+            displayElement.style.display = 'none';
+        }
+    }
+    
+    function showSumSelectedCells(hotInstance) {
+        const selection = hotInstance.getSelected();
+        if (!selection || selection.length === 0) return;
+        
+        let [startRow, startCol, endRow, endCol] = selection[0];
+        if (startRow === endRow && startCol === endCol) return; // Une seule cellule sélectionnée
+
+        // Ajuster si nécessaire
+        if (startRow > endRow) [startRow, endRow] = [endRow, startRow];
+        if (startCol > endCol) [startCol, endCol] = [endCol, startCol];
+
+        let sum = 0;
+        let cellCount = 0;
+        
+        for (let row = startRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                if (col < 3) continue;
+                
+                let value = 0;
+                
+                value = parseFloat(hotInstance.getDataAtCell(row, col)) || 0;
+                if (!isNaN(value) && value !== 0) {
+                    sum += value;
+                    cellCount++;
+                }
+            }
+        }
+        return { sum, cellCount };
+    }
+
+    // Fonction pour gérer le changement titre/normal
+    function handleTitreChange(rowIndex, isNowTitre) {
+        const rowData = hot.getSourceDataAtRow(rowIndex);
+        if (!rowData) return;
+        // Forcer le rendu
+        setTimeout(() => hot.render(), 50);
+    }
+    
+    function getSafeSelection() {
+        if (!hot) {
+            return null;
+        }
+        
+        const selected = hot.getSelected();
+        
+        if (!selected || !Array.isArray(selected) || selected.length === 0) {
+            return null;
+        }
+        
+        // Handsontable retourne [[startRow, startCol, endRow, endCol]]
+        const [startRow, startCol, endRow, endCol] = selected[0];
+        
+        // Pour un clic simple, startRow = endRow et startCol = endCol
+        const selectionInfo = {
+            startRow: Math.min(startRow, endRow),
+            startCol: Math.min(startCol, endCol),
+            endRow: Math.max(startRow,  endRow),
+            endCol: Math.max(startCol, endCol),
+            isSingleCell: (startRow === endRow && startCol === endCol),
+            selectedCell: hot.getDataAtCell(startRow, startCol),
+            rowData: hot.getSourceDataAtRow(startRow),
+        };
+        
+        return selectionInfo;
+    }
+
+    // Fonction pour indenter (augmenter le niveau)
+    function indente() {
+        const selection = getSafeSelection();
+        
+        if (!selection){
+            alert("❌ Veuillez sélectionner une ligne à indenter");
+            return;
+        }
+        
+        const rowIndex = selection.startRow;
+        let index = 0;
+        for (let i = selection.startRow; i < selection.endRow+1; i++) {
+            const rowData = hot.getSourceDataAtRow(i);
+            if (!rowData) break;
+            const currentNiveau = rowData.niveau || 0;
+            const newNiveau = Math.min(currentNiveau + 1, 5);
+            hot.setDataAtRowProp(i, 'niveau', newNiveau);
+        }
+        // Mettre à jour l'affichage
+        
+        setTimeout(() => {
+            hot.render();
+        }, 50);
+    }
+
+    // Fonction pour désindenter (diminuer le niveau)
+    function desindente() {
+        const selection = getSafeSelection();
+        
+        if (!selection) {
+            alert("❌ Veuillez sélectionner une ligne à désindenter");
+            return;
+        }
+        
+        const rowIndex = selection.startRow;
+        let index = 0;
+        for (let i = selection.startRow; i < selection.endRow+1; i++) {
+            const rowData = hot.getSourceDataAtRow(i);
+            if (!rowData) break;
+            const currentNiveau = rowData.niveau || 0;
+            const newNiveau = Math.max(currentNiveau - 1, 0);
+            hot.setDataAtRowProp(i, 'niveau', newNiveau);
+        }
+        // Mettre à jour l'affichage
+        setTimeout(() => {
+            hot.render();
+        }, 50);
+    }
+    
+    // Initialisation différée
+    document.addEventListener('DOMContentLoaded', function() {
+        // Attendre que le DOM soit complètement chargé
+        if (container) {
+            hot = new Handsontable(container, hotConfig);
+            // updateTree();
+            updateTotal();
+        }
+        setTimeout(() => {
+            setupTriangleToggle();
+            initializeExpansionState();
+        }, 100);
+        // Masquer automatiquement les messages après 3 secondes
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert-auto-dismiss');
+            alerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+        }, 3000);
+    });
+
+    // Fonctions d'interaction
+    function addTitleLine() {
+        const selected = getSafeSelection();
+        if (!selected) {
+            alert("Veuillez sélectionner une ligne");
+            return;
+        }
+        const insertAt = selected ? selected.startRow : hot.countRows();
+            
+        hot.alter('insert_row', insertAt, 1);
+        
+        setTimeout(() => {
+            hot.setDataAtRowProp(insertAt, 'id', `temp_${nextTempId++}`);
+            hot.setDataAtRowProp(insertAt, 'est_titre', true);
+            hot.setDataAtRowProp(insertAt, 'niveau', 0);
+            hot.setDataAtRowProp(insertAt, 'quantite', 0);
+            hot.setDataAtRowProp(insertAt, 'prix_unitaire', 0);
+            hot.setDataAtRowProp(insertAt, 'montant', 0);
+            hot.setDataAtRowProp(insertAt, 'designation', 'Nouvelle section:');
+            hot.setDataAtRowProp(insertAt, 'unite', '');
+            hot.setDataAtRowProp(insertAt, '_expanded', true);
+            hot.render();
+            updateTotal();
+        }, 100);
+    }
+    
+    // Fonction pour convertir une ligne existante en titre
+    function convertToTitle() {
+        const selected = getSafeSelection();
+        if (!selected) {
+            alert("Veuillez sélectionner une ligne");
+            return;
+        }
+        const rowIndex = selected.startRow;
+        const rowData = hot.getSourceDataAtRow(rowIndex);
+    
+        if (!rowData) {
+            console.error('Aucune donnée pour la ligne', rowIndex);
+            return;
+        }
+        
+        // 1. Modifier est_titre
+        hot.setDataAtRowProp(rowIndex, 'est_titre', true);
+        hot.setDataAtRowProp(rowIndex, 'unite', '');
+
+        // 3. Forcer le rendu
+        hot.render();
+        
+        // 4. Mettre à jour le total
+        updateTotal();        
+    }
+
+    // Fonction pour convertir un titre en ligne normale
+    function convertToNormal() {
+        const selected = hot.getSelected();
+        if (!selected || !selected[0]) {
+            alert("Veuillez sélectionner une ligne");
+            return;
+        }
+        
+        const rowIndex = selected[0][0];
+        const rowData = hot.getSourceDataAtRow(rowIndex);
+        
+        if (rowData && rowData.est_titre) {
+            hot.setDataAtRowProp(rowIndex, 'est_titre', false);
+            // applique le style des lignes normales
+
+        }
+    }
+    
+    function addChildLine() {
+        const selected = hot.getSelected();
+        if (!selected || !selected[0]) {
+            alert("Veuillez sélectionner un titre pour ajouter une ligne enfant");
+            return;
+        }
+        
+        const parentRow = selected[0][0];
+        const parentData = hot.getSourceDataAtRow(parentRow);
+        
+        if (!parentData || !parentData.est_titre) {
+            alert("Veuillez sélectionner un titre pour ajouter une ligne enfant");
+            return;
+        }
+        
+        const insertAt = parentRow + 1;
+        hot.alter('insert_row', insertAt, 1);
+        
+        setTimeout(() => {
+            hot.setDataAtRowProp(insertAt, 'id', `temp_${nextTempId++}`);
+            hot.setDataAtRowProp(insertAt, 'niveau', parentData.niveau + 1);
+            hot.setDataAtRowProp(insertAt, 'est_titre', false);
+            hot.setDataAtRowProp(insertAt, 'parent_id', parentData.id);
+            hot.render();
+            updateTotal();
+        }, 100);
+    }
+    
+    function afficherLoading(button, texte) {
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${texte}`;
+        }
+    }
+    
+    function setupTriangleToggle() {
+
+        hot.addHook('afterOnCellMouseDown', function(event, coords, TD) {
+            if (event.target.classList.contains('toggle-triangle')) {
+                event.stopPropagation();
+
+                const row = parseInt(event.target.getAttribute('data-row'));
+                toggleChildrenVisibility(row);
+
+                return false; // Empêcher la sélection normale
+            }
+        });
+    }
+
+    // Fonction récursive améliorée avec Set pour éviter les doublons
+    function getDescendantIds(parentId) {
+        const descendants = new Set();
+        const stack = [parentId];
+        
+        while (stack.length > 0) {
+            const currentId = stack.pop();
+            const children = data.filter(row => row.parent_id === currentId);
+            
+            children.forEach(child => {
+                if (!descendants.has(child.id)) {
+                    descendants.add(child.id);
+                    stack.push(child.id);
+                }
+            });
+        }
+        return Array.from(descendants);
+    }
+    // Fonction pour obtenir les index à partir des IDs
+    function getIndexesFromIds(ids) {
+        return ids.map(id => {
+            const index = data.findIndex(row => row.id === id);
+            return index;
+        }).filter(index => index !== -1); // Retirer les IDs non trouvés
+    }
+
+    function toggleParentRow(parentData, isExpanded, parentRowIndex) {
+        const descendantIds = getDescendantIds(parentData.id);
+        const descendantIndexes = getIndexesFromIds(descendantIds);
+        
+        if (isExpanded) {
+            // EXPANSION : Retirer les descendants de hiddenRowsState
+            hiddenRowsState = hiddenRowsState.filter(index => 
+                !descendantIndexes.includes(index)
+            );
+        } else {
+            // COLLAPSE : Ajouter les descendants à hiddenRowsState
+            const newHiddenIndexes = descendantIndexes.filter(index => 
+                !hiddenRowsState.includes(index)
+            );
+            hiddenRowsState = [...hiddenRowsState, ...newHiddenIndexes];
+        }
+        hot.setDataAtRowProp(parentRowIndex, '_expanded', isExpanded);
+        // Mettre à jour Handsontable
+        hot.updateSettings({
+            hiddenRows: {
+                rows: hiddenRowsState
+            }
+        });
+        
+        // Sauvegarder dans le state local aussi
+        updateParentExpansionState(parentData.id, isExpanded);
+        }   
+    
+    function updateParentExpansionState(parentId, isExpanded) {
+        parentExpansionState.set(parentId, isExpanded);
+    }
+
+    function isParentExpanded(parentId) {
+        return parentExpansionState.get(parentId) || false;
+    }
+
+    // INITIALISATION AVEC ÉTAT EXPANDED
+    function initializeExpansionState() {
+        hiddenRowsState = [];
+        
+        data.forEach((row, index) => {
+            if (row.est_titre) {
+                // Initialiser l'état d'expansion
+                const isExpanded = row._expanded !== undefined ? row._expanded : true;
+                parentExpansionState.set(row.id, isExpanded);
+                
+                // Mettre à jour la donnée si nécessaire
+                if (row._expanded !== isExpanded) {
+                    hot.setDataAtRowProp(index, '_expanded', isExpanded);
+                }
+                
+                // Si le titre n'est pas expansé, masquer ses descendants
+                if (!isExpanded) {
+                    const descendantIds = getDescendantIds(row.id);
+                    const descendantIndexes = getIndexesFromIds(descendantIds);
+                    hiddenRowsState.push(...descendantIndexes);
+                }
+            }
+        });
+        
+        // Appliquer l'état initial
+        hot.updateSettings({
+            hiddenRows: {
+                rows: hiddenRowsState
+            }
+        });
+    }
+    
+    function onParentClick(parentData, parentRowIndex) {
+        const currentlyExpanded = isParentExpanded(parentData.id);
+        const newExpandedState = !currentlyExpanded;
+        
+        toggleParentRow(parentData, newExpandedState, parentRowIndex);
+    }
+    
+    function toggleChildrenVisibility(parentRow) {
+        const rowData = data[parentRow];
+        if (rowData && rowData.est_titre) {
+            onParentClick(rowData, parentRow);
+        }
+    }
+
+    function saveData() {
+        const saveBtn = document.getElementById('save-btn');
+        afficherLoading(saveBtn, "Enregistrement...");
+        const sourceData = hot.getSourceData();
+        
+        const finalData = sourceData
+            .filter(row => row && row.designation && row.designation.trim() !== '')
+            .map(row => ({
+                id: row.id,
+                numero: row.numero,
+                designation: row.designation,
+                unite: row.unite,
+                quantite: row.quantite || 0,
+                prix_unitaire: row.prix_unitaire || 0,
+                niveau: row.niveau || 0,
+                est_titre: row.est_titre || false,
+                parent_id: row.parent_id || null
+            }));
+        
+        fetch("{% url 'projets:sauvegarder_lignes_bordereau' lot.id %}", {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify(finalData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { 
+                    throw new Error(text || response.statusText) 
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.status === 'ok') {
+                alert("Données enregistrées avec succès !");
+            } else {
+                throw new Error(data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert("Erreur d'enregistrement : " + error.message);
+        });
+    }
+
+    function exportExcel() {
+        const exportData = hot.getData().filter(row => row && row[1] !== null && row[1] !== '');
+        const wb = XLSX.utils.book_new();
+        const wsData = [
+            ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'],
+            ...exportData
+        ];
+        const ws = XLSX.utils.aoa_to_sheet(wsData);
+        XLSX.utils.book_append_sheet(wb, ws, "Bordereau");
+        XLSX.writeFile(wb, "bordereau_{{ lot.nom|slugify }}.xlsx");
+    }
+
+    function exportPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const exportData = hot.getData().filter(row => row && row[1] !== null && row[1] !== '');
+        const headers = ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'];
+        const body = exportData.map(row => row.map(cell => {
+            if(typeof cell === 'number') {
+                return cell.toLocaleString('fr-FR', { minimumFractionDigits: 2 });
+            }
+            return cell || '';
+        }));
+        doc.text("Bordereau des prix unitaires - {{ lot.nom }}", 14, 15);
+        doc.autoTable({
+            head: [headers],
+            body: body,
+            startY: 20,
+            styles: { fontSize: 8 },
+            headStyles: { fillColor: [0, 123, 255] }
+        });
+        doc.save("bordereau_{{ lot.nom|slugify }}.pdf");
+    }
+
+</script>
+<style>
+    /* ===== STYLES GÉNÉRAUX HANDSONTABLE ===== */      
+.handsontable-custom {
+    background: transparent !important;
+    border: none !important;
+    font-family: 'Segoe UI', system-ui, sans-serif !important;
+}
+.handsontable-custom .montant-cell {
+    font-weight: 600 !important;
+    color: #34D399 !important;
+    font-size: 13px !important;
+}   
+.handsontable-custom .title-row {
+    background: #1F2937 !important;
+    font-weight: 700 !important;
+    color: #FBBF24 !important;
+    font-size: 13px !important;
+}
+
+/* ===== EN-TÊTES DE COLONNES ===== */
+.handsontable-custom thead th {
+    background: #374151 !important;
+    color: #22d3ee !important;
+    border:none !important;
+    border-right: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    /* min-height: 35px !important; */
+    height: 45px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+} 
+
+/* ===== CORPS DU TABLEAU ===== */
+.handsontable-custom tbody td {
+    background: #3B3B3B !important;
+    border: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    color: #E5E7EB !important;
+    transition: all 0.2s ease !important;
+    vertical-align: middle !important;
+    font-size: 12px !important;
+}
+
+/* Alternance des lignes */
+.handsontable-custom tbody tr:nth-child(even) td {
+    background: #363636;
+}
+ .toggle-triangle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    vertical-align: middle; 
+    line-height: 1;
+}
+
+.triangle-collapsed::before {
+    display: inline-block;
+    content: "▶ ";
+    color: #22d3ee;
+    font-size: 10px;
+}
+
+.triangle-expanded::before {
+    display: inline-block;
+    content: "▼ ";
+    color: #22d3ee;
+    font-size: 10px;
+} 
+/* Effet hover sur les triangles */
+.toggle-triangle:hover::before {
+    color: #0ee91d !important;
+    transform: scale(1.1);
+}
+</style>
+</body>
+</html>

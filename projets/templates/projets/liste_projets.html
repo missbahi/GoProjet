@@ -1,0 +1,656 @@
+<!DOCTYPE html> 
+<html lang="fr">
+<head> 
+    <meta charset="UTF-8">
+    <title>Tableau de Bord</title>
+    {% load static %}
+    <!--link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"-->
+    <!-- Font Awesome pour icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <style>
+        /* Styles pour la recherche */
+        #searchBox {
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        #searchBox.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        #searchInput::placeholder {
+            color: #6B7280;
+        }
+
+        .search-highlight {
+            background-color: rgba(34, 211, 238, 0.2);
+            border-radius: 2px;
+            padding: 0 2px;
+        }
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            padding: 8px 12px;
+        }
+
+        .sortable:hover {
+            background: linear-gradient(135deg, rgba(43, 156, 98, 0.15) 0%, rgba(59, 130, 246, 0.1) 100%);
+            transform: translateY(-1px);
+        }
+
+        .sortable.active {
+            background: linear-gradient(135deg, rgba(43, 156, 98, 0.25) 0%, rgba(59, 130, 246, 0.15) 100%);
+            color: #22d3ee;
+            font-weight: 600;
+            border-left: 3px solid #22d3ee;
+        }
+
+        .card {
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Animation pour le modal */
+        #notificationModal {
+            transition: opacity 0.3s ease;
+        }
+        #notificationModal:not(.hidden) {
+            opacity: 1;
+        }
+        
+        /* Style pour le bouton cloche */
+        button .fa-bell {
+            transition: transform 0.2s ease;
+        }
+        button:hover .fa-bell {
+            transform: rotate(-15deg);
+        }
+        
+        /* Style pour les champs du formulaire */
+        #notificationModal select, 
+        #notificationModal textarea, 
+        #notificationModal input[type="date"] {
+            transition: border-color 0.3s ease;
+        }
+        #notificationModal select:focus, 
+        #notificationModal textarea:focus, 
+        #notificationModal input[type="date"]:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+
+        /* Styles pour l'impression */
+        @media print {
+            /* Masquer les éléments de navigation et d'interface */
+            .no-print {
+                display: none !important;
+            }
+            
+            /* Masquer la colonne Actions */
+            .col-actions {
+                display: none !important;
+            }
+            
+            /* Masquer les boutons d'action dans les lignes */
+            .action-buttons {
+                display: none !important;
+            }
+            /* .print-right {
+                text-align: right !important;
+            } */
+            /* Ajustements généraux pour l'impression */
+            body {
+                background-color: white !important;
+                color: black !important;
+                font-size: 12pt;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            
+            /* Amélioration de la lisibilité du tableau */
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+            
+            th, td {
+                border: 1px solid #ddd !important;
+                padding: 8px !important;
+                /* text-align: left !important; */
+                color: black !important;
+                background: white !important;
+            }
+            
+            th {
+                background-color: #f5f5f5 !important;
+                font-weight: bold !important;
+            }
+            
+            /* Masquer les éléments de recherche et filtres */
+            #searchBox,
+            #searchToggle,
+            #resultCount,
+            #searchInfo {
+                display: none !important;
+            }
+            
+            /* Ajustement des couleurs pour l'impression */
+            /* .text-cyan-500,
+            .text-cyan-400,
+            .text-[#2B9C62] {
+                color: #0066cc !important;
+            } */
+            
+            .bg-\[#2E2E2E\] {
+                background: white !important;
+            }
+            
+            /* Ajustement des barres de progression */
+            /* .progress-bar {
+                background-color: #e0e0e0 !important;
+                border: 1px solid #ccc !important;
+            }
+            
+            .progress-fill {
+                background-color: #0066cc !important;
+            }
+            
+            /* Masquer les icônes Font Awesome inutiles */
+            /* .fas, .fa-solid, .fa-regular {
+                display: none !important;
+            } 
+             */
+            /* Conserver uniquement les icônes essentielles si nécessaire */
+            .fa-chart-line,
+            .fa-percent {
+                display: inline !important;
+            }
+            
+            /* Ajustement du titre */
+            h1 {
+                color: #0066cc !important;
+                font-size: 16pt !important;
+                margin-bottom: 10px !important;
+            }
+            
+            /* Masquer les modales */
+            #notificationModal,
+            #ajouterProjetModal-container,
+            #modifierProjetModal-container {
+                display: none !important;
+            }
+            
+            /* Ajustement des zones de notification */
+            #notification {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#2E2E2E] text-[#2B9C62] p-4 ">
+    <!-- En-tête de la page -->
+     <!-- Zone de notification -->
+    <div id="notification" class="fixed top-4 right-4 z-50 max-w-sm hidden no-print">
+        <div class="px-6 py-4 rounded-md shadow-lg text-white">
+            <div class="flex items-center">
+                <i id="notification-icon" class="fas mr-3"></i>
+                <span id="notification-message"></span>
+                <button onclick="document.getElementById('notification').classList.add('hidden')" class="ml-4">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+           // Gestion des messages Django
+        {% if messages %}
+            {% for message in messages %}
+                showNotification("{{ message }}", "{{ message.tags }}");
+            {% endfor %}
+        {% endif %}
+
+        // Gestion des messages depuis les modales
+        window.addEventListener('message', function(e) {
+            if (e.data.message) {
+                showNotification(e.data.message, e.data.type || 'success');
+            }
+        });
+    </script>
+    
+    <!-- Titre de la page -->
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-cyan-500">Tableau de Bord - Avancement des Projets</h1>
+    </div>
+    
+    <!-- boutons : accueil et ajout de projet -->
+    <div class="flex justify-between items-center my-3 no-print">
+        <a href="{% url 'home' %}" 
+           class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+            <i class="fa-solid fa-house"></i> Accueil
+        </a>
+        <a href="#"
+            hx-get="{% url 'projets:ajouter_projet_modal' %}"
+            hx-target="#ajouterProjetModal-container"
+            hx-swap="innerHTML"
+            class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+            <i class="fa-solid fa-plus"></i> <span>Ajouter un projet</span>
+        </a>
+    </div>
+    
+    <!-- Barre de recherche -->
+    <div class="mb-6 no-print">
+        <div class="flex items-center justify-between">
+            <!-- Bouton de recherche -->
+            <div class="relative">
+                <button id="searchToggle" class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2 flex items-center">
+                    <i class="fas fa-search mr-2"></i> Rechercher
+                </button>
+                
+                <!-- Champ de recherche (caché par défaut) -->
+                <div id="searchBox" class="hidden absolute left-0 top-12 bg-[#3B3B3B] border border-cyan-500 rounded-lg shadow-lg z-10 w-80">
+                    <div class="p-3">
+                        <div class="relative">
+                            <input type="text" 
+                                id="searchInput" 
+                                placeholder="Rechercher projets, entreprises, maîtres d'ouvrage..."
+                                class="w-full bg-[#2E2E2E] text-[#AECBD6] border border-cyan-500 rounded-lg px-4 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                            <i class="fas fa-search absolute right-3 top-3 text-cyan-400"></i>
+                        </div>
+                        <div class="text-xs text-gray-400 mt-2">
+                            Minimum 3 caractères. Recherche dans : numéros de marchés, noms de projets, entreprises, maîtres d'ouvrage.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Compteur de résultats -->
+            <div id="resultCount" class="text-cyan-400 text-sm hidden">
+                <span id="countValue">0</span> projet(s) trouvé(s)
+            </div>
+        </div>
+
+        <!-- Message d'information recherche -->
+        <div id="searchInfo" class="text-cyan-300 text-xs mt-2 hidden">
+            Recherche active : "<span id="searchTerm"></span>"
+            <button id="clearSearch" class="ml-2 text-red-400 hover:text-red-300">
+                <i class="fas fa-times"></i> Effacer
+            </button>
+        </div>
+    </div>
+
+    <!-- cadre du Tableau des projets -->
+     <div id="liste_projets">
+        {% include 'projets/partials/liste_projets_partial.html' %}
+     </div>
+
+    <!-- Modal de création de notification -->
+    <div id="notificationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 no-print">
+        <!-- Contenu de la modale -->
+        <div class="bg-[#525252] text-[#2B9C62] shadow-xl w-full max-w-md rounded-lg p-1" >
+            <!-- En-tête -->
+            <!-- Formulaire de notification -->
+            <form method="post" action="{% url 'projets:creer_notification' %}" class="bg-[#2E2E2E] text-[#2B9C62] shadow-lg rounded p-3">
+                <div class="flex justify-between items-center pb-4">
+                    <h3 class="text-xl font-semibold">
+                        <i class="fas fa-bell mr-2"></i> Créer une notification
+                    </h3>
+                    <button onclick="closeModal('notificationModal')" class="hover:text-green-700">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                {% csrf_token %}
+                <input type="hidden" name="projet_id" id="modalProjetId">
+                
+                <div class="space-y-4">
+                    <div> <!-- Champ de nom du projet -->
+                        <label class="block text-[#AECBD6] text-m font-medium  mb-1">Projet</label>
+                        <input type="text" id="modalProjetNom" class="w-full bg-black text-[#AECBD6] rounded-md border-green-500 border-1 shadow-sm p-2" readonly>
+                    </div>
+                    
+                    <div> <!-- Sélection du type de notification -->
+                        <label class="block text-[#AECBD6] text-sm font-medium  mb-1">Type de notification*</label>
+                        <select name="type_notification" class="w-full bg-black text-[#AECBD6] rounded-md border-green-500 border-1 shadow-sm p-2" required>
+                            <option value="">Sélectionnez un type</option>
+                            {% for type_code, type_label in notification_types %}
+                                <option value="{{ type_code }}">{{ type_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div> <!-- Champ de message -->
+                        <label class="block text-[#AECBD6] text-sm font-medium  mb-1">Message*</label>
+                        <textarea name="message" rows="3" class="w-full text-[#AECBD6] bg-black rounded-md border-green-500 border-1 shadow-sm p-2" required></textarea>
+                    </div>
+                    
+                    <div> <!-- Champ de date d'échéance -->
+                        <label class="block text-[#AECBD6] text-sm font-medium  mb-1">Date d'échéance</label>
+                        <input type="date" name="date_echeance" class="w-full text-[#AECBD6] bg-black rounded-md border-green-500 border-1 shadow-sm p-2">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal('notificationModal')" 
+                    class="btn bg-[#2E2E2E] hover:bg-[#525252] text-white border-gray-600">
+                        Annuler
+                    </button>
+
+                    <button type="submit" class="btn bg-[#2E2E2E]  hover:bg-[#107C41] text-white border-gray-600">
+                        <i class="fas fa-paper-plane mr-2"></i> Envoyer
+                    </button>
+                </div>
+            </form>
+            
+        </div>
+    </div>
+   
+    <!-- Modal d'ajout de projet -->
+     <div id="ajouterProjetModal-container" class="no-print"></div>
+
+    <!-- Modal de modification de projet -->
+    <div id="modifierProjetModal-container" class="fixed inset-0 hidden no-print"></div>
+
+<!-- Fonctions de base pour les modales -->
+<script>
+    function openNotificationModal(projetId, projetNom) {
+        document.getElementById('modalProjetId').value = projetId;
+        document.getElementById('modalProjetNom').value = projetNom;
+        document.getElementById('notificationModal').classList.remove('hidden');
+    }
+    // Fermeture de la modale
+    function closeModal(modalId, options = {}) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.classList.add('hidden');
+            if (options.reload) window.location.reload();
+            if (options.message) showNotification(options.message, options.type || 'success');
+        }
+    }
+    // Fermeture avec la touche Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const openModals = document.querySelectorAll('.fixed.inset-0:not(.hidden)');
+        openModals.forEach(modal => {
+          modal.classList.add('hidden');
+        });
+      }
+    });
+    // Fonction pour charger le formulaire de modification via AJAX
+    async function charger_modal(url) {
+        const container = document.querySelector('#modifierProjetModal-container');
+        const response = await fetch(url);
+        const html = await response.text();
+
+        container.innerHTML = ''; // Optionnel : vider le contenu avant de charger
+        container.innerHTML = html;
+        container.classList.remove('hidden'); 
+        // Clic sur le fond noir INTERNE (projetModal)
+        container.addEventListener('click', function(e) {
+            if (e.target.id === 'projetModal' || e.target === container) {
+                closeModal(container.id);
+            }
+            // Clic sur le bouton enregistrer
+            else if (e.target.id === 'submitProjetBtn' || e.target.closest('#submitProjetBtn')) {
+                e.preventDefault();
+                enregistrer_projet();
+            }
+        });
+    }
+    // Fonction pour enregistrer le projet via AJAX
+    async function enregistrer_projet() {
+        const form = document.getElementById('projetForm');
+        const submitBtn = document.getElementById('submitProjetBtn');
+        // Désactiver le bouton
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');    
+        // Récupérer les données du formulaire
+        try {
+        const response = await fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest' 
+            }
+        });
+                
+        if (response.ok) {
+            // Recharger juste la liste
+                htmx.ajax('GET', "{% url 'projets:liste_projets' %}", {
+                target: "#liste_projets",
+                swap: "innerHTML"
+            }); 
+            //   Afficher un message de confirmation
+            closeModal('projetModal');
+            showNotification('Projet mis à jour avec succès', 'success');
+        } else {
+            const error = await response.text();
+            showNotification('Erreur de soumission: ' + error, 'error')
+        }
+        } catch (error) {
+            showNotification("Erreur: " + error.message, 'error');
+        } finally {
+            // Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+</script>
+
+ <!-- Tri des colonnes -->
+<script>
+    let currentSort = { field: null, direction: 'asc' };
+
+    function sortTable(field) {
+        // Inverser la direction si même champ
+        if (currentSort.field === field) {
+            currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSort.field = field;
+            currentSort.direction = 'asc';
+        }
+
+        // Mettre à jour le style visuel
+        updateSortIndicator();
+        
+        // Tri HTMX - envoyer les paramètres seulement si un tri est actif
+        const urlParams = currentSort.field 
+            ? `?sort=${currentSort.field}&order=${currentSort.direction}`
+            : '';
+            
+        htmx.ajax('GET', `{% url 'projets:liste_projets' %}${urlParams}`, {
+            target: '#liste_projets',
+            swap: 'innerHTML'
+        });
+    }
+
+    function updateSortIndicator() {
+        // Retirer la classe active de tous
+        document.querySelectorAll('.sortable').forEach(el => {
+            el.classList.remove('active');
+        });
+        
+        // Activer seulement si un tri est sélectionné
+        if (currentSort.field) {
+            const activeHeader = document.querySelector(`[data-sort="${currentSort.field}"]`);
+            if (activeHeader) {
+                activeHeader.classList.add('active');
+            }
+        }
+    }
+
+    // Réinitialiser le tri
+    function resetSort() {
+        currentSort = { field: null, direction: 'asc' };
+        updateSortIndicator();
+        htmx.ajax('GET', "{% url 'projets:liste_projets' %}", {
+            target: '#liste_projets',
+            swap: 'innerHTML'
+        });
+    }
+
+    // Initialisation sans tri
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sortField = urlParams.get('sort');
+        
+        // Seulement initialiser le tri si explicitement demandé dans l'URL
+        if (sortField) {
+            currentSort.field = sortField;
+            currentSort.direction = urlParams.get('order') || 'asc';
+        }
+        
+        updateSortIndicator();
+    });
+</script>
+
+<!-- Script pour la recherche avancée -->
+<script> 
+    let searchTimeout = null;
+    let currentSearchTerm = '';
+
+    // Éléments DOM
+    const searchToggle = document.getElementById('searchToggle');
+    const searchBox = document.getElementById('searchBox');
+    const searchInput = document.getElementById('searchInput');
+    const resultCount = document.getElementById('resultCount');
+    const countValue = document.getElementById('countValue');
+    const searchInfo = document.getElementById('searchInfo');
+    const searchTerm = document.getElementById('searchTerm');
+    const clearSearch = document.getElementById('clearSearch');
+
+    // Toggle de la boîte de recherche
+    searchToggle.addEventListener('click', function(e) {
+        e.stopPropagation();
+        searchBox.classList.toggle('hidden');
+        searchBox.classList.toggle('show');
+        
+        if (!searchBox.classList.contains('hidden')) {
+            setTimeout(() => searchInput.focus(), 100);
+        }
+    });
+
+    // Recherche en temps réel
+    searchInput.addEventListener('input', function() {
+        const term = this.value.trim();
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Recherche après 500ms d'inactivité
+        searchTimeout = setTimeout(() => {
+            if (term.length >= 3 || term.length === 0) {
+                performSearch(term);
+            }
+        }, 500);
+    });
+
+    // Fermer la boîte de recherche en cliquant à l'extérieur
+    document.addEventListener('click', function(e) {
+        if (!searchBox.contains(e.target) && !searchToggle.contains(e.target)) {
+            searchBox.classList.add('hidden');
+            searchBox.classList.remove('show');
+        }
+    });
+
+    // Recherche avec la touche Entrée
+    searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch(this.value.trim());
+        }
+    });
+
+    // Effacer la recherche
+    clearSearch.addEventListener('click', function() {
+        searchInput.value = '';
+        performSearch('');
+        searchInput.focus();
+    });
+
+    function performSearch(term) {
+        currentSearchTerm = term;
+        
+        if (term.length >= 3) {
+            // Recherche via HTMX
+            htmx.ajax('GET', `{% url 'projets:liste_projets' %}?search=${encodeURIComponent(term)}`, {
+                target: '#liste_projets',
+                swap: 'innerHTML',
+                onSuccess: function() {
+                    updateSearchUI(term, true);
+                    highlightSearchTerms(term);
+                }
+            });
+        } else if (term.length === 0) {
+            // Reset à la liste complète
+            htmx.ajax('GET', "{% url 'projets:liste_projets' %}", {
+                target: '#liste_projets',
+                swap: 'innerHTML',
+                onSuccess: function() {
+                    updateSearchUI('', false);
+                }
+            });
+        }
+    }
+
+    function updateSearchUI(term, hasResults) {
+        if (term.length >= 3) {
+            searchInfo.classList.remove('hidden');
+            searchTerm.textContent = term;
+            resultCount.classList.remove('hidden');
+        } else {
+            searchInfo.classList.add('hidden');
+            resultCount.classList.add('hidden');
+        }
+    }
+
+    function highlightSearchTerms(term) {
+        // Mise en évidence des termes recherchés (optionnel)
+        const elements = document.querySelectorAll('td');
+        const regex = new RegExp(term, 'gi');
+        
+        elements.forEach(el => {
+            const html = el.innerHTML;
+            const highlighted = html.replace(regex, match => 
+                `<span class="search-highlight">${match}</span>`
+            );
+            el.innerHTML = highlighted;
+        });
+        
+        // Mettre à jour le compteur
+        const rows = document.querySelectorAll('tbody tr');
+        const visibleRows = Array.from(rows).filter(row => 
+            !row.style.display || row.style.display !== 'none'
+        );
+        countValue.textContent = visibleRows.length;
+    }
+
+    // Fermer avec Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            searchBox.classList.add('hidden');
+            searchBox.classList.remove('show');
+        }
+    });
+</script>
+
+<!-- script de notifications -->
+<script src="{% static 'projets/js/notification-handler.js' %}"></script>
+</body>
+</html>

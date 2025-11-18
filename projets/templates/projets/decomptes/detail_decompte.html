@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    {% load static %}
+    {% load formatters %}
+    <title>Décompte {{ decompte.numero }} – {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="{% static 'projets/js/nombre-lettres.js' %}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .facture-card { 
+            background: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            border-radius: 12px; 
+            padding: 2rem; 
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease; 
+        }
+        .facture-card:hover { 
+            border-color: #22d3ee; 
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
+        }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); border: none; color: white; }
+        
+        .statut-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .type-decompte-badge { 
+            display: inline-block; 
+            padding: 0.5rem 1rem; 
+            border-radius: 0.5rem; 
+            font-size: 0.875rem; 
+            font-weight: 600; 
+            margin-right: 0.5rem;
+        }
+        
+        .montant-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .retard-badge {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .ligne-separation {
+            border-top: 2px solid #4B5563;
+            margin: 1rem 0;
+        }
+        
+        .ligne-totale {
+            border-top: 3px solid #22d3ee;
+            margin: 1.5rem 0;
+            padding-top: 1rem;
+        }
+        
+        .ligne-deduction {
+            border-left: 3px solid #ef4444;
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+        }
+        
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+        
+        .facture-ligne {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        /* Style pour l'affichage du net à payer en lettres */
+        #net-a-payer-lettres {
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .total-section:hover #net-a-payer-lettres {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        .facture-ligne:last-child {
+            border-bottom: none;
+        }
+        .facture-libelle {
+            flex: 1;
+            color: #AECBD6;
+        }
+        .facture-montant {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            min-width: 120px;
+            text-align: right;
+        }
+
+        /* Styles pour l'impression */
+        @media print {
+            body { 
+                background-color: white !important; 
+                color: black !important; 
+                font-size: 12pt;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .facture-card {
+                background: white !important;
+                border: 1px solid #ccc !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .facture-card:hover {
+                border-color: #ccc !important;
+                box-shadow: none !important;
+            }
+            
+            .text-cyan-400, .text-cyan-300, .text-cyan-500 {
+                color: #0066cc !important;
+            }
+            
+            .text-gray-400, .text-gray-500 {
+                color: #666 !important;
+            }
+            
+            .text-red-400, .text-orange-400, .text-yellow-400, .text-amber-400 {
+                color: #cc0000 !important;
+            }
+                        
+            .bg-\[#2E2E2E\], .bg-\[#3B3B3B\] {
+                background: white !important;
+            }
+            
+            .border, .border-gray-600, .border-\[#4B5563\] {
+                border-color: #ccc !important;
+            }
+            
+            .ligne-separation, .ligne-totale {
+                border-color: #666 !important;
+            }
+            
+            .ligne-deduction {
+                border-left-color: #cc0000 !important;
+            }
+            
+            .statut-badge, .type-decompte-badge {
+                background: #f0f0f0 !important;
+                color: #333 !important;
+                border: 1px solid #ccc !important;
+            }
+            
+            .retard-badge {
+                background: #ffcccc !important;
+                color: #990000 !important;
+                animation: none !important;
+            }
+            
+            .alert-auto-dismiss {
+                display: none !important;
+            }
+            
+            a {
+                color: #0066cc !important;
+                text-decoration: underline !important;
+            }
+            
+            a[href]:after {
+                content: " (" attr(href) ")";
+            }
+            
+            #net-a-payer-lettres {
+                opacity: 1 !important;
+                font-style: normal !important;
+                font-weight: bold !important;
+            }
+
+            /* Masquer les liens d'attachement dans l'impression */
+            .attachement-link {
+                display: none !important;
+            }
+            
+            /* Optimisation de l'affichage des informations du décompte */
+            .decompte-info-grid {
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 1rem !important;
+            }
+            
+            .decompte-info-item {
+                margin-bottom: 0.5rem !important;
+                page-break-inside: avoid !important;
+            }
+        }
+ 
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- En-tête -->
+        <div class="mb-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h1 class="text-3xl font-bold text-cyan-400 mb-2">Décompte {{ decompte.numero }}</h1>
+                    <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+                </div>
+                <div class="flex gap-3 no-print">
+                    <a href="{% url 'projets:liste_decomptes' projet.id %}" 
+                       class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Retour aux décomptes
+                    </a>
+                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" 
+                       class="btn-warning px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Badges type et statut -->
+            <div class="flex items-center gap-4 mb-4">
+                <span class="type-decompte-badge 
+                    {% if decompte.type_decompte == 'PROVISOIRE' %}bg-blue-600
+                    {% elif decompte.type_decompte == 'DEFINITIF' %}bg-green-600
+                    {% else %}bg-purple-600{% endif %}">
+                    {{ decompte.get_type_decompte_display }}
+                </span>
+                <span class="statut-badge 
+                    {% if decompte.statut == 'PAYE' %}bg-green-900 text-green-300
+                    {% elif decompte.statut == 'VALIDE' %}bg-blue-900 text-blue-300
+                    {% elif decompte.statut == 'EMIS' %}bg-yellow-900 text-yellow-300
+                    {% elif decompte.statut == 'EN_RETARD' %}bg-red-900 text-red-300
+                    {% elif decompte.statut == 'PARTIEL' %}bg-orange-900 text-orange-300
+                    {% else %}bg-gray-700 text-gray-300{% endif %}">
+                    {{ decompte.get_statut_display }}
+                </span>
+                {% if decompte.est_en_retard %}
+                <span class="retard-badge bg-red-500 text-white text-sm px-3 py-1 rounded-full flex items-center gap-2">
+                    <i class="fas fa-exclamation-triangle"></i> En retard de paiement
+                </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2 no-print">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Carte Facture unique -->
+        <div class="facture-card">
+            <!-- En-tête de la facture - Version horizontale optimisée -->
+            <div class="decompte-info-grid grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="decompte-info-item">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-file-invoice"></i> INFORMATIONS DÉCOMPTE
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">N° Décompte:</strong><br>
+                            {{ decompte.numero }}
+                        </p>
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Projet:</strong><br>
+                            {{ projet.nom }}
+                        </p>
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Attachement:</strong><br>
+                            {{ decompte.attachement.numero }}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="decompte-info-item">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-calendar-alt"></i> DATES
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Émission:</strong><br>
+                            {{ decompte.date_emission|date:"d/m/Y" }}
+                        </p>
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Échéance:</strong><br>
+                            {% if decompte.date_echeance %}
+                                {{ decompte.date_echeance|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-gray-500 italic">Non définie</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Paiement:</strong><br>
+                            {% if decompte.date_paiement %}
+                                {{ decompte.date_paiement|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="text-gray-500 italic">Non payé</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="decompte-info-item">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                        <i class="fas fa-info-circle"></i> RÉFÉRENCES
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <p class="text-gray-400">
+                            <strong class="text-[#AECBD6]">Bordereau:</strong><br>
+                            {% if decompte.numero_bordereau %}
+                                {{ decompte.numero_bordereau }}
+                            {% else %}
+                                <span class="text-gray-500 italic">Aucun</span>
+                            {% endif %}
+                        </p>
+                        <p class="text-gray-400 attachement-link no-print">
+                            <strong class="text-[#AECBD6]">Lien attachement:</strong><br>
+                            <a href="{% url 'projets:detail_attachement' decompte.attachement.id %}" 
+                               class="text-cyan-400 hover:text-cyan-300">
+                                Voir l'attachement
+                            </a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Corps de la facture -->
+            <div class="bg-[#2E2E2E] rounded-lg p-4">
+                <!-- Montant HT -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-gray-400">Montant situation HT</span>
+                    <span class="facture-montant text-gray-400">{{ decompte.attachement.total_montant_ht|format_quantity }} DH</span>
+                </div>
+
+                <!-- Deduire Montant HT Precedent -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-gray-500">Déduire situation précedente HT</span>
+                    <span class="facture-montant text-gray-500">- {{ decompte.attachement.montant_ht_attachement_precedent|format_quantity }} DH</span>
+                </div>
+                <!-- Ligne de séparation -->
+                <div class="ligne-separation"></div>
+                <div class="facture-ligne">
+                    <span class="facture-libelle">Total situation HT</span>
+                    <span class="facture-montant text-white">{{ decompte.montant_situation_ht|format_quantity }} DH</span>
+                </div>
+                <!-- Deduire retenues de garantie -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-red-400">Déduire retenue de garantie HT ({{ decompte.taux_retenue_garantie }}%)</span>
+                    <span class="facture-montant text-red-400">- {{ decompte.montant_situation_retenue_garantie|format_quantity }} DH</span>
+                </div>
+                <!-- Ligne de séparation -->
+                <div class="ligne-separation"></div>
+                <div class="facture-ligne">
+                    <span class="facture-libelle">Reste à payer HT</span>
+                    <span class="facture-montant text-white">{{ decompte.reste_a_payer_ht|format_quantity }} DH</span>
+                </div>
+                <!-- TVA -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle  text-amber-400">TVA ({{ decompte.taux_tva }}%)</span>
+                    <span class="facture-montant text-amber-400">{{ decompte.montant_situation_tva|format_quantity }} DH</span>
+                </div>
+
+                <!-- Ligne de séparation -->
+                <div class="ligne-separation"></div>
+
+                <!-- Montant TTC -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-cyan-400 font-semibold">Montant TTC</span>
+                    <span class="facture-montant text-cyan-400 font-semibold">{{ decompte.montant_situation_ttc|format_quantity }} DH</span>
+                </div>
+
+                <!-- DÉDUCTIONS -->
+                <div class="mt-6">
+                    <!-- RAS -->
+                    {% if decompte.montant_ras %}
+                    <div class="ligne-deduction">
+                        <div class="facture-ligne">
+                            <span class="facture-libelle text-orange-400">RAS ({{ decompte.taux_ras }}%)</span>
+                            <span class="facture-montant text-orange-400">- {{ decompte.montant_situation_ras|format_quantity }} DH</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Autres retenues -->
+                    {% if decompte.autres_retenues %}
+                    <div class="ligne-deduction">
+                        <div class="facture-ligne">
+                            <span class="facture-libelle text-yellow-400">Autres retenues</span>
+                            <span class="facture-montant text-yellow-400">- {{ decompte.montant_situation_autres_retenues|format_quantity }} DH</span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Ligne de séparation totale -->
+                <div class="ligne-totale"></div>
+
+                <!-- NET À PAYER -->
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-[#2B9C62] text-xl font-bold">NET À PAYER</span>
+                    <span class="facture-montant text-[#2B9C62] text-xl font-bold">{{ decompte.montant_situation_net_a_payer|format_quantity }} DH</span>
+                </div>
+                <!-- Afficher le montant en lettre -->
+                <div class="ligne-separation"></div>
+                <div>
+                    <h3 class="text-gray-400 text-m">Net à payer toutes taxes comprises : </h3>
+                    <span id ="net-a-payer-lettres" class="text-white font-semibold"></span>
+                </div>
+            </div>
+
+            <!-- Observations -->
+            {% if decompte.observations %}
+            <div class="mt-4 pt-4">
+                <h4 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                    <i class="fas fa-sticky-note"></i> OBSERVATIONS
+                </h4>
+                <div class="text-gray-300 bg-[#2E2E2E] p-4 rounded-lg border border-gray-600">
+                    {{ decompte.observations|linebreaks }}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Actions -->
+        <div class="facture-card no-print">
+            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-cogs"></i> Actions
+            </h3>
+            <div class="flex gap-3 flex-wrap">
+                <a href="{% url 'projets:modifier_decompte' decompte.id %}" 
+                   class="btn-warning px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-edit"></i> Modifier ce décompte
+                </a>
+                
+                <a href="{% url 'projets:liste_decomptes' projet.id %}" 
+                   class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-list"></i> Voir tous les décomptes
+                </a>
+                
+                <a href="{% url 'projets:detail_attachement' decompte.attachement.id %}" 
+                   class="btn-info px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-external-link-alt"></i> Voir l'attachement
+                </a>
+                
+                <a href="{% url 'projets:supprimer_decompte' decompte.id %}" 
+                   class="btn-danger px-6 py-3 rounded-lg font-medium flex items-center gap-2"
+                   onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce décompte ? Cette action est irréversible.')">
+                    <i class="fas fa-trash"></i> Supprimer
+                </a>
+            </div>
+        </div>
+
+        <!-- Métadonnées -->
+        <div class="facture-card bg-[#2E2E2E] border-gray-700 no-print">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
+                <div>
+                    <strong class="text-[#AECBD6]">Créé le :</strong><br>
+                    {{ decompte.created_at|date:"d/m/Y à H:i" }}
+                </div>
+                <div>
+                    <strong class="text-[#AECBD6]">Modifié le :</strong><br>
+                    {{ decompte.updated_at|date:"d/m/Y à H:i" }}
+                </div>
+                <div>
+                    <strong class="text-[#AECBD6]">ID :</strong><br>
+                    {{ decompte.id }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Masquer automatiquement les messages après 5 secondes
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                const alerts = document.querySelectorAll('.alert-auto-dismiss');
+                alerts.forEach(alert => {
+                    alert.style.display = 'none';
+                });
+            }, 5000);
+        });
+
+        // Fonction pour mettre à jour le net à payer en lettres
+        function updateNetAPayerLettres() {
+            // Récupérer le montant depuis le template Django
+            const montantNetAPayer = parseFloat("{{ decompte.montant_situation_net_a_payer|default:0 }}");
+            // Convertir en lettres
+            const montantEnLettres = window.montantEnLettres(montantNetAPayer);
+            // Mettre à jour le div
+            const divLettres = document.getElementById('net-a-payer-lettres');
+            if (divLettres) {
+                divLettres.textContent = montantEnLettres;
+                divLettres.title = montantEnLettres; // Tooltip au survol
+            }
+        }    
+        // Attendre que tout soit chargé
+        window.addEventListener('load', function() {
+            updateNetAPayerLettres();
+        });
+    </script>
+</body>
+</html>

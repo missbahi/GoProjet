@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Base de Données - Bureau d'études techniques MEGAPERFORMANCE</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .active-menu-item {
+            background-color: #107C41;
+            color: white;
+        }
+        
+        /* Styles pour la modal */
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2E2E2E;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 50;
+            width: 90%;
+            max-width: 32rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-96 flex-shrink-0 md:block hidden">
+        <div class="p-4 border-b border-green-900">
+            <div class="flex items-center space-x-3">
+                <h6 class="text-xl font-bold">📊 Gestion base de données</h6>
+            </div>
+        </div>
+        <nav class="p-4">
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                    <ul class="space-y-2 text-l">
+                        <li>
+                            <div id="menu-ingenieurs" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                                <button onclick="loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')">
+                                    <i class="fas fa-user-tie"></i>
+                                    <span> Gestion des Ingénieurs / Chefs de projets</span>
+                                </button>
+                            </div>
+                        </li>
+                        <li>
+                            <div id="menu-clients" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                                <button onclick="loadModule('{% url 'projets:partial_clients' %}', 'menu-clients')">
+                                    <i class="fas fa-users"></i>
+                                    <span> Gestion des Clients / Maitres d'ouvrages</span>
+                                </button> 
+                            </div>
+                        </li>
+                        <li>
+                            <div id="menu-entreprises" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                                <button onclick="loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises')">
+                                    <i class="fas fa-building"></i>
+                                    <span> Gestion des Entreprises</span>
+                                </button>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+        </nav>
+        <div class="p-4 border-t border-green-900">
+            <a href="{% url 'home' %}" class="flex items-center space-x-2 p-2  hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-house"></i> <span>Accueil</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Content area -->
+    <main class="flex-1 p-6 overflow-y-auto bg-[#525252] text-[#2B9C62] shadow">
+        <div id="content-area">
+            <h2 class="text-xl font-semibold text-green-700">Sélectionnez un module à gauche</h2>
+        </div>
+    </main>
+</div>
+
+<!-- Modal de modification ingénieur -->
+<div id="editIngenieurModal" class="modal">
+    <div class="bg-[#2E2E2E] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier l'ingénieur
+            </h3>
+            <button onclick="closeEditIngenieurModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="editIngenieurForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editId" name="id">
+            <div class="mb-3">
+                <label for="editNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
+                <input type="text" id="editNom" name="nom" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditIngenieurModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout ingénieur -->
+<div id="addIngenieurModal" class="modal">
+    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un ingénieur
+            </h3>
+            <button onclick="closeAddIngenieurModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="addIngenieurForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
+                <input type="text" id="addNom" name="nom" 
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                    required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddIngenieurModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification client -->
+<div id="editClientModal" class="modal">
+    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier le client
+            </h3>
+            <button onclick="closeEditClientModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="editClientForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editClientId" name="id">
+            
+            <div class="mb-3">
+                <label for="editClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
+                <input type="text" id="editClientNom" name="nom" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="editClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
+                <input type="text" id="editClientContact" name="contact" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
+                <input type="email" id="editClientEmail" name="email" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="editClientTelephone" name="telephone" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
+                <textarea id="editClientAdresse" name="adresse" rows="3"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                </textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditClientModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout client -->
+<div id="addClientModal" class="modal">
+    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un client
+            </h3>
+            <button onclick="closeAddClientModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="addClientForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="addClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
+                <input type="text" id="addClientNom" name="nom" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="addClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
+                <input type="text" id="addClientContact" name="contact" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
+                <input type="email" id="addClientEmail" name="email" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="addClientTelephone" name="telephone" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
+                <textarea id="addClientAdresse" name="adresse" rows="3"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                </textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddClientModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification entreprise -->
+<div id="editEntrepriseModal" class="modal">
+    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier l'entreprise
+            </h3>
+            <button onclick="closeEditEntrepriseModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="editEntrepriseForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editEntrepriseId" name="id">
+            
+            <div class="mb-3">
+                <label for="editEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
+                <input type="text" id="editEntrepriseNom" name="nom" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="editEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
+                <input type="text" id="editEntrepriseContact" name="contact" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
+                <input type="email" id="editEntrepriseEmail" name="email" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="editEntrepriseTelephone" name="telephone" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="editEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
+                <textarea id="editEntrepriseAdresse" name="adresse" rows="3"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                </textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditEntrepriseModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout entreprise -->
+<div id="addEntrepriseModal" class="modal">
+    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter une entreprise
+            </h3>
+            <button onclick="closeAddEntrepriseModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <form id="addEntrepriseForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            
+            <div class="mb-3">
+                <label for="addEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
+                <input type="text" id="addEntrepriseNom" name="nom" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="addEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
+                <input type="text" id="addEntrepriseContact" name="contact" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
+                <input type="email" id="addEntrepriseEmail" name="email" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="addEntrepriseTelephone" name="telephone" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+            </div>
+            
+            <div class="mb-3">
+                <label for="addEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
+                <textarea id="addEntrepriseAdresse" name="adresse" rows="3"
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                </textarea>
+            </div>
+            
+            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddEntrepriseModal()" 
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
+
+<script>
+    let activeMenuItemId = null;
+    let currentIngenieurId = null;
+    let currentClientId = null;
+    let currentEntrepriseId = null;
+
+    function loadModule(url, menuItemId) {
+        // Retirer la classe active de l'élément précédent s'il existe
+        if (activeMenuItemId) {
+            document.getElementById(activeMenuItemId).classList.remove('active-menu-item');
+        }
+        
+        // Ajouter la classe active au nouvel élément
+        document.getElementById(menuItemId).classList.add('active-menu-item');
+        
+        // Mettre à jour l'élément actif
+        activeMenuItemId = menuItemId;
+        
+        // Charger le contenu
+        return fetch(url)
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('content-area').innerHTML = html;
+            })
+            .catch(error => {
+                console.error('Erreur de chargement:', error);
+            });
+    }   
+    
+    // Charger par défaut le module des ingénieurs au démarrage
+    loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')
+    
+    // Fonctions d'ouverture/fermeture des modals (inchangées)
+    function openEditIngenieurModal(id, nom) {
+        currentIngenieurId = id;
+        document.getElementById('editId').value = id;
+        document.getElementById('editNom').value = nom;
+        document.getElementById('editIngenieurModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddIngenieurModal() {
+        document.getElementById('addIngenieurModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditIngenieurModal() {
+        document.getElementById('editIngenieurModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editIngenieurForm').classList.remove('was-validated');
+        document.getElementById('editNom').classList.remove('border-red-500');
+        document.querySelector('#editIngenieurForm .invalid-feedback').classList.add('hidden');
+    }
+
+    function closeAddIngenieurModal() {
+        document.getElementById('addIngenieurModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addIngenieurForm').classList.remove('was-validated');
+        document.getElementById('addNom').classList.remove('border-red-500');
+        document.querySelector('#addIngenieurForm .invalid-feedback').classList.add('hidden');
+        document.getElementById('addNom').value = '';
+    }
+
+    // Fonctions pour les clients
+    function openEditClientModal(id, nom, contact, email, telephone, adresse) {
+        currentClientId = id;
+        document.getElementById('editClientId').value = id;
+        document.getElementById('editClientNom').value = nom;
+        document.getElementById('editClientContact').value = contact || '';
+        document.getElementById('editClientEmail').value = email || '';
+        document.getElementById('editClientTelephone').value = telephone || '';
+        document.getElementById('editClientAdresse').value = adresse || '';
+        document.getElementById('editClientModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddClientModal() {
+        document.getElementById('addClientModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditClientModal() {
+        document.getElementById('editClientModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editClientForm').classList.remove('was-validated');
+        document.getElementById('editClientNom').classList.remove('border-red-500');
+        document.querySelectorAll('#editClientForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddClientModal() {
+        document.getElementById('addClientModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addClientForm').classList.remove('was-validated');
+        document.getElementById('addClientNom').classList.remove('border-red-500');
+        document.querySelectorAll('#addClientForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addClientNom').value = '';
+        document.getElementById('addClientContact').value = '';
+        document.getElementById('addClientEmail').value = '';
+        document.getElementById('addClientTelephone').value = '';
+        document.getElementById('addClientAdresse').value = '';
+    }
+
+    // Fonctions pour les entreprises
+    function openEditEntrepriseModal(id, nom, contact, email, telephone, adresse) {
+        currentEntrepriseId = id;
+        document.getElementById('editEntrepriseId').value = id;
+        document.getElementById('editEntrepriseNom').value = nom;
+        document.getElementById('editEntrepriseContact').value = contact || '';
+        document.getElementById('editEntrepriseEmail').value = email || '';
+        document.getElementById('editEntrepriseTelephone').value = telephone || '';
+        document.getElementById('editEntrepriseAdresse').value = adresse || '';
+        document.getElementById('editEntrepriseModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddEntrepriseModal() {
+        document.getElementById('addEntrepriseModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditEntrepriseModal() {
+        document.getElementById('editEntrepriseModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editEntrepriseForm').classList.remove('was-validated');
+        document.getElementById('editEntrepriseNom').classList.remove('border-red-500');
+        document.querySelectorAll('#editEntrepriseForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddEntrepriseModal() {
+        document.getElementById('addEntrepriseModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addEntrepriseForm').classList.remove('was-validated');
+        document.getElementById('addEntrepriseNom').classList.remove('border-red-500');
+        document.querySelectorAll('#addEntrepriseForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addEntrepriseNom').value = '';
+        document.getElementById('addEntrepriseContact').value = '';
+        document.getElementById('addEntrepriseEmail').value = '';
+        document.getElementById('addEntrepriseTelephone').value = '';
+        document.getElementById('addEntrepriseAdresse').value = '';
+    }
+
+    function closeAllModals() {
+        closeEditIngenieurModal();
+        closeAddIngenieurModal();
+        closeEditClientModal();
+        closeAddClientModal();
+        closeEditEntrepriseModal();
+        closeAddEntrepriseModal();
+    }
+
+    // === DELEGATION D'EVENEMENTS : GESTION CENTRALISÉE ===
+
+    // Gérer tous les clics sur les boutons d'ajout, d'édition et de suppression
+    document.addEventListener('click', function(e) {
+        // Boutons d'ajout (Ingénieurs, Clients, Entreprises)
+        if (e.target.matches('[data-add-ingenieur-button]')) {
+            e.preventDefault();
+            openAddIngenieurModal();
+        } else if (e.target.matches('[data-add-client-button]')) {
+            e.preventDefault();
+            openAddClientModal();
+        } else if (e.target.matches('[data-add-entreprise-button]')) {
+            e.preventDefault();
+            openAddEntrepriseModal();
+        }
+        
+        // Boutons d'édition Ingénieurs
+        if (e.target.matches('[data-edit-ingenieur-button]') || e.target.closest('[data-edit-ingenieur-button]')) {
+            const button = e.target.matches('[data-edit-ingenieur-button]') ? e.target : e.target.closest('[data-edit-ingenieur-button]');
+            const id = button.getAttribute('data-id');
+            const nom = button.getAttribute('data-nom');
+            openEditIngenieurModal(id, nom);
+        }
+        
+        // Boutons d'édition Clients
+        if (e.target.matches('[data-edit-client-button]') || e.target.closest('[data-edit-client-button]')) {
+            const button = e.target.matches('[data-edit-client-button]') ? e.target : e.target.closest('[data-edit-client-button]');
+            const id = button.getAttribute('data-id');
+            const nom = button.getAttribute('data-nom');
+            const contact = button.getAttribute('data-contact');
+            const email = button.getAttribute('data-email');
+            const telephone = button.getAttribute('data-telephone');
+            const adresse = button.getAttribute('data-adresse');
+            openEditClientModal(id, nom, contact, email, telephone, adresse);
+        }
+        
+        // Boutons d'édition Entreprises
+        if (e.target.matches('[data-edit-entreprise-button]') || e.target.closest('[data-edit-entreprise-button]')) {
+            const button = e.target.matches('[data-edit-entreprise-button]') ? e.target : e.target.closest('[data-edit-entreprise-button]');
+            const id = button.getAttribute('data-id');
+            const nom = button.getAttribute('data-nom');
+            const contact = button.getAttribute('data-contact');
+            const email = button.getAttribute('data-email');
+            const telephone = button.getAttribute('data-telephone');
+            const adresse = button.getAttribute('data-adresse');
+            openEditEntrepriseModal(id, nom, contact, email, telephone, adresse);
+        }
+        
+        // Boutons de suppression
+        if (e.target.matches('a[href*="supprimer"]') || e.target.closest('a[href*="supprimer"]')) {
+            const link = e.target.matches('a[href*="supprimer"]') ? e.target : e.target.closest('a[href*="supprimer"]');
+            e.preventDefault();
+            
+            const entityType = link.href.includes('ingenieur') ? 'ingénieur' : 
+                            link.href.includes('client') ? 'client' : 'entreprise';
+            
+            if (!confirm(`Supprimer cet ${entityType} ?`)) return;
+            
+            fetch(link.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    // Recharger le module correspondant
+                    if (link.href.includes('ingenieur')) {
+                        loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs');
+                    } else if (link.href.includes('client')) {
+                        loadModule('{% url 'projets:partial_clients' %}', 'menu-clients');
+                    } else if (link.href.includes('entreprise')) {
+                        loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises');
+                    }
+                } else {
+                    alert('Erreur lors de la suppression.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Une erreur est survenue lors de la suppression.');
+            });
+        }
+        
+        // Boutons de fermeture des modals
+        if (e.target.matches('.modal button i.fa-times') || e.target.closest('.modal button i.fa-times')) {
+            closeAllModals();
+        }
+    });
+
+    // Gérer toutes les soumissions de formulaires
+    document.addEventListener('submit', function(e) {
+        if (e.target.matches('#addIngenieurForm')) {
+            e.preventDefault();
+            handleAddIngenieur(e.target);
+        } else if (e.target.matches('#editIngenieurForm')) {
+            e.preventDefault();
+            handleEditIngenieur(e.target);
+        } else if (e.target.matches('#addClientForm')) {
+            e.preventDefault();
+            handleAddClient(e.target);
+        } else if (e.target.matches('#editClientForm')) {
+            e.preventDefault();
+            handleEditClient(e.target);
+        } else if (e.target.matches('#addEntrepriseForm')) {
+            e.preventDefault();
+            handleAddEntreprise(e.target);
+        } else if (e.target.matches('#editEntrepriseForm')) {
+            e.preventDefault();
+            handleEditEntreprise(e.target);
+        }
+    });
+
+    // === FONCTIONS DE GESTION DES FORMULAIRES ===
+
+    // Ingénieurs
+    function handleAddIngenieur(form) {
+        const nomInput = document.getElementById('addNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#addIngenieurForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#addIngenieurForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_INGENIEUR_URL = "{% url 'projets:ajouter_ingenieur' %}";
+
+        fetch(`${AJOUTER_INGENIEUR_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddIngenieurModal();
+                showSuccessMessage('Ingénieur ajouté avec succès!');
+                loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditIngenieur(form) {
+        const nomInput = document.getElementById('editNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#editIngenieurForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#editIngenieurForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editId').value;
+
+        fetch(`/ingenieurs/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditIngenieurModal();
+                loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Clients
+    function handleAddClient(form) {
+        const nomInput = document.getElementById('addClientNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#addClientForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#addClientForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_CLIENT_URL = "{% url 'projets:ajouter_client' %}";
+
+        fetch(`${AJOUTER_CLIENT_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddClientModal();
+                loadModule('{% url 'projets:partial_clients' %}', 'menu-clients')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditClient(form) {
+        const nomInput = document.getElementById('editClientNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#editClientForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#editClientForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editClientId').value;
+
+        fetch(`/clients/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditClientModal();
+                loadModule('{% url 'projets:partial_clients' %}', 'menu-clients')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Entreprises
+    function handleAddEntreprise(form) {
+        const nomInput = document.getElementById('addEntrepriseNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#addEntrepriseForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#addEntrepriseForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_ENTREPRISE_URL = "/entreprises/ajouter/";
+
+        fetch(`${AJOUTER_ENTREPRISE_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddEntrepriseModal();
+                loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditEntreprise(form) {
+        const nomInput = document.getElementById('editEntrepriseNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#editEntrepriseForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#editEntrepriseForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editEntrepriseId').value;
+
+        fetch(`/entreprises/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditEntrepriseModal();
+                loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+                    
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Fonction utilitaire pour afficher les messages de succès
+    function showSuccessMessage(message) {
+        const contentArea = document.getElementById('content-area');
+        const successMsg = document.createElement('div');
+        successMsg.className = 'p-4 mb-4 bg-green-800 text-green-200 rounded-lg';
+        successMsg.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
+        contentArea.prepend(successMsg);
+        setTimeout(() => {
+            successMsg.remove();
+        }, 3000);
+    }
+
+    // Fermer la modal avec la touche Échap
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeAllModals();
+        }
+    });
+
+    // Gérer le clic sur le backdrop
+    document.getElementById('modalBackdrop').addEventListener('click', function() {
+        closeAllModals();
+    });
+
+    // Plus besoin d'appeler attachEventHandlers() dans DOMContentLoaded
+    document.addEventListener('DOMContentLoaded', function() {
+        // Les événements sont déjà gérés par délégation
+    });
+</script>
+
+</body>
+</html>

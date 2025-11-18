@@ -1,0 +1,259 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Créer Décompte – {{ projet.nom }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="{% static 'projets/css/tailwind.css' %}" rel="stylesheet" />
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: rgb(88, 88, 88); 
+            color: #18ca15; 
+            font-size: 20px;
+        }
+        
+        .footer {
+            position: fixed; 
+            z-index: 1000; 
+            bottom: 0; 
+            left: 0; 
+            right: 0; 
+            background-color: rgb(88, 88, 88); 
+            padding: 2px; 
+            border-color: #0faa40; 
+            text-align: center; 
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        input, select, textarea {
+            background-color: #2d3748;
+            color: #18ca15;
+            border: 1px solid #0faa40;
+            border-radius: 4px;
+            padding: 8px 12px;
+            width: 100%;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        
+        .montant {
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        .attachement-info {
+            background-color: #2d3748;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #0faa40;
+        }
+    </style>
+</head>
+<body class="bg-grey-700 px-2 py-2">
+    <header class="header mb-6">
+        <h2>Projet : {{ projet.nom }}</h2>
+        <h3>Créer un décompte</h3>
+    </header>
+
+    <div class="max-w-4xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg mb-20">
+        <!-- Information sur les attachements disponibles -->
+        <div class="attachement-info">
+            <h4 class="text-info mb-3"><i class="fa-solid fa-info-circle"></i> Attachements validés disponibles</h4>
+            <p class="mb-2">Sélectionnez un attachement validé pour créer le décompte correspondant.</p>
+            <p class="text-sm text-gray-400">Un décompte ne peut être créé que sur la base d'un attachement validé.</p>
+        </div>
+
+        <form method="POST" novalidate class="needs-validation">
+            {% csrf_token %}
+            
+            <!-- Sélection de l'attachement -->
+            <div class="form-group">
+                <label for="attachement_id">Attachement validé *</label>
+                <select id="attachement_id" name="attachement_id" required class="mb-4">
+                    <option value="">Sélectionnez un attachement validé</option>
+                    {% for attachement in attachements %}
+                    <option value="{{ attachement.id }}" data-montant="{{ attachement.total_montant_ht }}">
+                        {{ attachement.numero }} - 
+                        Période: {{ attachement.date_debut_periode|date:"d/m/Y" }} à {{ attachement.date_fin_periode|date:"d/m/Y" }} - 
+                        Montant HT: {{ attachement.total_montant_ht|floatformat:2 }} DH
+                    </option>
+                    {% endfor %}
+                </select>
+                
+                {% if not attachements %}
+                <div class="text-warning bg-yellow-900 p-3 rounded mt-2">
+                    <i class="fa-solid fa-exclamation-triangle"></i> 
+                    Aucun attachement validé disponible. 
+                    <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="text-info underline">
+                        Créer un attachement d'abord
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Informations du décompte (uniquement si attachement sélectionné) -->
+            <div id="decompte-infos" style="display: none;">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="form-group">
+                        <label for="type_decompte">Type de décompte *</label>
+                        <select id="type_decompte" name="type_decompte" required>
+                            <option value="PROVISOIRE">Décompte provisoire</option>
+                            <option value="DEFINITIF">Décompte définitif</option>
+                            <option value="SOLDE">Décompte de solde</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="numero">Numéro de décompte *</label>
+                        <input type="text" id="numero" name="numero" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date_emission">Date d'émission *</label>
+                        <input type="date" id="date_emission" name="date_emission" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="date_echeance">Date d'échéance</label>
+                        <input type="date" id="date_echeance" name="date_echeance">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="statut">Statut *</label>
+                        <select id="statut" name="statut" required>
+                            <option value="BROUILLON">Brouillon</option>
+                            <option value="EMIS">Émis</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Paramètres financiers -->
+                <div class="mt-8">
+                    <h4 class="text-info border-b border-gray-600 pb-2 mb-4">Paramètres financiers</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="form-group">
+                            <label for="taux_tva">Taux TVA (%)</label>
+                            <input type="number" id="taux_tva" name="taux_tva" value="20.0" step="0.01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taux_retenue_garantie">Retenue de garantie (%)</label>
+                            <input type="number" id="taux_retenue_garantie" name="taux_retenue_garantie" value="5.0" step="0.01">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="taux_ras">RAS (%)</label>
+                            <input type="number" id="taux_ras" name="taux_ras" value="0.0" step="0.01">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="autres_retenues">Autres retenues (DH)</label>
+                        <input type="number" id="autres_retenues" name="autres_retenues" value="0.0" step="0.01">
+                    </div>
+                </div>
+
+                <!-- Aperçu des calculs -->
+                <div class="mt-8 p-4 bg-gray-700 rounded">
+                    <h4 class="text-info mb-3">Aperçu du décompte</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>Montant HT attachement: <span id="preview_ht" class="montant">0.00 DH</span></div>
+                        <div>Montant TVA: <span id="preview_tva" class="montant">0.00 DH</span></div>
+                        <div>Montant TTC: <span id="preview_ttc" class="montant">0.00 DH</span></div>
+                        <div>Retenue garantie: <span id="preview_retenue" class="montant">0.00 DH</span></div>
+                        <div>Net à payer: <span id="preview_net" class="montant">0.00 DH</span></div>
+                    </div>
+                </div>
+
+                <!-- Bouton de soumission -->
+                <div class="flex items-center gap-4 mt-8">
+                    <button type="submit" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md text-lg">
+                        <i class="fa-solid fa-file-invoice-dollar"></i> Créer le décompte
+                    </button>
+                    <a href="{% url 'projets:liste_decomptes' projet.id %}" class="text-gray-300 hover:text-white underline">
+                        Annuler
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <footer class="footer">
+        <div class="toolbar flex flex-wrap justify-between items-center bg-grey-200 p-3 rounded shadow top-4 z-50 border border-gray-100">
+            <div class="flex flex-wrap gap-2 text-sm text-gray-700 rounded shadow">
+                <button onclick="window.location.href='{% url 'projets:liste_decomptes' projet.id %}'" 
+                        class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+                    <i class="fa-solid fa-arrow-left"></i> Retour aux décomptes
+                </button>
+                <a href="{% url 'projets:ajouter_attachement' projet.id %}" 
+                   class="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded shadow">
+                    <i class="fa-solid fa-plus"></i> Nouvel attachement
+                </a>
+                <button onclick="window.location.href='{% url 'projets:dashboard' projet.id %}'" 
+                        class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded shadow">
+                    <i class="fa-solid fa-arrow-left"></i> Retour au projet
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Afficher/masquer les infos du décompte selon la sélection d'attachement
+        const attachementSelect = document.getElementById('attachement_id');
+        const decompteInfos = document.getElementById('decompte-infos');
+        
+        function updateDecompteForm() {
+            if (attachementSelect.value) {
+                decompteInfos.style.display = 'block';
+                updateCalculs();
+            } else {
+                decompteInfos.style.display = 'none';
+            }
+        }
+        
+        function updateCalculs() {
+            const selectedOption = attachementSelect.options[attachementSelect.selectedIndex];
+            const montantHT = parseFloat(selectedOption.getAttribute('data-montant')) || 0;
+            const tauxTVA = parseFloat(document.getElementById('taux_tva').value) || 20;
+            const tauxRetenue = parseFloat(document.getElementById('taux_retenue_garantie').value) || 5;
+            const tauxRAS = parseFloat(document.getElementById('taux_ras').value) || 0;
+            const autresRetenues = parseFloat(document.getElementById('autres_retenues').value) || 0;
+            
+            const montantTVA = (montantHT * tauxTVA) / 100;
+            const montantTTC = montantHT + montantTVA;
+            const retenueGarantie = (montantHT * tauxRetenue) / 100;
+            const retenueRAS = (montantHT * tauxRAS) / 100;
+            const netAPayer = Math.max(0, montantTTC - retenueGarantie - retenueRAS - autresRetenues);
+            
+            document.getElementById('preview_ht').textContent = montantHT.toFixed(2) + ' DH';
+            document.getElementById('preview_tva').textContent = montantTVA.toFixed(2) + ' DH';
+            document.getElementById('preview_ttc').textContent = montantTTC.toFixed(2) + ' DH';
+            document.getElementById('preview_retenue').textContent = retenueGarantie.toFixed(2) + ' DH';
+            document.getElementById('preview_net').textContent = netAPayer.toFixed(2) + ' DH';
+        }
+        
+        attachementSelect.addEventListener('change', updateDecompteForm);
+        
+        // Écouteurs pour les changements de paramètres financiers
+        document.getElementById('taux_tva')?.addEventListener('input', updateCalculs);
+        document.getElementById('taux_retenue_garantie')?.addEventListener('input', updateCalculs);
+        document.getElementById('taux_ras')?.addEventListener('input', updateCalculs);
+        document.getElementById('autres_retenues')?.addEventListener('input', updateCalculs);
+        
+        // Initialisation
+        updateDecompteForm();
+    </script>
+</body>
+</html>

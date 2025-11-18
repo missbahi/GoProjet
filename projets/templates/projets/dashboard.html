@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tableau de bord – {{ projet.nom }}</title>
+  {% load static %}
+  {% load formatters %}
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+  
+  <style>
+    body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+    
+    .card-custom {
+      background: #3B3B3B;
+      border: 1px solid #4B5563;
+      border-radius: 8px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+    }
+    
+    .card-custom:hover {
+      border-color: #22d3ee;
+      box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+    }
+    
+    .btn-primary { 
+      background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
+      border: none; 
+      color: white; 
+    }
+    
+    .btn-warning { 
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+      border: none; 
+      color: white; 
+    }
+    
+    .btn-danger { 
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+      border: none; 
+      color: white; 
+    }
+    
+    .btn-success { 
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+      border: none; 
+      color: white; 
+    }
+    
+    .btn-info { 
+      background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+      border: none; 
+      color: white; 
+    }
+    
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #4B5563;
+      color: #AECBD6;
+    }
+    
+    .btn-outline:hover {
+      background: #4B5563;
+      border-color: #22d3ee;
+    }
+
+    /* Style pour les cartes de décomptes */
+    .decompte-card {
+      background: linear-gradient(135deg, #2d3748, #4a5568);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 4px solid #22d3ee;
+    }
+    
+    .decompte-statut {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      font-weight: bold;
+    }
+    
+    .statut-valide { background-color: #10b981; color: white; }
+    .statut-brouillon { background-color: #6b7280; color: white; }
+    .statut-emis { background-color: #3b82f6; color: white; }
+    .statut-en_retard { background-color: #ef4444; color: white; }
+    .statut-paye { background-color: #10b981; color: white; }
+    .statut-partiel { background-color: #f59e0b; color: white; }
+
+    /* Styles pour les modales */
+    .modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 1040;
+    }
+    
+    .modal-content {
+      position: relative;
+      z-index: 1050;
+    }
+
+    /* Cartes de statistiques */
+    .stat-card {
+      background: linear-gradient(135deg, #374151, #4B5563);
+      border-radius: 8px;
+      padding: 1.5rem;
+      text-align: center;
+      border: 1px solid #4B5563;
+    }
+    
+    .stat-card h4 {
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-card.total { border-top: 4px solid #22d3ee; }
+    .stat-card.payes { border-top: 4px solid #10b981; }
+    .stat-card.emis { border-top: 4px solid #f59e0b; }
+    .stat-card.retard { border-top: 4px solid #ef4444; }
+
+    /* Styles améliorés pour les modules */
+    .module-card {
+      background: linear-gradient(135deg, #374151, #4B5563);
+      border-radius: 10px;
+      padding: 1.5rem;
+      transition: all 0.3s ease;
+      border: 1px solid #4B5563;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .module-card:hover {
+      transform: translateY(-5px);
+      border-color: #22d3ee;
+      box-shadow: 0 10px 25px rgba(34, 211, 238, 0.15);
+    }
+    
+    .module-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .module-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      color: #E5E7EB;
+    }
+    
+    .module-description {
+      font-size: 0.9rem;
+      color: #9CA3AF;
+      flex-grow: 1;
+      margin-bottom: 1rem;
+    }
+    
+    .module-actions {
+      margin-top: auto;
+    }
+  </style>
+</head>
+
+<body class="p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- En-tête -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+        <i class="fas fa-diagram-project"></i>
+        Tableau de bord du projet
+      </h1>
+    </div>
+
+    <!-- Boutons navigation -->
+    <div class="flex gap-3 mb-6 flex-wrap">
+      <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+        <i class="fas fa-house"></i> Accueil
+      </a>
+      <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+        <i class="fas fa-arrow-left"></i> Retour aux projets
+      </a>
+    </div>
+
+    <!-- Carte infos projet -->
+    <div class="card-custom mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-cyan-300">{{ projet.nom }}</h2>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="space-y-2">
+          <div><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</div>
+          <div><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</div>
+          <div><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</div>
+        </div>
+        <div class="space-y-2">
+          <div><strong class="text-[#AECBD6]">Délai :</strong> {{ projet.delai }} jours</div>
+          <div><strong class="text-[#AECBD6]">Date de début :</strong> {{ projet.date_debut|date:"d/m/Y" }}</div>
+          {% if lots %}
+            {% for lot in lots %}
+              <div><strong class="text-[#AECBD6]">{{ lot.nom }} :</strong> {{ lot.montant_formate }} DH</div>
+            {% endfor %}
+          {% endif %}
+        </div>
+      </div>
+      
+      <div class="mt-4 pt-4 border-t border-[#4B5563]">
+        <div class="font-bold text-amber-400 text-lg">
+          <strong>Montant Marché TTC :</strong> {{ montant_total|default:"0.00"}} DH
+        </div>
+      </div>
+    </div>
+
+    <!-- Modules du projet -->
+    <div class="card-custom mb-6">
+      <h3 class="text-xl font-semibold text-cyan-300 mb-6 flex items-center gap-2">
+        <i class="fas fa-toolbox"></i>
+        Modules du projet
+      </h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+        <!-- Lot et Bordereaux -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-cubes"></i>
+          </div>
+          <h4 class="module-title">Lots et Bordereaux</h4>
+          <p class="module-description">Gérez les lots du projet et les bordereaux des prix unitaires</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:lots_projet' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Accéder</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Documents -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-paperclip"></i>
+          </div>
+          <h4 class="module-title">Documents administratifs</h4>
+          <p class="module-description">Consultez et gérez tous les documents liés au projet</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:documents' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Accéder</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Suivi d'exécution -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <h4 class="module-title">Suivi d'exécution</h4>
+          <p class="module-description">Suivez l'avancement et les performances du projet</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Accéder</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Ordres de services -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-file-contract"></i>
+          </div>
+          <h4 class="module-title">Ordres de services</h4>
+          <p class="module-description">Gérez les ordres de service et les modifications</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:ordres_service' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Accéder</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Fiche de contrôle -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-clipboard-check"></i>
+          </div>
+          <h4 class="module-title">Fiche de Contrôle</h4>
+          <p class="module-description">Consultez et gérez les fiches de contrôle qualité</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:fiche_controle' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Accéder</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Attachements -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-file-invoice-dollar"></i>
+          </div>
+          <h4 class="module-title">Attachements</h4>
+          <p class="module-description">
+            {% if attachements %}
+              Gérez les attachements financiers du projet
+            {% else %}
+              Ajoutez le premier attachement financier
+            {% endif %}
+          </p>
+          <div class="module-actions">
+            {% if attachements %}
+            <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-arrow-right"></i>
+              <span>Gérer</span>
+            </a>
+            {% else %}
+            <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="btn-success w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+              <i class="fas fa-plus"></i>
+              <span>Créer</span>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Modification des informations -->
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-edit"></i>
+          </div>
+          <h4 class="module-title">Informations Projet</h4>
+          <p class="module-description">Modifiez les informations générales du projet</p>
+          <div class="module-actions">
+            <button 
+                onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')" 
+                class="btn-warning w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+                <i class="fas fa-cog"></i>
+                <span>Modifier</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Décomptes -->
+    <div class="card-custom">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+          <i class="fas fa-file-invoice-dollar"></i>
+          Décomptes du projet
+        </h3>
+        
+        {% if attachements %}
+        <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-success px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+          <i class="fas fa-plus"></i>
+          Gérer les décomptes
+        </a>
+        {% else %}
+        <div class="text-amber-400 text-sm max-w-md">
+          <i class="fas fa-exclamation-triangle mr-2"></i>
+          Il faut au moins un attachement pour gérer les décomptes
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Résumé des décomptes -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="stat-card total">
+          <h4 class="text-cyan-400">{{ total_decomptes|default:0 }}</h4>
+          <p class="text-gray-300 mb-0">Total Décomptes</p>
+        </div>
+        <div class="stat-card payes">
+          <h4 class="text-green-400">{{ decomptes_payes|default:0 }}</h4>
+          <p class="text-gray-300 mb-0">Payés</p>
+        </div>
+        <div class="stat-card emis">
+          <h4 class="text-amber-400">{{ decomptes_emis|default:0 }}</h4>
+          <p class="text-gray-300 mb-0">Émis</p>
+        </div>
+        <div class="stat-card retard">
+          <h4 class="text-red-400">{{ decomptes_retard|default:0 }}</h4>
+          <p class="text-gray-300 mb-0">En retard</p>
+        </div>
+      </div>
+
+      <!-- Liste des décomptes récents -->
+      {% if decomptes_recents %}
+        <h5 class="text-cyan-300 mb-4 flex items-center gap-2">
+          <i class="fas fa-clock"></i>
+          Décomptes récents
+        </h5>
+        
+        <div class="space-y-4">
+          {% for decompte in decomptes_recents %}
+            <div class="decompte-card">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h6 class="text-white font-semibold mb-2">{{ decompte.numero }} - {{ decompte.get_type_decompte_display }}</h6>
+                  <div class="text-sm text-gray-300 space-y-1">
+                    <p>Émis le: {{ decompte.date_emission|date:"d/m/Y" }}</p>
+                    <p>Montant TTC: <strong class="text-amber-400">{{ decompte.montant_ttc|format_quantity }} DH</strong></p>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <span class="decompte-statut statut-{{ decompte.statut|lower }}">
+                    {{ decompte.get_statut_display }}
+                  </span>
+                  <div class="flex gap-2 mt-3">
+                    <a href="{% url 'projets:detail_decompte' decompte.id %}" class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                      <i class="fas fa-eye"></i>
+                    </a>
+                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" class="btn-warning px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        
+        {% if decomptes_recents|length < total_decomptes %}
+          <div class="text-center mt-6">
+            <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-outline px-6 py-2 rounded-lg font-medium">
+              Voir tous les décomptes ({{ total_decomptes }})
+            </a>
+          </div>
+        {% endif %}
+        
+      {% else %}
+        <div class="text-center py-8">
+          <i class="fas fa-file-invoice-dollar text-6xl text-gray-500 mb-4"></i>
+          <p class="text-gray-400 text-lg mb-4">Aucun décompte créé pour ce projet</p>
+          {% if attachements %}
+            <a href="{% url 'projets:projet_ajouter_decompte' projet.id %}" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2 inline-flex">
+              <i class="fas fa-plus"></i>
+              Créer le premier décompte
+            </a>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Conteneur pour la modale de modification -->
+  <div class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden" id="modifierProjetModal-container"></div>
+
+  <!-- Script pour gérer les modales -->
+  <script>
+    function closeModal(modalId) {
+      fermer_modal();
+    }
+
+    function fermer_modal() {
+      const container = document.querySelector('#modifierProjetModal-container');
+      container.classList.add('hidden');
+      container.innerHTML = '';
+    }
+
+    async function charger_modal(url) {
+      const container = document.querySelector('#modifierProjetModal-container');
+      const response = await fetch(url);
+      const html = await response.text();
+      
+      container.innerHTML = html;
+      container.classList.remove('hidden');
+      
+      container.addEventListener('click', function(e) {
+        if (e.target.id === 'projetModal' || e.target === container) {
+          fermer_modal();
+        }
+        else if (e.target.id === 'submitProjetBtn' || e.target.closest('#submitProjetBtn')) {
+          e.preventDefault();
+          enregistrer_projet();
+        }
+      });
+    }
+
+    // Fermeture avec la touche Escape
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const openModals = document.querySelectorAll('.fixed.inset-0:not(.hidden)');
+        openModals.forEach(modal => {
+          modal.classList.add('hidden');
+        });
+      }
+    });
+
+    async function enregistrer_projet() {
+      const form = document.getElementById('projetForm');
+      const submitBtn = document.getElementById('submitProjetBtn');
+      
+      submitBtn.disabled = true;
+      submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          body: new FormData(form),
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        });
+        
+        if (response.ok) {
+          closeModal('projetModal');
+          showNotification('Projet mis à jour avec succès', 'success');
+          // Recharger la page après un délai pour voir la notification
+          setTimeout(() => {
+            window.location.reload();
+          }, 1500);
+        } else {
+          const error = await response.text();
+          showNotification('Erreur de soumission: ' + error, 'error');
+        }
+      } catch (error) {
+        showNotification("Erreur: " + error.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    // Fonction de notification (identique aux autres templates)
+    function showNotification(message, type = 'success') {
+      // Créer une notification temporaire si nécessaire
+      console.log(`${type}: ${message}`);
+      // Vous pouvez implémenter un système de notification visuel ici
+      alert(`${type.toUpperCase()}: ${message}`);
+    }
+  </script>
+</body>
+</html>

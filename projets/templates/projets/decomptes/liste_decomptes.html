@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    {% load static %}
+    {% load formatters %}
+    <title>Décomptes – {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .decompte-card { 
+            background: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            border-radius: 8px; 
+            padding: 1.5rem; 
+            margin-bottom: 1rem; 
+            transition: all 0.3s ease; 
+        }
+        .decompte-card:hover { 
+            border-color: #22d3ee; 
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
+            transform: translateY(-2px);
+        }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); border: none; color: white; }
+        .form-control { 
+            background-color: #2E2E2E; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .form-control:focus { 
+            border-color: #22d3ee; 
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); 
+            outline: none;
+        }       
+        .statut-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }     
+        .type-decompte-badge { 
+            display: inline-block; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.375rem; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            margin-right: 0.5rem;
+        }
+        .formulaire-decompte {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            background: #3B3B3B;
+            border: 1px solid #4B5563;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        /* État EXPANDÉ (visible) */
+        .formulaire-decompte.expanded {
+            max-height: 1000px;
+            opacity: 1;
+        }
+        .formulaire-decompte.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+            margin-bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        
+        .formulaire-decompte:focus-within {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+        
+        .form-control.auto-focused {
+            animation: pulseFocus 2s ease-in-out;
+        }      
+        @keyframes pulseFocus {
+            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+        }        
+        .montant-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }        
+        .retard-badge {
+            animation: pulse 2s infinite;
+        }       
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }       
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }       
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }       
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+        .auto-expand-form {
+            border-left: 4px solid #8b5cf6;
+            animation: slideInContext 0.5s ease-out;
+        }
+        @keyframes slideInContext {
+            from { 
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .context-indicator {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.1) 100%);
+        }
+        .btn-disabled {
+            background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-disabled:hover {
+            background: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- L'en-tête -->
+        {% if from_attachement_list and attachement_cible %}
+        <div class="mb-4 p-4 bg-purple-900/30 border border-purple-500 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-file-contract text-purple-400 text-xl"></i>
+                    <div>
+                        <span class="text-purple-300 font-medium">Contexte : </span>
+                        <span class="text-white">
+                            {% if action_type == 'modifier' %}
+                            Modification du décompte
+                            {% elif action_type == 'ajouter' %}
+                            Ajout d'un décompte
+                            {% endif %}
+                            pour l'attachement
+                        </span>
+                        <span class="bg-purple-600 text-white px-3 py-1 rounded-lg text-sm ml-2 font-mono">
+                            {{ attachement_cible.numero }}
+                        </span>
+                    </div>
+                </div>
+                <div class="text-sm text-purple-300">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    Période : {{ attachement_cible.date_fin_periode|date:"d/m/Y" }}
+                </div>
+            </div>
+            
+            {% if action_type == 'ajouter' %}
+            <div class="mt-3 pt-3 border-t border-purple-400/30">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-check-circle text-green-400"></i>
+                        <span class="text-green-300">Attachement présélectionné</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-calendar-day text-blue-400"></i>
+                        <span class="text-blue-300">Date d'émission : Aujourd'hui</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-hourglass-end text-amber-400"></i>
+                        <span class="text-amber-300">Échéance : Date fin de période</span>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+        <!-- Dans liste_decomptes.html - section des boutons -->
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+            <!-- Boutons de gauche -->
+            <div class="flex gap-3 flex-wrap">
+                <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-house"></i> Accueil
+                </a>
+                <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i> Retour aux projets
+                </a>
+                <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-diagram-project"></i> Tableau de bord
+                </a>
+                <a href="{% url 'projets:liste_attachements' projet.id %}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-file-contract"></i> Attachements
+                </a>
+            </div>
+            
+            <!-- Bouton à droite -->
+            {% if decompte_a_modifier or attachements_disponibles_count > 0 %}
+            <button id="toggle-form-btn" 
+                    class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center gap-2 transition-colors">
+                <span id="toggle-form-text">
+                    {% if not decomptes %}Ajouter le premier décompte{% else %}Ajouter un décompte{% endif %}
+                </span>
+                <i id="toggle-form-icon" class="fas fa-chevron-down transition-transform"></i>
+            </button>
+            {% else %}
+            <div class="px-4 py-2 rounded-lg bg-gray-600 text-gray-300 font-medium flex items-center gap-2 cursor-not-allowed" 
+                title="Aucun attachement disponible pour créer un décompte">
+                <span>Aucun attachement disponible</span>
+                <i class="fas fa-ban"></i>
+            </div>
+            {% endif %}
+        </div>
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Informations projet -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
+                    <p class="text-gray-400">
+                        <strong class="text-[#AECBD6]">Statut :</strong> 
+                        <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs">{{ projet.get_statut_display }}</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Résumé financier -->
+        {% if decomptes %}
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
+                <div class="text-cyan-400 text-sm mb-1">Total HT</div>
+                <div class="text-xl font-bold text-white">
+                    {{ decomptes_total_ht|default:0|format_quantity }} DH
+                </div>
+            </div>
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
+                <div class="text-cyan-400 text-sm mb-1">Total TTC</div>
+                <div class="text-xl font-bold text-white">
+                    {{ decomptes_total_ttc|default:0|format_quantity }} DH
+                </div>
+            </div>
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
+                <div class="text-cyan-400 text-sm mb-1">Net à Payer</div>
+                <div class="text-xl font-bold text-white">
+                    {{ decomptes_total_net|default:0|format_quantity }} DH
+                </div>
+            </div>
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
+                <div class="text-cyan-400 text-sm mb-1">Décomptes Payés</div>
+                <div class="text-xl font-bold text-white">
+                    {{ decomptes_payes_count|default:0 }}/{{ decomptes.count }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Filtres par statut -->
+        <div class="flex justify-between items-center mb-4">
+            <div class="flex gap-2">
+                <a href="?statut=PAYE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Payés ({{ decomptes_payes.count }})
+                </a>
+                <a href="?statut=EMIS" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Émis ({{ decomptes_emis.count }})
+                </a>
+                <a href="?statut=VALIDE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Validés ({{ decomptes_valides.count }})
+                </a>
+                <a href="?statut=BROUILLON" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Brouillons ({{ decomptes_brouillons.count }})
+                </a>
+                <a href="?" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Tous ({{ decomptes.count }})
+                </a>
+            </div>
+        </div>
+
+        <!-- Liste des décomptes -->
+        {% if decomptes %}
+            <div class="grid gap-4 mb-6">
+                {% for decompte in decomptes %}
+                <div class="decompte-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="type-decompte-badge 
+                                    {% if decompte.type_decompte == 'PROVISOIRE' %}bg-blue-600
+                                    {% elif decompte.type_decompte == 'DEFINITIF' %}bg-green-600
+                                    {% else %}bg-purple-600{% endif %}">
+                                    {{ decompte.get_type_decompte_display }}
+                                </span>
+                                <span class="statut-badge 
+                                    {% if decompte.statut == 'PAYE' %}bg-green-900 text-green-300
+                                    {% elif decompte.statut == 'VALIDE' %}bg-blue-900 text-blue-300
+                                    {% elif decompte.statut == 'EMIS' %}bg-yellow-900 text-yellow-300
+                                    {% elif decompte.statut == 'EN_RETARD' %}bg-red-900 text-red-300
+                                    {% elif decompte.statut == 'PARTIEL' %}bg-orange-900 text-orange-300
+                                    {% else %}bg-gray-700 text-gray-300{% endif %}">
+                                    {{ decompte.get_statut_display }}
+                                </span>
+                                {% if decompte.est_en_retard %}
+                                <span class="retard-badge bg-red-500 text-white text-xs px-2 py-1 rounded" title="En retard de paiement">
+                                    <i class="fas fa-exclamation-triangle"></i> Retard
+                                </span>
+                                {% endif %}
+                            </div>
+                            <h3 class="text-xl font-semibold text-cyan-300">{{ decompte.numero }}</h3>
+                            <p class="text-[#2B9C62] font-medium">Attachement: {{ decompte.attachement.numero }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="{% url 'projets:detail_decompte' decompte.id %}" 
+                               class="btn-info px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-eye"></i> Détails
+                            </a>
+                            {% if decompte.statut != 'PAYE' %}
+                            <a href="{% url 'projets:liste_decomptes' projet.id %}?modifier={{ decompte.id }}{% if from_attachement_list %}&from_attachements=true&attachement_id={{ decompte.attachement.id }}&action=modifier{% endif %}" 
+                                class="btn-warning px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-edit"></i> Modifier
+                                </a>
+                            <a href="{% url 'projets:supprimer_decompte' decompte.id %}" 
+                               class="btn-danger px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce décompte?')">
+                                <i class="fas fa-trash"></i> Supprimer
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Informations financières -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400 mb-3">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-money-bill"></i>
+                            <span>HT: {{ decompte.montant_situation_ht|format_quantity }} DH</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-percentage"></i>
+                            <span>TVA: {{ decompte.montant_situation_tva|format_quantity }} DH</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calculator"></i>
+                            <span>TTC: {{ decompte.montant_situation_ttc|format_quantity }} DH</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            <span class="font-semibold text-white">Net: {{ decompte.montant_situation_net_a_payer|format_quantity }} DH</span>
+                        </div>
+                    </div>
+
+                    <!-- Informations supplémentaires -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar"></i>
+                            <span>Émission: {{ decompte.date_emission|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-hourglass-end"></i>
+                            <span>Échéance: {{ decompte.date_echeance|date:"d/m/Y"|default:"-" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            <span>
+                                {% if decompte.numero_bordereau %}
+                                    Bordereau: {{ decompte.numero_bordereau }}
+                                {% else %}
+                                    Sans bordereau
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar-check"></i>
+                            <span>
+                                {% if decompte.date_paiement %}
+                                    Payé le: {{ decompte.date_paiement|date:"d/m/Y" }}
+                                {% else %}
+                                    Non payé
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Retenues -->
+                    {% if decompte.montant_retenue_garantie or decompte.montant_ras or decompte.autres_retenues %}
+                    <div class="mt-3 pt-3 border-t border-gray-600">
+                        <div class="text-sm text-amber-400 font-semibold mb-2">Retenues appliquées:</div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                            {% if decompte.montant_retenue_garantie %}
+                            <div>Garantie: {{ decompte.montant_situation_retenue_garantie|format_quantity }} DH ({{ decompte.taux_retenue_garantie }}%)</div>
+                            {% endif %}
+                            {% if decompte.montant_ras %}
+                            <div>RAS: {{ decompte.montant_situation_ras|format_quantity }} DH ({{ decompte.taux_ras }}%)</div>
+                            {% endif %}
+                            {% if decompte.autres_retenues %}
+                            <div>Autres: {{ decompte.montant_situation_autres_retenues|format_quantity }} DH</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-8 text-center mb-6">
+                <i class="fas fa-calculator text-6xl text-gray-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">Aucun décompte</h3>
+                <p class="text-gray-500">Commencez par ajouter un décompte pour ce projet.</p>
+            </div>
+        {% endif %}
+
+        <!-- Formulaire de décompte -->
+         {% if decompte_a_modifier or attachements_disponibles_count > 0 %}
+        <div id="formulaire-decompte" 
+             class="formulaire-decompte {% if not decomptes %}expanded{% else %}collapsed{% endif %}">
+            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> 
+                {% if decompte_a_modifier %}
+                    Modifier le décompte
+                {% else %}
+                    Ajouter un nouveau décompte
+                {% endif %}
+            </h3>
+            
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if decompte_a_modifier %}
+                <input type="hidden" name="decompte_id" value="{{ decompte_a_modifier.id }}">
+                {% endif %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="{{ form.attachement.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Attachement *
+                        </label>
+                        <select id="{{ form.attachement.id_for_label }}" 
+                                name="{{ form.attachement.name }}" 
+                                class="form-control w-full px-3 py-2 rounded-lg" 
+                                required>
+                            <option value="">Sélectionnez un attachement</option>
+                            {% for choice in form.attachement.field.choices %}
+                                <option value="{{ choice.0 }}" 
+                                        {% if form.attachement.value == choice.0 or form.initial.attachement == choice.0 %}selected{% endif %}>
+                                    {{ choice.1 }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if form.attachement.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {% for error in form.attachement.errors %}
+                                {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <label for="numero" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Numéro de décompte *
+                        </label>
+                        <input type="text" id="numero" name="numero" 
+                            class="form-control w-full px-3 py-2 rounded-lg" required
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.numero }}{% elif form.initial.numero %}{{ form.initial.numero }}{% endif %}"
+                            placeholder="Ex: DEC-2024-001">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="type_decompte" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Type de décompte *
+                        </label>
+                        <select id="type_decompte" name="type_decompte" class="form-control w-full px-3 py-2 rounded-lg" required>
+                            <option value="PROVISOIRE" 
+                                {% if not decompte_a_modifier and not form.initial.type_decompte or decompte_a_modifier.type_decompte == 'PROVISOIRE' or form.initial.type_decompte == 'PROVISOIRE' %}selected{% endif %}>
+                                Décompte provisoire
+                            </option>
+                            <option value="DEFINITIF" 
+                                {% if decompte_a_modifier and decompte_a_modifier.type_decompte == 'DEFINITIF' or form.initial.type_decompte == 'DEFINITIF' %}selected{% endif %}>
+                                Décompte définitif
+                            </option>
+                            <option value="SOLDE" 
+                                {% if decompte_a_modifier and decompte_a_modifier.type_decompte == 'SOLDE' or form.initial.type_decompte == 'SOLDE' %}selected{% endif %}>
+                                Décompte de solde
+                            </option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="statut" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Statut *
+                        </label>
+                        <select id="statut" name="statut" class="form-control w-full px-3 py-2 rounded-lg" required>
+                            <option value="BROUILLON" 
+                                {% if not decompte_a_modifier and not form.initial.statut or decompte_a_modifier.statut == 'BROUILLON' or form.initial.statut == 'BROUILLON' %}selected{% endif %}>
+                                Brouillon
+                            </option>
+                            <option value="VALIDE" 
+                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'VALIDE' or form.initial.statut == 'VALIDE' %}selected{% endif %}>
+                                Validé
+                            </option>
+                            <option value="EMIS" 
+                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'EMIS' or form.initial.statut == 'EMIS' %}selected{% endif %}>
+                                Émis
+                            </option>
+                            <option value="EN_RETARD" 
+                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'EN_RETARD' or form.initial.statut == 'EN_RETARD' %}selected{% endif %}>
+                                En retard de paiement
+                            </option>
+                            <option value="PARTIEL" 
+                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'PARTIEL' or form.initial.statut == 'PARTIEL' %}selected{% endif %}>
+                                Payé partiellement
+                            </option>
+                            <option value="PAYE" 
+                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'PAYE' or form.initial.statut == 'PAYE' %}selected{% endif %}>
+                                Payé
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="date_emission" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date d'émission *
+                        </label>
+                        <input type="date" id="date_emission" name="date_emission" 
+                            class="form-control w-full px-3 py-2 rounded-lg" required
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_emission|date:'Y-m-d' }}{% elif form.initial.date_emission %}{{ form.initial.date_emission|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div>
+                        <label for="date_echeance" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date d'échéance
+                        </label>
+                        <input type="date" id="date_echeance" name="date_echeance" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_echeance|date:'Y-m-d' }}{% elif form.initial.date_echeance %}{{ form.initial.date_echeance|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                    <div>
+                        <label for="date_paiement" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date de paiement
+                        </label>
+                        <input type="date" id="date_paiement" name="date_paiement" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_paiement|date:'Y-m-d' }}{% elif form.initial.date_paiement %}{{ form.initial.date_paiement|date:'Y-m-d' }}{% endif %}">
+                    </div>
+                </div>
+
+                <!-- Taux et retenues -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="taux_tva" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Taux TVA (%) *
+                        </label>
+                        <input type="number" step="0.01" id="taux_tva" name="taux_tva" 
+                            class="form-control w-full px-3 py-2 rounded-lg" required
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_tva }}{% elif form.initial.taux_tva %}{{ form.initial.taux_tva }}{% else %}20.0{% endif %}">
+                    </div>
+                    <div>
+                        <label for="taux_retenue_garantie" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Taux retenue garantie (%)
+                        </label>
+                        <input type="number" step="0.01" id="taux_retenue_garantie" name="taux_retenue_garantie" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_retenue_garantie }}{% elif form.initial.taux_retenue_garantie %}{{ form.initial.taux_retenue_garantie }}{% else %}10.0{% endif %}">
+                    </div>
+                    <div>
+                        <label for="taux_ras" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Taux RAS (%)
+                        </label>
+                        <input type="number" step="0.01" id="taux_ras" name="taux_ras" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_ras }}{% elif form.initial.taux_ras %}{{ form.initial.taux_ras }}{% else %}0.0{% endif %}">
+                    </div>
+                    <div>
+                        <label for="autres_retenues" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Autres retenues (DH)
+                        </label>
+                        <input type="number" step="0.01" id="autres_retenues" name="autres_retenues" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.autres_retenues }}{% elif form.initial.autres_retenues %}{{ form.initial.autres_retenues }}{% else %}0.0{% endif %}">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="numero_bordereau" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Numéro de bordereau
+                        </label>
+                        <input type="text" id="numero_bordereau" name="numero_bordereau" 
+                            class="form-control w-full px-3 py-2 rounded-lg"
+                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.numero_bordereau }}{% elif form.initial.numero_bordereau %}{{ form.initial.numero_bordereau }}{% endif %}"
+                            placeholder="Ex: BORD-2024-001">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="observations" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Observations
+                    </label>
+                    <textarea id="observations" name="observations" 
+                            class="form-control w-full px-3 py-2 rounded-lg" 
+                            rows="3"
+                            placeholder="Observations supplémentaires...">{% if decompte_a_modifier %}{{ decompte_a_modifier.observations }}{% elif form.initial.observations %}{{ form.initial.observations }}{% endif %}</textarea>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" 
+                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-save"></i>
+                        {% if decompte_a_modifier %}
+                            Modifier le décompte
+                        {% else %}
+                            Ajouter le décompte
+                        {% endif %}
+                    </button>
+                    <a href="{% url 'projets:liste_decomptes' projet.id %}" 
+                    class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="bg-amber-900/30 border border-amber-500 rounded-lg p-6 text-center">
+            <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mb-3"></i>
+            <h3 class="text-lg font-semibold text-amber-300 mb-2">Aucun attachement disponible</h3>
+            <p class="text-amber-200">Tous les attachements ont déjà un décompte associé.</p>
+            <p class="text-amber-200 text-sm mt-2">
+                <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="underline hover:text-amber-100">
+                    Ajouter un nouvel attachement
+                </a> pour créer un décompte.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // =========================================================================
+    // 1. INITIALISATION ET VÉRIFICATIONS
+    // =========================================================================
+
+    // Éléments principaux
+    const toggleFormBtn = document.getElementById('toggle-form-btn');
+    const toggleFormText = document.getElementById('toggle-form-text');
+    const toggleFormIcon = document.getElementById('toggle-form-icon');
+    const formulaireDecompte = document.getElementById('formulaire-decompte');
+    
+    // Variables de contexte
+    const attachementsDisponibles = {{ attachements_disponibles_count }};
+    const isModificationMode = {{ decompte_a_modifier|yesno:"true,false" }};
+    const fromAttachementList = {{ from_attachement_list|yesno:"true,false" }};
+    const actionType = "{{ action_type|default:'' }}";
+    const hasDecomptes = {{ decomptes|yesno:"true,false" }};
+    
+
+    // CORRECTION : Ne bloquer que si on veut AJOUTER mais aucun attachement disponible
+    if (attachementsDisponibles === 0 && !isModificationMode) {
+        return;
+    }
+    
+
+    // Vérifier que les éléments essentiels existent
+    if (!toggleFormBtn || !formulaireDecompte) {
+        console.error('❌ Éléments manquants pour la gestion du formulaire:', {
+            toggleFormBtn: !!toggleFormBtn,
+            formulaireDecompte: !!formulaireDecompte
+        });
+        return;
+    }
+
+    // =========================================================================
+    // 2. GESTION PRINCIPALE DU FORMULAIRE
+    // =========================================================================
+    
+    let isExpanded = formulaireDecompte.classList.contains('expanded');
+
+    function updateFormState() {
+        if (isExpanded) {
+            // État EXPANDÉ
+            formulaireDecompte.classList.remove('collapsed');
+            formulaireDecompte.classList.add('expanded');
+            
+            if (toggleFormIcon) {
+                toggleFormIcon.classList.remove('fa-chevron-down');
+                toggleFormIcon.classList.add('fa-chevron-up');
+            }
+            if (toggleFormText) {
+                toggleFormText.textContent = hasDecomptes ? 'Masquer le formulaire' : 'Ajouter le premier décompte';
+            }
+        } else {
+            // État COLLAPSÉ
+            formulaireDecompte.classList.remove('expanded');
+            formulaireDecompte.classList.add('collapsed');
+            
+            if (toggleFormIcon) {
+                toggleFormIcon.classList.remove('fa-chevron-up');
+                toggleFormIcon.classList.add('fa-chevron-down');
+            }
+            if (toggleFormText) {
+                toggleFormText.textContent = hasDecomptes ? 'Ajouter un décompte' : 'Ajouter le premier décompte';
+            }
+        }
+    }
+
+    // Gestion du clic sur le bouton toggle
+    toggleFormBtn.addEventListener('click', function() {
+        isExpanded = !isExpanded;
+        updateFormState();
+    });
+
+    // =========================================================================
+    // 3. OUVERTURE AUTOMATIQUE DANS LES CAS SPÉCIFIQUES
+    // =========================================================================
+    
+    function ouvrirFormulaireAutomatiquement() {
+        const doitOuvrir = isModificationMode || 
+                          (fromAttachementList && (actionType === 'ajouter' || actionType === 'modifier'));
+        
+        if (doitOuvrir && !isExpanded) {
+            // Forcer l'ouverture
+            isExpanded = true;
+            updateFormState();
+            
+            // Marquer visuellement le contexte
+            if (isModificationMode) {
+                formulaireDecompte.classList.add('formulaire-modification');
+            } else if (fromAttachementList) {
+                formulaireDecompte.classList.add('auto-expand-form');
+            }
+            
+            // Configuration spécifique pour l'ajout depuis attachements
+            if (fromAttachementList && actionType === 'ajouter') {
+                configurerAjoutDepuisAttachements();
+            }
+        }
+    }
+
+    // =========================================================================
+    // 4. CONFIGURATION SPÉCIFIQUE POUR AJOUT DEPUIS ATTACHEMENTS
+    // =========================================================================
+    
+    function configurerAjoutDepuisAttachements() {
+        const attachementSelect = document.getElementById('{{ form.attachement.id_for_label }}');
+        
+        if (attachementSelect && !attachementSelect.disabled) {
+            const validOptions = Array.from(attachementSelect.options).filter(opt => opt.value !== '');
+            
+            // Verrouiller la sélection si un seul choix valide
+            if (validOptions.length === 1) {
+                // attachementSelect.disabled = true;
+                attachementSelect.classList.add('bg-gray-700', 'cursor-not-allowed', 'opacity-80');
+                
+                const container = attachementSelect.parentElement;
+                container.classList.add('relative');
+                
+                // Ajouter icône de verrouillage
+                if (!container.querySelector('.fa-lock')) {
+                    const lockIcon = document.createElement('span');
+                    lockIcon.className = 'absolute right-10 top-1/2 transform -translate-y-1/2 text-amber-400';
+                    lockIcon.innerHTML = '<i class="fas fa-lock" title="Attachement présélectionné"></i>';
+                    container.appendChild(lockIcon);
+                }
+            }
+        }
+        
+        // Focus sur le premier champ éditable
+        setTimeout(() => {
+            const premierChamp = document.querySelector('#formulaire-decompte input:not([disabled])');
+            if (premierChamp) {
+                premierChamp.focus();
+                premierChamp.classList.add('auto-focused');
+                setTimeout(() => premierChamp.classList.remove('auto-focused'), 2000);
+            }
+        }, 800);
+    }
+
+    // =========================================================================
+    // 5. INITIALISATION FINALE
+    // =========================================================================
+    
+    // État initial
+    updateFormState();
+    
+    // Ouvrir automatiquement si nécessaire
+    ouvrirFormulaireAutomatiquement();
+
+});
+</script>
+</body>
+</html>

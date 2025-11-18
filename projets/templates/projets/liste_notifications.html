@@ -1,0 +1,336 @@
+{% load static i18n %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% trans "Liste des notifications" %}</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #2ecc71;
+            --info-color: #1abc9c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+            --gray-color: #95a5a6;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            color: var(--dark-color);
+            border-bottom: 2px solid var(--light-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .notification {
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid var(--gray-color);
+            border-radius: 4px;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .notification:hover {
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+        }
+        
+        .notification.unread {
+            border-left-color: var(--primary-color);
+            background-color: #f8f9fa;
+        }
+        
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        
+        .notification-title {
+            font-weight: bold;
+            color: var(--dark-color);
+            margin: 0;
+        }
+        
+        .notification-date {
+            color: var(--gray-color);
+            font-size: 0.9em;
+        }
+        
+        .notification-message {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        
+        .notification-projet {
+            font-style: italic;
+            color: var(--primary-color);
+        }
+        
+        .notification-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        
+        .type-RETARD {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .type-NOUVEAU_AO {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .type-RECEPTION {
+            background-color: var(--success-color);
+            color: white;
+        }
+        
+        .type-ECHEANCE {
+            background-color: var(--warning-color);
+            color: white;
+        }
+        
+        .type-AUTRE {
+            background-color: var(--gray-color);
+            color: white;
+        }
+        
+        .mark-read {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: var(--gray-color);
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        
+        .mark-read:hover {
+            color: var(--primary-color);
+        }
+        
+        .actions {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger-color);
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+        
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-color);
+            font-style: italic;
+        }
+        
+        .badge {
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8em;
+            margin-left: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>
+            {% trans "Mes notifications" %}
+            {% if unread_count > 0 %}
+                <span class="badge">{{ unread_count }}</span>
+            {% endif %}
+        </h1>
+        
+        <div class="actions">
+            <button class="btn btn-primary" id="mark-all-read">
+                {% trans "Tout marquer comme lu" %}
+            </button>
+            <button class="btn btn-danger" id="delete-all">
+                {% trans "Supprimer toutes les notifications" %}
+            </button>
+        </div>
+        
+        {% if notifications %}
+            {% for notification in notifications %}
+                <div class="notification {% if not notification.lue %}unread{% endif %}" data-id="{{ notification.id }}">
+                    <div class="notification-header">
+                        <h3 class="notification-title">
+                            <span class="notification-type type-{{ notification.type_notification }}">
+                                {{ notification.get_type_notification_display }}
+                            </span>
+                            {{ notification.titre }}
+                        </h3>
+                        <span class="notification-date">
+                            {{ notification.date_creation|date:"d/m/Y H:i" }}
+                        </span>
+                    </div>
+                    
+                    <p class="notification-message">{{ notification.message }}</p>
+                    
+                    {% if notification.projet %}
+                        <p class="notification-projet">
+                            {% trans "Projet concerné:" %} {{ notification.projet.nom }} ({{ notification.projet.reference }})
+                        </p>
+                    {% endif %}
+                    
+                    {% if notification.date_echeance %}
+                        <p>
+                            <strong>{% trans "Échéance:" %}</strong> 
+                            {{ notification.date_echeance|date:"d/m/Y" }}
+                        </p>
+                    {% endif %}
+                    
+                    {% if not notification.lue %}
+                        <button class="mark-read" title="{% trans 'Marquer comme lu' %}">
+                            <i>✓</i>
+                        </button>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-message">
+                {% trans "Vous n'avez aucune notification pour le moment." %}
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Marquer une notification comme lue
+            document.querySelectorAll('.mark-read').forEach(button => {
+                button.addEventListener('click', function() {
+                    const notificationDiv = this.closest('.notification');
+                    const notificationId = notificationDiv.dataset.id;
+                    
+                    fetch(`/notifications/marquer-lue/${notificationId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            notificationDiv.classList.remove('unread');
+                            this.remove();
+                            updateUnreadCount();
+                        }
+                    });
+                });
+            });
+            
+            // Marquer toutes les notifications comme lues
+            document.getElementById('mark-all-read').addEventListener('click', function() {
+                fetch('/notifications/marquer-toutes-lues/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.querySelectorAll('.notification.unread').forEach(div => {
+                            div.classList.remove('unread');
+                            const markReadBtn = div.querySelector('.mark-read');
+                            if (markReadBtn) markReadBtn.remove();
+                        });
+                        updateUnreadCount(0);
+                    }
+                });
+            });
+            
+            // Supprimer toutes les notifications
+            document.getElementById('delete-all').addEventListener('click', function() {
+                if (confirm('{% trans "Êtes-vous sûr de vouloir supprimer toutes vos notifications ?" %}')) {
+                    fetch('/notifications/supprimer-toutes/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json',
+                        },
+                        credentials: 'same-origin',
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.querySelector('.container').innerHTML = `
+                                <h1>{% trans "Mes notifications" %}</h1>
+                                <div class="empty-message">
+                                    {% trans "Vous n'avez aucune notification pour le moment." %}
+                                </div>
+                            `;
+                        }
+                    });
+                }
+            });
+            
+            function updateUnreadCount(newCount) {
+                const badge = document.querySelector('h1 .badge');
+                if (badge) {
+                    if (newCount === 0) {
+                        badge.remove();
+                    } else {
+                        badge.textContent = newCount;
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

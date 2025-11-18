@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Modifier le projet</title>
+
+    <link href="{% static 'projets/css/tailwind.css' %}" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+</head>
+<body lass="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="max-w-2xl w-full shadow-xl rounded-xl overflow-hidden">
+        <div class="bg-blue-600 px-6 py-4">
+            <h1 class="text-2xl font-bold text-white">
+                <i class="fas fa-pen-to-square mr-2"></i> Modifier le projet 
+            </h1>
+            <p class="text-blue-100 text-sm mt-1">{{ projet.nom }}</p>
+        </div>
+        <!-- formulaire pour modifier le projet -->
+        <form method="POST" action="{% url 'projets:modifier_projet' projet.id %}" 
+            class="p-6 space-y-2 text-gray-700">
+            {% csrf_token %}
+            <div id="form-errors" class="text-sm text-red-600">
+                {{ form.non_field_errors }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="space-y-2">
+                    <div>
+                        <label for="{{ form.nom.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.nom.label }}
+                            {% if form.nom.field.required %}<span class="text-red-500">*</span>{% endif %}
+                        </label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ form.nom.errors.as_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div>
+                        <label for="{{ form.reference.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.reference.label }}
+                        </label>
+                        {{ form.reference }}
+                    </div>
+                </div>                
+            </div>
+            <div>
+                <label for="{{ form.objet.id_for_label }}" class="block text-sm font-medium mb-1">
+                    {{ form.objet.label }}
+                </label>
+                {{ form.objet }}
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div class="space-y-2">
+                    <div>
+                        <label for="{{ form.maitre_ouvrage.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.maitre_ouvrage.label }}
+                        </label>
+                        {{ form.maitre_ouvrage }}
+                    </div>
+                    <div>
+                        <label for="{{ form.localisation.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.localisation.label }}
+                        </label>
+                        {{ form.localisation }}
+                    </div>
+                    <div>
+                        <label for="{{ form.date_debut.id_for_label }}" class="block text-sm font-medium mb-1">
+                            Date de début
+                        </label>
+                        {{ form.date_debut }}
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <div>
+                        <label for="{{ form.delai.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.delai.label }}
+                        </label>
+                        {{ form.delai }}
+                    </div>
+                    <div class="hidden"> <!-- Champ caché pour le calcul de l'avancement -->
+                        <label for="{{ form.montant.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.montant.label }}
+                        </label>
+                        {{ form.montant }}
+                    </div class="hidden">
+                    <div>
+                        <label for="form.type_projet.id_for_label" class="block text-sm font-medium mb-1">
+                            Type de projet
+                        </label>
+                        {{ form.type_projet }}
+                    </div>
+                    <div>
+                        <label for="{{ form.avancement.id_for_label }}" class="block text-sm font-medium mb-1">
+                            {{ form.avancement.label }}
+                        </label>
+                        {{ form.avancement }}
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-1">
+                <div>
+                    <label for="{{ form.statut.id_for_label }}" class="block text-sm font-medium  mb-1">
+                        {{ form.statut.label }}
+                    </label>
+                    {{ form.statut }}
+                </div>
+                <div>
+                    <label for="{{ form.entreprise.id_for_label }}" class="block text-sm font-medium  mb-1">
+                        {{ form.entreprise.label }}
+                    </label>
+                    {{ form.entreprise }}
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
+                
+                <button onclick="window.history.back();" 
+                    class="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 px-5 py-2.5 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition duration-200 font-medium">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Annuler</span>
+                </button>
+                
+                <button type="submit" 
+                    class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                    <i class="fas fa-save"></i>
+                    <span>Enregistrer</span>
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+<script type="module">
+  import { setupNumericFormatting, cleanFieldsBeforeSubmit } from "{% static 'projets/js/numericformatting.js' %}";
+
+  document.addEventListener("DOMContentLoaded", () => {
+    setupNumericFormatting('{{ form.montant.id_for_label }}', 2);
+    setupNumericFormatting('{{ form.avancement.id_for_label }}', 0);
+
+    cleanFieldsBeforeSubmit('form', [
+      '{{ form.montant.id_for_label }}',
+      '{{ form.avancement.id_for_label }}',
+      '{{ form.delai.id_for_label }}',
+    ]);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,132 @@
+<div class="bg-gray-800 p-2 rounded-lg shadow">
+    <!-- Tableau des projets -->
+    <table class="min-w-full bg-[#2E2E2E]">
+        <thead class="bg-gray-700 text-[#2B9C62]">
+            <tr class="text-left text-m font-medium uppercase">
+                <th class="px-6 py-3 sortable" onclick="sortTable('nom')" data-sort="nom">
+                    <div>Projet</div>
+                    <div class="text-xs text-gray-400">Numéro de marché</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('maitre_ouvrage')" data-sort="maitre_ouvrage">
+                    <div>Maitre d'ouvrage</div>
+                    <div class="text-xs text-gray-400">Entreprise</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('montant_total')" data-sort="montant_total">
+                    Montant TTC
+                </th>
+                <th class="px-6 py-3">
+                    <div>Décomptes</div>
+                    <div class="text-xs text-gray-400">Nb attachements</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('localisation')" data-sort="localisation">
+                    Localisation
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('statut')" data-sort="statut">
+                    Statut
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('avancement')" data-sort="avancement">
+                    Avancement<br>Workflow(%)
+                </th>
+                <th class="px-6 py-3 no-print">Actions</th>
+            </tr>
+        </thead>
+        <!-- Corps du tableau -->
+        <tbody class="bg-gray-800 divide-y divide-green-800">
+            {% for projet in projets %}
+            <tr class="text-[#AECBD6]">
+                <td class="px-4 py-2">
+                    <div><a href="{% url 'projets:dashboard' projet.id %}" class="text-cyan-500 hover:text-cyan-600">{{ projet.nom }}</a></div>
+                    <div class="text-xs text-gray-500">{{ projet.numero }}</div>
+                </td>
+                <td class="px-4 py-2">
+                    <div>{{ projet.maitre_ouvrage }}</div>
+                    <div class="text-xs text-gray-500">{{ projet.entreprise }}</div>
+                </td>
+                <td class="px-4 py-2 text-right print-right">{{ projet.montant_total_formate }}</td>
+                <td class="px-4 py-2 text-center">
+                    {% if projet.attachements.all %}
+                        <div>
+                            <a href="{% url 'projets:liste_attachements' projet.id %}" 
+                            class="text-cyan-500 hover:text-cyan-600 font-medium">
+                                {{ projet.attachements.count }}
+                            </a>
+                        </div>
+                    {% else %}
+                        <span class="text-gray-500">-</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-2">{{ projet.localisation }}</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs font-semibold rounded-full 
+                        {% if projet.statut == 'COURS' %}bg-blue-100 text-blue-800
+                        {% elif projet.en_retard %}bg-yellow-100 text-yellow-800
+                        {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}bg-green-100 text-green-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ projet.get_statut_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                            <div class="h-4
+                                {% if projet.avancement_workflow < 20 %}bg-red-500
+                                {% elif projet.avancement_workflow < 40 %}bg-orange-500
+                                {% elif projet.avancement_workflow < 60 %}bg-yellow-500
+                                {% elif projet.avancement_workflow < 80 %}bg-green-300
+                                {% else %}bg-green-600{% endif %}" 
+                                style="width: {{ projet.avancement_workflow }}%">
+                            </div>
+                        </div>
+                        <span class="text-sm text-[#AECBD6]">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+                    </div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap no-print">
+                    <div class="flex justify-center items-center">
+                        <button onclick="openNotificationModal('{{ projet.id }}', '{{ projet.nom }}')" 
+                            class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            <i class="fas fa-bell"></i>
+                        </button>
+                        <button onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')" 
+                            class="text-green-600 hover:text-green-900 mr-3">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <a href="{% url 'projets:supprimer_projet' projet.id %}" 
+                           onclick="supprimerProjet(event, this)"
+                           class="text-red-600 hover:text-red-900">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-2 text-center">Aucun projet disponible.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function supprimerProjet(event, element) {
+        event.preventDefault();
+        if (confirm('Supprimer ce projet ?')) {
+            fetch(element.href, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    htmx.ajax('GET', "{% url 'projets:liste_projets' %}", {
+                       target: "#liste_projets",
+                       swap: "innerHTML"
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    }
+</script>

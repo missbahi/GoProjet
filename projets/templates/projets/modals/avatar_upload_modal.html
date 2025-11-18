@@ -1,0 +1,76 @@
+<div id="avatar-upload-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-gray-800 rounded-lg max-w-md w-full border border-gray-700">
+        <div class="flex justify-between items-center border-b border-gray-700 p-4">
+            <h3 class="text-lg font-medium text-white">Changer la photo de profil</h3>
+            <button @click="$dispatch('close-modal')" class="text-gray-400 hover:text-white">
+                &times;
+            </button>
+        </div>
+
+        <form hx-post="{% url 'projets:upload_avatar' %}"
+              hx-encoding="multipart/form-data"
+              hx-target="#avatar-container"
+              class="p-6">
+            {% csrf_token %}
+            
+            <div class="flex flex-col items-center mb-6">
+                <div id="avatar-container" class="mb-4">
+                    <img src="{{ user.profile.get_avatar_url }}" 
+                         class="w-32 h-32 rounded-full object-cover mx-auto"
+                         id="avatar-preview">
+                </div>
+
+                <input type="file" 
+                       name="avatar" 
+                       id="avatar-upload" 
+                       accept="image/*" 
+                       class="hidden"
+                       @change="previewFile">
+
+                <label for="avatar-upload" 
+                       class="cursor-pointer bg-[#2B9C62] text-white px-4 py-2 rounded-lg hover:bg-[#228752] transition-colors">
+                    Sélectionner une image
+                </label>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button type="button" 
+                        @click="$dispatch('close-modal')"
+                        class="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700">
+                    Annuler
+                </button>
+                <button type="submit" 
+                        class="px-4 py-2 bg-[#2B9C62] text-white rounded-lg hover:bg-[#228752]">
+                    Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Prévisualisation de l'image
+    function previewFile(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('avatar-preview');
+        const reader = new FileReader();
+
+        reader.onloadend = function() {
+            preview.src = reader.result;
+        }
+
+        if (file) {
+            reader.readAsDataURL(file);
+        }
+    }
+    // Gestion des événements Alpine.js
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('avatarUpload', () => ({
+            previewFile(event) {
+                previewFile(event);
+            }
+        }));
+    });
+});
+</script>

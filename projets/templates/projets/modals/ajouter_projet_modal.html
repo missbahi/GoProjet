@@ -1,0 +1,192 @@
+<div id="nouveauProjetModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2">
+    <div class="bg-[#525252] text-blue-500 shadow-xl w-full max-w-2xl rounded-lg p-2">
+        <div class="p-2 bg-[#2E2E2E] text-[#2B9C62] shadow-lg rounded ">
+            <!-- En-tête -->
+            <div class="p-4 flex justify-between items-center border-b border-green-500">
+                <h3 class="text-4xl font-semibold">
+                    <i class="fas fa-plus-circle"></i> Ajouter un nouveau projet
+                </h3>
+                <button onclick="closeModal('nouveauProjetModal')" 
+                        class="text-green-600 hover:text-green-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- formulaire pour ajouter un nouveau projet -->
+            <form id="nouveauProjetForm" 
+                method="post"  
+                action="{% url 'projets:ajouter_projet_modal' %}"
+                modal=true
+                class="space-y-4 max-h-[70vh] text-blue-500 overflow-y-auto mb-4 p-3"
+                enctype="multipart/form-data">
+                {% csrf_token %}
+                <div id="form-errors" class="text-sm text-red-600">
+                    {{ form.non_field_errors }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="{{ form.nom.id_for_label }}" class="block text-sm font-medium mb-1">
+                                {{ form.nom.label }}
+                                {% if form.nom.field.required %}<span class="text-red-500">*</span>{% endif %}
+                            </label>
+                            {{ form.nom }}
+                            <div id="error-nom" class="text-red-500 text-xs mt-1 hidden"></div>
+                            {% if form.nom.errors %}
+                            <p class="mt-1 text-sm text-red-600">{{ form.nom.errors.as_text }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="{{ form.reference.id_for_label }}" class="block text-sm font-medium mb-1">
+                                {{ form.numero.label }}
+                            </label>
+                            {{ form.numero }}
+                        </div>
+                    </div>                
+                </div>
+
+                <div>
+                    <label for="{{ form.objet.id_for_label }}" class="block text-sm font-medium mb-1">
+                        {{ form.objet.label }}
+                    </label>
+                    {{ form.objet }}
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="{{ form.maitre_ouvrage.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.maitre_ouvrage.label }}
+                            </label>
+                            {{ form.maitre_ouvrage }}
+                        </div>
+                        <div>
+                            <label for="{{ form.localisation.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.localisation.label }}
+                            </label>
+                            {{ form.localisation }}
+                        </div>
+                        <div> <!-- Champ caché pour le calcul de l'avancement -->
+                            <label for="{{ form.montant_soumission.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.montant_soumission.label }}
+                            </label>
+                            {{ form.montant_soumission }}
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="{{ form.delai.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.delai.label }}
+                            </label>
+                            {{ form.delai }}
+                        </div>
+                        <div>
+                            <label for="{{ form.date_debut.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.date_debut.label }}
+                            </label>
+                            {{ form.date_debut }}
+                        </div>
+                        <div class="hidden"> <!-- Champ caché pour le calcul de l'avancement -->
+                            {{ form.date_creation }}
+                            <label for="{{ form.montant.id_for_label }}" class="block text-sm font-medium  mb-1">
+                                {{ form.montant.label }}
+                            </label>
+                            {{ form.montant }}
+                        </div>
+                        <div>
+                            <label for="form.type_projet.id_for_label" class="block text-sm font-medium mb-1">
+                                Type de projet
+                            </label>
+                            {{ form.type_projet }}
+                        </div>
+                        
+                        <div class="hidden"> <!-- Champ cache pour le calcul de l'avancement -->
+                            {{ form.avancement }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div>
+                        <label for="{{ form.statut.id_for_label }}" class="block text-sm font-medium  mb-1">
+                            {{ form.statut.label }}
+                        </label>
+                        {{ form.statut }}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.entreprise.id_for_label }}" class="block text-sm font-medium  mb-1">
+                            {{ form.entreprise.label }}
+                        </label>
+                        {{ form.entreprise }}
+                    </div>
+                </div>
+            </form>
+            <!-- Boutons -->
+            <div class="mt-4 p-4 flex justify-end space-x-3 border-t border-green-500">
+                <button type="button" onclick="closeModal('nouveauProjetModal')" 
+                    class="bg-[#2E2E2E] hover:bg-blue-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+                    <i class="fas fa-times-circle"></i>
+                    <span>Annuler</span>
+                </button>
+                <button type="submit" 
+                    id="submitNouveauProjetBtn" 
+                    class="bg-[#2E2E2E] hover:bg-blue-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+                    <i class="fas fa-save mr-2"></i>
+                    <span>Enregistrer</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('submitNouveauProjetBtn').addEventListener('click', async function(e) {
+        e.preventDefault();
+        const form = document.getElementById('nouveauProjetForm');
+        const submitBtn = this;
+        
+        // Désactiver le bouton
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest' // Pour identifier les requêtes AJAX
+                }
+            });
+            
+            if (response.ok) {
+                // Fermer la modale après succès
+                const modal = document.getElementById('nouveauProjetModal');
+                modal.classList.add('hidden');
+
+                // Recharger juste la liste
+                htmx.ajax('GET', "{% url 'projets:liste_projets' %}", {
+                    target: "#liste_projets",
+                    swap: "innerHTML"
+                }); 
+                
+                // Afficher un message
+                showNotification('Nouveau projet créé avec succès', 'success');
+            } else {
+                const error = await response.text();
+                showNotification('Erreur de soumission: ' + error, 'error')
+            }
+        } catch (error) {
+            console.error("Erreur:", error);
+            showNotification("Erreur: " + error.message, 'error');
+        } finally {
+            // Réactiver le bouton
+            submitBtn.disabled = false;
+            submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    });
+</script>

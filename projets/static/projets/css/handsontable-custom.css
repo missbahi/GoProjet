@@ -1,0 +1,93 @@
+/* static/css/handsontable-custom.css */
+/* ===== STYLES GÉNÉRAUX HANDSONTABLE ===== */      
+.handsontable-custom {
+    background: transparent !important;
+    border: none !important;
+    font-family: 'Segoe UI', system-ui, sans-serif !important;
+}
+
+/* ===== EN-TÊTES DE COLONNES ===== */
+.handsontable-custom thead th {
+    background: #374151 !important;
+    color: #22d3ee !important;
+    border:none !important;
+    border-right: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    font-weight: 600 !important;
+    font-size: 13px !important;
+    text-transform: uppercase !important;
+    /* min-height: 35px !important; */
+    height: 45px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+} 
+
+/* ===== CORPS DU TABLEAU ===== */
+.handsontable-custom tbody td {
+    background: #3B3B3B!important;
+    border: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    color: #E5E7EB !important;
+    transition: all 0.2s ease !important;
+    vertical-align: middle !important;
+    font-size: 12px !important;
+}
+
+/* Alternance des lignes */
+.handsontable-custom tbody tr:nth-child(even) td {
+    background: #363636;
+}
+
+.handsontable-custom td:last-child {
+    font-size: 12px !important;
+}
+
+/* ===== LIGNES DE TITRE ===== */
+.handsontable-custom .title-row {
+    color: #22d3ee !important;
+    font-weight: 700 !important;
+    font-size: 15px !important;
+}
+
+.handsontable-custom .htCenter {
+    text-align: center !important;
+}
+/* Style des cellules sélectionnées avec le thème cyan */
+.handsontable-custom .wtBorder.current {
+    border: 1px solid #22d3ee !important;
+}
+
+.handsontable-custom .wtBorder.area {
+    background: rgba(34, 211, 238, 0.25) !important;
+    border: 1px solid #0ea5e9 !important;
+}
+
+@keyframes highlightCustom {
+    0% { background-color: rgba(34, 211, 238, 0.3) !important; }
+    100% { background-color: transparent !important; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .handsontable-custom thead th {
+        height: 50px !important;
+        min-height: 50px !important;
+        font-size: 12px !important;
+        padding: 8px 4px !important;
+    }
+}
+/* ===== EN-TÊTES DE LIGNES ===== */
+.handsontable-custom .ht_clone_left th,
+.handsontable-custom .ht_clone_top_left_corner th {
+    background-color: #374151 !important;
+    color: #22d3ee !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+    vertical-align: middle !important;
+    border-bottom: 1px solid rgba(144, 161, 185, 0.15) !important;  
+    border-top: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    border-left: 1px solid rgba(144, 161, 185, 0.15) !important; 
+}
+
+/* no scroll handsontable */
+.handsontable-custom .wtHolder {
+    overflow-y: hidden !important;
+}

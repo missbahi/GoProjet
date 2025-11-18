@@ -1,0 +1,313 @@
+{% extends 'projets/base.html' %}
+{% load static %} 
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Titre de la page -->
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-3xl font-bold text-cyan-500">Tableau de Bord - Liste des taches</h1>
+    </div>
+    <!-- boutons : accueil et ajouter une nouvelle tache -->
+    <div class="flex justify-between items-center my-3">
+        <a href="{% url 'home' %}" 
+           class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+            <i class="fa-solid fa-house"></i> Accueil
+        </a>
+        <button onclick="openTaskModal()" 
+            class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+            <i class="fa-solid fa-plus"></i> <span>Ajouter une tache</span>
+        </button>
+    </div>
+
+    <!-- Filtres -->
+    <!-- Liste des tâches -->
+    <div id="taches-container">
+        <div class="bg-gray-800 p-2">
+            <table class=" min-w-full bg-[#2E2E2E]">
+                <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+                    <tr class=" text-left text-m font-medium uppercase"></tr>
+                        <th class="text-left px-4 py-3">Titre</th>
+                        <th class="text-left px-4 py-3">Projet</th>
+                        <th class="text-left px-4 py-3">Responsable</th>
+                        <th class="text-left px-4 py-3">Priorité</th>
+                        <th class="text-left px-4 py-3">Statut</th>
+                        <th class="px-4 py-3">Avancement</th>
+                        <th class="px-4 py-3 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody  class="bg-gray-800 divide-y divide-green-800">
+                    {% for tache in taches %}
+                    <tr class="text-[#AECBD6]">
+                        <td>
+                            <div class="flex items-center text-cyan-500">
+                                <!--i class="fas fa-tasks"></i-->
+                                <a href="{% url 'projets:detail_tache' tache.pk %}" 
+                                   class="flex items-center p-2 hover:text-cyan-600 rounded-full transition">
+                                    <span class="ml-2font-medium">{{ tache.titre }}</span>
+                                </a>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">{{ tache.projet.nom }}</td>
+                        <td class="px-4 py-3">{{ tache.responsable.username}}</td>
+                        <td class="px-4 py-3">{{ tache.priorite }}</td>
+                        <td class="px-4 py-3">
+                            {% if tache.terminee %}
+                                Terminée
+                            {% else %}
+                                En cours
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center">{{ tache.avancement }}%</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="openTaskModal({{ tache.id }})" 
+                                    class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-edit"></i> 
+                            </button>
+                            <button onclick="deleteTask({{ tache.id }})" 
+                                    class="text-red-600 hover:text-red-900 ml-2">
+                                <i class="fas fa-trash"></i> 
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="px-4 py-2 text-center">Aucun projet disponible.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal création/modification -->
+<div id="taskModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-[#525252] rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-gray-800">
+                <i class="fas fa-tasks mr-2 text-blue-500"></i>
+                <span id="modalTitle">Nouvelle Tâche</span>
+            </h3>
+            <button onclick="closeTaskModal()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+        </div>
+
+        <form id="taskForm" method="post" class="p-6 space-y-4 " onsubmit="submitTacheForm(event)">
+            {% csrf_token %}
+            <input type="hidden" name="tache_id" id="tacheId">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">Titre *</label>
+                        <input type="text" name="titre" id="titre"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium  mb-1">Projet *</label>
+                        <select name="projet" id="projet"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium  mb-1">Date début *</label>
+                            <input type="date" name="date_debut" id="date_debut" class="w-full px-3 py-2 border rounded-md">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium  mb-1">Date fin *</label>
+                            <input type="date" name="date_fin" id="date_fin" class="w-full px-3 py-2 border rounded-md">
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium  mb-1">Responsable *</label>
+                        <select name="responsable" id="responsable" class="w-full px-3 py-2 border rounded-md bg-white">
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium  mb-1">Priorité *</label>
+                        <select name="priorite" id="priorite" class="w-full px-3 py-2 border rounded-md bg-white">
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="terminee" id="terminee" class="h-4 w-4 text-blue-600 border-gray-300 rounded">
+                            <span class="text-sm">Terminée</span>
+                        </label>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium mb-1">Avancement</label>
+                            <input type="range" name="avancement" id="avancement" min="0" max="100" class="w-full h-2 bg-gray-200 rounded-lg">
+                            <div class="text-right text-sm" id="avancementLabel">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6">
+                <label class="block text-sm font-medium mb-1">Description</label>
+                <textarea name="description" id="description" rows="4" class="w-full px-3 py-2 border rounded-md"></textarea>
+            </div>
+
+            <div class="mt-8 flex justify-end space-x-3">
+                <button type="button" onclick="closeTaskModal()" class="px-5 py-2.5 border rounded-lg bg-white text-gray-700 hover:bg-gray-50">
+                    <i class="fas fa-times mr-2"></i> Annuler
+                </button>
+                <button type="submit" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md">
+                    <i class="fas fa-save mr-2"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="{% static 'projets/js/taches.js' %}"></script>
+<script>
+async function loadFormData() {
+    if (appData.formData) return;
+    const response = await fetch('/api/get-form-data/');
+    appData.formData = await response.json();
+    populateFormOptions();
+}
+
+function populateFormOptions() {
+    const selects = {
+        projet: document.getElementById('projet'),        
+        responsable: document.getElementById('responsable'), 
+        priorite: document.getElementById('priorite')
+    };
+    
+    // Vérification que les éléments existent
+    if (!selects.projet || !selects.responsable || !selects.priorite) {
+        console.error('Un ou plusieurs selects sont introuvables');
+        return;
+    }
+    selects.projet.innerHTML = '<option value="">Sélectionnez...</option>';
+    selects.responsable.innerHTML = '<option value="">Sélectionnez...</option>';
+    selects.priorite.innerHTML = '<option value="">Sélectionnez...</option>';
+    
+    appData.formData.projets.forEach(p => selects.projet.add(new Option(p.nom, p.id)));
+    appData.formData.responsables.forEach(r => selects.responsable.add(new Option(r.username, r.id)));
+    appData.formData.priorites.forEach(p => selects.priorite.add(new Option(p.label, p.value)));
+    appData.initialized = true;
+}
+
+async function openTaskModal(tacheId = null) {
+    const modal = document.getElementById('taskModal');
+    if (!modal) {
+        console.error("Erreur: La modal #taskModal est introuvable");
+        showAlert('error', 'Erreur système: modal introuvable');
+        return;
+    }
+
+    modal.classList.remove('hidden');
+    document.getElementById('modalTitle').textContent = tacheId ? 'Modifier Tâche' : 'Nouvelle Tâche';
+    document.getElementById('tacheId').value = tacheId || '';
+
+    try {
+        // 1. Charger les données du formulaire d'abord
+        await loadFormData();
+        
+        // 2. Si nouvelle tâche, reset du formulaire
+        if (!tacheId) {
+            document.getElementById('taskForm').reset();
+            return;
+        }
+
+        // 3. Charger les données de la tâche
+        const response = await fetch(`/taches/${tacheId}/`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Erreur ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (!data?.success) {
+            throw new Error(data?.message || 'Réponse invalide du serveur');
+        }
+
+        // 4. Remplir le formulaire avec les données de la tâche
+        await fillTaskForm(data.data);
+
+    } catch (error) {
+        console.error('Erreur:', error);
+        showAlert('error', `Échec: ${error.message}`);
+        closeTaskModal();
+    }
+}
+
+async function fillTaskForm(tache) {
+    // Attendre que le DOM soit complètement mis à jour
+    await new Promise(resolve => setTimeout(resolve, 50));
+    const fieldMap = {
+        'titre': 'titre',
+        'projet': 'projet',          // ← name="projet" → id="projetSelect" 
+        'responsable': 'responsable', // ← name="responsable" → id="responsableSelect"
+        'priorite': 'priorite',      // ← name="priorite" → id="prioriteSelect"
+        'date_debut': 'date_debut',
+        'date_fin': 'date_fin',
+        'terminee': 'terminee',
+        'avancement': 'avancement',
+        'description': 'description'
+    };
+    const fields = {
+        'titre': tache.titre,
+        'projet': tache.projet.id || '',  
+        'responsable': tache.responsable.id || '',
+        'priorite': tache.priorite || 'NORMALE',
+        'date_debut': tache.date_debut ? new Date(tache.date_debut).toISOString().split('T')[0] : '',
+        'date_fin': tache.date_fin ? new Date(tache.date_fin).toISOString().split('T')[0] : '',
+        'terminee': tache.terminee,
+        'avancement': tache.avancement || 0,
+        'description': tache.description
+    };
+    // Remplissage avec vérification
+    Object.entries(fields).forEach(([fieldName, value]) => {
+        const elementId = fieldMap[fieldName];
+        if (!elementId) {
+            console.warn(`Mapping manquant pour: ${fieldName}`);
+            return;
+        }
+
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.warn(`Élément #${elementId} introuvable (pour ${fieldName})`);
+            return;
+        }
+   
+        if (element.type === 'checkbox') {
+            element.checked = !!value;
+        } else if (element.tagName === 'SELECT') {
+            // Pour les selects, assurez-vous que la valeur existe
+            const optionExists = Array.from(element.options).some(opt => opt.value === String(value));
+            if (optionExists) {
+                element.value = String(value);
+            } else {
+                // console.warn(`Option ${value} non trouvée dans le select ${id}`);
+                element.value = '';
+            }
+        } else {
+            element.value = value || '';
+        }
+    });
+
+    document.getElementById('avancementLabel').textContent = `${tache.avancement || 0}%`;
+}
+
+function closeTaskModal() {
+    document.getElementById('taskModal').classList.add('hidden');
+    document.getElementById('taskForm').reset();
+}
+
+document.getElementById('avancement').addEventListener('input', function(){
+    document.getElementById('avancementLabel').textContent = this.value + '%';
+});
+
+</script>
+{% endblock %}

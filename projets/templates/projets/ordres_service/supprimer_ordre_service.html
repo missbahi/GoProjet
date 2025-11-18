@@ -1,0 +1,79 @@
+<!-- projets/templates/projets/supprimer_ordre_service.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Supprimer l'ordre de service</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
+            <div class="text-center mb-6">
+                <i class="fas fa-exclamation-triangle text-5xl text-yellow-500 mb-4"></i>
+                <h1 class="text-2xl font-bold text-cyan-300 mb-2">Confirmation de suppression</h1>
+                <p class="text-gray-400">Êtes-vous sûr de vouloir supprimer cet ordre de service ?</p>
+            </div>
+            
+            <div class="bg-[#2E2E2E] border border-[#4B5563] rounded-lg p-4 mb-6">
+                <div class="flex items-center gap-3 mb-2">
+                    <span class="bg-cyan-600 text-white px-2 py-1 rounded text-sm font-medium">
+                        {{ ordre.type_os.code }}
+                    </span>
+                    <span class="px-2 py-1 rounded text-xs font-medium 
+                        {% if ordre.statut == 'NOTIFIE' %}bg-green-600 text-white
+                        {% elif ordre.statut == 'BROUILLON' %}bg-gray-600 text-white
+                        {% else %}bg-red-600 text-white{% endif %}">
+                        {{ ordre.get_statut_display }}
+                    </span>
+                </div>
+                <h3 class="text-lg font-semibold text-cyan-300 mb-2">{{ ordre.titre }}</h3>
+                <div class="grid grid-cols-2 gap-2 text-sm text-gray-400">
+                    <div>
+                        <i class="fas fa-hashtag mr-2"></i>
+                        <span>Référence: {{ ordre.reference }}</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-calendar mr-2"></i>
+                        <span>Publié le: {{ ordre.date_publication|date:"d/m/Y" }}</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-sort-numeric-up mr-2"></i>
+                        <span>Séquence: {{ ordre.ordre_sequence }}</span>
+                    </div>
+                    <div>
+                        <i class="fas fa-file-alt mr-2"></i>
+                        <span>Type: {{ ordre.type_os.nom }}</span>
+                    </div>
+                </div>
+            </div>
+
+            {% if ordre.statut == 'NOTIFIE' %}
+            <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-4 mb-4">
+                <div class="flex items-center gap-2 text-yellow-300">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention:</strong> Cet ordre de service est notifié. Sa suppression peut affecter la séquence des OS.
+                </div>
+            </div>
+            {% endif %}
+            
+            <form method="POST" class="flex justify-center gap-4">
+                {% csrf_token %}
+                <button type="submit" 
+                        class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-trash"></i> Confirmer la suppression
+                </button>
+                <a href="{% url 'projets:ordres_service' projet.id %}" 
+                   class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-times"></i> Annuler
+                </a>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

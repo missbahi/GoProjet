@@ -1,0 +1,414 @@
+<!-- validation_attachement.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    {% load formatters %}
+    <title>Validation d'Attachement - {{ attachement.numero }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { 
+            background-color: #2E2E2E; 
+            color: #AECBD6; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(59, 59, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-success { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-warning { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-info { 
+            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .form-control { 
+            background-color: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+        }
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        .status-en-attente { background: #f59e0b; color: white; }
+        .status-valide { background: #10b981; color: white; }
+        .status-rejete { background: #ef4444; color: white; }
+        .status-correction { background: #8b5cf6; color: white; }
+    </style>
+</head>
+<body>
+    <div class="main-container max-w-6xl mx-auto p-6">
+        <!-- En-tête -->
+        <header class="glass-effect p-6 mb-6">
+            <div class="text-center">
+                <h1 class="text-3xl font-bold text-cyan-400 mb-4">
+                    <i class="fas fa-clipboard-check mr-3"></i>
+                    Processus de Validation d'Attachement
+                </h1>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                    <div>
+                        <span class="text-[#AECBD6]">Attachement :</span>
+                        <div class="text-xl font-bold text-cyan-300">{{ attachement.numero }}</div>
+                    </div>
+                    <div>
+                        <span class="text-[#AECBD6]">Projet :</span>
+                        <div class="text-xl font-bold text-cyan-300">{{ attachement.projet.nom }}</div>
+                    </div>
+                    <div>
+                        <span class="text-[#AECBD6]">Statut global :</span>
+                        <div class="text-xl font-bold 
+                            {% if attachement.statut == 'VALIDE' %}text-green-400
+                            {% elif attachement.statut == 'BROUILLON' %}text-yellow-400
+                            {% elif attachement.statut == 'TRANSMIS' %}text-blue-400
+                            {% else %}text-gray-400{% endif %}">
+                            {{ attachement.get_statut_display }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Boutons navigation -->
+        <div class="flex justify-between items-center mb-6">
+            <div class="flex gap-3">
+                <button onclick="window.location.href='{% url 'projets:liste_attachements' attachement.projet.id %}'" 
+                        class="btn btn-info">
+                    <i class="fa-solid fa-arrow-left"></i> Retour aux attachements
+                </button>
+                <button onclick="window.location.href='{% url 'projets:dashboard' attachement.projet.id %}'" 
+                        class="btn btn-primary">
+                    <i class="fa-solid fa-diagram-project"></i> Retour au projet
+                </button>
+            </div>
+            <div class="text-right">
+                <div class="text-cyan-400 font-semibold">
+                    Montant total : <span class="text-white text-xl">{{ attachement.total_montant_ht|format_currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-3">
+                {% for message in messages %}
+                    <div class="p-4 rounded-xl 
+                        {% if message.tags == 'success' %}bg-green-600
+                        {% elif message.tags == 'error' %}bg-red-600
+                        {% elif message.tags == 'warning' %}bg-yellow-600
+                        {% else %}bg-blue-600{% endif %} 
+                        text-white flex justify-between items-center shadow-lg">
+                        <div class="flex items-center gap-3">
+                            <i class="fas 
+                                {% if message.tags == 'success' %}fa-check-circle
+                                {% elif message.tags == 'error' %}fa-exclamation-circle
+                                {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                                {% else %}fa-info-circle{% endif %}"></i>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Processus de validation -->
+        <div class="glass-effect p-6 mb-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
+                <i class="fas fa-list-ol"></i>
+                Étapes de Validation
+            </h2>
+            
+            <div class="space-y-4">
+                {% for validation in validations %}
+                <div class="bg-gray-800 rounded-xl p-4 border-l-4 
+                    {% if validation.statut_validation == 'VALIDE' %}border-green-500
+                    {% elif validation.statut_validation == 'REJETE' %}border-red-500
+                    {% elif validation.statut_validation == 'EN_ATTENTE' %}border-yellow-500
+                    {% else %}border-purple-500{% endif %}">
+                    
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-cyan-400 font-bold text-lg">Étape {{ validation.ordre_validation }}</span>
+                            <h3 class="text-xl font-semibold text-white">{{ validation.get_type_validation_display }}</h3>
+                            {% if validation.est_obligatoire %}
+                                <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">Obligatoire</span>
+                            {% endif %}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="status-badge 
+                                {% if validation.statut_validation == 'VALIDE' %}bg-green-500
+                                {% elif validation.statut_validation == 'REJETE' %}bg-red-500
+                                {% elif validation.statut_validation == 'EN_ATTENTE' %}bg-yellow-500
+                                {% else %}bg-purple-500{% endif %} 
+                                text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                {{ validation.get_statut_validation_display }}
+                            </span>
+                            {% if validation.est_en_retard %}
+                                <span class="text-red-400 text-sm font-semibold">
+                                    <i class="fas fa-clock"></i> En retard
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
+                        <div>
+                            <span class="text-cyan-400">Validateur :</span>
+                            <span class="text-white">
+                                {% if validation.validateur %}
+                                    {{ validation.validateur.get_full_name|default:validation.validateur.username }}
+                                {% else %}
+                                    <span class="text-yellow-400">Non assigné</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div>
+                            <span class="text-cyan-400">Date limite :</span>
+                            <span class="text-white">
+                                {% if validation.date_limite %}
+                                    {{ validation.date_limite|date:"d/m/Y" }}
+                                    {% if validation.jours_restants is not None %}
+                                        <span class="{% if validation.jours_restants < 3 %}text-red-400{% else %}text-green-400{% endif %}">
+                                            ({{ validation.jours_restants }} jour{{ validation.jours_restants|pluralize }} restant{{ validation.jours_restants|pluralize }})
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    Non définie
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if validation.commentaires %}
+                    <div class="mb-3">
+                        <span class="text-cyan-400">Commentaires :</span>
+                        <p class="text-white mt-1 bg-gray-700 p-3 rounded">{{ validation.commentaires }}</p>
+                    </div>
+                    {% endif %}
+
+                    {% if validation.motifs_rejet %}
+                    <div class="mb-3">
+                        <span class="text-red-400">Motifs de rejet :</span>
+                        <p class="text-white mt-1 bg-red-900/30 p-3 rounded">{{ validation.motifs_rejet }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    {% if validation.est_validable_par_utilisateur %}
+                    <div class="flex gap-3 mt-4 pt-4 border-t border-gray-600">
+                        <button onclick="openValidationModal('valider', {{ validation.id }})" 
+                                class="btn btn-success">
+                                {% if validation.etapes_validation %}
+                            <i class="fas fa-check"></i> Consulter les étapes de validation
+                                {% else %}
+                            <i class="fas fa-check"></i> Valider
+                                {% endif %}
+                        </button>
+                        <button onclick="openValidationModal('rejeter', {{ validation.id }})" 
+                                class="btn btn-danger">
+                            <i class="fas fa-times"></i> Rejeter
+                        </button>
+                        <button onclick="openValidationModal('correction', {{ validation.id }})" 
+                                class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Demander correction
+                        </button>
+                    </div>
+                    {% elif validation.est_en_attente %}
+                    <div class="mt-4 pt-4 border-t border-gray-600">
+                        <p class="text-yellow-400 text-sm">
+                            <i class="fas fa-clock"></i>
+                            En attente de validation par {% if validation.validateur %}{{ validation.validateur.get_full_name|default:validation.validateur.username }}{% else %}un validateur{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-info-circle text-4xl mb-4"></i>
+                    <p>Aucun processus de validation défini pour cet attachement.</p>
+                    {% if attachement.statut == 'TRANSMIS' %}
+                    <p class="mt-2">Le processus de validation devrait être initialisé automatiquement.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Informations détaillées de l'attachement -->
+        <div class="glass-effect p-6">
+            <h2 class="text-2xl font-bold text-cyan-400 mb-4">
+                <i class="fas fa-info-circle mr-2"></i>
+                Détails de l'Attachement
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 border border-gray-600 rounded-xl p-4">
+                <div class="mr-8">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 border-b border-gray-500">Informations générales</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Période :</span> {{ attachement.date_debut_periode|date:"d/m/Y" }} - {{ attachement.date_fin_periode|date:"d/m/Y" }}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Date établissement :</span> {{ attachement.date_etablissement|date:"d/m/Y" }}
+                        </div> 
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Observations :</span> {{ attachement.observations|default:"Aucune" }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mr-8">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 border-b border-gray-500">Montants</h3>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Montant HT :</span><span>{{ attachement.total_montant_ht|format_currency }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Cumul précédent :</span><span>{{ attachement.montant_ht_attachement_precedent|format_currency }}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-cyan-400">Situation actuelle :</span><span>{{ attachement.montant_situation|format_currency }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour les actions de validation -->
+    <div id="validationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+                <h3 id="modalTitle" class="text-xl font-bold text-cyan-400 mb-4"></h3>
+                <form id="validationForm" method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" id="validationId" name="validation_id">
+                    <input type="hidden" id="actionType" name="action_type">
+                    
+                    <div class="mb-4">
+                        <label class="block text-cyan-400 mb-2">Commentaires :</label>
+                        <textarea id="commentaires" name="commentaires" rows="4" 
+                                  class="form-control" placeholder="Saisissez vos commentaires..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4" id="motifsField" style="display: none;">
+                        <label class="block text-red-400 mb-2">Motifs de rejet :</label>
+                        <textarea id="motifs" name="motifs" rows="4" 
+                                  class="form-control" placeholder="Expliquez les motifs du rejet..."></textarea>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-cyan-400 mb-2">Fichier justificatif (optionnel) :</label>
+                        <input type="file" id="fichier" name="fichier" class="form-control">
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" onclick="closeModal()" class="btn btn-secondary">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Confirmer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openValidationModal(action, validationId) {
+            const modal = document.getElementById('validationModal');
+            const title = document.getElementById('modalTitle');
+            const motifsField = document.getElementById('motifsField');
+            const actionType = document.getElementById('actionType');
+            const validationIdInput = document.getElementById('validationId');
+            
+            validationIdInput.value = validationId;
+            actionType.value = action;
+            
+            if (action === 'valider') {
+                title.textContent = 'Valider cette étape';
+                motifsField.style.display = 'none';
+            } else if (action === 'rejeter') {
+                title.textContent = 'Rejeter cette étape';
+                motifsField.style.display = 'block';
+            } else if (action === 'correction') {
+                title.textContent = 'Demander une correction';
+                motifsField.style.display = 'none';
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('validationModal').classList.add('hidden');
+            document.getElementById('validationForm').reset();
+        }
+
+        // Fermer la modal en cliquant à l'extérieur
+        document.getElementById('validationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Gérer la soumission du formulaire
+        document.getElementById('validationForm').addEventListener('submit', function(e) {
+            const actionType = document.getElementById('actionType').value;
+            const motifs = document.getElementById('motifs').value;
+            
+            if (actionType === 'rejeter' && !motifs.trim()) {
+                e.preventDefault();
+                alert('Veuillez saisir les motifs du rejet.');
+                return;
+            }
+        });
+    </script>
+</body>
+</html>

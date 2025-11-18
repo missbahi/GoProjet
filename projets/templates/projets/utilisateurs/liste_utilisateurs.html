@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Liste des utilisateurs</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #2E2E2E; 
+            color: #2B9C62; 
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        th, td {
+            border: none;
+        }
+        
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .bg-\[\#2E2E2E\] {
+            background-color: #2E2E2E;
+        }
+        
+        .bg-\[\#525252\] {
+            background-color: #525252;
+        }
+        
+        .text-\[\#2B9C62\] {
+            color: #2B9C62;
+        }
+        
+        .text-\[\#AECBD6\] {
+            color: #AECBD6;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="container max-w-6xl mx-auto p-6 rounded-lg shadow-lg">
+        <!-- Titre de la page -->
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-cyan-500">Gestion des Utilisateurs</h1>
+        </div>
+        
+        <!-- boutons : accueil et ajouter un nouvel utilisateur -->
+        <div class="flex justify-between items-center my-3">
+            <a href="{% url 'home' %}" 
+               class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+                <i class="fa-solid fa-house"></i> Accueil
+            </a>
+            <a href="{% url 'projets:ajouter_utilisateur' %}" 
+               class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
+                <i class="fa-solid fa-plus"></i> Ajouter un utilisateur
+            </a>
+        </div>
+
+        <!-- Liste des utilisateurs -->
+        <div id="utilisateurs-container">
+            <div class="bg-gray-800 p-2 rounded-lg">
+                <table class="min-w-full bg-[#2E2E2E] rounded-lg overflow-hidden">
+                    <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+                        <tr class="text-left text-m font-medium uppercase">
+                            <th class="text-left px-4 py-3">Nom d'utilisateur</th>
+                            <th class="text-left px-4 py-3">Email</th>
+                            <th class="text-left px-4 py-3">Rôle</th>
+                            <th class="px-4 py-3 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-gray-800 divide-y divide-green-800">
+                        {% for utilisateur in utilisateurs %}
+                        <tr class="text-[#AECBD6] hover:bg-gray-700 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center text-cyan-500">
+                                    <i class="fas fa-user-circle mr-2"></i>
+                                    <span class="font-medium">{{ utilisateur.username }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">{{ utilisateur.email }}</td>
+                            <td class="px-4 py-3">
+                                {% if utilisateur.is_superuser %}
+                                    <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs">Super Admin</span>
+                                {% elif utilisateur.is_staff %}
+                                    <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs">Staff</span>
+                                {% else %}
+                                    <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs">Utilisateur</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center space-x-2">
+                                <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}" 
+                                   class="text-blue-400 hover:text-blue-300 transition"
+                                   title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}" 
+                                   class="text-red-400 hover:text-red-300 transition"
+                                   onclick="return confirm('Confirmer la suppression ?')"
+                                   title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="px-4 py-4 text-center text-gray-400">
+                                <i class="fas fa-users-slash mr-2"></i>Aucun utilisateur trouvé.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Ajout d'un effet de hover sur les lignes du tableau
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach(row => {
+                row.addEventListener('mouseenter', function() {
+                    this.style.backgroundColor = '#374151';
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.style.backgroundColor = '';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

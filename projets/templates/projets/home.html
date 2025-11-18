@@ -1,0 +1,497 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - MEGAPERFORMANCE</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+
+<!-- div principale de la gestion des modals -->  
+<div id="modals-container"></div>
+     
+<body class="font-sans">
+    <!-- Container principal -->
+    <div class="flex h-screen overflow-hidden "> 
+        <!-- Sidebar -->  
+        <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-72 flex-shrink-0 md:block hidden">
+            <div class="p-4 border-b border-green-900">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-building text-2xl text-red-500"></i>
+                    <h6 class="text-xl text-red-500 font-bold">MEGAPERFORMANCE</h6>
+                </div>
+                <p class="text-sm text-green-400 mt-1">Gestion des projets BTP</p>
+            </div>
+            <nav class="p-4">
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                    <ul class="space-y-2 text-lg">
+                        <li>
+                            <a class="flex items-center space-x-2 p-2 rounded-lg bg-[#107C41] text-white ">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Tableau de bord</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_projets' %}" 
+                            class="flex items-center space-x-2 p-2  hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-project-diagram"></i>
+                                <span>Projets</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_taches' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-tasks"></i>
+                                <span>Gestion des Tâches</span>
+                            </a>
+                        </li>    
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Paramètres</p>
+                    <ul class="space-y-2 text-lg">
+                        <li>
+                            <a href="{% url 'projets:base_donnees' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-database"></i>
+                                <span>Configuration</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_utilisateurs' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-users"></i>
+                                <span>Administration</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:apropos' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-info-circle"></i>
+                                <span>À propos</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        <!-- Contenu principal -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-[#525252] text-[#2B9C62] shadow-sm z-10 border-b border-gray-500">
+                <div class="flex items-center justify-between p-4">
+                    <!-- Titre Tableau de bord-->
+                    <div class="flex items-center space-x-4">
+                        <button id="sidebarToggle" class="md:hidden text-gray-600">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h2 class="text-xl font-semibold "><i class="fas fa-home"></i> Tableau de bord</h2>
+                    </div>
+                    <!--  -->
+                    <div class="flex items-center space-x-4">
+                        <div class="relative"> <!-- Notofications -->
+                            <button id="notificationBtn" class="text-[#2B9C62] hover:text-green-500 relative">
+                                <i class="fas fa-bell text-xl"></i>
+                                {% if nb_notifications > 0 %}
+                                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                    {{ nb_notifications }}
+                                </span>
+                                {% endif %}
+                            </button>
+                            <div id="notificationDropdown" 
+                                 class="hidden absolute right-0 mt-2 w-72 bg-gray-800 bg-opacity-80 rounded-md shadow-lg py-1 z-20">
+                                <div class="px-4 py-2 border-b border-gray-200">
+                                    <p class="text-sm font-semibold">Notifications ({{ nb_notifications }})</p>
+                                </div>
+                                <div class="max-h-60 overflow-y-auto">
+                                    {% for notification in notifications %}
+                                    <a href="{% url 'projets:dashboard' notification.projet.id %}" class="notification block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 border-b border-gray-100 
+                                        {% if notification.type_notification == 'RETARD' %}notification-retard
+                                        {% elif notification.type_notification == 'NOUVEAU_AO' %}notification-ao
+                                        {% elif notification.type_notification == 'RECEPTION' %}notification-reception
+                                        {% else %}notification-generale{% endif %}">
+                                        <div class="flex items-start">
+                                            <div class="flex-shrink-0 
+                                                {% if notification.type_notification == 'RETARD' %}text-yellow-500
+                                                {% elif notification.type_notification == 'NOUVEAU_AO' %}text-blue-500
+                                                {% elif notification.type_notification == 'RECEPTION' %}text-green-500
+                                                {% else %}text-gray-500{% endif %} mt-1">
+                                                <i class="fas 
+                                                    {% if notification.type_notification == 'RETARD' %}fa-exclamation-triangle
+                                                    {% elif notification.type_notification == 'NOUVEAU_AO' %}fa-file-signature
+                                                    {% elif notification.type_notification == 'RECEPTION' %}fa-check-circle
+                                                    {% else %}fa-info-circle{% endif %}"></i>
+                                            </div>
+                                            <div class="ml-3">
+                                                <p class="font-medium">{{ notification.titre }}</p>
+                                                <p class="text-xs text-gray-500">{{ notification.message }}</p>
+                                                <p class="text-xs text-gray-400 mt-1">{{ notification.date_creation|timesince }}</p>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    {% empty %}
+                                    <div class="px-4 py-3 text-center text-sm text-gray-500">
+                                        Aucune nouvelle notification
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                <div class="px-4 py-2 border-t border-gray-200">
+                                    <a href="{% url 'projets:liste_notifications' %}" class="text-xs text-blue-600 hover:underline">Voir toutes les notifications</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="relative"> <!-- Menu utilisateur -->
+                            <button id="userMenuBtn" class="flex items-center space-x-2 text-lg">
+                                <img src="{{ user.profile.avatar_url }}" alt="Avatar" 
+                                    class="w-8 h-8 rounded-full object-cover"
+                                    onerror="this.onerror=null; this.src='{% static 'images/default_avatar.png' %}'">
+                                <span class="hidden md:inline text-[#2B9C62]">{{ user.username }}</span>
+                                <i class="fas fa-chevron-down text-xs text-[#2B9C62]"></i>
+                            </button>
+                            
+                            <div id="userMenuDropdown" 
+                                class="hidden absolute bg-gray-800 bg-opacity-80 right-0 mt-2 w-72 rounded-md shadow-lg py-1 z-20">
+                                <!-- Lien Profil avec HTMX -->
+                                <a href="#" 
+                                    hx-get="{% url 'projets:profile_modal' %}"
+                                    hx-target="#modals-container"
+                                    hx-swap="innerHTML"
+                                    class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                    <i class="fas fa-user-circle mr-2"></i> Profil
+                                </a>
+                                
+                                {% if user.is_superuser %}
+                                <a href="{% url 'projets:liste_utilisateurs' %}" 
+                                    class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                    <i class="fas fa-users-cog mr-2"></i> Utilisateurs
+                                </a>
+                                {% endif %}
+                                
+                                <div class="border-t border-gray-600 my-1"></div>
+                                
+                                <form action="{% url 'logout' %}" method="post" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" 
+                                            class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                                    </button>
+                                </form>
+                            </div>                            
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Contenu --> 
+            <main class="flex-1 overflow-y-auto p-4 bg-[#525252]">
+                <!-- titre et description -->
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-gray-800">Bureau d'Études Techniques - Gestion des Projets BTP</h1>
+                    <p class="text-gray-400">Suivi complet des projets depuis l'appel d'offres jusqu'à la réception définitive</p>
+                </div>
+                <!-- Cartes de résumé -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    {% for carte in resume_cartes %}
+                    <div class="dashboard-card bg-gray-800 text-[#2B9C62] rounded-lg shadow p-6 transition">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium ">{{ carte.titre }}</p>
+                                <p class="text-2xl font-bold text-{{ carte.couleur }}-600 mt-1">{{ carte.valeur }}</p>
+                            </div>
+                            <div class="p-3 rounded-full bg-{{ carte.couleur }}-100 text-{{ carte.couleur }}-600">
+                                <i class="fas {{ carte.icône }} text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span>{{ carte.sous_titre }}</span>
+                                <span>{{ carte.sous_valeur }}</span>
+                            </div>
+                            <div class="progress-bar bg-gray-200 rounded h-2 overflow-hidden">
+                                <div class="progress-fill bg-{{ carte.couleur }}-600 h-full transition-all duration-300"
+                                    style="width: {{ carte.progress }}%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Projets récents -->
+                <div class="bg-gray-800 text-[#2B9C62] rounded-lg shadow mb-6">
+                    <div class="p-4 border-b border-gray-700">
+                        <h2 class="text-lg font-semibold ">
+                            <i class="fas fa-clock mr-2"></i> Projets récents
+                        </h2>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <!-- En-têtes du tableau -->
+                            <thead class="bg-gray-800 text-[#2B9C62] border-b border-gray-700">
+                                <tr class=" text-left text-m font-medium uppercase">
+                                    <th class="px-6 py-3">Projet</th>
+                                    <th class="px-6 py-3">
+                                        <div>Maitre d'ouvrage</div>
+                                        <div class="text-xs">Entreprise</div>
+                                    </th>
+                                    <th class="px-6 py-3">Localisation</th>
+                                    <th class="px-6 py-3">Statut</th>
+                                    <th class="px-6 py-3">Avancement</th>
+                                    <!--<th class="px-6 py-3">Actions</th>-->
+                                </tr>
+                            </thead>
+                            <!-- Corps du tableau -->
+                            <tbody class="bg-gray-800 text-[#AECBD6] divide-y divide-green-800">
+                                {% for projet in projets_recents %}
+                                <tr>
+                                    <!-- Colonne Projet -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <a href="{% url 'projets:dashboard' projet.id %}" 
+                                            class="flex items-center p-2 hover:bg-[#107C41] hover:text-white rounded-full transition">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </a>
+                                            <!-- Informations du projet -->                                            
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium">{{ projet.nom|truncatechars:25 }}</div>
+                                                <div class="text-sm text-gray-500">{{ projet.objet|truncatechars:25 }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <!-- Colonne Client et Entreprise -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm">{{ projet.maitre_ouvrage|truncatechars:25 }}</div>
+                                        <div class="text-sm text-gray-500">
+                                            {% if projet.entreprise %}
+                                                {{ projet.entreprise.nom|truncatechars:25 }}
+                                            {% else %}
+                                                Non défini
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <!-- Colonne Localisation -->
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        {{ projet.localisation|truncatechars:25 }}
+                                    </td>
+                                    <!-- Colonne Statut et Avancement -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full 
+                                            {% if projet.statut == 'COURS' %}
+                                                bg-blue-100 text-blue-800
+                                            {% elif projet.en_retard %}
+                                                bg-yellow-100 text-yellow-800
+                                            {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}
+                                                bg-green-100 text-green-800
+                                            {% else %}
+                                                bg-gray-100 text-gray-800
+                                            {% endif %}">
+                                            {{ projet.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <!-- Colonne Avancement -->
+                                    <td class="px-4 py-2">
+                                        <div class="flex items-center space-x-2">
+                                            <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+                                                <div class="h-4
+                                                    {% if projet.avancement < 20 %}
+                                                        bg-red-500
+                                                    {% elif projet.avancement < 40 %}
+                                                        bg-orange-500
+                                                    {% elif projet.avancement < 60 %}
+                                                        bg-yellow-500
+                                                    {% elif projet.avancement < 80 %}
+                                                        bg-green-300
+                                                    {% else %}
+                                                        bg-green-600
+                                                    {% endif %}
+                                                    " style="width: {{ projet.avancement }}%">
+                                                </div>
+                                            </div>
+                                            <span class="text-sm">{{ projet.avancement|floatformat:0 }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-6">Aucun projet récent disponible.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-4 text-left border-t border-gray-700">
+                        <a href="{% url 'projets:liste_projets' %}" 
+                        class="text-[#2B9C62] hover:text-green-500 text-sm font-medium">
+                            <i class="fas fa-project-diagram"></i> Voir tous les projets
+                        </a>
+                    </div>
+                </div>
+                <!-- Graphiques et calendrier -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Graphique d'avancement -->
+                    <div class="lg:col-span-2 bg-gray-800 rounded-lg shadow ">
+                        <div class="flex items-center justify-between border-b border-gray-700 p-4">
+                            <h2 class="text-lg font-semibold text-[#2B9C62]">
+                                <i class="fas fa-chart-line mr-2"></i> Avancement des projets
+                            </h2>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-md period-btn" data-period="month">Mensuel</button>
+                                <button class="px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-md period-btn" data-period="quarter">Trimestriel</button>
+                                <button class="px-3 py-1 text-xs bg-gray-100 text-gray-800 rounded-md period-btn" data-period="year">Annuel</button>
+                            </div>
+                        </div>
+                        <div class="h-64">
+                            <canvas id="avancementChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Calendrier des échéances -->
+                    <div class="bg-gray-800 rounded-lg shadow flex flex-col h-full">
+                        <div class="flex items-center justify-between border-b border-gray-700 p-4">
+                            <h2 class="text-lg font-semibold text-[#2B9C62]">
+                                <i class="fas fa-calendar-alt mr-2"></i> Échéances à venir
+                            </h2>
+                        </div>
+                        <div class="space-y-4 flex-grow p-4">
+                            {% for echeance in echeances %}
+                            <div class="flex items-start">
+                                <div class="flex-shrink-0 rounded-lg p-2 mr-3
+                                    {% if echeance.priorite == 'URGENTE' %}bg-red-100 text-red-800
+                                    {% elif echeance.priorite == 'HAUTE' %}bg-orange-100 text-orange-800
+                                    {% elif echeance.priorite == 'NORMALE' %}bg-green-100 text-green-800
+                                    {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    <div class="text-center">
+                                        <div class="font-bold">{{ echeance.date_fin|date:"d" }}</div>
+                                        <div class="text-xs uppercase">{{ echeance.date_fin|date:"M" }}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-sm text-gray-200">{{ echeance.titre }}</h3>
+                                    <p class="text-sm text-gray-400">
+                                        {% if echeance.Terminee %}
+                                        Date limite: {{ echeance.date_fin|date:"d/m/Y" }} (Terminée)
+                                        {% else %}
+                                        Échéance: {{ echeance.date_fin|date:"d/m/Y" }}
+                                        {% endif %}
+                                    </p>
+                                    <span class="mt-1 inline-block py-1 text-xs font-semibold 
+                                        {% if echeance.priorite == 'URGENTE' %}text-red-800
+                                        {% elif echeance.priorite == 'HAUTE' %}text-orange-800
+                                        {% elif echeance.priorite == 'NORMALE' %}text-green-800
+                                        {% else %}text-yellow-800{% endif %}">
+                                       {{ echeance.priorite}}
+                                    </span>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-gray-500 text-center py-4">Aucune échéance à venir</p>
+                            {% endfor %}
+                        </div>
+                        <div class="p-4 border-t border-gray-700 mt-auto">
+                            <a href="{% url 'projets:liste_taches' %}"  
+                            class="text-[#2B9C62] hover:text-green-500 text-sm font-medium">
+                                <i class="fas fa-calendar-alt mr-1"></i> Voir calendrier complet
+                            </a>
+                        </div>
+                    </div>
+                    
+                </div>
+            </main>
+        </div>
+    </div>
+    
+<script> // JavaScript du template accueil 
+    // Toggle sidebar mobile
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        document.querySelector('.sidebar').classList.toggle('hidden');
+    });
+
+    // Toggle notifications dropdown
+    document.getElementById('notificationBtn').addEventListener('click', function() {
+        document.getElementById('notificationDropdown').classList.toggle('hidden');
+        document.getElementById('userMenuDropdown').classList.add('hidden');
+        
+        // Marquer les notifications comme lues lorsqu'on ouvre le dropdown
+        if (!document.getElementById('notificationDropdown').classList.contains('hidden')) {
+            fetch("{% url 'projets:mark_all_notifications_as_read' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                credentials: 'same-origin'
+            }).then(response => {
+                if(response.ok) {
+                    // Mettre à jour le compteur visuellement
+                    const badge = document.querySelector('#notificationBtn span');
+                    if(badge) {
+                        badge.remove();
+                    }
+                    // Mettre à jour également le badge dans le menu utilisateur
+                    const menuBadge = document.querySelector('#userMenuDropdown a[href*="notifications"] span');
+                    if(menuBadge) {
+                        menuBadge.remove();
+                    }
+                }
+            });
+        }
+    });
+
+    // Toggle user menu dropdown
+    document.getElementById('userMenuBtn').addEventListener('click', function() {
+        document.getElementById('userMenuDropdown').classList.toggle('hidden');
+        document.getElementById('notificationDropdown').classList.add('hidden');
+    });
+
+    // Fermer les dropdowns quand on clique ailleurs
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+            document.getElementById('notificationDropdown').classList.add('hidden');
+        }
+        if (!event.target.closest('#userMenuBtn') && !event.target.closest('#userMenuDropdown')) {
+            document.getElementById('userMenuDropdown').classList.add('hidden');
+        }
+    });
+
+    // Animation des cartes au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card');
+        cards.forEach((card, index) => {
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+    });
+</script>
+
+<!-- scripts des modals -->
+<script src="{% static 'projets/js/modals.js' %}"></script>
+
+<!-- scripts de profile -->
+<script src="{% static 'projets/js/profile.js' %}"></script>
+
+<!-- script de notifications -->
+<script src="{% static 'projets/js/notification-handler.js' %}"></script>
+
+<!-- Chart.js  -->
+<script>
+    // Utilisez JSON.parse pour convertir la chaîne JSON en un tableau JavaScript
+    const chartData = {
+        labels: JSON.parse('{{ projets_noms_recents|safe }}'),
+        data: JSON.parse('{{ avancement_projets_recents|safe }}'),
+        avancements: JSON.parse('{{ avancement_projets_recents|safe }}')
+    };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'projets/js/chart.js' %}"></script>
+
+<!-- scripts de calendrier -->
+</body>
+</html>

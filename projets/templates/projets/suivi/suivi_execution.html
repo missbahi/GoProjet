@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Suivi d'Exécution - {{ projet.nom }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .suivi-card { 
+            background: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            border-radius: 8px; 
+            padding: 1.5rem; 
+            margin-bottom: 1rem; 
+            transition: all 0.3s ease; 
+        }
+        .suivi-card:hover { 
+            border-color: #22d3ee; 
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
+            transform: translateY(-2px);
+        }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); border: none; color: white; }
+        .form-control { 
+            background-color: #2E2E2E; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .form-control:focus { 
+            border-color: #22d3ee; 
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); 
+            outline: none;
+        }
+        .upload-area {
+            border: 2px dashed #4B5563;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #2E2E2E;
+        }
+        .upload-area:hover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
+        }
+        .file-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        .badge-type {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+        .badge-reunion { background-color: #2563eb; color: white; }
+        .badge-incident { background-color: #dc2626; color: white; }
+        .badge-planning { background-color: #0ea5e9; color: white; }
+        .badge-livraison { background-color: #059669; color: white; }
+        .badge-validation { background-color: #d97706; color: white; }
+        .badge-autre { background-color: #6b7280; color: white; }
+        
+        .badge-importance {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-faible { background-color: #059669; color: white; }
+        .badge-moyenne { background-color: #d97706; color: white; }
+        .badge-elevee { background-color: #dc2626; color: white; }
+        
+        .timeline {
+            position: relative;
+            padding-left: 3rem;
+            margin: 2rem 0;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 15px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, #22d3ee, #8b5cf6);
+        }
+        .timeline-item {
+            position: relative;
+            margin-bottom: 2rem;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2.35rem;
+            top: 0.5rem;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #22d3ee;
+            border: 3px solid #2E2E2E;
+            z-index: 1;
+        }
+        .fichier-item {
+            border-left: 3px solid #22d3ee;
+            padding-left: 15px;
+            margin-bottom: 10px;
+        }
+        
+        /* Animation pour l'affichage du formulaire */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Messages flash */
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-chart-line"></i>
+                Suivi d'Exécution
+            </h1>
+            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-4 text-sm text-gray-400">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>Suivi détaillé de l'exécution du projet</span>
+            </div>
+        </div>
+
+        <!-- Boutons navigation -->
+        <div class="flex gap-3 mb-6 flex-wrap">
+            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-house"></i> Accueil
+            </a>
+            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour aux projets
+            </a>
+            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-diagram-project"></i> Tableau de bord
+            </a>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Informations projet -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
+                </div>
+                <div>
+                    <p class="text-gray-400"><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
+                    <p class="text-gray-400">
+                        <strong class="text-[#AECBD6]">Statut :</strong> 
+                        <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs">{{ projet.get_statut_display }}</span>
+                    </p>
+                    <p class="text-gray-400">
+                        <strong class="text-[#AECBD6]">Avancement :</strong> 
+                        <div class="w-full bg-[#2E2E2E] rounded-full h-2.5 mt-1">
+                            <div class="bg-[#2B9C62] h-2.5 rounded-full" style="width: {{ projet.avancement }}%"></div>
+                        </div>
+                        <small class="text-gray-500">{{ projet.avancement }}% complété</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bouton pour afficher le formulaire d'ajout -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6 text-center">
+            <button type="button" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto" id="toggleSuiviForm">
+                <i class="fas fa-plus"></i> Ajouter un nouveau suivi
+            </button>
+        </div>
+
+        <!-- Section d'ajout d'un suivi (masquée par défaut) -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6 hidden" id="suiviFormContainer">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Nouvelle entrée de suivi
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-white" id="closeSuiviForm">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <form method="post" enctype="multipart/form-data" action="{% url 'projets:ajouter_suivi' projet.id %}" class="space-y-4" id="suiviForm">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="date" class="block text-sm font-medium text-[#AECBD6] mb-2">Date *</label>
+                        <input type="date" class="form-control" id="date" name="date" required value="{% now 'Y-m-d' %}">
+                    </div>
+                    
+                    <div>
+                        <label for="type_suivi" class="block text-sm font-medium text-[#AECBD6] mb-2">Type de suivi *</label>
+                        <select class="form-control" id="type_suivi" name="type_suivi" required>
+                            <option value="">Sélectionner un type...</option>
+                            <option value="reunion">Réunion de chantier</option>
+                            <option value="incident">Incident</option>
+                            <option value="planning">Mise à jour planning</option>
+                            <option value="livraison">Livraison</option>
+                            <option value="validation">Validation d'étape</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="importance" class="block text-sm font-medium text-[#AECBD6] mb-2">Importance</label>
+                        <select class="form-control" id="importance" name="importance">
+                            <option value="faible">Faible</option>
+                            <option value="moyenne" selected>Moyenne</option>
+                            <option value="elevee">Élevée</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="titre" class="block text-sm font-medium text-[#AECBD6] mb-2">Titre *</label>
+                    <input type="text" class="form-control" id="titre" name="titre" placeholder="Ex: Réunion de coordination du 15/11/2023" required>
+                </div>
+                
+                <div>
+                    <label for="commentaire" class="block text-sm font-medium text-[#AECBD6] mb-2">Commentaire ou résumé *</label>
+                    <textarea class="form-control" id="commentaire" name="commentaire" rows="4" placeholder="Détails de l'événement ou du suivi..." required></textarea>
+                </div>
+                
+                <div>
+                    <label for="redacteur" class="block text-sm font-medium text-[#AECBD6] mb-2">Rédigé par</label>
+                    <input type="text" class="form-control" id="redacteur" name="redacteur" placeholder="Votre nom">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-[#AECBD6] mb-2">Fichiers joints (optionnel)</label>
+                    <div class="upload-area" onclick="document.getElementById('fichiers').click()">
+                        <i class="fas fa-cloud-upload-alt file-icon text-cyan-400"></i>
+                        <p class="mb-2 text-gray-400">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
+                        <p class="text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)</p>
+                    </div>
+                    <input type="file" class="hidden" id="fichiers" name="fichiers" multiple onchange="updateFileNames(this)">
+                    <div id="file-names" class="mt-2 text-cyan-400 text-sm"></div>
+                    
+                    <div id="file-descriptions" class="mt-3 space-y-2"></div>
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-plus"></i> Ajouter le suivi
+                    </button>
+                    <button type="button" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium" id="cancelSuiviForm">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Liste des suivis -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+                    <i class="fas fa-history"></i> Historique des suivis
+                </h3>
+                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                    {{ suivis.count }} entrée(s)
+                </span>
+            </div>
+            
+            {% if suivis %}
+                <div class="timeline">
+                    {% for suivi in suivis %}
+                        <div class="timeline-item suivi-card">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <h4 class="text-lg font-semibold text-cyan-300 mb-2">{{ suivi.titre }}</h4>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="badge-type 
+                                            {% if suivi.type_suivi == 'reunion' %}badge-reunion
+                                            {% elif suivi.type_suivi == 'incident' %}badge-incident
+                                            {% elif suivi.type_suivi == 'planning' %}badge-planning
+                                            {% elif suivi.type_suivi == 'livraison' %}badge-livraison
+                                            {% elif suivi.type_suivi == 'validation' %}badge-validation
+                                            {% else %}badge-autre{% endif %}">
+                                            {{ suivi.get_type_suivi_display }}
+                                        </span>
+                                        <span class="badge-importance badge-{{ suivi.importance }}">
+                                            {{ suivi.get_importance_display }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="text-gray-400">{{ suivi.date|date:"d/m/Y" }}</small>
+                            </div>
+                            
+                            <p class="text-gray-300 mb-4 whitespace-pre-line">{{ suivi.commentaire }}</p>
+                            
+                            {% if suivi.redacteur %}
+                                <p class="text-gray-400 mb-4 text-sm"><i class="fas fa-user mr-1"></i> Rédigé par: {{ suivi.redacteur }}</p>
+                            {% endif %}
+                            
+                            <!-- Fichiers joints -->
+                            {% if suivi.fichiers.all %}
+                                <div class="mt-4">
+                                    <h5 class="text-cyan-400 mb-3 flex items-center gap-2">
+                                        <i class="fas fa-paperclip"></i> Fichiers joints:
+                                    </h5>
+                                    {% for fichier in suivi.fichiers.all %}
+                                        <div class="fichier-item mb-3">
+                                            <div class="flex justify-between items-center">
+                                                <div class="flex items-center gap-2">
+                                                    {% with fichier.fichier.name|slice:"-4:"|lower as file_ext %}
+                                                        {% if file_ext == '.pdf' %}
+                                                            <i class="fas fa-file-pdf text-red-500"></i>
+                                                        {% elif file_ext == '.doc' or file_ext == 'docx' %}
+                                                            <i class="fas fa-file-word text-blue-500"></i>
+                                                        {% elif file_ext == '.xls' or file_ext == 'xlsx' %}
+                                                            <i class="fas fa-file-excel text-green-500"></i>
+                                                        {% elif file_ext == '.jpg' or file_ext == '.jpeg' or file_ext == '.png' or file_ext == '.gif' %}
+                                                            <i class="fas fa-file-image text-amber-500"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-file text-gray-400"></i>
+                                                        {% endif %}
+                                                    {% endwith %}
+                                                    
+                                                    <span class="text-gray-300">{{ fichier.fichier.name|truncatechars:30 }}</span>
+                                                    {% if fichier.description %}
+                                                        <small class="text-gray-500">- {{ fichier.description }}</small>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}" 
+                                                       target="_blank" class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                    <a href="{{ fichier.fichier.url }}" download class="btn-success px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            </div>
+
+                            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-[#4B5563]">
+                                <!-- Bouton de modification -->
+                                <a href="{% url 'projets:modifier_suivi' projet.id suivi.id %}" class="btn-warning px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                    <i class="fas fa-pen-to-square"></i> Modifier
+                                </a>
+
+                                <!-- Bouton de suppression -->
+                                <form method="post" action="{% url 'projets:supprimer_suivi' projet.id suivi.id %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-danger px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce suivi et tous ses fichiers?')">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <i class="fas fa-clipboard-list text-6xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400 text-lg">Aucun suivi d'exécution n'a été enregistré pour ce projet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script>
+        // Gestion de l'affichage des noms de fichiers
+        function updateFileNames(input) {
+            const fileNamesElement = document.getElementById('file-names');
+            const fileDescriptionsElement = document.getElementById('file-descriptions');
+            
+            if (input.files.length > 0) {
+                fileNamesElement.innerHTML = `<strong class="text-cyan-400">Fichiers sélectionnés (${input.files.length}):</strong>`;
+                fileDescriptionsElement.innerHTML = '';
+                
+                for (let i = 0; i < input.files.length; i++) {
+                    fileNamesElement.innerHTML += `<div class="ml-2">${input.files[i].name}</div>`;
+                    
+                    // Ajouter un champ de description pour chaque fichier
+                    fileDescriptionsElement.innerHTML += `
+                        <div>
+                            <label for="description_${i}" class="block text-sm font-medium text-[#AECBD6] mb-1">Description pour ${input.files[i].name}</label>
+                            <input type="text" class="form-control" 
+                                   id="description_${i}" name="description_${i}" 
+                                   placeholder="Description optionnelle">
+                        </div>
+                    `;
+                }
+            } else {
+                fileNamesElement.innerHTML = '';
+                fileDescriptionsElement.innerHTML = '';
+            }
+        }
+        
+        // Gestion du drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('fichiers');
+        
+        if (uploadArea && fileInput) {
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#22d3ee';
+                uploadArea.style.backgroundColor = 'rgba(34, 211, 238, 0.1)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '#4B5563';
+                uploadArea.style.backgroundColor = '#2E2E2E';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '#4B5563';
+                uploadArea.style.backgroundColor = '#2E2E2E';
+                
+                if (e.dataTransfer.files.length) {
+                    fileInput.files = e.dataTransfer.files;
+                    updateFileNames(fileInput);
+                }
+            });
+        }
+
+        // Gestion de l'affichage/masquage du formulaire
+        const toggleButton = document.getElementById('toggleSuiviForm');
+        const formContainer = document.getElementById('suiviFormContainer');
+        const closeButton = document.getElementById('closeSuiviForm');
+        const cancelButton = document.getElementById('cancelSuiviForm');
+
+        toggleButton.addEventListener('click', function() {
+            formContainer.classList.remove('hidden');
+            formContainer.classList.add('fade-in');
+            toggleButton.classList.add('hidden');
+        });
+
+        function hideForm() {
+            formContainer.classList.add('hidden');
+            toggleButton.classList.remove('hidden');
+        }
+
+        closeButton.addEventListener('click', hideForm);
+        cancelButton.addEventListener('click', hideForm);
+
+        // Masquer le formulaire après soumission réussie
+        document.getElementById('suiviForm').addEventListener('submit', function() {
+            setTimeout(function() {
+                hideForm();
+                // Réinitialiser le formulaire
+                document.getElementById('suiviForm').reset();
+                document.getElementById('file-names').innerHTML = '';
+                document.getElementById('file-descriptions').innerHTML = '';
+            }, 1000);
+        });
+
+        // Masquer automatiquement les messages après 5 secondes
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert-auto-dismiss');
+            alerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>À propos - Gestion Projets BTP</title>
+    {% load static %}
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <!-- HEADER -->
+    <header class="bg-gray-800 shadow-md py-4 flex justify-center border-b border-gray-700">
+        <divv class="bg-white rounded-lg shadow-lg p-4">
+            <img src="{% static 'images/LOGO MEGAP.jpg' %}" alt="Logo MEGAP BTP" class="h-16 w-auto">
+        </div>
+    </header>
+
+    <!-- TITRE -->
+    <section class="text-center mt-10 mb-6">
+        <h2 class="text-3xl font-bold text-green-400">
+            À propos de notre bureau d'études
+        </h2>
+    </section>
+
+    <!-- EXPERTISE & SERVICES -->
+    <section class="container mx-auto bg-gray-800 rounded-lg shadow-lg p-8 mb-8 border border-gray-700">
+        <h3 class="text-2xl font-semibold mb-4 flex items-center text-yellow-400">
+            <i class="fa-solid fa-lightbulb mr-2"></i> Notre Expertise
+        </h3>
+        <p class="mb-6 text-gray-300 leading-relaxed">
+            Fort d'une expérience confirmée, <strong class="text-green-400">MEGAPERFORMANCE</strong> accompagne ses clients 
+            dans la conception, la planification et le suivi des projets de construction.
+            Nous assurons une gestion rigoureuse, de l'appel d'offres à la réception définitive.
+        </p>
+
+        <h3 class="text-2xl font-semibold mb-4 flex items-center text-green-400">
+            <i class="fa-solid fa-tools mr-2"></i> Nos Services
+        </h3>
+        <ul class="list-disc pl-6 space-y-2 text-gray-300">
+            <li>Études techniques approfondies</li>
+            <li>Suivi et contrôle des chantiers</li>
+            <li>Assistance à la maîtrise d'ouvrage</li>
+            <li>Gestion documentaire complète</li>
+            <li>Élaboration de rapports et reporting personnalisé</li>
+        </ul>
+    </section>
+
+    <!-- CONTACT -->
+    <section class="container mx-auto bg-gray-800 rounded-lg shadow-lg p-8 mb-12 border border-gray-700">
+        <h3 class="text-2xl font-semibold mb-4 flex items-center text-blue-400">
+            <i class="fa-solid fa-envelope mr-2"></i> Contact
+        </h3>
+        <p class="mb-2 text-gray-300">
+            <i class="fa-solid fa-paper-plane mr-2 text-blue-400"></i>
+            Email : 
+            <a href="mailto:megaperformance2020@gmail.com" class="text-blue-400 hover:underline">
+                megaperformance2020@gmail.com
+            </a>
+        </p>
+        <p class="mb-4 text-gray-300">
+            <i class="fa-solid fa-phone mr-2 text-green-400"></i>
+            Téléphone/Fax : +212 5 21 00 31 97
+        </p>
+        
+        <a href="{% url 'home' %}" 
+        class="inline-flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-500 transition">
+            <i class="fa-solid fa-house mr-2"></i> Retour à la page d'accueil
+        </a>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 text-center py-4 text-sm text-gray-400 border-t border-gray-700">
+        &copy; {{ now|date:"Y" }} Bureau d'études techniques MEGAPERFORMANCE - Tous droits réservés.
+    </footer>
+
+</body>
+</html>

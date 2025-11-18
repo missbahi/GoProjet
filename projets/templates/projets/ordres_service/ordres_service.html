@@ -1,0 +1,721 @@
+<!-- projets/templates/projets/ordres_service.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ordres de Service - {{ projet.nom }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .ordre-card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1.5rem; margin-bottom: 1rem; transition: all 0.3s ease; }
+        .ordre-card:hover { border-color: #22d3ee; box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .form-control { background-color: #2E2E2E; border: 1px solid #4B5563; color: #AECBD6; }
+        .form-control:focus { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); }
+        .statut-brouillon { background-color: #6b7280; color: white; }
+        .statut-notifie { background-color: #10b981; color: white; }
+        .statut-annule { background-color: #ef4444; color: white; }
+        .type-os-badge { 
+            display: inline-block; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.375rem; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            margin-right: 0.5rem;
+        }
+        .formulaire-os {
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            background: #3B3B3B;
+            border: 1px solid #4B5563;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        /* État EXPANDÉ (visible) */
+        .formulaire-os.expanded {
+            max-height: 1000px; /* Suffisamment grand pour contenir le formulaire */
+            opacity: 1;
+        }
+        .formulaire-os.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+            margin-bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+        .formulaire-os:focus-within {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+        .form-control:focus {
+            border-color: #22d3ee;
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.3);
+            outline: none;
+        }
+        .form-control.auto-focused {
+            animation: pulseFocus 2s ease-in-out;
+        }
+        /* .form-control:hover {
+            border-color: #22d3ee;
+        } */
+        @keyframes pulseFocus {
+            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+        }
+        .cursor-not-allowed {
+            cursor: not-allowed;
+        }
+
+        #jours-resultat {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="p-6">
+    <div class="max-w-6xl mx-auto">
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span>{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <!-- En-tête -->
+        <div class="mb-4">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2">Ordres de Service</h1>
+            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center my-4 text-sm text-gray-400">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>Gestion des ordres de service avec contraintes métier</span>
+            </div>
+            <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+            <!-- Boutons de gauche -->
+                <div class="flex gap-3 flex-wrap">
+                    <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-house"></i> Accueil
+                    </a>
+                    <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-arrow-left"></i> Retour aux projets
+                    </a>
+                    <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-diagram-project"></i> Tableau de bord
+                    </a>
+                </div>
+                
+                <!-- Bouton à droite -->
+                <button id="toggle-form-btn" 
+                    class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center gap-2 transition-colors">
+                    <span id="toggle-form-text">
+                        {% if not ordres_service %}Ajouter le premier OS{% else %}Ajouter un OS{% endif %}
+                    </span>
+                    <i id="toggle-form-icon" class="fas fa-chevron-down transition-transform"></i>
+                </button>
+            </div>
+            
+        </div>
+        
+        
+        <!-- Section Calcul des jours découlés -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 mb-4">
+            <div class="flex items-center justify-between">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-cyan-300 mb-2 flex items-center gap-2">
+                        <i class="fas fa-calculator"></i>
+                        Calcul des jours découlés
+                    </h3>
+                    <p class="text-sm text-gray-400">
+                        Calcul du nombre de jours de travaux effectifs depuis le démarrage
+                    </p>
+                </div>
+                
+                <div class="flex items-end gap-3">
+                    <!-- Groupe Date + Bouton -->
+                    <div class="flex items-end gap-2">
+                        <!-- Champ date -->
+                        <div class="flex flex-col">
+                            <label for="date-reference" class="text-sm font-medium text-[#AECBD6] mb-1">
+                                Date de référence
+                            </label>
+                            <input type="date" 
+                                id="date-reference" 
+                                class="form-control px-3 py-2 rounded-lg w-40 {% if not projet.marche_approuve %}opacity-50 cursor-not-allowed{% endif %}"
+                                {% if not projet.marche_approuve %}disabled{% endif %}
+                                value="{{ today|date:'Y-m-d' }}">
+                        </div>
+                    </div>
+                    <!-- Résultat -->
+                    <div class="text-center min-w-[80px]">
+                        <div class="text-sm text-gray-400 mb-1">Jours</div>
+                        <div id="jours-resultat" 
+                            class="text-2xl font-bold {% if projet.marche_approuve %}text-[#2B9C62]{% else %}text-gray-500{% endif %}">
+                            {% if projet.marche_approuve %}
+                                {{ projet.jours_decoules_aujourdhui|default:"0" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Message si marché non approuvé -->
+            {% if not projet.marche_approuve %}
+            <div class="mt-3 p-3 bg-amber-900 border border-amber-600 rounded-lg">
+                <div class="flex items-center gap-2 text-amber-200">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span class="text-sm">Le calcul des jours n'est disponible qu'après l'approbation du marché (OSN notifié)</span>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        <div class="flex justify-between items-center mb-4">
+            <!-- Filtres par statut -->
+            <div class="flex gap-2">
+                <a href="?statut=NOTIFIE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Notifiés ({{ os_notifies.count }})
+                </a>
+                <a href="?statut=BROUILLON" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Brouillons ({{ os_brouillons.count }})
+                </a>
+                <a href="?statut=ANNULE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Annulés ({{ os_annules.count }})
+                </a>
+                <a href="?" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
+                    Tous ({{ os_notifies.count|add:os_brouillons.count|add:os_annules.count }})
+                </a>
+                
+            </div>
+            
+            
+        </div>
+
+        <!-- Liste des ordres de service -->
+        {% if ordres_service %}
+            <div class="grid gap-4 mb-6">
+                {% for ordre in ordres_service %}
+                <div class="ordre-card">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="type-os-badge bg-cyan-600">{{ ordre.type_os.code }}</span>
+                                <span class="px-2 py-1 rounded text-xs font-medium 
+                                    {% if ordre.statut == 'NOTIFIE' %}statut-notifie
+                                    {% elif ordre.statut == 'BROUILLON' %}statut-brouillon
+                                    {% else %}statut-annule{% endif %}">
+                                    {{ ordre.get_statut_display }}
+                                </span>
+                                <span class="text-sm text-gray-400">Séquence: {{ ordre.ordre_sequence }}</span>
+                            </div>
+                            <h3 class="text-xl font-semibold text-cyan-300">{{ ordre.titre }}</h3>
+                            <p class="text-[#2B9C62] font-medium">{{ ordre.reference }}</p>
+                            <p class="text-sm text-gray-400 mt-1">{{ ordre.type_os.nom }}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            {% if ordre.statut == 'BROUILLON' %}
+                            <form method="POST" action="{% url 'projets:notifier_ordre_service' projet.id ordre.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" name="notifier_os" value="{{ ordre.id }}" 
+                                       class="btn-success px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                                       onclick="return confirm('Notifier cet ordre de service ?')">
+                                    <i class="fas fa-paper-plane"></i> Notifier
+                                </button>
+                            </form>
+                            {% endif %}
+                            
+                            <a href="{% url 'projets:details_ordre_service' projet.id ordre.id %}" 
+                               class="btn-primary px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-eye"></i> Détails
+                            </a>
+                            <a href="{% url 'projets:modifier_ordre_service' projet.id ordre.id %}" 
+                               class="btn-warning px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                <i class="fas fa-edit"></i> Modifier
+                            </a>
+                            {% if ordre.statut == 'BROUILLON' %}
+                            <form method="POST" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" name="annuler_os" value="{{ ordre.id }}" 
+                                       class="btn-danger px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                                       onclick="return confirm('Annuler cet ordre de service ?')">
+                                    <i class="fas fa-times"></i> Annuler
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Informations supplémentaires -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calendar"></i>
+                            <span>Publié: {{ ordre.date_publication|date:"d/m/Y" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-hourglass-end"></i>
+                            <span>Limite: {{ ordre.date_limite|date:"d/m/Y"|default:"-" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-clock"></i>
+                            <span>Date effet: {{ ordre.date_effet|date:"d/m/Y"|default:"-" }}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-file"></i>
+                            <span>
+                                {% if ordre.documents %}
+                                    <a href="{{ ordre.documents.url }}" class="text-cyan-400 hover:underline">Document</a>
+                                {% else %}
+                                    Aucun document
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Champs spécifiques selon le type -->
+                    {% if ordre.duree_extension %}
+                    <div class="mt-3 text-sm">
+                        <span class="text-amber-400">⏱️ Extension: {{ ordre.duree_extension }} jours</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if ordre.montant_supplementaire %}
+                    <div class="mt-1 text-sm">
+                        <span class="text-emerald-400">💰 Supplément: {{ ordre.montant_supplementaire }} DH</span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-8 text-center mb-6">
+                <i class="fas fa-inbox text-6xl text-gray-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-400 mb-2">Aucun ordre de service</h3>
+                <p class="text-gray-500">Commencez par ajouter un ordre de service pour ce projet.</p>
+            </div>
+        {% endif %}
+
+        <!-- Formulaire d'ajout d'ordre de service -->
+        <div id="formulaire-os" 
+             class="formulaire-os bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 {% if not ordres_service %}expanded{% else %}collapsed{% endif %}">
+            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+                <i class="fas fa-plus-circle"></i> 
+                {% if ordre_a_modifier %}
+                    Modifier l'ordre de service
+                {% else %}
+                    Ajouter un nouvel ordre de service
+                {% endif %}
+            </h3>
+            
+            <form method="POST" enctype="multipart/form-data" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if ordre_a_modifier %}
+                <input type="hidden" name="ordre_id" value="{{ ordre_a_modifier.id }}">
+                {% endif %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="type_os" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Type d'OS *
+                        </label>
+
+                        <select id="type_os" name="type_os" class="form-control w-full px-3 py-2 rounded-lg" required>
+                            <option value="">Sélectionnez un type</option>
+                            {% for type in types_disponibles %}
+                            <option value="{{ type.id }}" 
+                                    {% if ordre_a_modifier and ordre_a_modifier.type_os.id == type.id %}selected{% endif %}
+                                    data-code="{{ type.code }}">
+                                {{ type.code }} - {{ type.nom }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="type_os_info" class="mt-2 text-sm text-gray-400 hidden">
+                            <div id="prerequis_info"></div>
+                            <div id="unicite_info"></div>
+                        </div>
+                        <div class="mt-4">
+                            <label for="statut" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                                Statut *
+                            </label>
+                            <select id="statut" name="statut" class="form-control w-full px-3 py-2 rounded-lg" required>
+                                <option value="BROUILLON" {% if not ordre_a_modifier or ordre_a_modifier.statut == 'BROUILLON' %}selected{% endif %}>Brouillon</option>
+                                <option value="NOTIFIE" {% if ordre_a_modifier and ordre_a_modifier.statut == 'NOTIFIE' %}selected{% endif %}>Notifié</option>
+                                <option value="ANNULE" {% if ordre_a_modifier and ordre_a_modifier.statut == 'ANNULE' %}selected{% endif %}>Annulé</option>
+                            </select>
+                            <p class="text-sm text-gray-400 mt-1">
+                                <i class="fas fa-info-circle"> </i> 
+                                {% if not ordre_a_modifier %}
+                                    Par défaut : "Brouillon". Changez en "Notifié" pour valider les contraintes métier.
+                                {% else %}
+                                    Attention : Changer le statut déclenchera les validations métier.
+                                {% endif %}
+                            </p>
+                            
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="reference" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Référence *
+                        </label>
+                        <input type="text" id="reference" name="reference" 
+                               class="form-control w-full px-3 py-2 rounded-lg" required
+                               {% if ordre_a_modifier %}value="{{ ordre_a_modifier.reference }}"{% endif %}
+                               placeholder="Ex: OS-2024-001">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="titre" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Titre *
+                    </label>
+                    <input type="text" id="titre" name="titre" 
+                           class="form-control w-full px-3 py-2 rounded-lg" required
+                           {% if ordre_a_modifier %}value="{{ ordre_a_modifier.titre }}"{% endif %}
+                           placeholder="Ex: Ordre de service pour travaux de terrassement">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="date_publication" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date de publication *
+                        </label>
+                        <input type="date" id="date_publication" name="date_publication" 
+                               class="form-control w-full px-3 py-2 rounded-lg" required
+                               {% if ordre_a_modifier %}value="{{ ordre_a_modifier.date_publication|date:'Y-m-d' }}"{% endif %}>
+                    </div>
+                    <div>
+                        <label for="date_limite" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date limite
+                        </label>
+                        <input type="date" id="date_limite" name="date_limite" 
+                               class="form-control w-full px-3 py-2 rounded-lg"
+                               {% if ordre_a_modifier %}value="{{ ordre_a_modifier.date_limite|date:'Y-m-d' }}"{% endif %}>
+                    </div>
+                    <div>
+                        <label for="date_effet" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Date d'effet
+                        </label>
+                        <input type="date" id="date_effet" name="date_effet" 
+                               class="form-control w-full px-3 py-2 rounded-lg"
+                               {% if ordre_a_modifier %}value="{{ ordre_a_modifier.date_effet|date:'Y-m-d' }}"{% endif %}>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Description *
+                    </label>
+                    <textarea id="description" name="description" 
+                              class="form-control w-full px-3 py-2 rounded-lg" 
+                              rows="4" required
+                              placeholder="Description détaillée de l'ordre de service...">{% if ordre_a_modifier %}{{ ordre_a_modifier.description }}{% endif %}</textarea>
+                </div>
+
+                <!-- Champs conditionnels selon le type d'OS -->
+                <div id="champs_conditionnels" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-sm mx-auto ml-2">
+                        <div id="champ_duree" class="hidden">
+                            <label for="duree_extension" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                                Durée d'extension (jours)
+                            </label>
+                            <input type="number" id="duree_extension" name="duree_extension" 
+                                   class="form-control w-full px-3 py-2 rounded-lg"
+                                   {% if ordre_a_modifier %} value="{{ ordre_a_modifier.duree_extension }}"{% endif %}
+                                   placeholder="Durée en jours">
+                        </div>
+                        
+                        <div id="champ_montant" class="hidden">
+                            <label for="montant_supplementaire" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                                Montant supplémentaire (DH)
+                            </label>
+                            <input type="number" step="0.01" id="montant_supplementaire" name="montant_supplementaire" 
+                                     class="form-control w-full px-3 py-2 rounded-lg"
+                                    min="0" max="9999999.99"  
+                                    {% if ordre_a_modifier and ordre_a_modifier.montant_supplementaire %} 
+                                    value="{{ ordre_a_modifier.montant_supplementaire }}"
+                                    {% else %}
+                                    value="0.00"
+                                    {% endif %}
+                                    placeholder="Montant en DH">
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="documents" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Documents joints
+                    </label>
+                    <input type="file" id="documents" name="documents" 
+                           class="form-control w-full px-3 py-2 rounded-lg">
+                    {% if ordre_a_modifier and ordre_a_modifier.documents %}
+                        <div class="mt-2 text-sm text-cyan-400">
+                            <i class="fas fa-file mr-2"></i>
+                            Document actuel: 
+                            <a href="{{ ordre_a_modifier.documents.url }}" class="underline">{{ ordre_a_modifier.documents.name }}</a>
+                            <label class="ml-4 text-gray-400">
+                                <input type="checkbox" name="supprimer_document" value="1"> Supprimer le document
+                            </label>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" 
+                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-save"></i>
+                        {% if ordre_a_modifier %}
+                            Modifier l'ordre de service
+                        {% else %}
+                            Ajouter l'ordre de service
+                        {% endif %}
+                    </button>
+                    {% if ordre_a_modifier %}
+                    <a href="{% url 'projets:ordres_service' projet.id %}" 
+                       class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                        <i class="fas fa-times"></i> Annuler
+                    </a>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Gestion de l'affichage/masquage du formulaire
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggleFormBtn = document.getElementById('toggle-form-btn');
+            const toggleFormText = document.getElementById('toggle-form-text');
+            const toggleFormIcon = document.getElementById('toggle-form-icon');
+            const formulaireOs = document.getElementById('formulaire-os');
+            
+            // Déterminer l'état initial
+            const hasOS = {{ ordres_service|yesno:"true,false" }};
+            let isExpanded = formulaireOs.classList.contains('expanded');
+            
+            // Fonction pour mettre à jour l'état du formulaire
+            function updateFormState() {
+                if (isExpanded) {
+                    formulaireOs.classList.remove('collapsed');
+                    toggleFormIcon.classList.remove('fa-chevron-down');
+                    toggleFormIcon.classList.add('fa-chevron-up');
+                    toggleFormText.textContent = hasOS ? 'Masquer le formulaire' : 'Ajouter le premier OS';
+                    
+                    // 🔥 SCROLL ET FOCUS AMÉLIORÉS
+                    setTimeout(() => {
+                        // Calculer la position pour que le formulaire soit entièrement visible
+                        const formulaireRect = formulaireOs.getBoundingClientRect();
+                        const offset = 20; // Marge en pixels
+                        
+                        window.scrollTo({
+                            top: window.scrollY + formulaireRect.top - offset,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Focus sur le champ "Type d'OS"
+                        const typeOsSelect = document.getElementById('type_os');
+                        if (typeOsSelect) {
+                            // Petit délai pour s'assurer que l'animation est terminée
+                            setTimeout(() => {
+                                typeOsSelect.focus();
+                            }, 200);
+                        }
+                        
+                    }, 100);
+                    
+                } else {
+                    formulaireOs.classList.add('collapsed');
+                    toggleFormIcon.classList.remove('fa-chevron-up');
+                    toggleFormIcon.classList.add('fa-chevron-down');
+                    toggleFormText.textContent = hasOS ? 'Ajouter un OS' : 'Ajouter le premier OS';
+                }
+            }
+            // Initialiser l'état
+            updateFormState();
+            
+            // Gérer le clic sur le bouton
+            toggleFormBtn.addEventListener('click', function() {
+                isExpanded = !isExpanded;
+                updateFormState();
+            });
+            
+            // Si on est en mode modification, forcer l'affichage du formulaire
+            {% if ordre_a_modifier %}
+                isExpanded = true;
+                updateFormState();
+            {% endif %}
+        });
+
+        // Gestion dynamique des champs conditionnels
+        document.addEventListener('DOMContentLoaded', function() {
+            const statutSelect = document.getElementById('statut');
+            const typeOsSelect = document.getElementById('type_os');
+            const champsConditionnels = document.getElementById('champs_conditionnels');
+            const champDuree = document.getElementById('champ_duree');
+            const champMontant = document.getElementById('champ_montant');
+            const typeOsInfo = document.getElementById('type_os_info');
+            const prerequisInfo = document.getElementById('prerequis_info');
+            const uniciteInfo = document.getElementById('unicite_info');
+
+            if (statutSelect && typeOsSelect) {
+                statutSelect.addEventListener('change', function() {
+                    if (this.value === 'NOTIFIE') {
+                        // Avertir l'utilisateur que les validations vont s'appliquer
+                        const selectedType = typeOsSelect.options[typeOsSelect.selectedIndex];
+                        const typeCode = selectedType ? selectedType.getAttribute('data-code') : '';
+                        
+                        if (typeCode && !['OSN'].includes(typeCode)) {
+                            alert('⚠️ Attention: La notification déclenchera les validations métier. Assurez-vous que tous les prérequis sont remplis.');
+                        }
+                    }
+                });
+            }
+
+            // Données des types d'OS (à remplacer par des données dynamiques si possible)
+            const typesOsData = {
+                {% for type in types_disponibles %}
+                '{{ type.id }}': {
+                    code: '{{ type.code }}',
+                    prerequis: [{% for p in type.precedent_obligatoire.all %}'{{ p.code }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+                    unique: {{ type.unique_dans_projet|yesno:"true,false" }},
+                    showDuree: {% if type.code == "OSA" or type.code == "OSR" %}true{% else %}false{% endif %},
+                    showMontant: {% if type.code == "OSC10" or type.code == "OSV" %}true{% else %}false{% endif %}
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            };
+            function updateChampsConditionnels() {
+                const selectedTypeId = typeOsSelect.value;
+                const typeData = typesOsData[selectedTypeId];
+                
+                if (typeData) {
+                    // Afficher/masquer les champs conditionnels
+                    if (typeData.showDuree) {
+                        champDuree.classList.remove('hidden');
+                        champsConditionnels.classList.remove('hidden');
+                    } else {
+                        champDuree.classList.add('hidden');
+                    }
+                    
+                    if (typeData.showMontant) {
+                        champMontant.classList.remove('hidden');
+                        champsConditionnels.classList.remove('hidden');
+                    } else {
+                        champMontant.classList.add('hidden');
+                    }
+                    
+                    // Masquer la section si aucun champ conditionnel n'est visible
+                    if (!typeData.showDuree && !typeData.showMontant) {
+                        champsConditionnels.classList.add('hidden');
+                    }
+                    
+                    // Afficher les informations du type
+                    typeOsInfo.classList.remove('hidden');
+                    
+                    // Prérequis
+                    if (typeData.prerequis.length > 0) {
+                        prerequisInfo.innerHTML = `<i class="fas fa-info-circle mr-2"></i> Prérequis: ${typeData.prerequis.join(', ')}`;
+                    } else {
+                        prerequisInfo.innerHTML = `<i class="fas fa-info-circle mr-2"></i> Aucun prérequis`;
+                    }
+                    
+                    // Unicité
+                    if (typeData.unique) {
+                        uniciteInfo.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i> Type unique par projet`;
+                    } else {
+                        uniciteInfo.innerHTML = `<i class="fas fa-info-circle mr-2"></i> Type multiple autorisé`;
+                    }
+                } else {
+                    champsConditionnels.classList.add('hidden');
+                    typeOsInfo.classList.add('hidden');
+                }
+            }
+
+            typeOsSelect.addEventListener('change', updateChampsConditionnels);
+            
+            // Initialiser au chargement
+            updateChampsConditionnels();
+
+            // Validation des dates
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const datePublication = document.getElementById('date_publication').value;
+                const dateLimite = document.getElementById('date_limite').value;
+                const dateEffet = document.getElementById('date_effet').value;
+                
+                if (dateLimite && datePublication > dateLimite) {
+                    e.preventDefault();
+                    alert('La date limite ne peut pas être antérieure à la date de publication.');
+                    return;
+                }
+                
+                if (dateEffet && datePublication > dateEffet) {
+                    e.preventDefault();
+                    alert('La date d\'effet ne peut pas être antérieure à la date de publication.');
+                    return;
+                }
+            });
+        });
+    </script>
+    <script>
+        // Gestion du calcul des jours découlés
+        document.addEventListener('DOMContentLoaded', function() {
+            const dateReferenceInput = document.getElementById('date-reference');
+            const joursResultat = document.getElementById('jours-resultat');
+            const projetId = {{ projet.id }};
+
+            if (dateReferenceInput && joursResultat) {
+                dateReferenceInput.addEventListener('change', function() {
+                    calculerJoursDecoules();
+                });
+
+                function calculerJoursDecoules() {
+                    const dateReference = dateReferenceInput.value;
+                    
+                    if (!dateReference) {
+                        joursResultat.textContent = '-';
+                        joursResultat.className = 'text-2xl font-bold text-gray-500';
+                        return;
+                    }
+
+                    // Afficher un indicateur de chargement
+                    joursResultat.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    joursResultat.className = 'text-2xl font-bold text-cyan-400';
+
+                    // Appel AJAX au serveur
+                    fetch(`/api/projets/${projetId}/jours-decoules/?date=${dateReference}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.jours !== null) {
+                                joursResultat.textContent = data.jours;
+                                joursResultat.className = 'text-2xl font-bold text-[#2B9C62]';
+                            } else {
+                                joursResultat.textContent = '-';
+                                joursResultat.className = 'text-2xl font-bold text-amber-500';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            joursResultat.textContent = 'Erreur';
+                            joursResultat.className = 'text-2xl font-bold text-red-500';
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>

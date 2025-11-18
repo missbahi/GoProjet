@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détail Attachement - {{ attachement.numero }}</title>
+    {% load formatters %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #2E2E2E;
+            color: #AECBD6;
+            font-family: Arial, sans-serif;
+        }
+        .lot-section {
+            margin-bottom: 30px;
+            border: 1px solid #4B5563;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .lot-header {
+            background: linear-gradient(135deg, #4B5563 0%, #374151 100%);
+            color: #22d3ee;
+            padding: 15px;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-bottom: 1px solid #22d3ee;
+        }
+        .table-container {
+            background: #3B3B3B;
+            padding: 0;
+        }
+        .table-title {
+            background: linear-gradient(135deg, #2B9C62 0%, #107C41 100%);
+            color: white;
+            padding: 12px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 0;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+        }
+        .table-attachement {
+            width: 100%;
+            border-collapse: collapse;
+            background: #3B3B3B;
+        }
+        .table-attachement th {
+            background-color: #1E40AF;
+            color: white;
+            padding: 14px 10px;
+            text-align: left;
+            font-weight: 600;
+            border: 1px solid #22d3ee; 
+            font-size: 0.95em;
+            position: relative;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .table-attachement th:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+        }
+        .table-attachement td {
+            padding: 12px 10px;
+            border: 1px solid #4B5563;
+        }
+        .table-attachement tr:nth-child(even) {
+            background-color: #2E2E2E;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .montant {
+            color: #2B9C62;
+            font-weight: 600;
+        }
+        .empty-value {
+            color: #6B7280;
+            font-style: italic;
+        }
+        .total-lot {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f172a 100%);
+            border: 1px solid #22d3ee;
+            color: #22d3ee;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .total-ttc {
+            background: linear-gradient(135deg, #1a2a3a 0%, #0f172a 100%);
+            border: 2px solid #0ecf4b;
+            color: #0ecf4b;
+            font-weight: 800;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+        }
+        .btn {
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #2B9C62 0%, #107C41 100%);
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #4B5563 0%, #374151 100%);
+        }
+        .btn-warning { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-info { 
+            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-validation { 
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-ferme { 
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        .summary-card {
+            background: linear-gradient(135deg, #3B3B3B 0%, #2E2E2E 100%);
+            border: 1px solid #4B5563;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #4B5563;
+        }
+        .stat-value {
+            color: #22d3ee;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+        .table-footer {
+            background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+            color: white;
+            font-weight: 700;
+        }
+        .quantite-cell {
+            font-weight: 500;
+        }
+        .quantite-zero {
+            color: #EF4444;
+        }
+        
+        /* Styles inspirés de attachement_form.html */
+        .glass-effect {
+            background: rgba(59, 59, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .content-section {
+            background: rgba(59, 59, 59, 0.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #4B5563;
+        }
+        .btn-action {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .btn-action:active {
+            transform: translateY(0);
+        }
+        
+        /* Badge de statut */
+        .statut-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .statut-brouillon { background: #f59e0b; color: white; }
+        .statut-signe { background: #3b82f6; color: white; }
+        .statut-transmis { background: #8b5cf6; color: white; }
+        .statut-valide { background: #10b981; color: white; }
+        
+        @media print {
+            body { 
+                background-color: white !important; 
+                color: black !important; 
+                font-size: 12pt;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="p-4">
+    <div class="max-w-7xl mx-auto">
+        <!-- En-tête inspiré de attachement_form.html -->
+        <header class="header-section">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-cyan-400 mb-4 flex items-center justify-center gap-3">
+                    <i class="fas fa-file-contract"></i>
+                    Détail de l'Attachement
+                </h1>
+                <div class="flex items-center justify-center gap-4 mb-4">
+                    <span class="text-xl text-[#AECBD6]">Projet :</span>
+                    <span class="text-2xl font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1">
+                        {{ attachement.projet.nom }}
+                    </span>
+                </div>
+                <div class="flex justify-center">
+                    <span class="statut-badge statut-{{ attachement.statut|lower }}">
+                        <i class="fas 
+                            {% if attachement.statut == 'VALIDE' %}fa-check-circle
+                            {% elif attachement.statut == 'BROUILLON' %}fa-edit
+                            {% elif attachement.statut == 'SIGNE' %}fa-signature
+                            {% else %}fa-paper-plane{% endif %}"></i>
+                        Statut : {{ attachement.get_statut_display }}
+                    </span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Boutons navigation avec style inspiré de attachement_form.html -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'projets:liste_attachements' attachement.projet.id %}" 
+                   class="btn-action btn-success">
+                    <i class="fa-solid fa-arrow-left"></i> Retour aux attachements
+                </a>
+                <a href="{% url 'projets:dashboard' attachement.projet.id %}" 
+                   class="btn-action btn-info">
+                    <i class="fa-solid fa-diagram-project"></i> Retour au projet
+                </a>
+                <a href="{% url 'home' %}" 
+                   class="btn-action btn-warning">
+                    <i class="fa-solid fa-house"></i> Accueil
+                </a>
+            </div>
+            
+            <!-- Boutons d'action avec le nouveau bouton de processus de validation -->
+            <div class="flex flex-wrap gap-3">
+                {% if attachement.est_validable %}
+                    <!-- Attachement en cours de validation -->
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" 
+                       class="btn-action btn-validation">
+                        <i class="fas fa-clipboard-check"></i> Processus de Validation
+                    </a>
+                    
+                {% elif attachement.peut_reouvrir %}
+                    <!-- Attachement validé mais réouvrable -->
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" 
+                       class="btn-action btn-success">
+                        <i class="fas fa-eye"></i> Voir le processus
+                    </a>
+                    
+                {% elif attachement.ferme %}
+                    <!-- Attachement signé (fermé) -->
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" 
+                       class="btn-action btn-ferme">
+                        <i class="fas fa-eye"></i> Consulter l'attachement
+                    </a>
+                    
+                {% else %}
+                    <!-- Bouton par défaut pour voir le processus de validation -->
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" 
+                       class="btn-action btn-validation">
+                        <i class="fas fa-clipboard-check"></i> Voir le processus de validation
+                    </a>
+                {% endif %}
+                
+                <!-- Bouton Modifier -->
+                <a href="{% url 'projets:modifier_attachement' attachement.id %}" 
+                   class="btn-action btn-primary">
+                    <i class="fas fa-edit"></i> Modifier
+                </a>
+                
+                <!-- Boutons d'export -->
+                <button onclick="exportPDF()" class="btn-action btn-success">
+                    <i class="fas fa-file-pdf"></i> PDF
+                </button>
+                <button onclick="exportExcel()" class="btn-action btn-success">
+                    <i class="fas fa-file-excel"></i> Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Informations de l'attachement -->
+        <div class="content-section mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-hashtag text-cyan-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Numéro d'attachement</p>
+                            <p class="text-white text-lg">{{ attachement.numero }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-calendar-alt text-green-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Date d'établissement</p>
+                            <p class="text-white text-lg">{{ attachement.date_etablissement|date:"d/m/Y" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-calendar-check text-green-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Période</p>
+                            <p class="text-white text-lg">
+                                Du {{ attachement.date_debut_periode|date:"d/m/Y" }} au {{ attachement.date_fin_periode|date:"d/m/Y" }}
+                            </p>
+                        </div>
+                    </div> 
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-clock text-blue-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Date de création</p>
+                            <p class="text-white text-lg">{{ attachement.date_creation|date:"d/m/Y H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-comments text-gray-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Observations</p>
+                            <p class="text-white text-lg">{{ attachement.observations|default:"Aucune observation" }}</p>
+                        </div>
+                    </div>
+                    {% if attachement.fichier %}
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-file-pdf text-red-400 text-xl"></i>
+                        <div>
+                            <p class="text-cyan-300 font-semibold">Fichier joint</p>
+                            <a href="{{ attachement.fichier.url }}" target="_blank" 
+                               class="text-white text-lg underline hover:text-cyan-300 transition-colors">
+                                Voir le fichier
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Résumé -->
+        <div class="summary-card no-print">
+            <h2 class="text-xl font-bold text-cyan-400 mb-4">Résumé de l'Attachement</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="stat-item">
+                    <span class="text-l">Total lignes d'attachement :</span>
+                    <span class="stat-value">{{ total_lignes }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="text-l">Montant total HT : </span>
+                    <span class="stat-value">{{ montant_total|format_currency }} MAD</span>
+                </div>
+                <div class="stat-item">
+                    <span class="text-l">Montant total TTC : </span>
+                    <span class="stat-value">{{ montant_total|amount_ttc }} MAD</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Détail par lot -->
+        {% for lot_data in lots_data %}
+        <div class="lot-section">
+            <div class="lot-header">
+                <i class="fas fa-cube mr-2"></i>Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}
+            </div>
+            <div class="table-container">
+
+                <table class="table-attachement">
+                    <thead>
+                        <tr>
+                            <th width="80">N°</th>
+                            <th>Désignation</th>
+                            <th width="100" class="text-center">Unité</th>
+                            <th width="120" class="text-right">Quantité</th>
+                            <th width="120" class="text-right">PU (DH)</th>
+                            <th width="140" class="text-right">Montant (DH)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lot_data.lignes %}
+                        <tr>
+                            <td>
+                                {% if ligne.numero %}
+                                    {{ ligne.numero }}
+                                {% else %}
+                                    <span class="empty-value"></span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if ligne.is_title %}
+                                    <span class="font-semibold text-cyan-400">{{ ligne.designation }}</span>
+                                {% else %}
+                                {{ ligne.designation }}
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if ligne.unite %}
+                                    {{ ligne.unite }}
+                                {% else %}
+                                    <span class="empty-value"></span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right quantite-cell {% if not ligne.quantite_realisee or ligne.quantite_realisee == 0 %}quantite-zero{% endif %}">
+                                {% if ligne.quantite_realisee %}
+                                    {{ ligne.quantite_realisee|format_quantity }}
+                                {% else %}
+                                    <span class="empty-value"></span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">
+                                {% if ligne.prix_unitaire %}
+                                    {{ ligne.prix_unitaire|format_french_number }}
+                                {% else %}
+                                    <span class="empty-value"></span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right montant">
+                                {% if ligne.montant %}
+                                    {{ ligne.montant|format_french_number }}
+                                {% else %}
+                                    <span class="empty-value"></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-inbox text-cyan-400 text-2xl mb-2 block"></i>
+                                Aucune ligne d'attachement pour ce lot
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="no-print">
+                        <tr class="table-footer">
+                            <td colspan="4" class="text-right">
+                                Total Lot HT :
+                            </td>
+                            <td colspan="2" class="text-right">
+                                {{ lot_data.total_lot|format_currency}}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-8 text-center">
+            <i class="fas fa-file-contract text-cyan-400 text-4xl mb-4"></i>
+            <h3 class="text-xl font-bold text-cyan-400 mb-2">Aucun lot trouvé</h3>
+            <p class="text-[#AECBD6]">Cet attachement ne contient aucun lot pour le moment.</p>
+        </div>
+        {% endfor %}
+
+        <!-- Total général -->
+        {% if lots_data %}
+        <div class="flex justify-end mt-6">
+            <div class="total-lot flex items-center gap-2">
+                <i class="fas fa-calculator"></i>
+                Total Général HT : {{ montant_total|format_currency }}
+            </div>
+            <div class="total-ttc flex items-center gap-2 ml-4">
+                <i class="fas fa-calculator"></i>
+                <span>Total Général TTC : {{ montant_total|amount_ttc }} DH</span>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Scripts pour l'export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        function exportExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            {% for lot_data in lots_data %}
+            const data{{ lot_data.lot.id }} = [
+                ['Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}'],
+                ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'],
+                {% for ligne in lot_data.lignes %}
+                [
+                    '{{ ligne.numero|default:"" }}',
+                    '{{ ligne.designation }}',
+                    '{{ ligne.unite|default:"" }}',
+                    {{ ligne.quantite_realisee|default:0 }},
+                    {{ ligne.prix_unitaire|default:0 }},
+                    {{ ligne.montant|default:0 }}
+                ],
+                {% endfor %}
+                ['', '', '', '', 'Total:', {{ lot_data.total_lot }}]
+            ];
+            
+            const ws{{ lot_data.lot.id }} = XLSX.utils.aoa_to_sheet(data{{ lot_data.lot.id }});
+            XLSX.utils.book_append_sheet(wb, ws{{ lot_data.lot.id }}, "Lot {{ lot_data.lot.numero }}");
+            {% endfor %}
+            
+            XLSX.writeFile(wb, "attachement_{{ attachement.numero|slugify }}.xlsx");
+        }
+
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // En-tête
+            doc.setFontSize(16);
+            doc.setTextColor(34, 211, 238); // Cyan
+            doc.text("Attachement: {{ attachement.numero }}", 14, 15);
+            doc.setFontSize(12);
+            doc.setTextColor(174, 203, 214); // Gris bleu
+            doc.text("Projet: {{ attachement.projet.nom }}", 14, 22);
+            doc.text("Date d'attachement: {{ attachement.date_fin_periode|date:'d/m/Y' }}", 14, 29);
+            doc.text("Date de création: {{ attachement.date_creation|date:'d/m/Y H:i' }}", 14, 36);
+            
+            let startY = 50;
+            // Préparation des données du tableau - DÉCLARATION UNIQUE des headers
+            const headers = ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'];  
+
+            {% for lot_data in lots_data %}
+            // Titre du lot
+            doc.setFontSize(14);
+            doc.setTextColor(34, 211, 238);
+            doc.text("Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}", 14, startY);
+            
+            let body{{ lot_data.lot.id }} = [
+                {% for ligne in lot_data.lignes %}
+                [
+                    '{{ ligne.numero|default:"-" }}',
+                    '{{ ligne.designation }}',
+                    '{{ ligne.unite|default:"-" }}',
+                    '{{ ligne.quantite_realisee|default:0|floatformat:3 }}',
+                    '{{ ligne.prix_unitaire|default:0|floatformat:2 }}',
+                    '{{ ligne.montant|default:0|floatformat:2 }}'
+                ],
+                {% endfor %}
+            ];
+            
+            // Tableau
+            doc.autoTable({
+                head: [headers],  
+                body: body{{ lot_data.lot.id }},
+                startY: startY + 5,
+                styles: { 
+                    fontSize: 8,
+                    textColor: [50, 50, 50]
+                },
+                headStyles: { 
+                    fillColor: [30, 64, 175],
+                    textColor: [255, 255, 255]
+                },
+                alternateRowStyles: {
+                    fillColor: [240, 240, 240]
+                },
+                theme: 'grid'
+            });
+            
+            startY = doc.lastAutoTable.finalY + 10;
+            
+            // Total du lot
+            doc.setFontSize(10);
+            doc.setTextColor(30, 64, 175);
+            doc.text(`Total Lot {{ lot_data.lot.numero }}: {{ lot_data.total_lot|floatformat:2 }} MAD`, 14, startY);
+            startY += 7;
+            
+            // Saut de page si nécessaire
+            if (startY > 250 && !{% if forloop.last %}true{% else %}false{% endif %}) {
+                doc.addPage();
+                startY = 20;
+            }
+            {% endfor %}
+            
+            // Total général
+            doc.setFontSize(12);
+            doc.setTextColor(34, 211, 238);
+            doc.text(`Total Général HT: {{ montant_total|floatformat:2 }} MAD`, 14, startY);
+            doc.text(`Total Général TTC: {{ montant_total|amount_ttc }} MAD`, 14, startY + 7);
+            
+            doc.save("attachement_{{ attachement.numero|slugify }}.pdf");  
+        }
+    </script>
+</body>
+</html>

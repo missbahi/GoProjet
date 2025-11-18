@@ -1,0 +1,71 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-gray-900">
+  
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  {% block extra_css %}{% endblock %}
+  <title>{% block title %}MEGAPERFORMANCE - Gestion des Projets{% endblock %}</title>
+  <link href="{% static 'projets/css/tailwind.css' %}" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            gray: {
+              900: '#111827',
+              800: '#1F2937',
+              700: '#374151',
+              600: '#4B5563',
+            },
+            primary: {
+              600: '#2563eb',
+              700: '#1d4ed8',
+            }
+          }
+        }
+      } 
+    }
+  </script>
+  {% block extra_head %}{% endblock %}
+  <style>
+    #taches-container.updating {
+        opacity: 0.5;
+        pointer-events: none;
+    }
+    /* Transition fluide pour le filtrage */
+    #taches-container {
+        transition: opacity 0.3s ease;
+    }
+
+    /* Style pour les options de filtre */
+    select:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 1px #3b82f6;
+    }
+
+    /* Bouton réinitialiser */
+    button:hover {
+        transition: background-color 0.2s ease;
+    }
+</style>
+</head>
+<body class="h-full">
+  <div href="home" class="flex h-full">
+    
+    <div class="flex-1 flex flex-col overflow-hidden">
+      
+      <main class="flex-1 overflow-y-auto  bg-[#2E2E2E] text-[#2B9C62] p-4  p-6">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  
+  {% block extra_js %}{% endblock %}
+  
+</body>
+</html>

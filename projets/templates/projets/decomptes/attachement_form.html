@@ -1,0 +1,988 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <title>{% if is_edition %}Modifier{% else %}Ajouter{% endif %} Attachement – {{ projet.nom }}</title>
+    {% load formatters %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    <style>
+        body { 
+            background-color: #2E2E2E; 
+            color: #AECBD6; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+        }
+        .glass-effect {
+            background: rgba(59, 59, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-warning { 
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-danger { 
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-success { 
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-info { 
+            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-validation { 
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+            border: none; 
+            color: white; 
+        }
+        .btn-ferme { 
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+            border: none; 
+            color: white; 
+        }
+        .form-control { 
+            background-color: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            color: #AECBD6; 
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: all 0.3s ease;
+            font-size: 16px;
+        }
+        .form-control:focus { 
+            border-color: #22d3ee; 
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2); 
+            outline: none;
+            background-color: #2E2E2E;
+        }
+        .form-control::placeholder {
+            color: #6B7280;
+        }
+        .form-group {
+            margin-bottom: 0.2rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #22d3ee;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+       
+        /* Messages */
+        .alert-auto-dismiss {
+            animation: fadeOut 5s forwards;
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+
+        .main-container {
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header-section {
+            background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+            border: 1px solid #22d3ee;
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .content-section {
+            background: rgba(59, 59, 59, 0.8);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            border: 1px solid #4B5563;
+        }
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Total section */
+        .total-section {
+            background: linear-gradient(135deg, #1a3a1a 0%, #2d4d2d 100%);
+            border: 1px solid #10b981;
+            border-radius: 12px;
+            padding: 1.0rem;
+            margin: 1.0rem 0;
+        }
+
+        /* File upload amélioré */
+        .file-upload {
+            border: 2px dashed #4B5563;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .file-upload:hover {
+            border-color: #22d3ee;
+            background: rgba(34, 211, 238, 0.05);
+        }
+        .file-current {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #78aa9a;
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        /* Style pour l'affichage de la somme des cellules sélectionnées */
+        .selection-sum-display {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+        }
+
+        /* Badge de statut */
+        .statut-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .statut-brouillon { background: #f59e0b; color: white; }
+        .statut-signe { background: #3b82f6; color: white; }
+        .statut-transmis { background: #8b5cf6; color: white; }
+        .statut-valide { background: #10b981; color: white; }
+
+        /* Section validation */
+        .validation-section {
+            background: linear-gradient(135deg, #1e3a2c 0%, #2d4d3d 100%);
+            border: 1px solid #10b981;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        /* Section fermée */
+        .section-fermee {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+            border: 1px solid #6b7280;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Affichage de la somme des cellules sélectionnées -->
+    <div id="selectionSumDisplay" class="selection-sum-display"></div>
+
+    <div class="main-container">
+        <!-- En-tête -->
+        <header class="header-section">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold text-cyan-400 mb-4 flex items-center justify-center gap-3">
+                    <i class="fas {% if is_edition %}fa-edit{% else %}fa-plus-circle{% endif %}"></i>
+                    {% if is_edition %}Modifier{% else %}Ajouter{% endif %} un Attachement
+                </h1>
+                <div class="flex items-center justify-center gap-4 mb-4">
+                    <span class="text-xl text-[#AECBD6]">Projet :</span>
+                    <span class="text-2xl font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1">
+                        {{ projet.nom }}
+                    </span>
+                </div>
+                {% if is_edition %}
+                <div class="flex justify-center">
+                    <span class="statut-badge statut-{{ attachement.statut|lower }}">
+                        <i class="fas 
+                            {% if attachement.statut == 'VALIDE' %}fa-check-circle
+                            {% elif attachement.statut == 'BROUILLON' %}fa-edit
+                            {% elif attachement.statut == 'SIGNE' %}fa-signature
+                            {% else %}fa-paper-plane{% endif %}"></i>
+                        Statut : {{ attachement.get_statut_display }}
+                    </span>
+                </div>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Boutons navigation -->
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <div class="flex flex-wrap gap-3">
+                <button onclick="window.location.href='{% url 'projets:liste_attachements' projet.id %}'" 
+                        class="btn btn-success">
+                    <i class="fa-solid fa-arrow-left"></i> Retour aux attachements
+                </button>
+                <button onclick="window.location.href='{% url 'projets:dashboard' projet.id %}'" 
+                        class="btn btn-info">
+                    <i class="fa-solid fa-diagram-project"></i> Retour au projet
+                </button>
+                <button onclick="window.location.href='{% url 'home' %}'" 
+                        class="btn btn-warning">
+                    <i class="fa-solid fa-house"></i> Accueil
+                </button>
+            </div>
+            <!-- Boutons de validation -->
+            {% if is_edition %}
+            <div class="flex flex-wrap gap-3">
+                {% if attachement.est_validable %}
+                    <!-- Attachement en cours de validation -->
+                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                            class="btn btn-validation">
+                        <i class="fas fa-clipboard-check"></i> Processus de Validation
+                    </button>
+                    
+                    {% if attachement.statut == 'BROUILLON' %}
+                    <button type="button" id="transmettre-btn" class="btn btn-primary">
+                        <i class="fas fa-paper-plane"></i> Transmettre pour validation
+                    </button>
+                    {% endif %}
+                    
+                {% elif attachement.peut_reouvrir %}
+                    <!-- Attachement validé mais réouvrable -->
+                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                            class="btn btn-success">
+                        <i class="fas fa-eye"></i> Voir le processus
+                    </button>
+                    
+                    {% if is_edition and attachement.peut_reouvrir %}
+                    <button id="reouvrir-btn" onclick="reouvrirAttachement({{ attachement.id }})" 
+                            class="btn btn-warning">
+                        <i class="fas fa-undo"></i> Réouvrir l'attachement
+                    </button>
+                    {% endif %}
+                    
+                {% elif attachement.ferme %}
+                    <!-- Attachement signé (fermé) -->
+                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                            class="btn btn-ferme">
+                        <i class="fas fa-eye"></i> Consulter l'attachement
+                    </button>
+                    
+                {% else %}
+                    <!-- Autres statuts -->
+                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                            class="btn btn-info">
+                        <i class="fas fa-info-circle"></i> Détails de validation
+                    </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="mb-6 space-y-3">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-4 rounded-xl alert-{{ message.tags }} flex justify-between items-center shadow-lg">
+                        <div class="flex items-center gap-3">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-circle"></i>
+                            {% elif message.tags == 'warning' %}
+                                <i class="fas fa-exclamation-triangle"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle"></i>
+                            {% endif %}
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Section d'information selon le statut -->
+        {% if is_edition %}
+            {% if attachement.est_validable %}
+            <div class="validation-section">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-info-circle text-cyan-400 text-xl"></i>
+                        <div>
+                            <h3 class="text-cyan-300 font-bold text-lg">Processus de Validation</h3>
+                            <p class="text-gray-300">
+                                Cet attachement doit passer par plusieurs étapes de validation avant d'être définitivement approuvé.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-cyan-400 font-semibold">
+                            Statut : <span class="text-yellow-400">{{ attachement.get_statut_display }}</span>
+                        </p>
+                        {% if attachement.statut == 'BROUILLON' %}
+                        <p class="text-gray-300 text-sm">
+                            Prêt à être transmis pour validation
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% elif attachement.peut_reouvrir %}
+            <div class="validation-section">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-check-circle text-green-400 text-xl"></i>
+                        <div>
+                            <h3 class="text-green-300 font-bold text-lg">Attachement Validé</h3>
+                            <p class="text-gray-300">
+                                Cet attachement a été validé. Vous pouvez le consulter ou le réouvrir pour modification.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-green-400 font-semibold">
+                            Validation complète
+                        </p>
+                        <p class="text-gray-300 text-sm">
+                            Montant validé : {{ attachement.total_montant_ht|format_currency }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% elif attachement.ferme %}
+            <div class="section-fermee">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <i class="fas fa-lock text-gray-400 text-xl"></i>
+                        <div>
+                            <h3 class="text-gray-300 font-bold text-lg">Attachement Signé</h3>
+                            <p class="text-gray-400">
+                                Cet attachement a été signé et n'est plus modifiable.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-gray-400 font-semibold">
+                            Statut final
+                        </p>
+                        <p class="text-gray-400 text-sm">
+                            Consultation seule
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% endif %}
+
+        <!-- Contenu principal -->
+        <div class="content-section">
+            <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
+                {% csrf_token %}
+                
+                <!-- Informations de base -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                    <div class="form-group">
+                        <label for="numero"><i class="fas fa-hashtag mr-2"></i>Numéro d'attachement *</label>
+                        <input type="text" id="numero" name="numero" 
+                               value="{% if is_edition %}{{ attachement.numero }}{% else %}{{ numero }}{% endif %}" 
+                               required class="form-control"
+                               {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="date_etablissement"><i class="fas fa-calendar-alt mr-2"></i>Date d'établissement *</label>
+                        <input type="date" id="date_etablissement" name="date_etablissement" 
+                               value="{% if is_edition %}{{ attachement.date_etablissement|date:'Y-m-d' }}{% else %}{{ date_etablissement|date:'Y-m-d' }}{% endif %}" 
+                               required class="form-control"
+                               {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="date_debut_periode"><i class="fas fa-play-circle mr-2"></i>Date début période *</label>
+                        <input type="date" id="date_debut_periode" name="date_debut_periode" 
+                               value="{% if is_edition %}{{ attachement.date_debut_periode|date:'Y-m-d' }}{% else %}{{ date_debut_periode|date:'Y-m-d' }}{% endif %}" 
+                               required class="form-control"
+                               {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="date_fin_periode"><i class="fas fa-stop-circle mr-2"></i>Date fin période *</label>
+                        <input type="date" id="date_fin_periode" name="date_fin_periode" 
+                               value="{% if is_edition %}{{ attachement.date_fin_periode|date:'Y-m-d' }}{% else %}{{ date_fin_periode|date:'Y-m-d' }}{% endif %}" 
+                               required class="form-control"
+                               {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="statut"><i class="fas fa-tag mr-2"></i>Statut *</label>
+                        <select id="statut" name="statut" required class="form-control"
+                                {% if is_edition and not attachement.est_validable %}disabled{% endif %}>
+                            <option value="BROUILLON" {% if is_edition and attachement.statut == 'BROUILLON' %}selected{% endif %}>Brouillon</option>
+                            <option value="SIGNE" {% if is_edition and attachement.statut == 'SIGNE' %}selected{% endif %}>Signé</option>
+                            <option value="TRANSMIS" {% if is_edition and attachement.statut == 'TRANSMIS' %}selected{% endif %}>Transmis</option>
+                            {% if attachement.est_validable or not is_edition %}
+                            <option value="VALIDE" {% if is_edition and attachement.statut == 'VALIDE' %}selected{% endif %}>Validé</option>
+                            {% endif %}
+                        </select>
+                        {% if is_edition and not attachement.est_validable %}
+                        <input type="hidden" name="statut" value="{{ attachement.statut }}">
+                        {% endif %}
+                    </div>
+                    <div class="form-group">
+                        <label for="fichier"><i class="fas fa-file-upload mr-2"></i>Fichier joint</label>
+                        <input type="file" id="fichier" name="fichier" class="form-control"
+                               {% if is_edition and not attachement.est_validable %}disabled{% endif %}>
+                        {% if is_edition and attachement.fichier %}
+                        <div class="file-current">
+                            <p class="text-green-400 font-medium flex items-center gap-2">
+                                <i class="fas fa-file-pdf text-lg"></i>
+                                Fichier actuel : 
+                                <a href="{{ attachement.fichier.url }}" target="_blank" class="underline hover:text-green-300 transition-colors">
+                                    {{ attachement.fichier.name|slice:"20:" }}
+                                </a>
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tableau Handsontable -->
+                <div class="mb-6">
+                    <h3 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
+                        <i class="fas fa-table"></i>
+                        Détail des Lignes d'Attachement
+                    </h3>
+                    <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
+                </div>
+
+                <!-- Observations -->
+                <div class="form-group mb-2">
+                    <label for="observations"><i class="fas fa-sticky-note mr-2"></i>Observations</label>
+                    <textarea id="observations" name="observations" rows="4" placeholder="Observations supplémentaires..." 
+                              class="form-control" {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                        {% if is_edition %}{{ attachement.observations }}{% endif %}
+                    </textarea>
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="flex justify-between flex-wrap">
+                    <div class="flex items-center gap-4 flex-wrap">
+                        {% if not is_edition or attachement.est_validable %}
+                        <button type="button" id="save-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-save"></i> {% if is_edition %}Modifier{% else %}Créer{% endif %} l'attachement
+                        </button>
+                        {% endif %}
+                        
+                        {% if is_edition and attachement.peut_supprimer %}
+                        <button type="button" id="delete-btn" class="btn btn-danger">
+                            <i class="fa-solid fa-trash"></i> Supprimer
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Total général -->
+                    <div class="total-section">
+                        <div class="flex justify-between gap-4">
+                            <!-- Titre à gauche -->
+                            <div class="flex items-center gap-3">
+                                <i class="fas fa-calculator text-cyan-400 text-xl"></i>
+                                <h5 class="text-cyan-300 text-lg font-bold">
+                                    Total général de l'attachement HT : 
+                                </h5>
+                            </div>
+                            
+                            <!-- Total à droite -->
+                            <div class="flex items-center gap-2">
+                                <span id="total_attachement" class="text-white text-2xl font-bold">
+                                    0.00 DH
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+<script>
+    const container = document.getElementById('hot');
+    const hotData = JSON.parse('{{ lignes|escapejs }}');
+    const isEdition = {% if is_edition %}true{% else %}false{% endif %};
+    const attachementId = {% if is_edition %}{{ attachement.id }}{% else %}null{% endif %}; 
+    const estValidable =  {% if is_edition %}{% if attachement.est_validable %}true{% else %}false{% endif %}
+                          {% else %}true{% endif %}; 
+    
+    // Variables globales
+    const modifiedCells = new Set();
+    let hot;
+
+    // ==================== FONCTIONS UTILITAIRES ====================
+
+    function formatNumber(value, decimals = 2) {
+        return value.toLocaleString('en-US', {
+            minimumFractionDigits: decimals,
+            maximumFractionDigits: decimals
+        });
+    }
+
+    function showSumSelectedCells(hotInstance) {
+        const selection = hotInstance.getSelected();
+        if (!selection) return;
+        
+        let [startRow, startCol, endRow, endCol] = selection[0];
+
+        // Ajuster si nécessaire
+        if (startRow > endRow) [startRow, endRow] = [endRow, startRow];
+        if (startCol > endCol) [startCol, endCol] = [endCol, startCol];
+
+        let sum = 0;
+        let cellCount = 0;
+        
+        for (let row = startRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                // if (col < 3 || col > 7) continue;
+                
+                const rowData = hotInstance.getSourceDataAtRow(row);
+                let value = 0;
+                
+                if (col < colMontantIndex) { 
+                    value = parseFloat(hotInstance.getDataAtCell(row, col)) || 0;
+                } else { // montant
+                    const pu = parseFloat(rowData.prix_unitaire) || 0;
+                    const qte = parseFloat(rowData.quantite_realisee) || 0;
+                    value = qte * pu;
+                }
+                
+                if (!isNaN(value) && value !== 0) {
+                    sum += value;
+                    cellCount++;
+                }
+            }
+        }
+        return { sum, cellCount };
+    }
+
+    function displaySelectionSum() {
+        const result = showSumSelectedCells(hot);
+        const displayElement = document.getElementById('selectionSumDisplay');
+        if (result && result.cellCount > 1) {
+            const formattedSum = formatNumber(result.sum);
+            const average = formatNumber(result.sum / result.cellCount) || 0;
+            displayElement.textContent = `Somme : ${formattedSum} | Moyenne : ${average} | (${result.cellCount} cellules)`;
+            displayElement.style.display = 'block';
+        } else {
+            displayElement.style.display = 'none';
+        }
+    }
+
+    function updateTotal() {
+        let total = 0;
+        const data = hot.getSourceData();
+                
+        data.forEach((row) => {
+            const isTitle = row.is_title;
+            if (isTitle) return;
+            
+            const qte = parseFloat(row.quantite_realisee) || 0;
+            const pu = parseFloat(row.prix_unitaire) || 0;
+            const montant = qte * pu;
+            
+            total += montant;
+        });
+        
+        const totalFormatted = formatNumber(total, 2);
+        const totalElement = document.getElementById('total_attachement');
+        totalElement.innerHTML = `<strong>${totalFormatted} DH</strong>`;
+        totalElement.style.color = '#22d3ee';            
+    }
+
+    // ==================== FONCTIONS DE VALIDATION ====================
+
+    function validerFormulaire() {
+        const numero = document.getElementById('numero').value;
+        const dateEtablissement = document.getElementById('date_etablissement').value;
+        const dateDebut = document.getElementById('date_debut_periode').value;
+        const dateFin = document.getElementById('date_fin_periode').value;
+        
+        if (!numero || !dateEtablissement || !dateDebut || !dateFin) {
+            alert('Veuillez remplir tous les champs obligatoires (*)');
+            return false;
+        }
+        
+        const hasValidData = hot.getSourceData().some(row => {
+            const isTitle = row.is_title;
+            const quantite = parseFloat(row.quantite_realisee) || 0;
+            return !isTitle && quantite > 0;
+        });
+        
+        if (!hasValidData) {
+            alert('Veuillez saisir au moins une quantité à attacher');
+            return false;
+        }
+        
+        return true;
+    }
+
+    function preparerDonneesLignes() {
+        const lignesData = hot.getSourceData().map(row => ({
+            id: row.id,
+            quantite_realisee: parseFloat(row.quantite_realisee) || 0,
+            {% if not is_edition %}
+            inclure_titre: row.inclure_titre || false,
+            is_title: row.est_titre || false
+            {% endif %}
+        }));
+
+        let hiddenInput = document.getElementById('lignes-hidden');
+        if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'lignes_attachement';
+            hiddenInput.id = 'lignes-hidden';
+            document.getElementById('attachement-form').appendChild(hiddenInput);
+        }
+        hiddenInput.value = JSON.stringify(lignesData);
+    }
+
+    function afficherLoading(button, texte) {
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> ${texte}`;
+        }
+    }
+
+    // ==================== FONCTIONS D'ACTION ====================
+
+    function reouvrirAttachement(attachementId) {
+        if (!attachementId) return;
+        
+        if (confirm("Êtes-vous sûr de vouloir réouvrir cet attachement validé ?\n\nCette action :\n- Réinitialisera le statut à 'Brouillon'\n- Réinitialisera toutes les validations\n- Rendrera l'attachement à nouveau modifiable")) {
+            const button = document.getElementById('reouvrir-btn');
+            afficherLoading(button, 'Réouverture...');
+            window.location.href = "{% if is_edition %}{% url 'projets:reouvrir_attachement' attachement.id %}{% endif %}";
+        }
+    }
+
+    function soumettreFormulaire(action, texteLoading) {
+        // Valider le formulaire
+        if (!validerFormulaire()) {
+            return false;
+        }
+        
+        // Préparer les données du tableau
+        preparerDonneesLignes();
+        
+        // Afficher le loading sur tous les boutons d'action
+        const saveBtn = document.getElementById('save-btn');
+        const transmettreBtn = document.getElementById('transmettre-btn');
+        
+        if (saveBtn) afficherLoading(saveBtn, texteLoading);
+        if (transmettreBtn) afficherLoading(transmettreBtn, texteLoading);
+        
+        // Soumettre le formulaire
+        console.log(`${action} de l'attachement...`);
+        document.getElementById('attachement-form').submit();
+        
+        return true;
+    }
+    
+    function hierarchyRenderer(instance, td, row, col, prop, value, cellProperties) {
+        Handsontable.renderers.TextRenderer.apply(this, arguments);
+        
+        const rowData = instance.getSourceDataAtRow(row);
+        if (!rowData) return;
+        
+        const niveau = rowData.niveau || 0;
+        const isTitle = rowData.is_title || false;
+        if (isTitle) {
+            td.className = td.className + ' title-row';
+        }
+        if (prop === 'designation') { // Colonne Désignation
+            const indent = niveau * 8;
+            td.style.paddingLeft = `${8 + indent}px`;
+        } else if (prop === 'unite') { // Colonne Numéro
+            td.className = td.className + ' htCenter';
+        } 
+    }
+    // ==================== CONFIGURATION HANDSONTABLE ====================
+
+    const hotConfig = {
+        data: hotData,
+        columns: [
+            { data: 'numero', title: 'N°', readOnly: true, width: 80 },
+            { data: 'niveau', title: 'Niveau', readOnly: true, width: 80 },
+            { data: 'est_titre', title: 'Titre', readOnly: true, width: 80 },
+            { data: 'designation', title: 'Désignation', readOnly: true, width: 400, renderer: hierarchyRenderer },
+            { data: 'unite', title: 'Unité', readOnly: true, width: 100, className: 'htCenter' },
+            { data: 'quantite_prevue', title: 'Quantité<br>marché', readOnly: true, type: 'numeric', numericFormat: { pattern: '0,0.000' }, width: 120 },
+            { data: 'prix_unitaire', title: 'PU', readOnly: true, type: 'numeric', numericFormat: { pattern: '0,0.00' }, width: 120 },
+            { data: 'quantite_deja_realisee', 
+                title: 'Quantité<br>attachée', 
+                readOnly: true, 
+                type: 'numeric', 
+                width: 100,
+                className: 'editable-quantity-attachee',
+                numericFormat: { pattern: '0,0.000' }, 
+                renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                    Handsontable.renderers.NumericRenderer.apply(this, arguments);
+                    const qte_r = value || 0;
+                    if (qte_r === 0) td.textContent = '';
+                },
+            },
+            { data: 'quantite_realisee', 
+                title: isEdition ? 'Quantité<br>à modifier' : 'Quantité<br>à attacher', 
+                type: 'numeric', 
+                className: 'editable-quantity', 
+                width: 140, 
+                numericFormat: { pattern: '0,0.000' },
+                readOnly: !estValidable,
+                renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                    Handsontable.renderers.NumericRenderer.apply(this, arguments);
+                    const qte_r = value || 0;
+                    if (qte_r === 0) {
+                        td.textContent = '';
+                        return;
+                    }
+                    if (modifiedCells.has(`${row}-${col}`)) {
+                        td.className = td.className + ' modified-cell';
+                    }
+                },
+            },
+            { data: 'montant', 
+                title: 'Montant<br>attaché(HT)', 
+                readOnly: true, 
+                type: 'numeric', 
+                numericFormat: { pattern: '0,0.00' }, 
+                width: 140,
+                renderer: function(instance, td, row, col, prop, value, cellProperties) {
+                    const rowData = instance.getSourceDataAtRow(row);
+                    const isTitle = rowData ? rowData.is_title : false;
+                    
+                    if (isTitle) {
+                        td.textContent = '';
+                        return;
+                    }
+                    
+                    const pu = parseFloat(rowData.prix_unitaire) || 0;
+                    const qte = parseFloat(rowData.quantite_realisee) || 0;
+                    const total = qte * pu;
+                    
+                    if (total === 0 || isNaN(total)) {
+                        td.textContent = '';
+                        return;
+                    }
+                    
+                    Handsontable.renderers.NumericRenderer.apply(this, arguments);
+                    td.textContent = total.toLocaleString('en-US', { minimumFractionDigits: 2 });
+                    td.className = 'htRight';
+                    td.style.fontWeight = '600';
+                    td.style.color = '#2B9C62';
+                }
+            },
+        ],
+        colHeaders: true,
+        rowHeaders: false,
+        hiddenColumns: {columns: [1, 2], indicators: false},
+        manualColumnResize: true,
+        licenseKey: 'non-commercial-and-evaluation',
+        contextMenu: false,
+        height: 'auto',
+        stretchH: 'all',
+        manualRowResize: true,
+        rowHeights: 40,
+        afterChange: estValidable ? function(changes, source) {            
+            if (changes) {
+                changes.forEach(function(change) {
+                    const [row, prop, oldValue, newValue] = change;
+                    if (prop === 'quantite_realisee' && newValue !== oldValue) {
+                        const col = hot.propToCol(prop);
+                        modifiedCells.add(`${row}-${col}`);
+                        setTimeout(() => hot.render(), 0);
+                    }
+                });
+                updateTotal();
+            }
+        } : null,
+        beforeChange: estValidable ? function(changes, source) {
+            if (!changes) return true;
+            
+            changes.forEach(function(change) {
+                const [row, prop, oldValue, newValue] = change;
+                
+                // Nettoyer les espaces
+                if (newValue !== null && typeof newValue === 'string') {
+                    change[3] = newValue.replace(/\s/g, '');
+                }
+                
+                // Validation : empêcher les valeurs négatives
+                if (prop === 'quantite_realisee' && parseFloat(newValue) < 0) {
+                    alert("Les quantités négatives ne sont pas autorisées");
+                    return false;
+                }
+            });
+            return true;
+        } : null,
+        afterSelection: displaySelectionSum,
+        afterDeselect: function() {
+            const displayElement = document.getElementById('selectionSumDisplay');
+            if (displayElement) displayElement.style.display = 'none';
+        },
+    };
+    const colMontantIndex = hotConfig.columns.findIndex(col => col.data === 'montant');
+    // ==================== GESTION DES BOUTONS ====================
+
+    function setupSaveButton() {
+        const saveBtn = document.getElementById('save-btn');
+        if (!saveBtn) return;
+
+        saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            soumettreFormulaire(
+                'Sauvegarde', 
+                '{% if is_edition %}Modification{% else %}Création{% endif %}...'
+            );
+        });
+    }
+
+    function setupTransmissionButton() {
+        const transmettreBtn = document.getElementById('transmettre-btn');
+        if (!transmettreBtn) return;
+
+        transmettreBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (confirm("Êtes-vous sûr de vouloir transmettre cet attachement pour validation ?\n\nCette action :\n- Sauvegardera toutes les modifications\n- Changera le statut à 'Transmis'\n- Lancera le processus de validation")) {
+                
+                // Changer le statut avant soumission
+                const statutInput = document.getElementById('statut');
+                if (statutInput) statutInput.value = 'TRANSMIS';
+                
+                // Soumettre avec validation et préparation des données
+                soumettreFormulaire('Transmission', 'Transmission...');
+            }
+        });
+    }
+
+    function setupDeleteButton() {
+        const deleteBtn = document.getElementById('delete-btn');
+        if (!deleteBtn) return;
+
+        deleteBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (confirm("Êtes-vous sûr de vouloir supprimer cet attachement ? Cette action est irréversible.")) {
+                const deleteForm = document.createElement('form');
+                deleteForm.method = 'POST';
+                deleteForm.action = "{% if is_edition %}{% url 'projets:supprimer_attachement' attachement.id %}{% endif %}";
+                
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = '{{ csrf_token }}';
+                
+                deleteForm.appendChild(csrfInput);
+                document.body.appendChild(deleteForm);
+                deleteForm.submit();
+            }
+        });
+    }
+
+    // ==================== INITIALISATION ====================
+
+    function initHandsontable() {
+        if (container) {
+            hot = new Handsontable(container, hotConfig);
+            updateTotal();
+        }
+    }
+
+    function initMessagesAutoDismiss() {
+        setTimeout(() => {
+            const alerts = document.querySelectorAll('.alert-auto-dismiss');
+            alerts.forEach(alert => {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    }
+
+    function initEventListeners() {
+        setupSaveButton();
+        setupTransmissionButton();
+        setupDeleteButton();
+    }
+
+    // Initialisation principale
+    document.addEventListener('DOMContentLoaded', function() {
+        initHandsontable();
+        initEventListeners();
+        initMessagesAutoDismiss();
+    });
+
+</script>
+<style>
+    /* ===== COLONNE QUANTITÉ À MODIFIER ===== */
+.handsontable-custom .editable-quantity {
+    color: #10b981 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+.handsontable-custom td.modified-cell {
+    color: #ecad26 !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+.handsontable-custom td.modified-cell::after {
+    content: '✓';
+    color: #10b981;
+    margin-left: 0.5rem;
+}
+/* ===== COLONNE QUANTITÉ DÉJÀ ATTACHÉE ===== */
+.handsontable-custom .editable-quantity-attachee {
+    font-weight: 600 !important;
+    font-style: italic !important;
+    color: #7f8082 !important;
+    font-size: 13px !important;
+}
+</style>
+</body>
+</html>
+       

@@ -1,0 +1,102 @@
+/* projets/static/projets/css/common.css */
+    .sidebar {
+        transition: all 0.3s ease;
+    }
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .progress-bar {
+        height: 8px;
+        border-radius: 4px;
+        background-color: #e0e0e0;
+    }
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+    }
+    /* Animation pour les notifications */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(20px); }
+    }
+
+    .message-fadeout {
+        animation: fadeOut 0.5s ease forwards;
+    }
+
+    .message {
+        transition: opacity 0.5s ease;
+    }
+    /* Styles pour les notifications */
+    .notification-retard {
+        border-left: 4px solid #f59e0b;
+    }
+    .notification-ao {
+        border-left: 4px solid #3b82f6;
+    }
+    .notification-reception {
+        border-left: 4px solid #10b981;
+    }
+    .notification-generale {
+        border-left: 4px solid #6b7280;
+    }
+    /* static/css/projets.css */
+    .echeance-card {
+        transition: all 0.3s ease;
+    }
+
+    .echeance-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .retard {
+        border-left: 4px solid #ef4444;
+    }
+    button[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    }
+
+.notification {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    padding: 18px 28px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+    z-index: 10000;
+    font-size: 1.05rem;
+    animation: slideIn 0.5s ease-out, fadeOut 0.7s 4.5s ease-out forwards;
+    transform: translateY(100px);
+    opacity: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 320px;
+}
+
+.notification.error {
+    background: #F44336;
+}
+
+.notification.warning {
+    background: #FF9800;
+}
+
+@keyframes slideIn {
+    to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateY(-20px); }
+}
