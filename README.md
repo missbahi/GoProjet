@@ -1,4 +1,6 @@
-# Créer le README.md
+![Django](https://img.shields.io/badge/Django-5.2.5-green)
+![Python](https://img.shields.io/badge/Python-3.8+-blue)
+![License](https://img.shields.io/badge/License-MIT-yellow)
 echo "# GoProjet
 
 Application Django de gestion de projets avec bordereaux de prix interactifs.
