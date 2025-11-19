@@ -16,8 +16,7 @@ SECRET_KEY = 'django-insecure-$ig!h90kpa^n)&sllczr4a+dugyqy=s1t*t+fvv_#o)3ohnu=4
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '').split(',')
-
+ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.localhost,0.0.0.0').split(',')
 # Application definition - Configuration de base
 BASE_APPS = [
     'django.contrib.admin',
@@ -33,23 +32,28 @@ BASE_APPS = [
 # Configuration conditionnelle pour Cloudinary (Railway)
 if os.environ.get('RAILWAY_STATIC_URL') or os.environ.get('CLOUDINARY_CLOUD_NAME'):
     # PRODUCTION sur Railway - avec Cloudinary
+    print("☁️  Mode Cloudinary activé (Production)")
     INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + BASE_APPS
     
     # Configuration Cloudinary    
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': os.environ.get('ddfqmth4q'),
         'API_KEY': os.environ.get('297278977298225'),
-        'API_SECRET': os.environ.get('KTIJ8VD53EfUDgZw')
+        'API_SECRET': os.environ.get('KTIJ8VD53EfUDgZw'),
+        'SECURE': True,
+
+        'PREFIX': os.environ.get('CLOUDINARY_PREFIX', 'goprojet-media'),
     }
     
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
+    STATIC_URL = '/static/'
     # Configuration Railway pour les fichiers statiques
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-    STATIC_URL = os.environ.get('RAILWAY_STATIC_URL', '/static/')
+
     
 else:
-    # DÉVELOPPEMENT LOCAL - sans Cloudinary
+    # DÉVELOPPEMENT LOCAL
+    print("💻 Mode développement local activé")
     INSTALLED_APPS = BASE_APPS
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
     STATIC_URL = '/static/'

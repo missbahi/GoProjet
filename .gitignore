@@ -1,0 +1,44 @@
+# Django
+*.pyc
+*__pycache__/
+db.sqlite3
+migrations/
+
+# Environnements virtuels
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers sensibles
+.env
+.env.local
+.secrets
+
+# Static files collectés
+staticfiles/
+media/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Windows
+*.cab
+*.msi
+*.msm
+*.msp
+
+# PyInstaller
+*.manifest
+*.spec

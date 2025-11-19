@@ -31,6 +31,7 @@ class Profile(models.Model):
         choices=ROLE_CHOICES, 
         default='UTILISATEUR'
     )
+    
     avatar = models.ImageField(
         upload_to=avatar_upload_path, 
         default='avatars/default.png',
