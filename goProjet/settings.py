@@ -127,3 +127,26 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Dossier pour les avatars
 AVATARS_DIR = 'avatars/'
+
+# SECURITY SETTINGS FOR RAILWAY
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
+
+# CSRF & CORS
+CSRF_TRUSTED_ORIGINS = [
+    'https://goprojet-production.up.railway.app',
+    'https://*.railway.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'https://localhost:8000',
+]
+
+# Cookies security
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# Pour Railway spécifiquement
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
