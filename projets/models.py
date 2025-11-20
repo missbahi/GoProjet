@@ -51,7 +51,7 @@ class Profile(models.Model):
             # Vérifier si le fichier existe réellement
             if default_storage.exists(self.avatar.name):
                 return self.avatar.url
-        return '/static/images/default_avatar.png'
+        return '/static/images/default.png'
     
     def save(self, *args, **kwargs):
         """Surcharge de la méthode save pour gérer les anciens avatars"""

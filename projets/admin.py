@@ -1,6 +1,19 @@
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin
 from .models import Attachement, Decompte, DocumentAdministratif, OrdreService, Profile, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
+class ProfileInline(admin.StackedInline):
+    model = Profile
+    can_delete = False
 
+class CustomUserAdmin(UserAdmin):
+    inlines = [ProfileInline]
+    list_display = ['username', 'email', 'first_name', 'last_name', 'is_staff', 'is_active']
+    list_filter = ['is_staff', 'is_superuser', 'is_active']
+
+# Re-register UserAdmin
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)
 # ------------------------ Admin Entreprise ------------------------
 @admin.register(Entreprise)
 class EntrepriseAdmin(admin.ModelAdmin):

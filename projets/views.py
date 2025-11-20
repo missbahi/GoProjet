@@ -49,6 +49,7 @@ VIEWABLE_TYPES = {
     }
 
 #------------------ Page d'accueil ------------------
+@login_required
 def home(request):
     # Nombre de projets
     today = date.today()
@@ -130,9 +131,7 @@ def home(request):
     ]
      # Échéances à venir (7 prochains jours)
     echeances = Tache.objects.filter(date_fin__gte=today).order_by('date_fin')[:3]
-    # echeances = Tache.objects.filter(date_fin__range=[today, today + timedelta(days=7)]).order_by('date_fin')
-    # echeances = Projet.objects.filter(Q(date_limite_soumission__gte=date.today()) | Q(date_reception__gte=date.today())
-    #                         ).order_by('date_limite_soumission')[:3]
+
     context = {
         'projets_recents': projets_recents,
         'projets_en_retard': projets_en_retard,
@@ -203,7 +202,7 @@ def supprimer_utilisateur(request, user_id):
 
 # -------------- projets -------------------------
 from django.db.models import Q
-
+@login_required
 def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
@@ -251,6 +250,7 @@ def liste_projets(request):
         return render(request, 'projets/partials/liste_projets_partial.html', context)
     
     return render(request, 'projets/liste_projets.html', context)
+@login_required
 def ajouter_projet_modal(request):
     if request.method == 'POST':
         form = ProjetForm(request.POST)
@@ -283,6 +283,7 @@ def ajouter_projet_modal(request):
     }
         
     return render(request, 'projets/modals/ajouter_projet_modal.html', context)
+@login_required
 def modifier_projet_modal(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     if request.method == 'POST':
@@ -318,6 +319,7 @@ def modifier_projet_modal(request, projet_id):
         'entreprises': Entreprise.objects.all(),
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
+@login_required
 def modifier_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -358,6 +360,7 @@ def modifier_projet(request, projet_id):
     # if request.GET.get('modal'):
     #     return render(request, 'projets/modifier_projet.html', context)
     return render(request, 'projets/modifier_projet.html', context)
+@login_required
 def supprimer_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     projet.delete()
@@ -623,19 +626,24 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
             raise
 
 #------------------ Gestion de la base de données ------------------
+@login_required
 def partial_ingenieurs(request):
     ingenieurs = Ingenieur.objects.all()
     return render(request, 'projets/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
+@login_required
 def partial_entreprises(request):
     entreprises = Entreprise.objects.all()
     return render(request, 'projets/partials/entreprises.html', {'entreprises': entreprises})
+@login_required
 def partial_clients(request):
     clients = Client.objects.all()
     return render(request, 'projets/partials/clients.html', {'clients': clients})
+@login_required
 def base_donnees(request):
     return render(request, 'projets/base_donnees.html')
 
 #------------------ Gestion d'un projet ------------------
+@login_required
 def dashboard_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = projet.lots.all()
@@ -667,33 +675,7 @@ def dashboard_projet(request, projet_id):
     return render(request, 'projets/dashboard.html', context)
 
 #------------------ Gestion des bordereaux ------------------
-def saisie_bordereau1(request, projet_id, lot_id):
-    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
-    total_lot = lot.lignes.aggregate(total=Sum('montant_calcule'))['total'] or 0
-    lignes = lot.lignes.select_related('parent').all()
-    lot_root = lot.to_line_tree()
-    # Création du JSON   
-    data = [
-        {
-            'id': ligne.id,
-            'numero': ligne.numero,
-            'designation': ligne.designation,
-            'unite': ligne.unite, # if not ligne.est_titre else '',
-            'quantite': float(ligne.quantite), # if not ligne.est_titre else 0,
-            'prix_unitaire': float(ligne.pu), # if not ligne.est_titre else 0,
-            'parent_id': ligne.parent.id if ligne.parent else None,
-            '_expanded': True,
-        }
-        for ligne in lot_root.get_descendants()
-    ]
-    
-    json_str = json.dumps(data, ensure_ascii=False)
-        
-    return render(request, 'projets/lots/saisie_bordereau.html', {
-        'lot': lot,
-        'root': lot_root,
-        'lignes': json_str,
-    })
+@login_required
 def saisie_bordereau(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     lot_root = lot.to_line_tree()
@@ -730,7 +712,7 @@ def indent_node(request, lot_id, node_id):
         tree_manager = BordereauTreeManager(lot)
         success = tree_manager.indent_node(node_id)
         return JsonResponse({'success': success})
-
+@login_required
 def outdent_node(request, lot_id, node_id):
     """API pour outdenter un node"""
     if request.method == 'POST':
@@ -757,7 +739,7 @@ def get_children(request, lot_id, node_id):
     
     children_ids = tree_manager.get_children_ids(node_id)
     return JsonResponse({'children': children_ids})
-
+@login_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
         try:
@@ -835,6 +817,7 @@ def sauvegarder_lignes_bordereau(request, lot_id):
             }, status=500)
 
 #------------------ Gestion des notifications ------------------
+@login_required
 def creer_notification(request):
     if request.method == 'POST':
         projet_id = request.POST.get('projet_id')
@@ -863,6 +846,7 @@ def creer_notification(request):
 def liste_notifications(request):
     notifications = Notification.objects.filter(utilisateur=request.user).order_by('-date_creation')
     return render(request, 'projets/liste_notifications.html', {'notifications': notifications})
+@login_required
 def mark_notification_as_read(request, notification_id):
     notification = get_object_or_404(Notification, id=notification_id, utilisateur=request.user)
     notification.lue = True
@@ -873,6 +857,7 @@ def mark_all_notifications_as_read(request):
     return redirect('projets:liste_notifications')
 
 #------------------ Gestion du profil ------------------
+
 def serve_avatar(request, filename):
     """Vue personnalisée pour servir les avatars avec fallback"""
     avatar_path = os.path.join(settings.MEDIA_ROOT, 'avatars', filename)
@@ -904,6 +889,7 @@ def profile_view(request):
         form = AvatarUpdateForm(instance=profile)
     
     return render(request, 'profile.html', {'form': form, 'profile': profile})
+@login_required
 def profile_update(request):
     if request.method == 'POST':
         try:
@@ -942,6 +928,7 @@ def profile_modal(request):
     return render(request, 'projets/modals/profile_modal.html', {
         'user': request.user
     })
+@login_required
 def password_modal(request):
     return render(request, 'projets/modals/password_modal.html')
 @login_required
