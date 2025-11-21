@@ -126,12 +126,16 @@ USE_I18N = True
 USE_TZ = True
 
 ## STATIC FILES - Avec gestion DEBUG
+# STATIC_URL = '/static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATICFILES_DIRS = [
+#     os.path.join(BASE_DIR, 'projets/static'),
+# ]
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'projets/static'),
+    BASE_DIR / 'static',  # UNIQUEMENT le dossier principal
 ]
-
 # Whitenoise seulement en production
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
@@ -141,8 +145,7 @@ else:
 
 # MEDIA FILES
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
+MEDIA_ROOT = BASE_DIR / 'media'
 # DEFAULT AUTO FIELD
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -174,3 +177,10 @@ if not DEBUG:
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'missbahi@gmail.com')
+    
+# Test Cloudinary
+if os.environ.get('CLOUDINARY_CLOUD_NAME'):
+    print("☁️  Cloudinary configuré")
+    print(f"Cloud Name: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+    print(f"API Key: {os.environ.get('CLOUDINARY_API_KEY')}")
+    print(f"API Secret: {os.environ.get('CLOUDINARY_API_SECRET')}")
