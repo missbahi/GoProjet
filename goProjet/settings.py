@@ -24,28 +24,6 @@ INSTALLED_APPS = [
     'projets.templatetags'
 ]
 
-# CONFIGURATION CLOUDINARY SIMPLIFIÉE
-if os.environ.get('CLOUDINARY_CLOUD_NAME'):
-    print("☁️  Cloudinary activé")
-    try:
-        INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + INSTALLED_APPS
-        
-        CLOUDINARY_STORAGE = {
-            'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-            'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-            'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-            'SECURE': True,
-        }
-        
-        DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-        
-    except ImportError as e:
-        print(f"❌ Erreur import Cloudinary: {e}")
-        # Fallback vers le stockage local
-        DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-else:
-    print("💻 Mode local")
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
 # MIDDLEWARE - Gardez seulement AdminRedirectMiddleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -178,8 +156,24 @@ if not DEBUG:
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'missbahi@gmail.com')
     
-# Test Cloudinary
+# Configuration Cloudinary
 if os.environ.get('CLOUDINARY_CLOUD_NAME'):
-    print("☁️  Cloudinary configuré")
-    print(f"Cloud Name: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+    print("☁️  Cloudinary activé")
+    
+    # Nettoyez les doublons potentiels
+    INSTALLED_APPS = [app for app in INSTALLED_APPS if app not in ['cloudinary_storage', 'cloudinary']]
+    
+    # Ajoutez au début
     INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + INSTALLED_APPS
+    
+    CLOUDINARY_STORAGE = {
+        'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+        'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+        'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+        'SECURE': True,
+    }
+    
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+else:
+    print("💻 Mode local")
+    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
