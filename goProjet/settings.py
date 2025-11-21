@@ -182,5 +182,4 @@ if not DEBUG:
 if os.environ.get('CLOUDINARY_CLOUD_NAME'):
     print("☁️  Cloudinary configuré")
     print(f"Cloud Name: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
-    print(f"API Key: {os.environ.get('CLOUDINARY_API_KEY')}")
-    print(f"API Secret: {os.environ.get('CLOUDINARY_API_SECRET')}")
+    INSTALLED_APPS = ['cloudinary_storage', 'cloudinary'] + INSTALLED_APPS
