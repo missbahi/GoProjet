@@ -982,25 +982,11 @@ def serve_avatar(request, filename):
 def avatar_upload_modal(request):
     """Retourne la modal dédiée à l'upload d'avatar"""
     try:
-        print("🔄 avatar_upload_modal appelée")
-        print(f"👤 Utilisateur: {request.user}")
-        print(f"✅ Authentifié: {request.user.is_authenticated}")
-        
-        # Vérifier que le template existe
-        from django.template.loader import get_template
-        template = get_template('projets/modals/avatar_upload_modal.html')
-        print("✅ Template trouvé")
-        
+        # Vérifier que le template existe        
         return render(request, 'projets/modals/avatar_upload_modal.html')
         
     except Exception as e:
         print(f"❌ Erreur dans avatar_upload_modal: {str(e)}")
-        import traceback
-        print(f"📋 Traceback: {traceback.format_exc()}")
-        
-        # Retourner une erreur simple pour debug
-        from django.http import HttpResponse
-        return HttpResponse(f"Erreur: {str(e)}", status=500)
 
 from .forms import AvatarUpdateForm
 @login_required
