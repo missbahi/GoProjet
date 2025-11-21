@@ -1,41 +1,89 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-md mx-auto my-10 p-6 bg-white rounded-lg shadow-md">
-    <h2 class="text-2xl font-bold text-center mb-6">Connexion</h2>
-    
-    {% if form.errors %}
-    <div class="mb-4 p-3 bg-red-50 text-red-700 rounded border border-red-200">
-        Identifiants incorrects. Veuillez réessayer.
-    </div>
-    {% endif %}
+<div class="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4">
+    <div class="w-full max-w-md">
+        <!-- CARD DE CONNEXION -->
+        <div class="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+            <!-- LOGO -->
+            <div class="flex justify-center mb-6">
+                <div class="bg-white rounded-lg shadow-lg p-3">
+                    <img src="{% static 'images/LOGO MEGAP.jpg' %}" alt="Logo MEGAP BTP" class="h-12 w-auto">
+                </div>
+            </div>
 
-    <form method="post" class="space-y-4">
-        {% csrf_token %}
-        
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</label>
-            <input type="text" name="username" required
-                   class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <!-- TITRE -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-green-400 mb-2">
+                    <i class="fa-solid fa-lock mr-2"></i>
+                    Connexion
+                </h1>
+                <p class="text-gray-400">Accédez à votre espace projets</p>
+            </div>
+
+            <!-- FORMULAIRE -->
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Gestion des erreurs -->
+                {% if form.errors %}
+                <div class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg flex items-center">
+                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                    Identifiant ou mot de passe incorrect.
+                </div>
+                {% endif %}
+
+                <!-- Champ Nom d'utilisateur -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fa-solid fa-user mr-2 text-blue-400"></i>
+                        Nom d'utilisateur
+                    </label>
+                    <input type="text" 
+                           name="username" 
+                           required 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                           placeholder="Votre nom d'utilisateur">
+                </div>
+
+                <!-- Champ Mot de passe -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fa-solid fa-key mr-2 text-yellow-400"></i>
+                        Mot de passe
+                    </label>
+                    <input type="password" 
+                           name="password" 
+                           required 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                           placeholder="Votre mot de passe">
+                </div>
+
+                <!-- Bouton de connexion -->
+                <button type="submit" 
+                        class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:from-green-500 hover:to-green-400 transition duration-300 transform hover:scale-105">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                    Se connecter
+                </button>
+            </form>
+
+            <!-- LIEN MOT DE PASSE OUBLIÉ -->
+            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
+                <a href="{% url 'password_reset' %}" class="text-green-400 hover:text-green-300 transition text-sm">
+                    <i class="fa-solid fa-key mr-1"></i>
+                    Mot de passe oublié ?
+                </a>
+            </div>
         </div>
-        
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
-            <input type="password" name="password" required
-                   class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+
+        <!-- LIEN RETOUR -->
+        <div class="text-center mt-6">
+            <a href="{% url 'home' %}" 
+               class="inline-flex items-center text-green-400 hover:text-green-300 transition">
+                <i class="fa-solid fa-arrow-left mr-2"></i>
+                Retour à la page d'accueil
+            </a>
         </div>
-
-        <button type="submit" 
-                class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
-            Se connecter
-        </button>
-    </form>
-
-    <div class="mt-4 text-center text-sm text-gray-600">
-        <a href="{% url 'password_reset' %}" class="text-blue-600 hover:underline">
-            Mot de passe oublié ?
-        </a>
-
     </div>
 </div>
 {% endblock %}

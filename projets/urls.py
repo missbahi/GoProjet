@@ -3,12 +3,25 @@
 from django.urls import path
 from . import views
 from django.contrib.auth.views import LogoutView
-
+from django.contrib.auth import views as auth_views
 # This file defines the URL patterns for the 'projets' app.
 
 app_name = "projets"
 
 urlpatterns = [
+    # Home
+    path('', views.home, name='home'),
+    
+    # URLs d'authentification personnalisées
+    path('accounts/login/', views.CustomLoginView.as_view(), name='login'),
+    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
+    path('accounts/password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
+    path('accounts/password_reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('accounts/access_denied/', views.access_denied, name='access_denied'),
+    
+    # Gestion des projets
     path('projets/', views.liste_projets, name='liste_projets'),
     path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
     
@@ -33,6 +46,7 @@ urlpatterns = [
     path('lot/<int:lot_id>/node/<int:node_id>/outdent/', views.outdent_node, name='outdent_node'),
     path('lot/<int:lot_id>/node/<int:node_id>/children/', views.get_children, name='get_children'),
     
+    # Apropos et base de données
     path('apropos/', views.apropos, name='apropos'),
     path('base-donnees/', views.base_donnees, name='base_donnees'),
     

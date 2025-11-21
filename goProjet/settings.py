@@ -46,22 +46,40 @@ if os.environ.get('CLOUDINARY_CLOUD_NAME'):
 else:
     print("💻 Mode local")
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-
-# MIDDLEWARE
+# MIDDLEWARE - Gardez seulement AdminRedirectMiddleware
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'projets.middleware.admin_redirect.AdminRedirectMiddleware',
-    'projets.middleware.auth_required.AuthRequiredMiddleware',  
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
+    'projets.middleware.admin_redirect.AdminRedirectMiddleware',
 ]
-LOGIN_URL = '/admin/login/'  # Utilise l'interface d'admin Django
-LOGIN_REDIRECT_URL = '/'     # Après connexion
-LOGOUT_REDIRECT_URL = '/admin/login/'  # Après déconnexion
+
+# Configuration d'authentification
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'home'
+LOGOUT_REDIRECT_URL = 'home'
+
+# URLs publiques (sans authentification requise)
+PUBLIC_URLS = [
+    '/',  # Page d'accueil
+    '/apropos/',
+    '/accounts/login/',
+    '/accounts/password_reset/',
+    '/accounts/password_reset/done/',
+    '/accounts/reset/',  # Pour les liens de réinitialisation
+    '/accounts/reset/done/',
+    '/static/',
+    '/media/',
+]
+
+
+
 # SÉCURITÉ AUTHENTIFICATION
 SESSION_COOKIE_AGE = 1209600  # 2 semaines en secondes
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Garder la session
@@ -113,7 +131,17 @@ if DEBUG:
     STATICFILES_DIRS = [os.path.join(BASE_DIR, 'projets/static')]
 else:
     STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# Static files configuration
 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # REQUIRED for collectstatic
+
+# Additional static directories
+STATICFILES_DIRS = [ os.path.join(BASE_DIR, 'projets/static'),
+                    ]
+
+# Optional: Whitenoise for production
+if not DEBUG:
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # MEDIA FILES
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
@@ -139,3 +167,13 @@ else:
     SECURE_SSL_REDIRECT = False
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
+    
+# Email configuration for production
+if not DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_HOST = os.environ.get('EMAIL_HOST')
+    EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+    EMAIL_USE_TLS = True
+    EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER')
+    EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+    DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'missbahi@gmail.com')

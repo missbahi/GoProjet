@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4">
+    <div class="w-full max-w-md">
+        <div class="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8 text-center">
+            <!-- LOGO -->
+            <div class="flex justify-center mb-6">
+                <div class="bg-white rounded-lg shadow-lg p-3">
+                    <img src="{% static 'images/LOGO MEGAP.jpg' %}" alt="Logo MEGAP BTP" class="h-12 w-auto">
+                </div>
+            </div>
+
+            <!-- ICÔNE -->
+            <div class="text-6xl text-red-400 mb-4">
+                <i class="fa-solid fa-ban"></i>
+            </div>
+
+            <!-- MESSAGE -->
+            <h1 class="text-2xl font-bold text-red-400 mb-4">
+                Accès refusé
+            </h1>
+            
+            <p class="text-gray-300 mb-6">
+                Vous n'avez pas les permissions nécessaires pour accéder à cette page.
+            </p>
+
+            <!-- BOUTONS -->
+            <div class="space-y-3">
+                <a href="{% url 'home' %}" 
+                   class="inline-flex items-center bg-green-600 text-white px-6 py-3 rounded-lg shadow hover:bg-green-500 transition w-full justify-center">
+                    <i class="fa-solid fa-house mr-2"></i>
+                    Retour à l'accueil
+                </a>
+                
+                {% if not user.is_authenticated %}
+                <a href="{% url 'login' %}" 
+                   class="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-500 transition w-full justify-center">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                    Se connecter
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

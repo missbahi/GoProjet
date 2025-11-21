@@ -35,7 +35,7 @@ from django.views.generic import ListView, CreateView, UpdateView, DeleteView, D
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from decimal import Decimal
-
+from django.contrib.auth import views as auth_views
 VIEWABLE_TYPES = {
         '.pdf': 'application/pdf',
         '.jpg': 'image/jpeg',
@@ -48,8 +48,51 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
+
+
+#------------------ Puur la Gestion de login ------------------
+class CustomLoginView(auth_views.LoginView):
+    template_name = 'registration/login.html'
+    
+    def form_valid(self, form):
+        messages.success(self.request, "Connexion réussie !")
+        return super().form_valid(form)
+    
+    def form_invalid(self, form):
+        messages.error(self.request, "Identifiant ou mot de passe incorrect.")
+        return super().form_invalid(form)
+
+class CustomPasswordResetView(auth_views.PasswordResetView):
+    template_name = 'registration/password_reset_form.html'
+    email_template_name = 'registration/password_reset_email.html'
+    subject_template_name = 'registration/password_reset_subject.txt'
+    success_url = reverse_lazy('password_reset_done')
+    
+    def form_valid(self, form):
+        messages.info(self.request, "Un email de réinitialisation a été envoyé.")
+        return super().form_valid(form)
+
+class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
+    template_name = 'registration/password_reset_done.html'
+
+class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
+    template_name = 'registration/password_reset_confirm.html'
+    success_url = reverse_lazy('password_reset_complete')
+    
+    def form_valid(self, form):
+        messages.success(self.request, "Votre mot de passe a été modifié avec succès !")
+        return super().form_valid(form)
+
+class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
+    template_name = 'registration/password_reset_complete.html'
+
+# Vue pour gérer l'accès refusé
+def access_denied(request):
+    return render(request, 'registration/access_denied.html', status=403)
+
+
 #------------------ Page d'accueil ------------------
-@login_required
+
 def home(request):
     # Nombre de projets
     today = date.today()
