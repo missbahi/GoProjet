@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "projets/base.html" %}
 {% load static %}
 
 {% block content %}
@@ -28,7 +28,7 @@
 
             <!-- BOUTONS -->
             <div class="space-y-3">
-                <a href="{% url 'home' %}" 
+                <a href="{% url 'projets:home' %}" 
                    class="inline-flex items-center bg-green-600 text-white px-6 py-3 rounded-lg shadow hover:bg-green-500 transition w-full justify-center">
                     <i class="fa-solid fa-house mr-2"></i>
                     Retour à l'accueil

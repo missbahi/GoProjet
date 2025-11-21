@@ -30,12 +30,14 @@ from django.contrib.auth import update_session_auth_hash
 import logging
 logger = logging.getLogger(__name__)
 from django.utils import timezone
+
 #------------------ POur la Gestion des taches ------------------
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from decimal import Decimal
 from django.contrib.auth import views as auth_views
+
 VIEWABLE_TYPES = {
         '.pdf': 'application/pdf',
         '.jpg': 'image/jpeg',
@@ -47,8 +49,6 @@ VIEWABLE_TYPES = {
         '.html': 'text/html',
         '.htm': 'text/html',
     }
-
-
 
 import django
 from django.views.decorators.csrf import csrf_exempt
@@ -108,7 +108,7 @@ def diagnostic(request):
 
 #------------------ Puur la Gestion de login ------------------
 class CustomLoginView(auth_views.LoginView):
-    template_name = 'registration/login.html'
+    template_name = 'authentification/login.html'
     
     def form_valid(self, form):
         messages.success(self.request, "Connexion réussie !")
@@ -119,20 +119,26 @@ class CustomLoginView(auth_views.LoginView):
         return super().form_invalid(form)
 
 class CustomPasswordResetView(auth_views.PasswordResetView):
-    template_name = 'registration/password_reset_form.html'
-    email_template_name = 'registration/password_reset_email.html'
-    subject_template_name = 'registration/password_reset_subject.txt'
+    template_name = 'authentification/password_reset_form.html'
+    email_template_name = 'authentification/password_reset_email.html'
+    subject_template_name = 'authentification/password_reset_subject.txt'
     success_url = reverse_lazy('password_reset_done')
+    def get_template_names(self):
+        templates = super().get_template_names()
+        return templates
     
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        return context
     def form_valid(self, form):
         messages.info(self.request, "Un email de réinitialisation a été envoyé.")
         return super().form_valid(form)
 
 class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
-    template_name = 'registration/password_reset_done.html'
+    template_name = 'authentification/password_reset_done.html'
 
 class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
-    template_name = 'registration/password_reset_confirm.html'
+    template_name = 'authentification/password_reset_confirm.html'
     success_url = reverse_lazy('password_reset_complete')
     
     def form_valid(self, form):
@@ -140,12 +146,11 @@ class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
         return super().form_valid(form)
 
 class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
-    template_name = 'registration/password_reset_complete.html'
+    template_name = 'authentification/password_reset_complete.html'
 
 # Vue pour gérer l'accès refusé
 def access_denied(request):
-    return render(request, 'registration/access_denied.html', status=403)
-
+    return render(request, 'authentification/access_denied.html', status=403)
 
 #------------------ Page d'accueil ------------------
 
@@ -973,6 +978,30 @@ def serve_avatar(request, filename):
                 return HttpResponse(f.read(), content_type='image/png')
         else:
             return HttpResponseNotFound('Avatar not found')
+@login_required
+def avatar_upload_modal(request):
+    """Retourne la modal dédiée à l'upload d'avatar"""
+    try:
+        print("🔄 avatar_upload_modal appelée")
+        print(f"👤 Utilisateur: {request.user}")
+        print(f"✅ Authentifié: {request.user.is_authenticated}")
+        
+        # Vérifier que le template existe
+        from django.template.loader import get_template
+        template = get_template('projets/modals/avatar_upload_modal.html')
+        print("✅ Template trouvé")
+        
+        return render(request, 'projets/modals/avatar_upload_modal.html')
+        
+    except Exception as e:
+        print(f"❌ Erreur dans avatar_upload_modal: {str(e)}")
+        import traceback
+        print(f"📋 Traceback: {traceback.format_exc()}")
+        
+        # Retourner une erreur simple pour debug
+        from django.http import HttpResponse
+        return HttpResponse(f"Erreur: {str(e)}", status=500)
+
 from .forms import AvatarUpdateForm
 @login_required
 def profile_view(request):
@@ -1027,6 +1056,7 @@ def profile_modal(request):
     return render(request, 'projets/modals/profile_modal.html', {
         'user': request.user
     })
+
 @login_required
 def password_modal(request):
     return render(request, 'projets/modals/password_modal.html')

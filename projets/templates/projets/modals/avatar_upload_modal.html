@@ -1,46 +1,53 @@
-<div id="avatar-upload-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-    <div class="bg-gray-800 rounded-lg max-w-md w-full border border-gray-700">
-        <div class="flex justify-between items-center border-b border-gray-700 p-4">
-            <h3 class="text-lg font-medium text-white">Changer la photo de profil</h3>
-            <button @click="$dispatch('close-modal')" class="text-gray-400 hover:text-white">
-                &times;
+{% load static %}
+<div id="avatar-upload-modal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md">
+        <div class="flex justify-between items-center border-b border-gray-700 p-6">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fas fa-camera mr-2"></i>Changer la photo de profil
+            </h3>
+            <button onclick="document.getElementById('avatar-upload-modal').remove()" 
+                    class="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2">
+                <i class="fas fa-times text-lg"></i>
             </button>
         </div>
 
-        <form hx-post="{% url 'projets:upload_avatar' %}"
-              hx-encoding="multipart/form-data"
-              hx-target="#avatar-container"
-              class="p-6">
+        <!-- ACTION ABSOLUE -->
+        <form method="post" action="/upload-avatar/" enctype="multipart/form-data" class="p-6">
             {% csrf_token %}
             
-            <div class="flex flex-col items-center mb-6">
-                <div id="avatar-container" class="mb-4">
-                    <img src="{{ user.profile.get_avatar_url }}" 
-                         class="w-32 h-32 rounded-full object-cover mx-auto"
-                         id="avatar-preview">
-                </div>
-
+            <div class="text-center mb-6">
+                <img src="{{ user.profile.avatar_url }}" 
+                     class="w-32 h-32 rounded-full border-4 border-green-500 mx-auto mb-4"
+                     id="avatar-preview"
+                     alt="Avatar"
+                     onerror="this.src='{% static 'images/default_avatar.png' %}'">
+                
                 <input type="file" 
                        name="avatar" 
-                       id="avatar-upload" 
+                       id="avatar-input"
                        accept="image/*" 
                        class="hidden"
-                       @change="previewFile">
-
-                <label for="avatar-upload" 
-                       class="cursor-pointer bg-[#2B9C62] text-white px-4 py-2 rounded-lg hover:bg-[#228752] transition-colors">
-                    Sélectionner une image
+                       onchange="previewAvatar(this)">
+                
+                <label for="avatar-input" 
+                       class="block w-full bg-green-500 text-white text-center py-3 rounded-lg cursor-pointer hover:bg-green-400 transition duration-200 font-semibold mb-2">
+                    <i class="fas fa-folder-open mr-2"></i>Sélectionner une image
                 </label>
+                
+                <p class="text-gray-400 text-xs">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Formats: JPG, PNG, GIF • Maximum 5MB
+                </p>
             </div>
 
-            <div class="flex justify-end space-x-3">
+            <div class="flex space-x-3">
                 <button type="button" 
-                        @click="$dispatch('close-modal')"
-                        class="px-4 py-2 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700">
+                        onclick="document.getElementById('avatar-upload-modal').remove()"
+                        class="flex-1 bg-gray-700 text-gray-300 px-4 py-3 rounded-lg border border-gray-600 hover:bg-gray-600 transition duration-200 font-semibold">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-[#2B9C62] text-white rounded-lg hover:bg-[#228752]">
+                        class="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-400 transition duration-200 font-semibold">
                     Enregistrer
                 </button>
             </div>
@@ -49,28 +56,19 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Prévisualisation de l'image
-    function previewFile(event) {
-        const file = event.target.files[0];
-        const preview = document.getElementById('avatar-preview');
+function previewAvatar(input) {
+    if (input.files && input.files[0]) {
         const reader = new FileReader();
-
-        reader.onloadend = function() {
-            preview.src = reader.result;
-        }
-
-        if (file) {
-            reader.readAsDataURL(file);
-        }
+        const preview = document.getElementById('avatar-preview');
+        
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.add('ring-2', 'ring-green-400');
+            setTimeout(() => {
+                preview.classList.remove('ring-2', 'ring-green-400');
+            }, 1000);
+        };
+        reader.readAsDataURL(input.files[0]);
     }
-    // Gestion des événements Alpine.js
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('avatarUpload', () => ({
-            previewFile(event) {
-                previewFile(event);
-            }
-        }));
-    });
-});
+}
 </script>

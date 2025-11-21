@@ -1,81 +1,110 @@
-<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+{% load static %}
+<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 hover:scale-100">
         <!-- En-tête -->
-        <div class="flex justify-between items-center border-b p-4">
-            <h3 class="text-lg font-semibold">Mon Profil</h3>
-            <button onclick="closeModal('profileModal')" class="text-gray-500 hover:text-gray-700">
-                <i class="fas fa-times"></i>
+        <div class="flex justify-between items-center border-b border-gray-700 p-6">
+            <h3 class="text-xl font-bold text-green-400">
+                <i class="fas fa-user-circle mr-2"></i>Mon Profil
+            </h3>
+            <button onclick="closeModal('profileModal')" 
+                    class="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2 transition duration-200">
+                <i class="fas fa-times text-lg"></i>
             </button>
         </div>
          
         <!-- Contenu -->
-        <div class="p-4">
+        <div class="p-6">
             <form id="profileForm" method="post" 
                 action="{% url 'projets:profile_update' %}" 
-                enctype="multipart/form-data">
+                enctype="multipart/form-data"
+                class="space-y-6">
 
                 {% csrf_token %}
-                <div class="space-y-4">
-                    <!-- Avatar -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Avatar</label>
-                        <div class="flex items-center mt-2">
-                            <!-- Prévisualisation -->
+                
+                <!-- Avatar -->
+                <div class="text-center">
+                    <label class="block text-sm font-medium text-gray-300 mb-3">Photo de profil</label>
+                    <div class="flex flex-col items-center space-y-4">
+                        <!-- Prévisualisation -->
+                        <div class="relative">
                             <img id="avatarPreview" 
                                 src="{{ user.profile.avatar.url }}" 
-                                class="w-16 h-16 rounded-full mr-4 object-cover"
-                                onerror="this.src='/static/images/default.png'">
-                            
-                            <!-- Input fichier masqué -->
-                            <input type="file" 
-                                name="avatar" 
-                                id="avatarInput" 
-                                class="hidden" 
-                                accept="image/*">
-                            
-                            <!-- Bouton déclencheur -->
-                            <button type="button" 
-                                    id="changeAvatarBtn"
-                                    class="px-3 py-1 bg-blue-100 text-blue-600 rounded text-sm hover:bg-blue-200">
-                                Changer
-                            </button>
+                                class="w-24 h-24 rounded-full border-4 border-green-500 object-cover shadow-lg"
+                                onerror="this.src='{% static 'images/default_avatar.png' %}'">
+                            <div class="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1 shadow-lg">
+                                <i class="fas fa-camera text-white text-xs"></i>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <!-- Champs utilisateur -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Nom complet</label>
-                        <input type="text" name="full_name" value="{{ user.get_full_name }}" 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700">Email</label>
-                        <input type="email" name="email" value="{{ user.email }}" 
-                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 border">
+                        
+                        <!-- Input fichier masqué -->
+                        <input type="file" 
+                            name="avatar" 
+                            id="avatarInput" 
+                            class="hidden" 
+                            accept="image/*">
+                        
+                        <!-- Bouton déclencheur -->
+                        <button
+                            hx-get="{% url 'projets:avatar_upload_modal' %}"
+                            hx-target="#modals-container"
+                            hx-swap="innerHTML"
+                            class="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-2 rounded-lg hover:from-green-500 hover:to-green-400 transition duration-200 font-semibold">
+                            <i class="fas fa-camera mr-2"></i>Changer la photo
+                        </button>
                     </div>
                 </div>
                 
-                <!-- Boutons -->
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal('profileModal')" 
-                        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
-                        Annuler
+                <!-- Informations utilisateur -->
+                <div class="space-y-4">
+                    <!-- Nom complet -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-user mr-2 text-blue-400"></i>Nom complet
+                        </label>
+                        <input type="text" 
+                               name="full_name" 
+                               value="{{ user.get_full_name }}" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                               placeholder="Votre nom complet">
+                    </div>
+                    
+                    <!-- Email -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-envelope mr-2 text-yellow-400"></i>Adresse email
+                        </label>
+                        <input type="email" 
+                               name="email" 
+                               value="{{ user.email }}" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                               placeholder="votre@email.com">
+                    </div>
+                </div>
+                
+                <!-- Boutons d'action -->
+                <div class="flex space-x-3 pt-4">
+                    <button type="button" 
+                            onclick="closeModal('profileModal')" 
+                            class="flex-1 bg-gray-700 text-gray-300 px-4 py-3 rounded-lg hover:bg-gray-600 hover:text-white transition duration-200 border border-gray-600 font-semibold">
+                        <i class="fas fa-times mr-2"></i>Annuler
                     </button>
                     <button type="submit" 
-                        id="submitProfileBtn" 
-                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        Enregistrer
+                            id="submitProfileBtn" 
+                            class="flex-1 bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-3 rounded-lg hover:from-green-500 hover:to-green-400 transition duration-200 font-semibold shadow-lg">
+                        <i class="fas fa-save mr-2"></i>Enregistrer
                     </button>
                 </div>
             </form>
+            
             <!-- Lien changement mot de passe -->
-            <div class="mt-4 pt-4 border-t">
+            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
                 <button 
-                hx-get="{% url 'projets:password_modal' %}"
+                    hx-get="{% url 'projets:password_modal' %}"
                     hx-target="#modals-container"
                     hx-swap="innerHTML"
-                    class="text-blue-600 hover:text-blue-800 text-sm font-medium">
-                    <i class="fas fa-key mr-1"></i> Changer le mot de passe
+                    class="text-green-400 hover:text-green-300 transition duration-200 font-medium group">
+                    <i class="fas fa-key mr-2 group-hover:animate-bounce"></i> 
+                    Changer le mot de passe
                 </button>
             </div>
         </div>
@@ -83,44 +112,100 @@
 </div>
 
 <script>
-// Gestionnaire pour le bouton "Changer"
-document.addEventListener('DOMContentLoaded', function() {
-    // Une fois que la modale est chargée, attacher les événements
-    const setupProfileModal = function() {
-        const changeAvatarBtn = document.getElementById('changeAvatarBtn');
-        const avatarInput = document.getElementById('avatarInput');
-        const avatarPreview = document.getElementById('avatarPreview');
+// console.log('🎯 Script INTERNE profile_modal exécuté');
+
+// // Initialisation immédiate
+// document.addEventListener('DOMContentLoaded', function() {
+//     console.log('🏠 DOMContentLoaded dans la modal');
+//     setupAvatarButton();
+// });
+
+// // function setupAvatarButton() {
+// //     const changeBtn = document.getElementById('changeAvatarBtn');
+// //     const avatarInput = document.getElementById('avatarInput');
+    
+// //     console.log('Dans modal - changeBtn:', changeBtn);
+// //     console.log('Dans modal - avatarInput:', avatarInput);
+    
+// //     if (changeBtn && avatarInput) {
+// //         changeBtn.addEventListener('click', function() {
+// //             console.log('✅ Clic détecté (script interne)');
+// //             avatarInput.click();
+// //         });
+// //     }
+// // }
+
+// // // Gestionnaire pour le bouton "Changer"
+// // document.addEventListener('DOMContentLoaded', function() {
+// //     const setupProfileModal = function() {
+// //         console.log('🔧 setupProfileModal executée');
         
-        if (changeAvatarBtn && avatarInput) {
-            // Gérer le clic sur le bouton "Changer"
-            changeAvatarBtn.addEventListener('click', function() {
-                avatarInput.click();
-            });
+// //         const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+// //         const avatarInput = document.getElementById('avatarInput');
+        
+// //         console.log('changeAvatarBtn:', changeAvatarBtn);
+// //         console.log('avatarInput:', avatarInput);
+
+// //         if (changeAvatarBtn && avatarInput) {
+// //             console.log('✅ Éléments trouvés, ajout des événements...');
             
-            // Gérer le changement de fichier
-            avatarInput.addEventListener('change', function(e) {
-                if (this.files && this.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        avatarPreview.src = e.target.result;
-                    };
-                    reader.readAsDataURL(this.files[0]);
-                }
-            });
-        }
-    };
+// //             changeAvatarBtn.addEventListener('click', function() {
+// //                 console.log('🎯 Bouton "Changer" cliqué!');
+// //                 avatarInput.click();
+// //             });
+// //             // Gérer le changement de fichier
+// //             avatarInput.addEventListener('change', function(e) {
+// //                 if (this.files && this.files[0]) {
+// //                     const reader = new FileReader();
+// //                     reader.onload = function(e) {
+// //                         avatarPreview.src = e.target.result;
+// //                         // Ajouter une animation de confirmation
+// //                         avatarPreview.classList.add('ring-2', 'ring-green-400');
+// //                         setTimeout(() => {
+// //                             avatarPreview.classList.remove('ring-2', 'ring-green-400');
+// //                         }, 1000);
+// //                     };
+// //                     reader.readAsDataURL(this.files[0]);
+// //                 }
+// //             });
+// //         }
+
+// //         // Animation de soumission du formulaire
+// //         if (profileForm) {
+// //             profileForm.addEventListener('submit', function() {
+// //                 const submitBtn = document.getElementById('submitProfileBtn');
+// //                 if (submitBtn) {
+// //                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enregistrement...';
+// //                     submitBtn.disabled = true;
+// //                 }
+// //             });
+// //         }
+// //     };
     
-    // Exécuter maintenant si la modale est déjà dans le DOM
-    if (document.getElementById('profileModal')) {
-        setupProfileModal();
-    }
+// //     // Exécuter maintenant si la modale est déjà dans le DOM
+// //     if (document.getElementById('profileModal')) {
+// //         console.log('Setup profile modal');
+// //         setupProfileModal();
+// //     }
     
-    // Écouter les événements HTMX pour les modales chargées dynamiquement
-    document.body.addEventListener('htmx:afterSwap', function(event) {
-        if (event.detail.target.id === 'modals-container' && 
-            event.detail.target.innerHTML.includes('profileModal')) {
-            setTimeout(setupProfileModal, 50); // Petit délai pour laisser le DOM se mettre à jour
-        }
-    });
-});
+// //     // Écouter les événements HTMX pour les modales chargées dynamiquement
+// //     document.body.addEventListener('htmx:afterSwap', function(event) {
+// //         if (event.detail.target.id === 'modals-container' && 
+// //             event.detail.target.innerHTML.includes('profileModal')) {
+// //             setTimeout(setupProfileModal, 50);
+// //         }
+// //     });
+// // });
+
+// // Fonction de fermeture avec animation
+// function closeProfileModal() {
+//     const modal = document.getElementById('profileModal');
+//     if (modal) {
+//         modal.classList.add('opacity-0', 'scale-95');
+//         setTimeout(() => {
+//             modal.remove();
+//         }, 300);
+//     }
+// }
+
 </script>

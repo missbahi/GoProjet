@@ -12,15 +12,7 @@ urlpatterns = [
     # Home
     path('', views.home, name='home'),
     path('diagnostic/', views.diagnostic, name='diagnostic'),
-    # URLs d'authentification personnalisées
-    path('accounts/login/', views.CustomLoginView.as_view(), name='login'),
-    path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('accounts/password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
-    path('accounts/password_reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('accounts/reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('accounts/reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('accounts/access_denied/', views.access_denied, name='access_denied'),
-    
+
     # Gestion des projets
     path('projets/', views.liste_projets, name='liste_projets'),
     path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
@@ -62,6 +54,7 @@ urlpatterns = [
     path('profile/update/', views.profile_update, name='profile_update'),
     path('profile/change-password/', views.password_change, name='password_change'),
     path('media/avatars/<str:filename>', views.serve_avatar, name='serve_avatar'),
+    path('modal/avatar-upload/', views.avatar_upload_modal, name='avatar_upload_modal'),
     
     # Gestion des notifications
     path('notifications/', views.liste_notifications, name='liste_notifications'),

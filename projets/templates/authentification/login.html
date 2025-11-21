@@ -1,5 +1,5 @@
-{% extends "base.html" %}
-
+{% extends "projets/base.html" %}
+{% load static %}
 {% block content %}
 <div class="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4">
     <div class="w-full max-w-md">
@@ -78,7 +78,7 @@
 
         <!-- LIEN RETOUR -->
         <div class="text-center mt-6">
-            <a href="{% url 'home' %}" 
+            <a href="{% url 'projets:home' %}" 
                class="inline-flex items-center text-green-400 hover:text-green-300 transition">
                 <i class="fa-solid fa-arrow-left mr-2"></i>
                 Retour à la page d'accueil
