@@ -114,6 +114,7 @@ def test_cloudinary(request):
         'cloudinary_configured': bool(settings.CLOUDINARY_STORAGE) if hasattr(settings, 'CLOUDINARY_STORAGE') else False,
         'media_root': settings.MEDIA_ROOT,
     }
+    print(config)
     return JsonResponse(config)
 #------------------ Puur la Gestion de login ------------------
 class CustomLoginView(auth_views.LoginView):
