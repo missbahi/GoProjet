@@ -1,7 +1,6 @@
 # Django
 *.pyc
 *__pycache__/
-db.sqlite3
 migrations/
 
 # Environnements virtuels
