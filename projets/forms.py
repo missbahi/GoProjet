@@ -23,7 +23,7 @@ class AvatarUpdateForm(forms.ModelForm):
         avatar = self.cleaned_data.get('avatar')
         if avatar:
             # Validation de la taille (max 2MB)
-            if avatar.size > 2 * 1024 * 1024:
+            if avatar.size > 5 * 1024 * 1024:
                 raise forms.ValidationError("L'image ne doit pas dépasser 2MB.")
             
             # Validation du type de fichier
