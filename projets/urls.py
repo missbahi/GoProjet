@@ -11,7 +11,7 @@ app_name = "projets"
 urlpatterns = [
     # Home
     path('', views.home, name='home'),
-    
+    path('diagnostic/', views.diagnostic, name='diagnostic'),
     # URLs d'authentification personnalisées
     path('accounts/login/', views.CustomLoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),

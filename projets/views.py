@@ -50,6 +50,62 @@ VIEWABLE_TYPES = {
 
 
 
+import django
+from django.views.decorators.csrf import csrf_exempt
+
+@csrf_exempt
+def diagnostic(request):
+    """Page de diagnostic complète pour Railway"""
+    
+    # Test des fichiers statiques
+    static_tests = {}
+    js_files_to_check = [
+        'projets/js/modals.js',
+        'projets/js/chart.js', 
+        'projets/js/profile.js',
+        'projets/js/notification-handler.js',
+        'projets/images/default_avatar.png'
+    ]
+    
+    for file_path in js_files_to_check:
+        full_path = os.path.join(settings.STATIC_ROOT, file_path)
+        static_tests[file_path] = {
+            'exists': os.path.exists(full_path),
+            'path': full_path,
+            'in_static_root': os.path.exists(settings.STATIC_ROOT)
+        }
+    
+    # Informations système
+    system_info = {
+        'django_version': django.get_version(),
+        'debug_mode': settings.DEBUG,
+        'static_root': settings.STATIC_ROOT,
+        'static_url': settings.STATIC_URL,
+        'staticfiles_dirs': [str(p) for p in settings.STATICFILES_DIRS],
+        'installed_apps': [app for app in settings.INSTALLED_APPS if 'django' not in app],
+        'database': settings.DATABASES['default']['ENGINE'],
+        'whitenoise_in_middleware': 'whitenoise.middleware.WhiteNoiseMiddleware' in settings.MIDDLEWARE
+    }
+    
+    # Test URLs
+    base_url = request.build_absolute_uri('/')[:-1]
+    test_urls = {
+        'home_page': f"{base_url}/",
+        'login_page': f"{base_url}/accounts/login/",
+        'static_modals_js': f"{base_url}/static/projets/js/modals.js",
+        'static_chart_js': f"{base_url}/static/projets/js/chart.js",
+        'diagnostic_page': f"{base_url}/diagnostic/",
+    }
+    
+    context = {
+        'system_info': system_info,
+        'static_tests': static_tests,
+        'test_urls': test_urls,
+        'base_url': base_url,
+    }
+    
+    return render(request, 'projets/diagnostic.html', context)
+
 #------------------ Puur la Gestion de login ------------------
 class CustomLoginView(auth_views.LoginView):
     template_name = 'registration/login.html'
