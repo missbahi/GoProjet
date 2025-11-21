@@ -1,0 +1,15 @@
+# railway.toml
+[build]
+builder = "nixpacks"
+
+[build.commands]
+install = "pip install -r requirements.txt"
+build = "python manage.py collectstatic --noinput --verbose"
+
+[deploy]
+startCommand = "python manage.py migrate && python manage.py collectstatic --noinput --verbose && gunicorn goProjet.wsgi:application"
+
+[[services]]
+name = "web"
+[services.env]
+DISABLE_COLLECTSTATIC = "0"
