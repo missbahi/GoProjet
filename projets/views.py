@@ -103,19 +103,9 @@ def diagnostic(request):
         'test_urls': test_urls,
         'base_url': base_url,
     }
-    test_cloudinary(request)
+
     return render(request, 'projets/diagnostic.html', context)
-def test_cloudinary(request):
-    from django.conf import settings
-    from django.http import JsonResponse
-    
-    config = {
-        'storage': settings.DEFAULT_FILE_STORAGE,
-        'cloudinary_configured': bool(settings.CLOUDINARY_STORAGE) if hasattr(settings, 'CLOUDINARY_STORAGE') else False,
-        'media_root': settings.MEDIA_ROOT,
-    }
-    print(config)
-    return JsonResponse(config)
+
 #------------------ Puur la Gestion de login ------------------
 class CustomLoginView(auth_views.LoginView):
     template_name = 'authentification/login.html'
