@@ -125,23 +125,20 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_TZ = True
 
-# STATIC FILES
+## STATIC FILES - Avec gestion DEBUG
 STATIC_URL = '/static/'
-if DEBUG:
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'projets/static')]
-else:
-    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-# Static files configuration
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'projets/static'),
+]
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')  # REQUIRED for collectstatic
-
-# Additional static directories
-STATICFILES_DIRS = [ os.path.join(BASE_DIR, 'projets/static'),
-                    ]
-
-# Optional: Whitenoise for production
+# Whitenoise seulement en production
 if not DEBUG:
     STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+else:
+    # En développement, utiliser le storage par défaut
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
 # MEDIA FILES
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
