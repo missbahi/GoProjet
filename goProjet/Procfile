@@ -1,2 +1,2 @@
-web: mkdir -p /app/static /app/staticfiles && python manage.py migrate && python manage.py collectstatic --noinput && gunicorn goProjet.wsgi:application --bind 0.0.0.0:$PORT
-release: python manage.py migrate
+web: python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn goprojet.wsgi:application --bind 0.0.0.0:$PORT
+release: python manage.py migrate --noinput

@@ -8,7 +8,7 @@ from pathlib import Path
 # --- 1. CHEMINS DE BASE ---
 # La définition de BASE_DIR est correcte et utilise pathlib
 BASE_DIR = Path(__file__).resolve().parent.parent
-print(f"DEBUG - BASE_DIR (Racine du Projet) : {BASE_DIR}")
+
 # --- 2. SÉCURITÉ ET ENVIRONNEMENT ---
 # Récupération de la clé secrète
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-local-only')
@@ -139,12 +139,7 @@ STATICFILES_DIRS = [
     # Laisser 'projets/static' si c'est la structure voulue.
     BASE_DIR / 'goProjet' / 'static',
 ]
-# --- DEBUG 2 : Afficher le chemin complet calculé ---
-if BASE_DIR / 'static' in STATICFILES_DIRS:
-    print(f"DEBUG - STATICFILES_DIRS (Chemin Cherché) : {BASE_DIR / 'static'}")
-else:
-    # Si vous avez plusieurs entrées, affichez toute la liste
-    print(f"DEBUG - STATICFILES_DIRS (Liste Complète) : {STATICFILES_DIRS}")
+
 # Whitenoise seulement en production
 if not DEBUG:
     # Pour la production : Whitenoise pour le service statique
@@ -164,7 +159,6 @@ CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
 
 if CLOUDINARY_CLOUD_NAME:
     print("☁️  Cloudinary activé pour le stockage de fichiers.")
-    
     # 1. Ajout des applications Cloudinary
     # CORRECTION MAJEURE : On ajoute les apps APRES la définition initiale
     INSTALLED_APPS.extend(['cloudinary_storage', 'cloudinary'])
@@ -176,7 +170,6 @@ if CLOUDINARY_CLOUD_NAME:
         'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
         'SECURE': True,
     }
-    
     # 3. Définition du stockage par défaut
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 else:
@@ -188,7 +181,6 @@ else:
 # --- 11. SÉCURITÉ EN PRODUCTION (RAILWAY) ---
 # La logique est correcte : basculer les sécurités basées sur DEBUG
 if not DEBUG:
-    print("🔒 Mode PRODUCTION activé. Sécurité renforcée.")
     # Paramètres de sécurité pour le proxy Railway
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SECURE_SSL_REDIRECT = True
@@ -200,7 +192,6 @@ if not DEBUG:
         'https://*.railway.app', # Wildcard pour tous les sous-domaines Railway
     ]
 else:
-    print("🔓 Mode DÉVELOPPEMENT activé. HTTP autorisé.")
     SECURE_SSL_REDIRECT = False
     CSRF_COOKIE_SECURE = False
     SESSION_COOKIE_SECURE = False
