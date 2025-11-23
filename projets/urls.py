@@ -55,6 +55,7 @@ urlpatterns = [
     path('profile/change-password/', views.password_change, name='password_change'),
     path('media/avatars/<str:filename>', views.serve_avatar, name='serve_avatar'),
     path('modal/avatar-upload/', views.avatar_upload_modal, name='avatar_upload_modal'),
+    path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
     
     # Gestion des notifications
     path('notifications/', views.liste_notifications, name='liste_notifications'),

@@ -38,6 +38,7 @@ from django.core.exceptions import PermissionDenied
 from decimal import Decimal
 from django.contrib.auth import views as auth_views
 
+MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 VIEWABLE_TYPES = {
         '.pdf': 'application/pdf',
         '.jpg': 'image/jpeg',
@@ -961,6 +962,15 @@ def mark_all_notifications_as_read(request):
     return redirect('projets:liste_notifications')
 
 #------------------ Gestion du profil ------------------
+@login_required
+def get_avatar_fragment(request):
+    """Vue HTMX pour renvoyer le HTML mis à jour de l'avatar."""
+    return render(request, 'projets/partials/avatar_fragment.html')
+
+@login_required
+def get_messages_fragment(request):
+    """Vue HTMX pour renvoyer le HTML mis à jour de la zone de messages."""
+    return render(request, 'projets/partials/messages_fragment.html')
 
 def serve_avatar(request, filename):
     """Vue personnalisée pour servir les avatars avec fallback"""
@@ -978,15 +988,66 @@ def serve_avatar(request, filename):
                 return HttpResponse(f.read(), content_type='image/png')
         else:
             return HttpResponseNotFound('Avatar not found')
+# Définition de la taille maximale (5 Mo en octets)
+@login_required
+def upload_avatar(request):
+    """
+    Gère la requête POST pour l'upload et la sauvegarde de l'avatar.
+    """
+    if request.method == 'POST':
+        avatar_file = request.FILES.get('avatar')
+        if not avatar_file:
+            messages.error(request, "Veuillez sélectionner un fichier image à uploader.")
+            # Retourner une réponse JSON avec trigger
+            response = HttpResponse(status=400)
+            response['HX-Trigger'] = json.dumps({
+                'showMessage': 'Veuillez sélectionner un fichier image à uploader.',
+                'messageType': 'error'
+            })
+            return response
+            
+        if avatar_file.size > MAX_UPLOAD_SIZE:
+            max_mb = MAX_UPLOAD_SIZE / (1024 * 1024)
+            error_msg = f"La taille du fichier ({avatar_file.size / (1024 * 1024):.2f} Mo) dépasse la limite autorisée de {max_mb:.0f} Mo."
+            response = HttpResponse(status=400)
+            response['HX-Trigger'] = json.dumps({
+                'showMessage': error_msg,
+                'messageType': 'error'
+            })
+            return response
+            
+        try:
+            profile = request.user.profile
+            profile.avatar = avatar_file
+            profile.save()
+            
+            # ✅ SUCCÈS : Renvoyer 200 avec les triggers
+            response = HttpResponse(status=200)
+            response['HX-Trigger'] = json.dumps({
+                'avatarUpdated': True,
+                'closeModal': True,
+                'showMessage': 'Photo de profil mise à jour avec succès !',
+                'messageType': 'success'
+            })
+            return response
+            
+        except Exception as e:
+            response = HttpResponse(status=500)
+            response['HX-Trigger'] = json.dumps({
+                'showMessage': f"Une erreur s'est produite lors de l'upload : {str(e)}",
+                'messageType': 'error'
+            })
+            return response
+
+    return redirect('home')
+
 @login_required
 def avatar_upload_modal(request):
-    """Retourne la modal dédiée à l'upload d'avatar"""
-    try:
-        # Vérifier que le template existe        
-        return render(request, 'projets/modals/avatar_upload_modal.html')
-        
-    except Exception as e:
-        print(f"❌ Erreur dans avatar_upload_modal: {str(e)}")
+    """Retourne la modal d'upload d'avatar (réponse GET pour HTMX)."""
+    context = {
+        'user': request.user
+    }
+    return render(request, 'projets/modals/avatar_upload_modal.html', context)
 
 from .forms import AvatarUpdateForm
 @login_required
@@ -1003,6 +1064,7 @@ def profile_view(request):
         form = AvatarUpdateForm(instance=profile)
     
     return render(request, 'profile.html', {'form': form, 'profile': profile})
+
 @login_required
 def profile_update(request):
     if request.method == 'POST':
@@ -1038,6 +1100,7 @@ def profile_update(request):
             return HttpResponseBadRequest(f"Erreur: {str(e)}")
     
     return HttpResponseBadRequest("Méthode non autorisée")
+
 def profile_modal(request):
     return render(request, 'projets/modals/profile_modal.html', {
         'user': request.user

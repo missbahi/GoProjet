@@ -22,7 +22,10 @@
 
 <!-- div principale de la gestion des modals -->  
 <div id="modals-container"></div>
-     
+<!-- afficher les messages de l'utilisateur -->
+<!-- Messages -->
+
+
 <body class="font-sans">
     <!-- Container principal -->
     <div class="flex h-screen overflow-hidden "> 
@@ -160,9 +163,11 @@
 
                             <div class="relative"> <!-- Menu utilisateur -->
                                 <button id="userMenuBtn" class="flex items-center space-x-2 text-lg">
-                                    <img src="{{ user.profile.avatar_url }}" alt="Avatar" 
+                                    <img src="{{ user.profile.avatar_url }}" 
+                                        alt="Avatar" 
+                                        id="navbar-avatar"
                                         class="w-8 h-8 rounded-full object-cover"
-                                        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        onerror="handleNavbarAvatarError(this)">
                                     <span class="hidden md:inline text-[#2B9C62]">{{ user.username }}</span>
                                     <i class="fas fa-chevron-down text-xs text-[#2B9C62]"></i>
                                 </button>
@@ -517,6 +522,8 @@
             }, index * 100);
         });
     });
+
+
 </script>
 
 <!-- scripts des modals -->
@@ -537,9 +544,39 @@
         avancements: JSON.parse('{{ avancement_projets_recents|safe }}')
     };
 </script>
+<script>
+// Gestion des erreurs pour l'avatar navbar
+function handleNavbarAvatarError(img) {
+    img.onerror = null;
+    const username = "{{ user.username|default:'User' }}";
+    const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=10B981&color=fff&size=64`;
+    img.src = defaultAvatarUrl;
+}
+
+// Fonction pour rafraîchir l'avatar navbar
+function refreshNavbarAvatar() {
+    const navbarAvatar = document.getElementById('navbar-avatar');
+    if (navbarAvatar) {
+        const currentSrc = navbarAvatar.src.split('?')[0];
+        navbarAvatar.src = currentSrc + '?t=' + new Date().getTime();
+        // Réappliquer le gestionnaire d'erreur
+        navbarAvatar.onerror = function() {
+            handleNavbarAvatarError(this);
+        };
+    }
+}
+
+// Écouter l'événement avatarUpdated
+document.addEventListener('avatarUpdated', function() {
+    console.log("Avatar mis à jour - rafraîchissement navbar...");
+    window.location.reload();
+    // refreshNavbarAvatar();
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="{% static 'projets/js/chart.js' %}"></script>
-
+<script src="{% static 'projets/js/notification-handler.js' %}"></script>
 <!-- scripts de calendrier -->
+
 </body>
 </html>

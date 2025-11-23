@@ -1,5 +1,5 @@
 (function () {
-    window.showNotification = function (message, type = 'success', duration = 5000) {
+    window.showNotification = function (message, type = 'success', duration = 3000) {
         const existing = document.querySelector('.notification');
         if (existing) existing.remove();
 

@@ -5,14 +5,19 @@
             <h3 class="text-xl font-bold text-green-400">
                 <i class="fas fa-camera mr-2"></i>Changer la photo de profil
             </h3>
-            <button onclick="document.getElementById('avatar-upload-modal').remove()" 
+            <button onclick="closeAvatarModal()" 
                     class="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2">
                 <i class="fas fa-times text-lg"></i>
             </button>
         </div>
 
-        <!-- ACTION ABSOLUE -->
-        <form method="post" action="/upload-avatar/" enctype="multipart/form-data" class="p-6">
+        <!-- ✅ SUPPRIMER hx-target du formulaire pour éviter la page blanche -->
+        <form method="post" 
+              action="{% url 'projets:upload_avatar' %}" 
+              enctype="multipart/form-data" 
+              class="p-6"
+              hx-post="{% url 'projets:upload_avatar' %}"
+              hx-encoding="multipart/form-data">
             {% csrf_token %}
             
             <div class="text-center mb-6">
@@ -20,7 +25,7 @@
                      class="w-32 h-32 rounded-full border-4 border-green-500 mx-auto mb-4"
                      id="avatar-preview"
                      alt="Avatar"
-                     onerror="this.src='{% static 'images/default_avatar.png' %}'">
+                     onerror="this.src='{% static 'images/default.png' %}'">
                 
                 <input type="file" 
                        name="avatar" 
@@ -42,12 +47,13 @@
 
             <div class="flex space-x-3">
                 <button type="button" 
-                        onclick="document.getElementById('avatar-upload-modal').remove()"
+                        onclick="closeAvatarModal()"
                         class="flex-1 bg-gray-700 text-gray-300 px-4 py-3 rounded-lg border border-gray-600 hover:bg-gray-600 transition duration-200 font-semibold">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-400 transition duration-200 font-semibold">
+                        id="submitAvatarBtn"    
+                        class="flex-1 bg-green-500 text-white px-4 py-3 rounded-lg hover:bg-green-400 transition duration-200 font-semibold hidden">
                     Enregistrer
                 </button>
             </div>
@@ -57,18 +63,104 @@
 
 <script>
 function previewAvatar(input) {
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const submitBtn = document.getElementById('submitAvatarBtn');
+
     if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        if (file.size > MAX_FILE_SIZE) {
+            alert(`L'image est trop volumineuse (${(file.size / 1024 / 1024).toFixed(2)} Mo). La limite est de 5 Mo.`);
+            input.value = "";
+            submitBtn.classList.add('hidden');
+            return;
+        }
+        
         const reader = new FileReader();
         const preview = document.getElementById('avatar-preview');
         
         reader.onload = function(e) {
             preview.src = e.target.result;
+            submitBtn.classList.remove('hidden');
             preview.classList.add('ring-2', 'ring-green-400');
             setTimeout(() => {
                 preview.classList.remove('ring-2', 'ring-green-400');
             }, 1000);
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
+    } else {
+        submitBtn.classList.add('hidden');
     }
 }
+
+function closeAvatarModal() {
+    const modal = document.getElementById('avatar-upload-modal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// ✅ Écouter les événements HTMX
+document.addEventListener('htmx:afterRequest', function(e) {
+    // Vérifier si c'est notre formulaire d'upload
+    if (e.detail.elt && e.detail.elt.form && 
+        e.detail.elt.form.action.includes('upload_avatar')) {
+        
+        const status = e.detail.xhr.status;
+        console.log('Statut de la requête:', status);
+        
+        // ✅ Accepter 200 comme succès
+        if (status === 200) {
+            console.log("Upload réussi, déclenchement des mises à jour...");
+            // Les triggers vont gérer le reste
+        } else if (status >= 400) {
+            console.error("Échec de l'upload.");
+        }
+        
+        // Cacher le bouton après envoi
+        const submitBtn = document.getElementById('submitAvatarBtn');
+        if (submitBtn) {
+            submitBtn.classList.add('hidden');
+        }
+    }
+});
+
+// ✅ VERSION CORRIGÉE - Plus simple et efficace
+document.addEventListener('avatarUpdated', function() {
+    console.log("Avatar mis à jour - rafraîchissement des avatars...");
+        
+    // Optionnel : fermer la modale après un délai
+    setTimeout(() => {
+        const modal = document.getElementById('avatar-upload-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }, 1000);
+});
+
+document.addEventListener('closeModal', function() {
+    console.log("Fermeture de la modale...");
+    closeAvatarModal();
+});
+
+document.addEventListener('showMessage', function(e) {
+    // Afficher un message toast (vous pouvez utiliser votre système de messages)
+    const message = e.detail.value || e.detail;
+    const messageType = e.detail.messageType || 'info';
+    
+    showToast(message, messageType);
+});
+
+// Fonction utilitaire pour les toasts
+function showToast(message, type = 'info') {
+    // Implémentez votre système de toasts ici
+    console.log(`${type.toUpperCase()}: ${message}`);
+    // Exemple simple avec alert
+    if (type === 'error') {
+        alert('❌ ' + message);
+    } else if (type === 'success') {
+        alert('✅ ' + message);
+    }
+}
+
 </script>
