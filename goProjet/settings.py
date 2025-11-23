@@ -214,3 +214,20 @@ if not DEBUG:
 else:
     # En développement : Console pour ne pas envoyer de vrais emails
     EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    
+# --- TEST MINIMAL CLOUDINARY ---
+print("\n⚡ CONFIGURATION CLOUDINARY:")
+cloudinary_configured = all([
+    os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    os.environ.get('CLOUDINARY_API_KEY'), 
+    os.environ.get('CLOUDINARY_API_SECRET')
+])
+
+if cloudinary_configured:
+    print(f"✅ CLOUDINARY ACTIVÉ - Storage: {DEFAULT_FILE_STORAGE}")
+    print(f"   Cloud: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
+else:
+    print(f"💻 STOCKAGE LOCAL - Storage: {DEFAULT_FILE_STORAGE}")
+
+print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+print("🎯 PRÊT POUR LE DÉPLOIEMENT\n")

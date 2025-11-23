@@ -962,15 +962,6 @@ def mark_all_notifications_as_read(request):
     return redirect('projets:liste_notifications')
 
 #------------------ Gestion du profil ------------------
-@login_required
-def get_avatar_fragment(request):
-    """Vue HTMX pour renvoyer le HTML mis à jour de l'avatar."""
-    return render(request, 'projets/partials/avatar_fragment.html')
-
-@login_required
-def get_messages_fragment(request):
-    """Vue HTMX pour renvoyer le HTML mis à jour de la zone de messages."""
-    return render(request, 'projets/partials/messages_fragment.html')
 
 def serve_avatar(request, filename):
     """Vue personnalisée pour servir les avatars avec fallback"""
