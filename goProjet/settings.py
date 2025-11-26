@@ -184,19 +184,29 @@ else:
     
     # Créer le dossier media s'il n'existe pas
     MEDIA_ROOT.mkdir(exist_ok=True)
-
-# --- 13. SÉCURITÉ (DÉSACTIVÉE EN LOCAL) ---
 SECURE_SSL_REDIRECT = False
 
-SECURE_PROXY_SSL_HEADER = None
-CSRF_COOKIE_SECURE = True  # True en production
-SESSION_COOKIE_SECURE = True  # True en production
-# CSRF trusted origins pour le développement
+# IMPORTANT: Railway fournit SSL, donc nous devons dire à Django qu'il est derrière un proxy
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Cookies sécurisés - IMPORTANT: True en production
+CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+
+# CSRF trusted origins - AJOUTER LES URLS HTTPS DE RAILWAY
 CSRF_TRUSTED_ORIGINS = [
+    'https://goprojet-production.up.railway.app',
+    'https://*.railway.app', 
+    'https://*.up.railway.app',
+    # URLs de développement (HTTP)
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://0.0.0.0:8000',
 ]
+
+# Autres paramètres CSRF
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
 
 # --- 14. EMAIL (CONSOLE EN LOCAL) ---
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
