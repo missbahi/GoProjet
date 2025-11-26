@@ -44,7 +44,7 @@ class AvatarManager {
         // Gestionnaire d'erreur pour les images
         document.querySelectorAll('.avatar-img').forEach(img => {
             img.onerror = function() {
-                this.src = '/static/images/default_avatar.png';
+                this.src = '/static/images/default.png';
             };
         });
     }

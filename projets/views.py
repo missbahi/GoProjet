@@ -110,7 +110,7 @@ def secure_download(request, model_name, object_id):
     
     # On force le download si demandé
     force_download = request.GET.get('download', 'false').lower() == 'true'
-
+    
     if force_download:
         # Récupérer le nom original pour le header
         if hasattr(obj, 'original_filename') and obj.original_filename:
@@ -118,6 +118,7 @@ def secure_download(request, model_name, object_id):
         else:
             original_filename = extract_filename_from_url(file_field.url)
         
+        print(f"Original filename for download: {file_field.url} -> {original_filename}")
         # Redirection vers Cloudinary avec le nom original
         return serve_file_with_original_name(file_field, original_filename)
     else:        
@@ -133,6 +134,11 @@ def serve_file_with_original_name(file_field, original_filename):
         import urllib.parse
         
         cloudinary_url = file_field.url
+        
+        if '%20=' in cloudinary_url:
+            cloudinary_url = cloudinary_url.replace('%20=', '')
+            print(f"🔧 URL nettoyée: {cloudinary_url}")
+        
         response = requests.get(cloudinary_url, stream=True)
         response.raise_for_status()
         
@@ -161,7 +167,7 @@ def diagnostic(request):
         'projets/js/chart.js', 
         'projets/js/profile.js',
         'projets/js/notification-handler.js',
-        'projets/images/default_avatar.png'
+        'projets/images/default.png'
     ]
     
     for file_path in js_files_to_check:
@@ -1098,7 +1104,7 @@ def serve_avatar(request, filename):
             return HttpResponse(f.read(), content_type='image/jpeg')
     else:
         # Servir l'avatar par défaut
-        default_avatar = os.path.join(settings.STATIC_ROOT, 'images', 'default_avatar.png')
+        default_avatar = os.path.join(settings.STATIC_ROOT, 'images', 'default.png')
         if os.path.exists(default_avatar):
             with open(default_avatar, 'rb') as f:
                 return HttpResponse(f.read(), content_type='image/png')

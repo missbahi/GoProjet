@@ -10,14 +10,14 @@ class AvatarManager {
         document.querySelectorAll('.avatar-img, img[src*="avatar"]').forEach(img => {
             img.onerror = function() {
                 console.warn('Avatar non trouvé, utilisation de la image par défaut:', this.src);
-                this.src = '/static/images/default_avatar.png';
+                this.src = '/static/images/default.png';
                 // Empêcher la boucle d'erreur
                 this.onerror = null;
             };
             
             // Vérifier si l'image est déjà en erreur
             if (img.complete && img.naturalHeight === 0) {
-                img.src = '/static/images/default_avatar.png';
+                img.src = '/static/images/default.png';
                 img.onerror = null;
             }
         });
@@ -56,7 +56,7 @@ class AvatarManager {
         document.querySelectorAll('.avatar-img, img[src*="avatar"]').forEach(img => {
             if (!img.complete || img.naturalHeight === 0) {
                 console.warn('Avatar invalide détecté:', img.src);
-                img.src = '/static/images/default_avatar.png';
+                img.src = '/static/images/default.png';
                 img.onerror = null;
             }
         });
