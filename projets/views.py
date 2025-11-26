@@ -1,16 +1,19 @@
 from datetime import date, datetime, timedelta
 import json
 import os
+import cloudinary
+from django.apps import apps
 from django.conf import settings
 
 from django.forms import ValidationError
 from django.shortcuts import render, get_object_or_404, redirect
 
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseNotFound, JsonResponse, FileResponse, Http404
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse, Http404
 from django.urls import  reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django.views import View
 
+from projets.decorators import chef_projet_required, superuser_required
 from projets.manager import BordereauTreeManager
 
 from .forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
@@ -24,7 +27,7 @@ from django.db.models import Sum, Avg, Q
 from django.contrib import messages
 
 from django.contrib.auth.models import User 
-from django.contrib.auth.decorators import permission_required, login_required
+from django.contrib.auth.decorators import permission_required, login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 import logging
@@ -53,7 +56,100 @@ VIEWABLE_TYPES = {
 
 import django
 from django.views.decorators.csrf import csrf_exempt
+def get_file_field(instance):
+    return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
+def get_projet_from_instance(instance):
+    if hasattr(instance, 'projet'):
+        return instance.projet
+    elif hasattr(instance, 'suivi'):
+        return instance.suivi.projet
+    elif hasattr(instance, 'attachement'):
+        return instance.attachement.projet
+    return None
+
+def extract_filename_from_url(url):
+    """Extrait un nom de fichier depuis une URL Cloudinary"""
+    if not url:
+        return None
+    
+    filename = url.split('/')[-1]
+    if '?' in filename:
+        filename = filename.split('?')[0]
+    if '._' in filename:
+        filename = filename.split('._')[0] + '.' + filename.split('.')[-1]
+    
+    return filename
+@login_required
+def secure_download(request, model_name, object_id):
+    """
+    Téléchargement sécurisé avec tous les paramètres dans l'URL
+    model_name: nom du modèle (Attachment, Document, etc.)
+    object_id: ID de l'objet à télécharger
+    """
+    model = apps.get_model('projets', model_name)
+    if not model:
+        return HttpResponseForbidden("Modèle non reconnu")
+    
+    # On cherche l'objet
+    obj = get_object_or_404(model, id=object_id)
+    if not obj:
+        return HttpResponseNotFound("Objet non trouvé")
+    
+    # On cherche le projet associé
+    projet = get_projet_from_instance(obj)
+    if not projet:
+        return HttpResponseForbidden("Projet non trouvé pour cet objet")
+    if not request.user.has_perm('projets.view_projet', projet):
+        return HttpResponseForbidden("Accès refusé au projet associé")
+    
+    # On cherche le fichier
+    file_field = get_file_field(obj)
+    if not file_field:
+        return HttpResponseForbidden("Aucun fichier lié à cet objet")
+    
+    # On force le download si demandé
+    force_download = request.GET.get('download', 'false').lower() == 'true'
+
+    if force_download:
+        # Récupérer le nom original pour le header
+        if hasattr(obj, 'original_filename') and obj.original_filename:
+            original_filename = obj.original_filename
+        else:
+            original_filename = extract_filename_from_url(file_field.url)
+        
+        # Redirection vers Cloudinary avec le nom original
+        return serve_file_with_original_name(file_field, original_filename)
+    else:        
+        # On récupère l'URL du fichier
+        url = file_field.url
+        # Redirection vers Cloudinary
+        return HttpResponseRedirect(url)
+
+def serve_file_with_original_name(file_field, original_filename):
+    """Télécharge le fichier avec le nom original"""
+    try:
+        import requests
+        import urllib.parse
+        
+        cloudinary_url = file_field.url
+        response = requests.get(cloudinary_url, stream=True)
+        response.raise_for_status()
+        
+        django_response = HttpResponse(
+            response.iter_content(chunk_size=8192),
+            content_type=response.headers.get('content-type', 'application/octet-stream')
+        )
+        
+        encoded_filename = urllib.parse.quote(original_filename)
+        django_response['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8\'\'{encoded_filename}'
+        
+        return django_response
+        
+    except Exception as e:
+        print(f"Erreur téléchargement: {e}")
+        return HttpResponseRedirect(file_field.url)
+    
 @csrf_exempt
 def diagnostic(request):
     """Page de diagnostic complète pour Railway"""
@@ -154,39 +250,39 @@ def access_denied(request):
     return render(request, 'authentification/access_denied.html', status=403)
 
 #------------------ Page d'accueil ------------------
-
+@login_required
 def home(request):
     # Nombre de projets
     today = date.today()
-    projets_recents = Projet.objects.order_by('-date_creation')[:5]  # Derniers 5 projets créés
+    projets_recents = request.user.projets.all().order_by('-date_creation')[:5]  # Derniers 5 projets créés
     
     # Projets en retard (utilisant le nouveau champ en_retard)
-    projets_en_retard = Projet.objects.filter(en_retard=True).order_by('-date_debut')[:5]
+    projets_en_retard = request.user.projets.all().filter(en_retard=True).order_by('-date_debut')[:5]
     
     # Nouveaux appels d'offres (à traiter)
-    nouveaux_ao = Projet.objects.filter(a_traiter=True).order_by('-date_creation')[:5]
+    nouveaux_ao = request.user.projets.all().filter(a_traiter=True).order_by('-date_creation')[:5]
     
     # Réceptions récemment validées
-    receptions_validees = Projet.objects.filter(reception_validee=True).order_by('-date_reception')[:5]
+    receptions_validees = request.user.projets.all().filter(reception_validee=True).order_by('-date_reception')[:5]
     
     # Statistiques principales
-    nb_projets_en_cours = Projet.objects.filter(statut='COURS').count()
-    nb_projets_en_retard = Projet.objects.filter(en_retard=True).count()
+    nb_projets_en_cours = request.user.projets.all().filter(statut='COURS').count()
+    nb_projets_en_retard = request.user.projets.all().filter(en_retard=True).count()
     
     # Avancement moyen des projets en cours
-    avancement_moyen = Projet.objects.filter(statut='COURS').aggregate(moy=Avg('avancement'))['moy'] or 0
+    avancement_moyen = request.user.projets.all().filter(statut='COURS').aggregate(moy=Avg('avancement'))['moy'] or 0
     
     # Appels d'offres
-    nb_appels_offres = Projet.objects.filter(statut='AO').count()
-    nb_a_traiter = Projet.objects.filter(a_traiter=True).count()
+    nb_appels_offres = request.user.projets.all().filter(statut='AO').count()
+    nb_a_traiter = request.user.projets.all().filter(a_traiter=True).count()
     
     # Réceptions
-    nb_receptions_validees = Projet.objects.filter(reception_validee=True).count()
-    nb_receptions_en_retard = Projet.objects.filter(reception_validee=True, en_retard=True).count()
+    nb_receptions_validees = request.user.projets.all().filter(reception_validee=True).count()
+    nb_receptions_en_retard = request.user.projets.all().filter(reception_validee=True, en_retard=True).count()
     
     # Chiffre d'affaires
     annee_courante = date.today().year
-    ca_total = Projet.objects.filter(date_debut__year=annee_courante).aggregate(total=Sum('montant'))['total'] or 0
+    ca_total = request.user.projets.all().filter(date_debut__year=annee_courante).aggregate(total=Sum('montant'))['total'] or 0
     
     # Notifications non lues pour l'utilisateur connecté
     if request.user.is_authenticated:
@@ -246,15 +342,16 @@ def home(request):
         'notifications': notifications,
         'nb_notifications': nb_notifications,
         'echeances': echeances,
-        'projets_noms': json.dumps([p.nom for p in Projet.objects.all()]),
+        'projets_noms': json.dumps([p.nom for p in request.user.projets.all().all()]),
         'projets_noms_recents': json.dumps([p.nom for p in projets_recents]),
-        'projets_avancements': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in Projet.objects.all()]),
+        'projets_avancements': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in request.user.projets.all().all()]),
         'avancement_projets_recents': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in projets_recents])
     }
     return render(request, 'projets/home.html', context)
 
 # --------------- Gestion des utilisateurs ---------------
 @login_required     
+@user_passes_test(lambda u: u.is_superuser)
 def modifier_utilisateur(request, user_id):
     user = get_object_or_404(User, id=user_id)
 
@@ -286,11 +383,11 @@ def modifier_utilisateur(request, user_id):
         return redirect('projets:liste_utilisateurs')
 
     return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {'user': user})
-@permission_required('auth.view_user')
+@superuser_required
 def liste_utilisateurs(request):
     utilisateurs = User.objects.all()
     return render(request, 'projets/utilisateurs/liste_utilisateurs.html', {'utilisateurs': utilisateurs})
-@permission_required('auth.add_user')
+@superuser_required
 def ajouter_utilisateur(request):
     if request.method == 'POST':
         username = request.POST.get('username')
@@ -299,12 +396,35 @@ def ajouter_utilisateur(request):
         user = User.objects.create_user(username=username, email=email, password=password)
         return redirect('projets:liste_utilisateurs')
     return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
-@permission_required('auth.delete_user')
+@superuser_required
 def supprimer_utilisateur(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     return redirect('projets:liste_utilisateurs')   
-
+@superuser_required
+@user_passes_test(lambda u: u.is_superuser)
+def gerer_projets_utilisateur(request, user_id):
+    utilisateur = get_object_or_404(User, id=user_id)
+    tous_les_projets = Projet.objects.all()
+    projets_utilisateur = utilisateur.projets.all()
+    
+    if request.method == 'POST':
+        # Gérer l'ajout/suppression de projets
+        projets_selectionnes = request.POST.getlist('projets')
+        
+        # Mettre à jour la relation ManyToMany
+        utilisateur.projets.set(projets_selectionnes)
+        
+        messages.success(request, f"Les projets de {utilisateur.username} ont été mis à jour avec succès.")
+        return redirect('projets:liste_utilisateurs')
+    
+    context = {
+        'utilisateur': utilisateur,
+        'tous_les_projets': tous_les_projets,
+        'projets_utilisateur': projets_utilisateur,
+    }
+    
+    return render(request, 'projets/utilisateurs/gerer_projets_utilisateur.html', context)
 # -------------- projets -------------------------
 from django.db.models import Q
 @login_required
@@ -312,10 +432,13 @@ def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
     sort_order = request.GET.get('order', 'asc')
-    
-    # Filtrage par recherche
-    # projets = Projet.objects.all()
-    projets = Projet.objects.all().order_by('nom')
+    if request.user.is_superuser:
+        # Superuser voit tous les projets
+        projets = Projet.objects.all().order_by('nom')
+    else:
+        # Les autres utilisateurs voient seulement leurs projets
+        projets = request.user.projets.all().order_by('nom')
+
     if search_term and len(search_term) >= 3:
         # Recherche dans multiple champs
         query = Q(nom__icontains=search_term) | \
@@ -355,13 +478,14 @@ def liste_projets(request):
         return render(request, 'projets/partials/liste_projets_partial.html', context)
     
     return render(request, 'projets/liste_projets.html', context)
-@login_required
+@chef_projet_required
 def ajouter_projet_modal(request):
     if request.method == 'POST':
         form = ProjetForm(request.POST)
         if form.is_valid():
             projet = form.save()
             projet.montant = 0.0  # ou une autre valeur par défaut
+            projet.users.add(request.user)  # Ajouter l'utilisateur actuel au projet
             projet.save()
             if request.GET.get('modal'):
                 return JsonResponse({'success': True})
@@ -388,7 +512,7 @@ def ajouter_projet_modal(request):
     }
         
     return render(request, 'projets/modals/ajouter_projet_modal.html', context)
-@login_required
+@permission_required('auth.add_user')
 def modifier_projet_modal(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     if request.method == 'POST':
@@ -424,7 +548,7 @@ def modifier_projet_modal(request, projet_id):
         'entreprises': Entreprise.objects.all(),
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
-@login_required
+@permission_required('auth.add_user')
 def modifier_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -465,7 +589,7 @@ def modifier_projet(request, projet_id):
     # if request.GET.get('modal'):
     #     return render(request, 'projets/modifier_projet.html', context)
     return render(request, 'projets/modifier_projet.html', context)
-@login_required
+@permission_required('auth.add_user')
 def supprimer_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     projet.delete()
@@ -731,19 +855,20 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
             raise
 
 #------------------ Gestion de la base de données ------------------
-@login_required
+@chef_projet_required
 def partial_ingenieurs(request):
     ingenieurs = Ingenieur.objects.all()
     return render(request, 'projets/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
-@login_required
+@chef_projet_required
 def partial_entreprises(request):
     entreprises = Entreprise.objects.all()
     return render(request, 'projets/partials/entreprises.html', {'entreprises': entreprises})
-@login_required
+@chef_projet_required
 def partial_clients(request):
     clients = Client.objects.all()
     return render(request, 'projets/partials/clients.html', {'clients': clients})
-@login_required
+
+@superuser_required
 def base_donnees(request):
     return render(request, 'projets/base_donnees.html')
 
@@ -780,7 +905,7 @@ def dashboard_projet(request, projet_id):
     return render(request, 'projets/dashboard.html', context)
 
 #------------------ Gestion des bordereaux ------------------
-@login_required
+@chef_projet_required
 def saisie_bordereau(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     lot_root = lot.to_line_tree()
@@ -844,7 +969,7 @@ def get_children(request, lot_id, node_id):
     
     children_ids = tree_manager.get_children_ids(node_id)
     return JsonResponse({'children': children_ids})
-@login_required
+@chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
         try:
@@ -983,13 +1108,11 @@ def serve_avatar(request, filename):
 @login_required
 def upload_avatar(request):
     """
-    Gère la requête POST pour l'upload et la sauvegarde de l'avatar.
+    Gère la requête POST pour l'upload et la sauvegarde de l'avatar avec Cloudinary
     """
     if request.method == 'POST':
         avatar_file = request.FILES.get('avatar')
         if not avatar_file:
-            messages.error(request, "Veuillez sélectionner un fichier image à uploader.")
-            # Retourner une réponse JSON avec trigger
             response = HttpResponse(status=400)
             response['HX-Trigger'] = json.dumps({
                 'showMessage': 'Veuillez sélectionner un fichier image à uploader.',
@@ -1009,7 +1132,22 @@ def upload_avatar(request):
             
         try:
             profile = request.user.profile
-            profile.avatar = avatar_file
+            
+            # Gestion Cloudinary vs stockage local
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                # Upload vers Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    avatar_file,
+                    folder="avatars",
+                    transformation=[
+                        {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
+                    ]
+                )
+                profile.avatar = upload_result['public_id']
+            else:
+                # Stockage local classique
+                profile.avatar = avatar_file
+                
             profile.save()
             
             # ✅ SUCCÈS : Renvoyer 200 avec les triggers
@@ -1135,6 +1273,7 @@ def partial_calendiers(request):
     return render(request, 'projets/partials/calendrier.html', context)
 
 # ------  Ingenieurs ------
+@permission_required('auth.add_user')
 def ajouter_ingenieur(request):
     if request.method == 'POST':
         form = IngenieurForm(request.POST)
@@ -1161,6 +1300,7 @@ def ajouter_ingenieur(request):
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/ingenieurs.html', {'form': form})
     # Ajoutez du debug temporaire
+@permission_required('auth.add_user')
 def modifier_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     
@@ -1179,6 +1319,7 @@ def modifier_ingenieur(request, ingenieur_id):
                 }, status=400)
     
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+@permission_required('auth.add_user')
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     ingenieur.delete()
@@ -1388,15 +1529,14 @@ def supprimer_document(request, projet_id, document_id):
     return redirect('projets:documents', projet_id=projet_id)
 def telecharger_document(request, document_id):
     document = get_object_or_404(DocumentAdministratif, id=document_id)
-    
-    # Vérifiez que l'utilisateur a le droit d'accéder à ce document
-    # (ajoutez les propres règles d'autorisation ici)
-    
+    return secure_download(request, 'DocumentAdministratif', document_id)
+
     file_path = document.fichier.path
     if os.path.exists(file_path):
         return FileResponse(open(file_path, 'rb'), as_attachment=False)
     else:
         raise Http404("Le document n'existe pas")
+
 def ajouter_document(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -1410,7 +1550,7 @@ def ajouter_document(request, projet_id):
             messages.error(request, "Le type de document et le fichier sont obligatoires.")
             return redirect('projets:documents', projet_id=projet_id)
         
-        # Vérifier la taille du fichier (max 10MB)
+        # Vérifier la taille du fichier (max 20MB)
         if fichier.size > 20 * 1024 * 1024:
             messages.error(request, "Le fichier ne doit pas dépasser 20MB.")
             return redirect('projets:documents', projet_id=projet_id)
@@ -1421,58 +1561,81 @@ def ajouter_document(request, projet_id):
                 projet=projet,
                 type_document=type_document,
                 date_remise=date_remise if date_remise else None,
-                fichier=fichier
             )
+            
+            # Gestion Cloudinary vs local
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                # Upload vers Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    fichier,
+                    folder="documents_administratifs",
+                    resource_type="raw"
+                )
+                document.fichier = upload_result['public_id']
+            else:
+                # Stockage local
+                document.fichier = fichier
+                
             document.save()
+            
             messages.success(request, f"Le document '{type_document}' a été ajouté avec succès.")
         except Exception as e:
             messages.error(request, f"Une erreur s'est produite lors de l'ajout du document: {str(e)}")
         
         return redirect('projets:documents', projet_id=projet_id)
     
-    # Si la méthode n'est pas POST, rediriger vers la page des documents
     return redirect('projets:documents', projet_id=projet_id)
+
+import requests
+
 class AfficherDocumentView(View):
-    """Vue pour afficher les documents dans le navigateur"""
-    from django.utils.decorators import method_decorator
-    from django.views.decorators.cache import cache_control
-    @method_decorator(cache_control(max_age=3600))  # Cache pour 1 heure  
+    """Vue avec téléchargement direct depuis Cloudinary"""
     
     def get(self, request, document_id):
         try:
+            res = secure_download(request, 'DocumentAdministratif', document_id)
+            return res
+        
+        
+        
             document = get_object_or_404(DocumentAdministratif, id=document_id)
-                
-            file_path = document.fichier.path
-        
-            if not os.path.exists(file_path):
-                raise Http404("Le document n'existe pas")
-            
-            # Déterminer le type MIME et l'ouvrir dans le navigateur
-            extension = os.path.splitext(file_path)[1].lower()
-        
-            # Si le type est affichable, l'ouvrir dans le navigateur
-            if extension in VIEWABLE_TYPES:
-                response = FileResponse(
-                    open(file_path, 'rb'),
-                    content_type=VIEWABLE_TYPES[extension]
-                )
-                response['Content-Disposition'] = f'inline; filename="{os.path.basename(file_path)}"'
-                return response
-            else:
-                # Forcer le téléchargement pour les types non affichables
-                response = FileResponse(open(file_path, 'rb'))
-                response['Content-Disposition'] = f'attachment; filename="{os.path.basename(file_path)}"'
-                return response
-        except DocumentAdministratif.DoesNotExist:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'error': 'Document non trouvé'}, status=404)
-            raise Http404("Document non trouvé")
-        
-        except Exception as e:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse({'error': str(e)}, status=500)
-            raise Http404("Erreur lors du chargement du document")
+            projet = document.projet
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                # 🔥 TÉLÉCHARGEMENT DIRECT
+                if hasattr(document.fichier, 'url') or isinstance(document.fichier, str):
+                    
+                    # Récupérer l'URL Cloudinary
+                    if hasattr(document.fichier, 'url'):
+                        file_url = document.fichier.url
+                    else:
+                        from cloudinary import CloudinaryResource
+                        resource = CloudinaryResource(str(document.fichier))
+                        file_url = resource.build_url(resource_type="raw", sign_url=True)
+                                        
+                    # Télécharger le fichier depuis Cloudinary
+                    response = requests.get(file_url, stream=True)
 
+                    if response.status_code == 200:
+                        # Créer la réponse Django avec le contenu
+                        django_response = HttpResponse(
+                            response.content,
+                            content_type=response.headers.get('content-type', 'application/octet-stream'))
+                        
+                        # Nom du fichier pour le téléchargement
+                        filename = f"{document.type_document}.pdf"
+                        django_response['Content-Disposition'] = f'inline; filename="{filename}"'
+                        
+                        return django_response
+                    else:
+                        print(f"❌ Erreur téléchargement Cloudinary: {response.status_code}")
+                        raise Http404("Erreur de téléchargement")
+            
+            raise Http404("Document non accessible")
+            
+        except Exception as e:
+            print(f"❌ Erreur: {e}")
+            raise Http404("Erreur lors du chargement du document")
+            
 #----------------------- Suivi d'exécution ---------------------------
 def suivi_execution(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1607,7 +1770,8 @@ def supprimer_fichier_suivi(request, projet_id, fichier_id):
     return redirect('projets:suivi_execution', projet_id=projet_id)
 def telecharger_fichier_suivi(request, fichier_id):
     fichier = get_object_or_404(FichierSuivi, id=fichier_id)
-    
+    return secure_download(request, 'FichierSuivi', fichier_id)
+
     file_path = fichier.fichier.path
     if os.path.exists(file_path):
         return FileResponse(open(file_path, 'rb'), as_attachment=False)
@@ -1615,7 +1779,7 @@ def telecharger_fichier_suivi(request, fichier_id):
         raise Http404("Le fichier n'existe pas")
 def ajouter_fichier_suivi(request, projet_id, suivi_id):
     """
-    Vue pour ajouter des fichiers à un suivi d'exécution existant
+    Vue pour ajouter des fichiers à un suivi d'exécution existant avec Cloudinary
     """
     projet = get_object_or_404(Projet, id=projet_id)
     suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet=projet)
@@ -1633,7 +1797,7 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
         fichiers_ajoutes = []
         
         for i, fichier in enumerate(fichiers):
-            # Vérifier la taille du fichier (max 10MB)
+            # Vérifier la taille du fichier (max 20MB)
             if fichier.size > 20 * 1024 * 1024:
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
@@ -1649,9 +1813,20 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
             try:
                 fichier_suivi = FichierSuivi(
                     suivi=suivi,
-                    fichier=fichier,
                     description=description
                 )
+                
+                # Gestion Cloudinary vs local
+                if getattr(settings, 'USE_CLOUDINARY', False):
+                    upload_result = cloudinary.uploader.upload(
+                        fichier,
+                        folder="suivis_execution",
+                        resource_type="raw"
+                    )
+                    fichier_suivi.fichier = upload_result['public_id']
+                else:
+                    fichier_suivi.fichier = fichier
+                    
                 fichier_suivi.save()
                 fichiers_ajoutes.append(fichier_suivi.fichier.name)
                 
@@ -1688,6 +1863,7 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
     return render(request, 'projets/suivi/ajouter_fichier_suivi.html', context)
 
 # ------------------------ Views pour Attachements ------------------------
+@login_required
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('id')
@@ -1695,8 +1871,10 @@ def liste_attachements(request, projet_id):
     context = {
         'projet': projet,
         'attachements': attachements,
+        # 'USE_CLOUDINARY': getattr(settings, 'USE_CLOUDINARY', False),
     }
     return render(request, 'projets/decomptes/liste_attachements.html', context)
+@login_required
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -1711,6 +1889,16 @@ def ajouter_attachement(request, projet_id):
             try:
                 attachement = form.save(commit=False)
                 attachement.projet = projet
+                # Gestion du fichier avec Cloudinary
+                fichier = request.FILES.get('fichier')
+                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
+                    upload_result = cloudinary.uploader.upload(
+                        fichier,
+                        folder="attachements",
+                        resource_type="raw"
+                    )
+                    attachement.fichier = upload_result['public_id']
+                
                 attachement.save()
                 
                 lignes_data_json = request.POST.get('lignes_attachement')
@@ -1833,6 +2021,7 @@ def ajouter_attachement(request, projet_id):
         'is_edition': False
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
+@login_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     projet = attachement.projet
@@ -1971,6 +2160,7 @@ def modifier_attachement(request, attachement_id):
         'is_edition': True
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
+@login_required
 def detail_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     
@@ -2022,6 +2212,7 @@ def detail_attachement(request, attachement_id):
     }
     
     return render(request, 'projets/decomptes/detail_attachement.html', context)
+@login_required
 def supprimer_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     projet_id = attachement.projet.id
@@ -2048,7 +2239,7 @@ def attachements_ajouter_decompte(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     projet = attachement.projet
     return redirect(f"{reverse('projets:liste_decomptes', args=[projet.id])}?ajouter=1&attachement_id={attachement_id}")
-
+@login_required
 def validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     # VÉRIFICATION ET INITIALISATION AUTOMATIQUE
@@ -2119,6 +2310,7 @@ def reouvrir_attachement(request, attachement_id):
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 
 # ------------------------ Views pour Décomptes ------------------------
+@login_required
 def liste_decomptes(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -2507,6 +2699,7 @@ def get_lignes_attachement(request, attachement_id):
     return JsonResponse(data, safe=False)
 
 # ------------------------ Views pour Ordres de Service ------------------------
+@login_required
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordres_service = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
@@ -2544,6 +2737,20 @@ def ordres_service(request, projet_id):
                 try:
                     ordre = form.save(commit=False)
                     ordre.projet = projet
+                    
+                    # Gestion des documents avec Cloudinary
+                    fichier_document = request.FILES.get('documents')
+                    if fichier_document:
+                        if getattr(settings, 'USE_CLOUDINARY', False):
+                            upload_result = cloudinary.uploader.upload(
+                                fichier_document,
+                                folder="ordres_services",
+                                resource_type="raw"
+                            )
+                            ordre.documents = upload_result['public_id']
+                        else:
+                            ordre.documents = fichier_document
+                            
                     if not ordre_a_modifier: # Création 
                         ordre.statut = 'BROUILLON'
                         
@@ -2798,7 +3005,9 @@ def annuler_ordre_service(request, projet_id, ordre_id):
     return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
 def telecharger_document_os(request, ordre_id):
     ordre = get_object_or_404(OrdreService, id=ordre_id)
-    
+    #path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),  
+    return secure_download(request, 'OrdreService', ordre.id)
+
     if ordre.documents and os.path.exists(ordre.documents.path):
         with open(ordre.documents.path, 'rb') as file:
             response = HttpResponse(file.read(), content_type='application/octet-stream')

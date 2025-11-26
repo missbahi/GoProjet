@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Gérer les projets - {{ utilisateur.username }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-900 min-h-screen p-6">
+    <div class="max-w-4xl mx-auto">
+        <!-- En-tête -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2">
+                <i class="fas fa-project-diagram mr-3"></i>Gestion des Projets
+            </h1>
+            <p class="text-gray-400">Affectation des projets à {{ utilisateur.get_full_name|default:utilisateur.username }}</p>
+        </div>
+
+        <!-- Carte principale -->
+        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+            <!-- En-tête utilisateur -->
+            <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        {% if utilisateur.profile.avatar %}
+                            <img src="{{ utilisateur.profile.avatar.url }}" 
+                                 alt="Avatar" 
+                                 class="w-16 h-16 rounded-full border-2 border-white">
+                        {% else %}
+                            <div class="w-16 h-16 rounded-full bg-gray-700 border-2 border-white flex items-center justify-center">
+                                <i class="fas fa-user text-white text-xl"></i>
+                            </div>
+                        {% endif %}
+                        <div class="text-white">
+                            <h2 class="text-xl font-bold">{{ utilisateur.get_full_name|default:utilisateur.username }}</h2>
+                            <p class="text-blue-100">{{ utilisateur.email }}</p>
+                            <p class="text-sm text-blue-200">
+                                {% if utilisateur.is_superuser %}
+                                    <span class="bg-red-600 px-2 py-1 rounded-full">Super Admin</span>
+                                {% elif utilisateur.is_staff %}
+                                    <span class="bg-blue-600 px-2 py-1 rounded-full">Staff</span>
+                                {% else %}
+                                    <span class="bg-green-600 px-2 py-1 rounded-full">Utilisateur</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="text-right text-white">
+                        <p class="text-2xl font-bold">{{ projets_utilisateur.count }}</p>
+                        <p class="text-blue-100">Projets assignés</p>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="p-6">
+                {% csrf_token %}
+                
+                <!-- Liste des projets -->
+                <div class="mb-6">
+                    <h3 class="text-cyan-300 text-lg font-semibold mb-4">
+                        <i class="fas fa-list mr-2"></i>Sélection des Projets
+                    </h3>
+                    
+                    {% if tous_les_projets %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
+                        {% for projet in tous_les_projets %}
+                        <div class="bg-gray-750 rounded-lg border border-gray-600 p-4 hover:border-cyan-500 transition-colors">
+                            <label class="flex items-start space-x-3 cursor-pointer">
+                                <input type="checkbox" 
+                                       name="projets" 
+                                       value="{{ projet.id }}"
+                                       {% if projet in projets_utilisateur %}checked{% endif %}
+                                       class="mt-1 rounded text-cyan-500 focus:ring-cyan-500">
+                                <div class="flex-1">
+                                    <span class="font-medium text-white block">{{ projet.nom }}</span>
+                                    <div class="text-gray-400 text-sm mt-1 space-y-1">
+                                        {% if projet.description %}
+                                        <p class="line-clamp-2">{{ projet.description|truncatewords:15 }}</p>
+                                        {% endif %}
+                                        <p class="flex items-center space-x-2">
+                                            <i class="fas fa-calendar text-xs"></i>
+                                            <span>Créé le {{ projet.date_creation|date:"d/m/Y" }}</span>
+                                        </p>
+                                        <p class="flex items-center space-x-2">
+                                            <i class="fas fa-users text-xs"></i>
+                                            <span>{{ projet.users.count }} utilisateur(s)</span>
+                                        </p>
+                                        {% if projet.est_actif %}
+                                            <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs">Actif</span>
+                                        {% else %}
+                                            <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs">Inactif</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="fas fa-inbox text-4xl mb-3"></i>
+                        <p>Aucun projet disponible</p>
+                        <p class="text-sm">Créez des projets avant de les assigner</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="bg-gray-750 rounded-lg p-4 mb-6">
+                    <h4 class="text-cyan-300 font-medium mb-3">Actions rapides</h4>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" 
+                                onclick="selectAll()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-check-square mr-1"></i>Tout sélectionner
+                        </button>
+                        <button type="button" 
+                                onclick="deselectAll()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-times-circle mr-1"></i>Tout désélectionner
+                        </button>
+                        <button type="button" 
+                                onclick="selectActiveOnly()" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
+                            <i class="fas fa-play-circle mr-1"></i>Projets actifs seulement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-700">
+                    <button type="submit" 
+                            class="flex-1 bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
+                        <i class="fas fa-save mr-2"></i>Enregistrer les modifications
+                    </button>
+                    <a href="{% url 'projets:liste_utilisateurs' %}" 
+                       class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 text-center border border-gray-600">
+                        <i class="fas fa-times mr-2"></i>Annuler
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Sélectionner tous les projets
+        function selectAll() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        }
+
+        // Désélectionner tous les projets
+        function deselectAll() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        }
+
+        // Sélectionner seulement les projets actifs
+        function selectActiveOnly() {
+            // Cette fonction nécessite que vos projets aient un indicateur visuel d'activité
+            // Vous pouvez l'adapter selon votre modèle
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                const projectCard = checkbox.closest('.bg-gray-750');
+                const isActive = projectCard.querySelector('.bg-green-600');
+                checkbox.checked = !!isActive;
+            });
+        }
+
+        // Compteur de projets sélectionnés
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('input[name="projets"]:checked').length;
+            const total = document.querySelectorAll('input[name="projets"]').length;
+            // Vous pouvez afficher ce compteur quelque part
+            console.log(`${selected}/${total} projets sélectionnés`);
+        }
+
+        // Mettre à jour le compteur quand les cases sont cochées/décochées
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                checkbox.addEventListener('change', updateSelectedCount);
+            });
+            updateSelectedCount();
+        });
+    </script>
+
+    <style>
+        .bg-gray-750 {
+            background-color: #374151;
+        }
+        
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        input[type="checkbox"]:checked + div {
+            border-color: #06b6d4;
+            background-color: #1e3a5f;
+        }
+    </style>
+</body>
+</html>

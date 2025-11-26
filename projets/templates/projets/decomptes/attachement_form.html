@@ -470,14 +470,17 @@
                     <div class="form-group">
                         <label for="fichier"><i class="fas fa-file-upload mr-2"></i>Fichier joint</label>
                         <input type="file" id="fichier" name="fichier" class="form-control"
-                               {% if is_edition and not attachement.est_validable %}disabled{% endif %}>
+                               {% if is_edition and not attachement.est_validable %}disabled{% endif %}
+                               onchange="updateOriginalFilename(this)">
+                        <input class="form-control hidden" id="original_filename" name="original_filename" 
+                                value="{{ attachement.original_filename|default:'' }}">
                         {% if is_edition and attachement.fichier %}
                         <div class="file-current">
                             <p class="text-green-400 font-medium flex items-center gap-2">
-                                <i class="fas fa-file-pdf text-lg"></i>
+                                <i class="fas fa-download text-sm ml-1"></i>
                                 Fichier actuel : 
-                                <a href="{{ attachement.fichier.url }}" target="_blank" class="underline hover:text-green-300 transition-colors">
-                                    {{ attachement.fichier.name|slice:"20:" }}
+                                <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" class="hover:text-blue-300 transition-colors">
+                                    <span class = "truncate overflow-ellipsis overflow-hidden">{{ attachement.get_file_name }}</span>
                                 </a>
                             </p>
                         </div>
@@ -556,7 +559,12 @@
     let hot;
 
     // ==================== FONCTIONS UTILITAIRES ====================
-
+    function updateOriginalFilename(input) {
+        if (input.files && input.files[0]) {
+            const originalFilename = input.files[0].name;
+            document.getElementById('original_filename').value = originalFilename;
+        }
+    }
     function formatNumber(value, decimals = 2) {
         return value.toLocaleString('en-US', {
             minimumFractionDigits: decimals,

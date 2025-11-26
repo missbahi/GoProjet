@@ -4,31 +4,243 @@
     <meta charset="UTF-8">
     <title>Ajouter un Utilisateur</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 p-8">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">Ajouter un Nouvel Utilisateur</h1>
-
-    <form method="post" class="bg-white p-6 rounded shadow w-full max-w-md">
-        {% csrf_token %}
-        <div class="mb-4">
-            <label for="username" class="block text-gray-700 font-medium mb-2">Nom d'utilisateur</label>
-            <input type="text" name="username" id="username" class="w-full border border-gray-300 rounded px-3 py-2" required>
+<body class="bg-gray-900 min-h-screen p-6">
+    <div class="max-w-2xl mx-auto">
+        <!-- En-tête -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-cyan-400 mb-2">
+                <i class="fas fa-user-plus mr-3"></i>Ajouter un Nouvel Utilisateur
+            </h1>
+            <p class="text-gray-400">Créez un nouveau compte utilisateur dans le système</p>
         </div>
 
-        <div class="mb-4">
-            <label for="email" class="block text-gray-700 font-medium mb-2">Email</label>
-            <input type="email" name="email" id="email" class="w-full border border-gray-300 rounded px-3 py-2">
+        <!-- Carte du formulaire -->
+        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
+            <!-- En-tête de la carte -->
+            <div class="bg-gradient-to-r from-cyan-600 to-blue-600 p-4">
+                <h2 class="text-white text-lg font-semibold">
+                    <i class="fas fa-user-circle mr-2"></i>Informations de l'utilisateur
+                </h2>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+                {% csrf_token %}
+                
+                <!-- Avatar -->
+                <div class="text-center mb-6">
+                    <div class="relative inline-block">
+                        <div id="avatar-preview" class="w-24 h-24 rounded-full bg-gray-700 border-2 border-cyan-500 flex items-center justify-center mb-3 mx-auto">
+                            <i class="fas fa-user text-cyan-400 text-2xl"></i>
+                        </div>
+                        <input type="file" name="avatar" id="avatar" accept="image/*" 
+                               class="hidden" onchange="previewAvatar(this)">
+                        <label for="avatar" class="cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded-full text-sm transition-colors">
+                            <i class="fas fa-camera mr-1"></i>Choisir un avatar
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Nom d'utilisateur -->
+                <div>
+                    <label for="username" class="block text-cyan-300 font-medium mb-2">
+                        <i class="fas fa-user mr-2"></i>Nom d'utilisateur *
+                    </label>
+                    <input type="text" name="username" id="username" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           placeholder="Entrez le nom d'utilisateur" required>
+                    <p class="text-gray-400 text-sm mt-1">Le nom d'utilisateur doit être unique</p>
+                </div>
+
+                <!-- Email -->
+                <div>
+                    <label for="email" class="block text-cyan-300 font-medium mb-2">
+                        <i class="fas fa-envelope mr-2"></i>Adresse email
+                    </label>
+                    <input type="email" name="email" id="email" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           placeholder="utilisateur@exemple.com">
+                </div>
+
+                <!-- Prénom et Nom -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="first_name" class="block text-cyan-300 font-medium mb-2">
+                            <i class="fas fa-signature mr-2"></i>Prénom
+                        </label>
+                        <input type="text" name="first_name" id="first_name" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                               placeholder="Prénom">
+                    </div>
+                    <div>
+                        <label for="last_name" class="block text-cyan-300 font-medium mb-2">
+                            <i class="fas fa-signature mr-2"></i>Nom
+                        </label>
+                        <input type="text" name="last_name" id="last_name" 
+                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                               placeholder="Nom">
+                    </div>
+                </div>
+
+                <!-- Mot de passe -->
+                <div>
+                    <label for="password" class="block text-cyan-300 font-medium mb-2">
+                        <i class="fas fa-lock mr-2"></i>Mot de passe *
+                    </label>
+                    <input type="password" name="password" id="password" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           placeholder="Mot de passe sécurisé" required>
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="show-password" class="mr-2" onchange="togglePassword()">
+                        <label for="show-password" class="text-gray-400 text-sm cursor-pointer">Afficher le mot de passe</label>
+                    </div>
+                </div>
+
+                <!-- Confirmation mot de passe -->
+                <div>
+                    <label for="confirm_password" class="block text-cyan-300 font-medium mb-2">
+                        <i class="fas fa-lock mr-2"></i>Confirmer le mot de passe *
+                    </label>
+                    <input type="password" name="confirm_password" id="confirm_password" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           placeholder="Confirmez le mot de passe" required>
+                    <p id="password-match" class="text-sm mt-1 hidden"></p>
+                </div>
+
+                <!-- Rôle et permissions -->
+                <div class="bg-gray-750 p-4 rounded-lg border border-gray-600">
+                    <h3 class="text-cyan-300 font-medium mb-3">
+                        <i class="fas fa-user-shield mr-2"></i>Rôle et Permissions
+                    </h3>
+                    
+                    <div class="space-y-3">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_staff" id="is_staff" class="mr-3 rounded text-cyan-500">
+                            <label for="is_staff" class="text-gray-300 cursor-pointer">
+                                <span class="font-medium">Accès staff</span>
+                                <p class="text-gray-400 text-sm">Accès à l'interface d'administration</p>
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_superuser" id="is_superuser" class="mr-3 rounded text-cyan-500">
+                            <label for="is_superuser" class="text-gray-300 cursor-pointer">
+                                <span class="font-medium">Super administrateur</span>
+                                <p class="text-gray-400 text-sm">Toutes les permissions sans restriction</p>
+                            </label>
+                        </div>
+                        
+                        <div class="flex items-center">
+                            <input type="checkbox" name="is_active" id="is_active" checked class="mr-3 rounded text-cyan-500">
+                            <label for="is_active" class="text-gray-300 cursor-pointer">
+                                <span class="font-medium">Compte actif</span>
+                                <p class="text-gray-400 text-sm">L'utilisateur peut se connecter</p>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Informations supplémentaires -->
+                <div>
+                    <label for="phone" class="block text-cyan-300 font-medium mb-2">
+                        <i class="fas fa-phone mr-2"></i>Téléphone
+                    </label>
+                    <input type="tel" name="phone" id="phone" 
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
+                           placeholder="+33 1 23 45 67 89">
+                </div>
+
+                <!-- Boutons d'action -->
+                <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-700">
+                    <button type="submit" 
+                            class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800">
+                        <i class="fas fa-user-plus mr-2"></i>Créer l'utilisateur
+                    </button>
+                    <a href="{% url 'projets:liste_utilisateurs' %}" 
+                       class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 text-center border border-gray-600">
+                        <i class="fas fa-times mr-2"></i>Annuler
+                    </a>
+                </div>
+            </form>
         </div>
 
-        <div class="mb-4">
-            <label for="password" class="block text-gray-700 font-medium mb-2">Mot de passe</label>
-            <input type="password" name="password" id="password" class="w-full border border-gray-300 rounded px-3 py-2" required>
+        <!-- Message d'information -->
+        <div class="mt-6 text-center text-gray-400 text-sm">
+            <p><i class="fas fa-info-circle mr-1"></i>Les champs marqués d'un * sont obligatoires</p>
         </div>
+    </div>
 
-        <div class="flex space-x-4">
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Ajouter</button>
-            <a href="{% url 'projets:liste_utilisateurs' %}" class="text-blue-600 hover:underline self-center">Annuler</a>
-        </div>
-    </form>
+    <script>
+        // Prévisualisation de l'avatar
+        function previewAvatar(input) {
+            const preview = document.getElementById('avatar-preview');
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full rounded-full object-cover">`;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Afficher/masquer le mot de passe
+        function togglePassword() {
+            const passwordField = document.getElementById('password');
+            const confirmField = document.getElementById('confirm_password');
+            const showPassword = document.getElementById('show-password');
+            
+            if (showPassword.checked) {
+                passwordField.type = 'text';
+                confirmField.type = 'text';
+            } else {
+                passwordField.type = 'password';
+                confirmField.type = 'password';
+            }
+        }
+
+        // Vérification de la correspondance des mots de passe
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const matchMessage = document.getElementById('password-match');
+            
+            if (confirmPassword === '') {
+                matchMessage.classList.add('hidden');
+            } else if (password === confirmPassword) {
+                matchMessage.textContent = '✓ Les mots de passe correspondent';
+                matchMessage.className = 'text-sm mt-1 text-green-400';
+                matchMessage.classList.remove('hidden');
+            } else {
+                matchMessage.textContent = '✗ Les mots de passe ne correspondent pas';
+                matchMessage.className = 'text-sm mt-1 text-red-400';
+                matchMessage.classList.remove('hidden');
+            }
+        });
+
+        // Animation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('form').classList.add('animate-fade-in');
+        });
+    </script>
+
+    <style>
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        input:focus, button:focus {
+            outline: none;
+        }
+        
+        .bg-gray-750 {
+            background-color: #374151;
+        }
+    </style>
 </body>
 </html>

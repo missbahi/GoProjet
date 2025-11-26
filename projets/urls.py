@@ -47,6 +47,7 @@ urlpatterns = [
     path('utilisateurs/ajouter/', views.ajouter_utilisateur, name='ajouter_utilisateur'),
     path('utilisateurs/modifier/<int:user_id>/', views.modifier_utilisateur, name='modifier_utilisateur'),
     path('utilisateurs/supprimer/<int:user_id>/', views.supprimer_utilisateur, name='supprimer_utilisateur'),
+    path('utilisateurs/<int:user_id>/gerer-projets/', views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
     
     # Gestion du profil utilisateur
     path('modal/profile/', views.profile_modal, name='profile_modal'),
@@ -56,6 +57,8 @@ urlpatterns = [
     path('media/avatars/<str:filename>', views.serve_avatar, name='serve_avatar'),
     path('modal/avatar-upload/', views.avatar_upload_modal, name='avatar_upload_modal'),
     path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
+    
+    path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),    
     
     # Gestion des notifications
     path('notifications/', views.liste_notifications, name='liste_notifications'),

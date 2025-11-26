@@ -39,6 +39,26 @@
         .text-\[\#AECBD6\] {
             color: #AECBD6;
         }
+        
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #2B9C62;
+        }
+        
+        .avatar-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #374151;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #2B9C62;
+            color: #2B9C62;
+        }
     </style>
 </head>
 <body class="p-6">
@@ -66,6 +86,7 @@
                 <table class="min-w-full bg-[#2E2E2E] rounded-lg overflow-hidden">
                     <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
                         <tr class="text-left text-m font-medium uppercase">
+                            <th class="text-left px-4 py-3">Avatar</th>
                             <th class="text-left px-4 py-3">Nom d'utilisateur</th>
                             <th class="text-left px-4 py-3">Email</th>
                             <th class="text-left px-4 py-3">Rôle</th>
@@ -75,6 +96,20 @@
                     <tbody class="bg-gray-800 divide-y divide-green-800">
                         {% for utilisateur in utilisateurs %}
                         <tr class="text-[#AECBD6] hover:bg-gray-700 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="flex justify-center">
+                                    {% if utilisateur.profile %}
+                                        <img src="{{ utilisateur.profile.avatar_url }}" 
+                                        alt="Avatar" 
+                                        id="navbar-avatar"
+                                        class="avatar">
+                                    {% else %} 
+                                        <div class="avatar-placeholder">
+                                            <i class="fas fa-user text-sm"></i>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </td>
                             <td class="px-4 py-3">
                                 <div class="flex items-center text-cyan-500">
                                     <i class="fas fa-user-circle mr-2"></i>
@@ -93,21 +128,27 @@
                             </td>
                             <td class="px-4 py-3 text-center space-x-2">
                                 <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}" 
-                                   class="text-blue-400 hover:text-blue-300 transition"
-                                   title="Modifier">
+                                class="text-blue-400 hover:text-blue-300 transition"
+                                title="Modifier">
                                     <i class="fas fa-edit"></i>
                                 </a>
+                                <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}" 
+                                class="text-green-400 hover:text-green-300 transition"
+                                title="Gérer les projets">
+                                    <i class="fas fa-project-diagram"></i>
+                                </a>
                                 <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}" 
-                                   class="text-red-400 hover:text-red-300 transition"
-                                   onclick="return confirm('Confirmer la suppression ?')"
-                                   title="Supprimer">
+                                class="text-red-400 hover:text-red-300 transition"
+                                onclick="return confirm('Confirmer la suppression ?')"
+                                title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </td>
+
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="px-4 py-4 text-center text-gray-400">
+                            <td colspan="5" class="px-4 py-4 text-center text-gray-400">
                                 <i class="fas fa-users-slash mr-2"></i>Aucun utilisateur trouvé.
                             </td>
                         </tr>

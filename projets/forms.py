@@ -121,9 +121,10 @@ class TacheForm(forms.ModelForm):
                 self.fields[field].widget.attrs.update({'class': 'form-input'})
 
 class AttachementForm(forms.ModelForm):
+    original_filename = forms.CharField(widget=forms.HiddenInput(), required=False)
     class Meta:
         model = Attachement
-        fields = ['numero', 'date_etablissement', 'date_debut_periode', 'date_fin_periode', 'statut', 'observations', 'fichier']
+        fields = ['numero', 'date_etablissement', 'date_debut_periode', 'date_fin_periode', 'statut', 'observations', 'fichier', 'original_filename']
         widgets = {
             'numero': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -146,6 +147,10 @@ class AttachementForm(forms.ModelForm):
             }),
             'fichier': forms.FileInput(attrs={
                 'class': 'form-input file-upload'
+            }),
+            'original_filename': forms.TextInput(attrs={
+                'class': 'form-input',
+                'readonly': True
             }),
             'observations': forms.Textarea(attrs={
                 'class': 'form-input form-textarea',

@@ -299,12 +299,14 @@
                             </td>
                             <td class="px-2 py-4"> 
                                 {% if attachement.fichier %}
-                                <a href="{{ attachement.fichier.url }}" 
+                                <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" 
                                 class="text-cyan-400 hover:text-cyan-300 transition inline-flex items-center"
                                 target="_blank">
                                     <i class="fa-solid fa-download mr-2"></i> 
-                                    <span class="truncate overflow-ellipsis overflow-hidden">{{ attachement.fichier.name|slice:"30:" }}</span>
-                                </a>
+                                        <span class="truncate overflow-ellipsis overflow-hidden">
+                                            {{ attachement.get_file_name }}
+                                        </span>
+                                </a> 
                                 {% else %}
                                     <span class="text-gray-400 italic">Aucun fichier</span>
                                 {% endif %}
