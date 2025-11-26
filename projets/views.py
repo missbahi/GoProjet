@@ -117,13 +117,12 @@ def secure_download(request, model_name, object_id):
             original_filename = obj.original_filename
         else:
             original_filename = extract_filename_from_url(file_field.url)
-        
-        print(f"Original filename for download: {file_field.url} -> {original_filename}")
         # Redirection vers Cloudinary avec le nom original
         return serve_file_with_original_name(file_field, original_filename)
     else:        
         # On récupère l'URL du fichier
         url = file_field.url
+        url = url.replace(' =', '')
         # Redirection vers Cloudinary
         return HttpResponseRedirect(url)
 
@@ -134,7 +133,7 @@ def serve_file_with_original_name(file_field, original_filename):
         import urllib.parse
         
         cloudinary_url = file_field.url
-        print(f"🔍 URL Cloudinary avant nettoyage: {cloudinary_url}")
+
         if ' =' in cloudinary_url:
             cloudinary_url = cloudinary_url.replace(' =', '')
             print(f"🔧 URL nettoyée: {cloudinary_url}")

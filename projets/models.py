@@ -55,7 +55,10 @@ class Profile(models.Model):
     def avatar_url(self):
         """Retourne l'URL de l'avatar - fonctionne avec Cloudinary et local"""
         if self.avatar and hasattr(self.avatar, 'url'):
-            return self.avatar.url
+            url = self.avatar.url
+            print(f"Avatar URL before cleanup: {url}")
+            url = url.replace(' =', '')
+            return url
         return '/static/images/default.png'
     
     def save(self, *args, **kwargs):
