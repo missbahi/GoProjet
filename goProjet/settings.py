@@ -18,8 +18,19 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-local-only')
 # Mode DEBUG activé en local
 DEBUG = True
 
-# Hosts pour le développement
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '.localhost']
+
+if DEBUG:
+    # Hosts pour le développement
+    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+else:
+    # Hosts pour la production
+    ALLOWED_HOSTS = [
+        'goprojet-production.up.railway.app',
+        '.railway.app',
+        '.up.railway.app',
+        '127.0.0.1',
+        'localhost'
+    ]
 
 # --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
