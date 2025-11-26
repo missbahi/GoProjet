@@ -135,6 +135,10 @@ def serve_file_with_original_name(file_field, original_filename):
         
         cloudinary_url = file_field.url
         print(f"🔍 URL Cloudinary avant nettoyage: {cloudinary_url}")
+        if ' =' in cloudinary_url:
+            cloudinary_url = cloudinary_url.replace(' =', '')
+            print(f"🔧 URL nettoyée: {cloudinary_url}")
+
         if '%20=' in cloudinary_url:
             cloudinary_url = cloudinary_url.replace('%20=', '')
             print(f"🔧 URL nettoyée: {cloudinary_url}")
