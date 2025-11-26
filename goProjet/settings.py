@@ -187,10 +187,10 @@ else:
 
 # --- 13. SÉCURITÉ (DÉSACTIVÉE EN LOCAL) ---
 SECURE_SSL_REDIRECT = False
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-SECURE_PROXY_SSL_HEADER = None
 
+SECURE_PROXY_SSL_HEADER = None
+CSRF_COOKIE_SECURE = True  # True en production
+SESSION_COOKIE_SECURE = True  # True en production
 # CSRF trusted origins pour le développement
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
