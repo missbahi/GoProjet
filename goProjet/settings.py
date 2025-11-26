@@ -4,7 +4,7 @@ Django settings for goProjet project.
 
 import os
 from pathlib import Path
-from dotenv import load_dotenv  # Nouveau
+from dotenv import load_dotenv
 
 # --- 1. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ---
 load_dotenv()  # Charge les variables depuis .env
@@ -15,13 +15,20 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # --- 3. SÉCURITÉ ET ENVIRONNEMENT ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-local-only')
 
-# Mode DEBUG activé en local
-DEBUG = True
+# 🔧 CORRECTION : DEBUG basé sur l'environnement
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-
+# 🔧 CORRECTION : Configuration ALLOWED_HOSTS améliorée
 if DEBUG:
     # Hosts pour le développement
-    ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0']
+    ALLOWED_HOSTS = [
+        'localhost', 
+        '127.0.0.1', 
+        '0.0.0.0',
+        'localhost:8000',
+        '127.0.0.1:8000',
+    ]
+    print("🚀 Mode DEBUG activé - Développement local")
 else:
     # Hosts pour la production
     ALLOWED_HOSTS = [
@@ -31,6 +38,7 @@ else:
         '127.0.0.1',
         'localhost'
     ]
+    print("🌐 Mode PRODUCTION - Hosts configurés pour Railway")
 
 # --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
@@ -90,7 +98,8 @@ TEMPLATES = [
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
-                'django.template.context_processors.request',
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',  # 🔧 AJOUT IMPORTANT
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
@@ -101,12 +110,31 @@ TEMPLATES = [
 WSGI_APPLICATION = 'goProjet.wsgi.application'
 
 # --- 7. DATABASE ---
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# 🔧 CORRECTION : Configuration base de données pour Railway
+DATABASE_URL = os.environ.get('DATABASE_URL')
+if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+
+if DATABASE_URL:
+    # Utiliser PostgreSQL sur Railway
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=DATABASE_URL,
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
+    print("🗄️  Base de données PostgreSQL configurée")
+else:
+    # SQLite en développement
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    print("🗄️  Base de données SQLite configurée")
 
 # --- 8. VALIDATION DES MOTS DE PASSE ---
 AUTH_PASSWORD_VALIDATORS = [
@@ -136,88 +164,102 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- 12. CONFIGURATION CLOUDINARY POUR LE LOCAL ---
-
-# Récupération des credentials Cloudinary
+# --- 12. CONFIGURATION CLOUDINARY ---
 CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
 CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
 CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
 
-
-# Vérification si Cloudinary est configuré
 USE_CLOUDINARY = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
 
 if USE_CLOUDINARY:
     print("☁️  Mode Cloudinary activé pour le stockage des fichiers")
     
-    # Configuration Cloudinary
     CLOUDINARY_STORAGE = {
         'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
         'API_KEY': CLOUDINARY_API_KEY,
         'API_SECRET': CLOUDINARY_API_SECRET,
         'SECURE': True,
-        'STATIC_IMAGES': False,  # Important pour les fichiers non-images
-        'STATIC_FILE_SUPPORT': True,  # Important pour les documents
+        'STATIC_IMAGES': False,
+        'STATIC_FILE_SUPPORT': True,
     }
     
-    # Stockage par défaut Cloudinary
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
-    # Configuration supplémentaire pour les fichiers raw (documents)
-    CLOUDINARY = {
-        'cloud_name': CLOUDINARY_CLOUD_NAME,
-        'api_key': CLOUDINARY_API_KEY,
-        'api_secret': CLOUDINARY_API_SECRET,
-        'secure': True
-    }
     
 else:
     print("💻 Mode local activé - Stockage des fichiers sur le disque dur")
     DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    
-    # Créer le dossier media s'il n'existe pas
     MEDIA_ROOT.mkdir(exist_ok=True)
 
-# --- 13. SÉCURITÉ (DÉSACTIVÉE EN LOCAL) ---
-SECURE_SSL_REDIRECT = False
-CSRF_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False
-SECURE_PROXY_SSL_HEADER = None
+# --- 13. SÉCURITÉ ---
+# 🔧 CORRECTION : Sécurité basée sur l'environnement
+if not DEBUG:
+    # En production
+    SECURE_SSL_REDIRECT = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    
+    # CSRF trusted origins pour Railway
+    CSRF_TRUSTED_ORIGINS = [
+        'https://goprojet-production.up.railway.app',
+        'https://*.railway.app',
+        'https://*.up.railway.app',
+    ]
+    print("🔒 Sécurité renforcée activée (Production)")
+else:
+    # En développement
+    SECURE_SSL_REDIRECT = False
+    CSRF_COOKIE_SECURE = False
+    SESSION_COOKIE_SECURE = False
+    
+    CSRF_TRUSTED_ORIGINS = [
+        'http://localhost:8000',
+        'http://127.0.0.1:8000',
+        'http://0.0.0.0:8000',
+    ]
+    print("🔓 Mode développement - Sécurité réduite")
 
-# CSRF trusted origins pour le développement
-CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
-    'http://0.0.0.0:8000',
-]
-
-# --- 14. EMAIL (CONSOLE EN LOCAL) ---
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# --- 14. EMAIL ---
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    # Configurer les paramètres SMTP pour la production
 
 # --- 15. CONFIGURATIONS DIVERSES ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- 16. LOGGING POUR LE DÉBOGAGE CLOUDINARY ---
+# --- 16. LOGGING ---
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'DEBUG',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
         'cloudinary': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
-        'django': {
+        'projets': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'DEBUG' if DEBUG else 'INFO',
             'propagate': False,
         },
     },
 }
 
+# 🔧 CORRECTION : Affichage des informations de configuration
+# print(f"📋 DEBUG: {DEBUG}")
+# print(f"🌐 ALLOWED_HOSTS: {ALLOWED_HOSTS}")
+# print(f"🔑 USE_CLOUDINARY: {USE_CLOUDINARY}")
