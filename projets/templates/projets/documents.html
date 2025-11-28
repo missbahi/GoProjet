@@ -1,8 +1,0 @@
-<h1>Documents administratifs – {{ projet.nom }}</h1>
-<ul>
-  {% for doc in documents %}
-    <li>{{ doc.type_document }} – {{ doc.date_remise }}</li>
-  {% empty %}
-    <li>Aucun document disponible.</li>
-  {% endfor %}
-</ul>

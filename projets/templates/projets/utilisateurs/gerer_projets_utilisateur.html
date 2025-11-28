@@ -2,205 +2,762 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gérer les projets - {{ utilisateur.username }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-gray-900 min-h-screen p-6">
-    <div class="max-w-4xl mx-auto">
-        <!-- En-tête -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-cyan-400 mb-2">
-                <i class="fas fa-project-diagram mr-3"></i>Gestion des Projets
-            </h1>
-            <p class="text-gray-400">Affectation des projets à {{ utilisateur.get_full_name|default:utilisateur.username }}</p>
-        </div>
-
-        <!-- Carte principale -->
-        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-            <!-- En-tête utilisateur -->
-            <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-6">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        {% if utilisateur.profile.avatar %}
-                            <img src="{{ utilisateur.profile.avatar.url }}" 
-                                 alt="Avatar" 
-                                 class="w-16 h-16 rounded-full border-2 border-white">
-                        {% else %}
-                            <div class="w-16 h-16 rounded-full bg-gray-700 border-2 border-white flex items-center justify-center">
-                                <i class="fas fa-user text-white text-xl"></i>
-                            </div>
-                        {% endif %}
-                        <div class="text-white">
-                            <h2 class="text-xl font-bold">{{ utilisateur.get_full_name|default:utilisateur.username }}</h2>
-                            <p class="text-blue-100">{{ utilisateur.email }}</p>
-                            <p class="text-sm text-blue-200">
-                                {% if utilisateur.is_superuser %}
-                                    <span class="bg-red-600 px-2 py-1 rounded-full">Super Admin</span>
-                                {% elif utilisateur.is_staff %}
-                                    <span class="bg-blue-600 px-2 py-1 rounded-full">Staff</span>
-                                {% else %}
-                                    <span class="bg-green-600 px-2 py-1 rounded-full">Utilisateur</span>
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                    <div class="text-right text-white">
-                        <p class="text-2xl font-bold">{{ projets_utilisateur.count }}</p>
-                        <p class="text-blue-100">Projets assignés</p>
-                    </div>
-                </div>
-            </div>
-
-            <form method="post" class="p-6">
-                {% csrf_token %}
-                
-                <!-- Liste des projets -->
-                <div class="mb-6">
-                    <h3 class="text-cyan-300 text-lg font-semibold mb-4">
-                        <i class="fas fa-list mr-2"></i>Sélection des Projets
-                    </h3>
-                    
-                    {% if tous_les_projets %}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto p-2">
-                        {% for projet in tous_les_projets %}
-                        <div class="bg-gray-750 rounded-lg border border-gray-600 p-4 hover:border-cyan-500 transition-colors">
-                            <label class="flex items-start space-x-3 cursor-pointer">
-                                <input type="checkbox" 
-                                       name="projets" 
-                                       value="{{ projet.id }}"
-                                       {% if projet in projets_utilisateur %}checked{% endif %}
-                                       class="mt-1 rounded text-cyan-500 focus:ring-cyan-500">
-                                <div class="flex-1">
-                                    <span class="font-medium text-white block">{{ projet.nom }}</span>
-                                    <div class="text-gray-400 text-sm mt-1 space-y-1">
-                                        {% if projet.description %}
-                                        <p class="line-clamp-2">{{ projet.description|truncatewords:15 }}</p>
-                                        {% endif %}
-                                        <p class="flex items-center space-x-2">
-                                            <i class="fas fa-calendar text-xs"></i>
-                                            <span>Créé le {{ projet.date_creation|date:"d/m/Y" }}</span>
-                                        </p>
-                                        <p class="flex items-center space-x-2">
-                                            <i class="fas fa-users text-xs"></i>
-                                            <span>{{ projet.users.count }} utilisateur(s)</span>
-                                        </p>
-                                        {% if projet.est_actif %}
-                                            <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs">Actif</span>
-                                        {% else %}
-                                            <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs">Inactif</span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="text-center py-8 text-gray-400">
-                        <i class="fas fa-inbox text-4xl mb-3"></i>
-                        <p>Aucun projet disponible</p>
-                        <p class="text-sm">Créez des projets avant de les assigner</p>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- Actions rapides -->
-                <div class="bg-gray-750 rounded-lg p-4 mb-6">
-                    <h4 class="text-cyan-300 font-medium mb-3">Actions rapides</h4>
-                    <div class="flex flex-wrap gap-2">
-                        <button type="button" 
-                                onclick="selectAll()" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-check-square mr-1"></i>Tout sélectionner
-                        </button>
-                        <button type="button" 
-                                onclick="deselectAll()" 
-                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-times-circle mr-1"></i>Tout désélectionner
-                        </button>
-                        <button type="button" 
-                                onclick="selectActiveOnly()" 
-                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm transition-colors">
-                            <i class="fas fa-play-circle mr-1"></i>Projets actifs seulement
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Boutons d'action -->
-                <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-700">
-                    <button type="submit" 
-                            class="flex-1 bg-gradient-to-r from-green-600 to-cyan-600 hover:from-green-700 hover:to-cyan-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105">
-                        <i class="fas fa-save mr-2"></i>Enregistrer les modifications
-                    </button>
-                    <a href="{% url 'projets:liste_utilisateurs' %}" 
-                       class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 text-center border border-gray-600">
-                        <i class="fas fa-times mr-2"></i>Annuler
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        // Sélectionner tous les projets
-        function selectAll() {
-            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
-                checkbox.checked = true;
-            });
-        }
-
-        // Désélectionner tous les projets
-        function deselectAll() {
-            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-        }
-
-        // Sélectionner seulement les projets actifs
-        function selectActiveOnly() {
-            // Cette fonction nécessite que vos projets aient un indicateur visuel d'activité
-            // Vous pouvez l'adapter selon votre modèle
-            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
-                const projectCard = checkbox.closest('.bg-gray-750');
-                const isActive = projectCard.querySelector('.bg-green-600');
-                checkbox.checked = !!isActive;
-            });
-        }
-
-        // Compteur de projets sélectionnés
-        function updateSelectedCount() {
-            const selected = document.querySelectorAll('input[name="projets"]:checked').length;
-            const total = document.querySelectorAll('input[name="projets"]').length;
-            // Vous pouvez afficher ce compteur quelque part
-            console.log(`${selected}/${total} projets sélectionnés`);
-        }
-
-        // Mettre à jour le compteur quand les cases sont cochées/décochées
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
-                checkbox.addEventListener('change', updateSelectedCount);
-            });
-            updateSelectedCount();
-        });
-    </script>
-
     <style>
-        .bg-gray-750 {
-            background-color: #374151;
+        :root {
+            --bg-dark: #111827;
+            --bg-card: #1F2937;
+            --bg-medium: #374151;
+            --text-primary: #22d3ee;
+            --text-secondary: #D1D5DB;
+            --accent-cyan: #22d3ee;
+            --accent-purple: #8B5CF6;
+            --accent-blue: #2563eb;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
         }
-        
-        .line-clamp-2 {
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-secondary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 56rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2rem;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid #374151;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--accent-purple) 0%, var(--accent-blue) 100%);
+            padding: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .card-body {
+                padding: 2rem;
+            }
+        }
+
+        /* Typography */
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #9CA3AF;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+            }
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+        }
+
+        /* User header */
+        .user-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            color: white;
+        }
+
+        @media (min-width: 640px) {
+            .user-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .user-info {
+                flex-direction: row;
+                text-align: left;
+            }
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid white;
+        }
+
+        .avatar-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: var(--bg-medium);
+            border: 3px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .user-details {
+            flex: 1;
+        }
+
+        .user-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .user-email {
+            color: #E5E7EB;
+            margin-bottom: 0.5rem;
+        }
+
+        .projects-count {
+            text-align: center;
+        }
+
+        .count-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .count-label {
+            color: #E5E7EB;
+            font-size: 0.875rem;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .badge-superadmin { background-color: #dc2626; color: white; }
+        .badge-staff { background-color: #2563eb; color: white; }
+        .badge-user { background-color: #059669; color: white; }
+        .badge-active { background-color: #059669; color: white; }
+        .badge-inactive { background-color: #dc2626; color: white; }
+
+        /* Projects grid */
+        .projects-container {
+            margin-bottom: 2rem;
+        }
+
+        .projects-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .projects-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .project-card {
+            background-color: var(--bg-medium);
+            border: 1px solid #4B5563;
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .project-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .project-card.selected {
+            border-color: var(--accent-cyan);
+            background-color: #1E3A5F;
+        }
+
+        .project-checkbox {
+            accent-color: var(--accent-cyan);
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.75rem;
+            margin-top: 0.25rem;
+        }
+
+        .project-content {
+            flex: 1;
+        }
+
+        .project-name {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .project-description {
+            color: #9CA3AF;
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+            line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
-        
-        input[type="checkbox"]:checked + div {
-            border-color: #06b6d4;
-            background-color: #1e3a5f;
+
+        .project-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: #9CA3AF;
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* Quick actions */
+        .quick-actions {
+            background-color: var(--bg-medium);
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #4B5563;
+        }
+
+        .actions-title {
+            color: var(--accent-cyan);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .actions-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .actions-grid {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #059669 0%, var(--accent-cyan) 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-medium);
+            color: white;
+            border: 1px solid #4B5563;
+        }
+
+        .btn-action {
+            background-color: #374151;
+            color: white;
+            border: 1px solid #4B5563;
+            padding: 0.5rem 1rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Form actions */
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #374151;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .form-actions {
+                flex-direction: row;
+            }
+            
+            .form-actions .btn {
+                flex: 1;
+            }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #9CA3AF;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Selection counter */
+        .selection-counter {
+            position: sticky;
+            top: 0;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            font-weight: 600;
+            text-align: center;
+            z-index: 10;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1.25rem;
+            }
+            
+            .project-card {
+                padding: 1rem;
+            }
+            
+            .quick-actions {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Scrollbar styling */
+        .projects-grid::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .projects-grid::-webkit-scrollbar-track {
+            background: #374151;
+            border-radius: 3px;
+        }
+
+        .projects-grid::-webkit-scrollbar-thumb {
+            background: var(--accent-cyan);
+            border-radius: 3px;
+        }
+
+        .projects-grid::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-blue);
+        }
+
+        /* Focus states for accessibility */
+        .project-card:focus-within {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+
+        .btn:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
         }
     </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Page Header -->
+        <div class="text-center mb-6 animate-fade-in">
+            <h1 class="page-title flex items-center justify-center gap-2">
+                <i class="fas fa-project-diagram"></i>
+                Gestion des Projets
+            </h1>
+            <p class="page-subtitle">
+                Affectation des projets à {{ utilisateur.get_full_name|default:utilisateur.username }}
+            </p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="card animate-fade-in" style="animation-delay: 0.1s;">
+            <!-- User Header -->
+            <div class="card-header">
+                <div class="user-header">
+                    <div class="user-info">
+                        {% if utilisateur.profile.avatar %}
+                            <img src="{{ utilisateur.profile.avatar.url }}" 
+                                 alt="Avatar de {{ utilisateur.username }}" 
+                                 class="avatar">
+                        {% else %}
+                            <div class="avatar-placeholder">
+                                <i class="fas fa-user text-xl"></i>
+                            </div>
+                        {% endif %}
+                        <div class="user-details">
+                            <div class="user-name">{{ utilisateur.get_full_name|default:utilisateur.username }}</div>
+                            <div class="user-email">{{ utilisateur.email }}</div>
+                            <div>
+                                {% if utilisateur.is_superuser %}
+                                    <span class="badge badge-superadmin">Super Admin</span>
+                                {% elif utilisateur.is_staff %}
+                                    <span class="badge badge-staff">Staff</span>
+                                {% else %}
+                                    <span class="badge badge-user">Utilisateur</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="projects-count">
+                        <div class="count-number">{{ projets_utilisateur.count }}</div>
+                        <div class="count-label">Projets assignés</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-body">
+                <form method="post" id="projects-form">
+                    {% csrf_token %}
+                    
+                    <!-- Projects Selection -->
+                    <div class="projects-container">
+                        <h3 class="section-title flex items-center gap-2">
+                            <i class="fas fa-list"></i>
+                            Sélection des Projets
+                        </h3>
+                        
+                        {% if tous_les_projets %}
+                            <!-- Selection Counter -->
+                            <div class="selection-counter" id="selection-counter">
+                                <span id="selected-count">0</span> / {{ tous_les_projets|length }} projets sélectionnés
+                            </div>
+
+                            <!-- Projects Grid -->
+                            <div class="projects-grid">
+                                {% for projet in tous_les_projets %}
+                                <div class="project-card {% if projet in projets_utilisateur %}selected{% endif %}" 
+                                     onclick="toggleProjectCard(this)">
+                                    <div class="flex items-start">
+                                        <input type="checkbox" 
+                                               name="projets" 
+                                               value="{{ projet.id }}"
+                                               id="projet-{{ projet.id }}"
+                                               {% if projet in projets_utilisateur %}checked{% endif %}
+                                               class="project-checkbox"
+                                               onchange="updateSelectionCounter()">
+                                        <div class="project-content">
+                                            <div class="project-name">{{ projet.nom }}</div>
+                                            {% if projet.description %}
+                                            <div class="project-description">{{ projet.description }}</div>
+                                            {% endif %}
+                                            <div class="project-meta">
+                                                <div class="meta-item">
+                                                    <i class="fas fa-calendar text-xs"></i>
+                                                    <span>Créé le {{ projet.date_creation|date:"d/m/Y" }}</span>
+                                                </div>
+                                                <div class="meta-item">
+                                                    <i class="fas fa-users text-xs"></i>
+                                                    <span>{{ projet.users.count }} utilisateur(s)</span>
+                                                </div>
+                                                <div class="meta-item">
+                                                    {% if projet.est_actif %}
+                                                        <span class="badge badge-active">Actif</span>
+                                                    {% else %}
+                                                        <span class="badge badge-inactive">Inactif</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <!-- Empty State -->
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <div class="text-lg mb-2">Aucun projet disponible</div>
+                                <div class="text-sm">Créez des projets avant de les assigner</div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Quick Actions -->
+                    {% if tous_les_projets %}
+                    <div class="quick-actions animate-slide-in">
+                        <h4 class="actions-title flex items-center gap-2">
+                            <i class="fas fa-bolt"></i>
+                            Actions rapides
+                        </h4>
+                        <div class="actions-grid">
+                            <button type="button" class="btn btn-action" onclick="selectAll()">
+                                <i class="fas fa-check-square mr-1"></i>Tout sélectionner
+                            </button>
+                            <button type="button" class="btn btn-action" onclick="deselectAll()">
+                                <i class="fas fa-times-circle mr-1"></i>Tout désélectionner
+                            </button>
+                            <button type="button" class="btn btn-action" onclick="selectActiveOnly()">
+                                <i class="fas fa-play-circle mr-1"></i>Projets actifs seulement
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer les modifications
+                        </button>
+                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-times mr-2"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateSelectionCounter();
+            
+            // Add click handlers to project cards
+            document.querySelectorAll('.project-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.matches('input[type="checkbox"]')) {
+                        const checkbox = this.querySelector('input[type="checkbox"]');
+                        checkbox.checked = !checkbox.checked;
+                        checkbox.dispatchEvent(new Event('change'));
+                    }
+                });
+            });
+        });
+
+        // Selection functions
+        function selectAll() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+            updateSelectionCounter();
+            updateCardStates();
+        }
+
+        function deselectAll() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            updateSelectionCounter();
+            updateCardStates();
+        }
+
+        function selectActiveOnly() {
+            document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+                const projectCard = checkbox.closest('.project-card');
+                const isActive = projectCard.querySelector('.badge-active');
+                checkbox.checked = !!isActive;
+            });
+            updateSelectionCounter();
+            updateCardStates();
+        }
+
+        function toggleProjectCard(card) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            updateCardState(card);
+            updateSelectionCounter();
+        }
+
+        function updateCardState(card) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            if (checkbox.checked) {
+                card.classList.add('selected');
+            } else {
+                card.classList.remove('selected');
+            }
+        }
+
+        function updateCardStates() {
+            document.querySelectorAll('.project-card').forEach(card => {
+                updateCardState(card);
+            });
+        }
+
+        function updateSelectionCounter() {
+            const selected = document.querySelectorAll('input[name="projets"]:checked').length;
+            const total = document.querySelectorAll('input[name="projets"]').length;
+            const counter = document.getElementById('selected-count');
+            const counterContainer = document.getElementById('selection-counter');
+            
+            if (counter) {
+                counter.textContent = selected;
+                
+                // Update counter style based on selection
+                if (selected === total) {
+                    counterContainer.style.background = 'linear-gradient(135deg, #059669 0%, #10B981 100%)';
+                } else if (selected === 0) {
+                    counterContainer.style.background = 'linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%)';
+                } else {
+                    counterContainer.style.background = 'linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%)';
+                }
+            }
+        }
+
+        // Form submission
+        document.getElementById('projects-form').addEventListener('submit', function(e) {
+            const submitBtn = document.getElementById('submit-btn');
+            
+            // Show loading state
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after 5 seconds in case of error
+            setTimeout(() => {
+                submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer les modifications';
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+
+        // Initialize card states
+        document.querySelectorAll('.project-card').forEach(card => {
+            updateCardState(card);
+        });
+
+        // Add change event listeners to checkboxes
+        document.querySelectorAll('input[name="projets"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                updateCardState(this.closest('.project-card'));
+                updateSelectionCounter();
+            });
+        });
+    </script>
 </body>
 </html>

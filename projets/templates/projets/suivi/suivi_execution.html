@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Suivi d'Exécution - {{ projet.nom }}</title>
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -12,7 +13,7 @@
             background: #3B3B3B; 
             border: 1px solid #4B5563; 
             border-radius: 8px; 
-            padding: 1.5rem; 
+            padding: 1rem; 
             margin-bottom: 1rem; 
             transition: all 0.3s ease; 
         }
@@ -42,7 +43,7 @@
         .upload-area {
             border: 2px dashed #4B5563;
             border-radius: 8px;
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -53,8 +54,8 @@
             background: rgba(34, 211, 238, 0.05);
         }
         .file-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
+            font-size: 2rem;
+            margin-bottom: 0.75rem;
         }
         .badge-type {
             display: inline-block;
@@ -84,13 +85,13 @@
         
         .timeline {
             position: relative;
-            padding-left: 3rem;
-            margin: 2rem 0;
+            padding-left: 2rem;
+            margin: 1.5rem 0;
         }
         .timeline::before {
             content: '';
             position: absolute;
-            left: 15px;
+            left: 10px;
             top: 0;
             bottom: 0;
             width: 2px;
@@ -98,15 +99,15 @@
         }
         .timeline-item {
             position: relative;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
         }
         .timeline-item::before {
             content: '';
             position: absolute;
-            left: -2.35rem;
+            left: -1.7rem;
             top: 0.5rem;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             border-radius: 50%;
             background: #22d3ee;
             border: 3px solid #2E2E2E;
@@ -114,8 +115,8 @@
         }
         .fichier-item {
             border-left: 3px solid #22d3ee;
-            padding-left: 15px;
-            margin-bottom: 10px;
+            padding-left: 12px;
+            margin-bottom: 8px;
         }
         
         /* Animation pour l'affichage du formulaire */
@@ -140,43 +141,100 @@
         .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
         .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
         .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+        
+        /* Optimisations responsive */
+        @media (max-width: 768px) {
+            .suivi-card {
+                padding: 0.75rem;
+            }
+            .btn-responsive {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            .text-responsive {
+                font-size: 0.875rem;
+            }
+            .grid-responsive {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            .flex-responsive {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .hidden-mobile {
+                display: none;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 0.5rem;
+            }
+            .suivi-card {
+                padding: 0.5rem;
+                margin-bottom: 0.75rem;
+            }
+            .btn-responsive {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.8rem;
+            }
+            .text-xs-mobile {
+                font-size: 0.75rem;
+            }
+            .timeline {
+                padding-left: 1.5rem;
+            }
+            .timeline-item::before {
+                left: -1.4rem;
+                width: 14px;
+                height: 14px;
+            }
+        }
+        
+        /* Améliorations pour très grands écrans */
+        @media (min-width: 1536px) {
+            .container-xxl {
+                max-width: 1400px;
+            }
+        }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 sm:p-6">
     <div class="max-w-6xl mx-auto">
         <!-- En-tête -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+        <div class="mb-6 sm:mb-8">
+            <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
                 <i class="fas fa-chart-line"></i>
                 Suivi d'Exécution
             </h1>
-            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
-            <div class="flex items-center mt-4 text-sm text-gray-400">
+            <h2 class="text-lg sm:text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-3 sm:mt-4 text-xs sm:text-sm text-gray-400">
                 <i class="fas fa-info-circle mr-2"></i>
                 <span>Suivi détaillé de l'exécution du projet</span>
             </div>
         </div>
 
         <!-- Boutons navigation -->
-        <div class="flex gap-3 mb-6 flex-wrap">
-            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-house"></i> Accueil
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-4 sm:mb-6">
+            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive">
+                <i class="fas fa-house"></i> <span class="hidden sm:inline">Accueil</span>
             </a>
-            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Retour aux projets
+            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive">
+                <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Retour aux projets</span>
             </a>
-            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-diagram-project"></i> Tableau de bord
+            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive">
+                <i class="fas fa-diagram-project"></i> <span class="hidden sm:inline">Tableau de bord</span>
             </a>
         </div>
 
         <!-- Messages -->
         {% if messages %}
-            <div class="mb-6 space-y-2">
+            <div class="mb-4 sm:mb-6 space-y-2">
                 {% for message in messages %}
-                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
-                        <span>{{ message }}</span>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                    <div class="alert-auto-dismiss p-3 sm:p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                        <span class="text-sm sm:text-base">{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -185,60 +243,62 @@
         {% endif %}
 
         <!-- Informations projet -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <h2 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-3 sm:mb-4">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                <div class="space-y-2">
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
                 </div>
-                <div>
+                <div class="space-y-2">
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
                     <p class="text-gray-400">
                         <strong class="text-[#AECBD6]">Statut :</strong> 
                         <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs">{{ projet.get_statut_display }}</span>
                     </p>
-                    <p class="text-gray-400">
-                        <strong class="text-[#AECBD6]">Avancement :</strong> 
-                        <div class="w-full bg-[#2E2E2E] rounded-full h-2.5 mt-1">
+                    <div>
+                        <p class="text-gray-400 mb-1">
+                            <strong class="text-[#AECBD6]">Avancement :</strong> 
+                        </p>
+                        <div class="w-full bg-[#2E2E2E] rounded-full h-2.5">
                             <div class="bg-[#2B9C62] h-2.5 rounded-full" style="width: {{ projet.avancement }}%"></div>
                         </div>
-                        <small class="text-gray-500">{{ projet.avancement }}% complété</small>
-                    </p>
+                        <small class="text-gray-500 text-xs">{{ projet.avancement }}% complété</small>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Bouton pour afficher le formulaire d'ajout -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6 text-center">
-            <button type="button" class="btn-primary px-6 py-3 rounded-lg font-medium flex items-center gap-2 mx-auto" id="toggleSuiviForm">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 text-center">
+            <button type="button" class="btn-primary px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 mx-auto text-sm sm:text-base btn-responsive w-full sm:w-auto" id="toggleSuiviForm">
                 <i class="fas fa-plus"></i> Ajouter un nouveau suivi
             </button>
         </div>
 
         <!-- Section d'ajout d'un suivi (masquée par défaut) -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6 hidden" id="suiviFormContainer">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 hidden" id="suiviFormContainer">
+            <div class="flex justify-between items-center mb-3 sm:mb-4">
+                <h3 class="text-lg sm:text-xl font-semibold text-cyan-300 flex items-center gap-2">
                     <i class="fas fa-plus"></i> Nouvelle entrée de suivi
                 </h3>
                 <button type="button" class="text-gray-400 hover:text-white" id="closeSuiviForm">
-                    <i class="fas fa-times text-xl"></i>
+                    <i class="fas fa-times text-lg sm:text-xl"></i>
                 </button>
             </div>
             
-            <form method="post" enctype="multipart/form-data" action="{% url 'projets:ajouter_suivi' projet.id %}" class="space-y-4" id="suiviForm">
+            <form method="post" enctype="multipart/form-data" action="{% url 'projets:ajouter_suivi' projet.id %}" class="space-y-3 sm:space-y-4" id="suiviForm">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     <div>
-                        <label for="date" class="block text-sm font-medium text-[#AECBD6] mb-2">Date *</label>
-                        <input type="date" class="form-control" id="date" name="date" required value="{% now 'Y-m-d' %}">
+                        <label for="date" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Date *</label>
+                        <input type="date" class="form-control text-sm sm:text-base" id="date" name="date" required value="{% now 'Y-m-d' %}">
                     </div>
                     
                     <div>
-                        <label for="type_suivi" class="block text-sm font-medium text-[#AECBD6] mb-2">Type de suivi *</label>
-                        <select class="form-control" id="type_suivi" name="type_suivi" required>
+                        <label for="type_suivi" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Type de suivi *</label>
+                        <select class="form-control text-sm sm:text-base" id="type_suivi" name="type_suivi" required>
                             <option value="">Sélectionner un type...</option>
                             <option value="reunion">Réunion de chantier</option>
                             <option value="incident">Incident</option>
@@ -250,8 +310,8 @@
                     </div>
                     
                     <div>
-                        <label for="importance" class="block text-sm font-medium text-[#AECBD6] mb-2">Importance</label>
-                        <select class="form-control" id="importance" name="importance">
+                        <label for="importance" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Importance</label>
+                        <select class="form-control text-sm sm:text-base" id="importance" name="importance">
                             <option value="faible">Faible</option>
                             <option value="moyenne" selected>Moyenne</option>
                             <option value="elevee">Élevée</option>
@@ -260,38 +320,38 @@
                 </div>
                 
                 <div>
-                    <label for="titre" class="block text-sm font-medium text-[#AECBD6] mb-2">Titre *</label>
-                    <input type="text" class="form-control" id="titre" name="titre" placeholder="Ex: Réunion de coordination du 15/11/2023" required>
+                    <label for="titre" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Titre *</label>
+                    <input type="text" class="form-control text-sm sm:text-base" id="titre" name="titre" placeholder="Ex: Réunion de coordination du 15/11/2023" required>
                 </div>
                 
                 <div>
-                    <label for="commentaire" class="block text-sm font-medium text-[#AECBD6] mb-2">Commentaire ou résumé *</label>
-                    <textarea class="form-control" id="commentaire" name="commentaire" rows="4" placeholder="Détails de l'événement ou du suivi..." required></textarea>
+                    <label for="commentaire" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Commentaire ou résumé *</label>
+                    <textarea class="form-control text-sm sm:text-base" id="commentaire" name="commentaire" rows="4" placeholder="Détails de l'événement ou du suivi..." required></textarea>
                 </div>
                 
                 <div>
-                    <label for="redacteur" class="block text-sm font-medium text-[#AECBD6] mb-2">Rédigé par</label>
-                    <input type="text" class="form-control" id="redacteur" name="redacteur" placeholder="Votre nom">
+                    <label for="redacteur" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Rédigé par</label>
+                    <input type="text" class="form-control text-sm sm:text-base" id="redacteur" name="redacteur" placeholder="Votre nom">
                 </div>
                 
                 <div>
-                    <label class="block text-sm font-medium text-[#AECBD6] mb-2">Fichiers joints (optionnel)</label>
+                    <label class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Fichiers joints (optionnel)</label>
                     <div class="upload-area" onclick="document.getElementById('fichiers').click()">
                         <i class="fas fa-cloud-upload-alt file-icon text-cyan-400"></i>
-                        <p class="mb-2 text-gray-400">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
-                        <p class="text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)</p>
+                        <p class="mb-2 text-gray-400 text-sm">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
+                        <p class="text-xs text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)</p>
                     </div>
                     <input type="file" class="hidden" id="fichiers" name="fichiers" multiple onchange="updateFileNames(this)">
-                    <div id="file-names" class="mt-2 text-cyan-400 text-sm"></div>
+                    <div id="file-names" class="mt-2 text-cyan-400 text-xs sm:text-sm"></div>
                     
                     <div id="file-descriptions" class="mt-3 space-y-2"></div>
                 </div>
                 
-                <div class="flex gap-3 pt-4">
-                    <button type="submit" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
+                    <button type="submit" class="btn-success px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive order-2 sm:order-1">
                         <i class="fas fa-plus"></i> Ajouter le suivi
                     </button>
-                    <button type="button" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium" id="cancelSuiviForm">
+                    <button type="button" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium text-sm sm:text-base btn-responsive order-1 sm:order-2" id="cancelSuiviForm">
                         Annuler
                     </button>
                 </div>
@@ -299,12 +359,12 @@
         </div>
 
         <!-- Liste des suivis -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4 sm:mb-6">
+                <h3 class="text-lg sm:text-xl font-semibold text-cyan-300 flex items-center gap-2">
                     <i class="fas fa-history"></i> Historique des suivis
                 </h3>
-                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
                     {{ suivis.count }} entrée(s)
                 </span>
             </div>
@@ -313,9 +373,9 @@
                 <div class="timeline">
                     {% for suivi in suivis %}
                         <div class="timeline-item suivi-card">
-                            <div class="flex justify-between items-start mb-3">
-                                <div>
-                                    <h4 class="text-lg font-semibold text-cyan-300 mb-2">{{ suivi.titre }}</h4>
+                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2 mb-3">
+                                <div class="flex-1">
+                                    <h4 class="text-base sm:text-lg font-semibold text-cyan-300 mb-2 break-words">{{ suivi.titre }}</h4>
                                     <div class="flex flex-wrap gap-2">
                                         <span class="badge-type 
                                             {% if suivi.type_suivi == 'reunion' %}badge-reunion
@@ -331,25 +391,25 @@
                                         </span>
                                     </div>
                                 </div>
-                                <small class="text-gray-400">{{ suivi.date|date:"d/m/Y" }}</small>
+                                <small class="text-gray-400 text-xs sm:text-sm">{{ suivi.date|date:"d/m/Y" }}</small>
                             </div>
                             
-                            <p class="text-gray-300 mb-4 whitespace-pre-line">{{ suivi.commentaire }}</p>
+                            <p class="text-gray-300 mb-3 sm:mb-4 whitespace-pre-line text-sm sm:text-base">{{ suivi.commentaire }}</p>
                             
                             {% if suivi.redacteur %}
-                                <p class="text-gray-400 mb-4 text-sm"><i class="fas fa-user mr-1"></i> Rédigé par: {{ suivi.redacteur }}</p>
+                                <p class="text-gray-400 mb-3 sm:mb-4 text-xs sm:text-sm"><i class="fas fa-user mr-1"></i> Rédigé par: {{ suivi.redacteur }}</p>
                             {% endif %}
                             
                             <!-- Fichiers joints -->
                             {% if suivi.fichiers.all %}
-                                <div class="mt-4">
-                                    <h5 class="text-cyan-400 mb-3 flex items-center gap-2">
+                                <div class="mt-3 sm:mt-4">
+                                    <h5 class="text-cyan-400 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
                                         <i class="fas fa-paperclip"></i> Fichiers joints:
                                     </h5>
                                     {% for fichier in suivi.fichiers.all %}
-                                        <div class="fichier-item mb-3">
-                                            <div class="flex justify-between items-center">
-                                                <div class="flex items-center gap-2">
+                                        <div class="fichier-item mb-2 sm:mb-3">
+                                            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                                                <div class="flex items-center gap-2 min-w-0">
                                                     {% with fichier.fichier.name|slice:"-4:"|lower as file_ext %}
                                                         {% if file_ext == '.pdf' %}
                                                             <i class="fas fa-file-pdf text-red-500"></i>
@@ -364,39 +424,43 @@
                                                         {% endif %}
                                                     {% endwith %}
                                                     
-                                                    <span class="text-gray-300">{{ fichier.fichier.name|truncatechars:30 }}</span>
+                                                    <span class="text-gray-300 text-sm truncate">{{ fichier.fichier.name }}</span>
                                                     {% if fichier.description %}
-                                                        <small class="text-gray-500">- {{ fichier.description }}</small>
+                                                        <small class="text-gray-500 text-xs hidden sm:inline">- {{ fichier.description }}</small>
                                                     {% endif %}
                                                 </div>
                                                 <div class="flex gap-2">
                                                     <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}" 
-                                                       target="_blank" class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                                       target="_blank" class="btn-info px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center gap-1">
                                                         <i class="fas fa-eye"></i>
+                                                        <span class="hidden sm:inline">Voir</span>
                                                     </a>
-                                                    <a href="{{ fichier.fichier.url }}" download class="btn-success px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                                                    <a href="{{ fichier.fichier.url }}" download class="btn-success px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center gap-1">
                                                         <i class="fas fa-download"></i>
+                                                        <span class="hidden sm:inline">Téléch.</span>
                                                     </a>
                                                 </div>
                                             </div>
+                                            {% if fichier.description %}
+                                                <small class="text-gray-500 text-xs sm:hidden mt-1 block">{{ fichier.description }}</small>
+                                            {% endif %}
                                         </div>
                                     {% endfor %}
                                 </div>
                             {% endif %}
-                            </div>
 
-                            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-[#4B5563]">
+                            <div class="flex flex-col sm:flex-row justify-end gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-[#4B5563]">
                                 <!-- Bouton de modification -->
-                                <a href="{% url 'projets:modifier_suivi' projet.id suivi.id %}" class="btn-warning px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
-                                    <i class="fas fa-pen-to-square"></i> Modifier
+                                <a href="{% url 'projets:modifier_suivi' projet.id suivi.id %}" class="btn-warning px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center justify-center gap-1">
+                                    <i class="fas fa-pen-to-square"></i> <span>Modifier</span>
                                 </a>
 
                                 <!-- Bouton de suppression -->
                                 <form method="post" action="{% url 'projets:supprimer_suivi' projet.id suivi.id %}" class="inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn-danger px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                    <button type="submit" class="btn-danger px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center justify-center gap-1 w-full sm:w-auto"
                                             onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce suivi et tous ses fichiers?')">
-                                        <i class="fas fa-trash"></i> Supprimer
+                                        <i class="fas fa-trash"></i> <span>Supprimer</span>
                                     </button>
                                 </form>
                             </div>
@@ -404,9 +468,9 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-8">
-                    <i class="fas fa-clipboard-list text-6xl text-gray-500 mb-4"></i>
-                    <p class="text-gray-400 text-lg">Aucun suivi d'exécution n'a été enregistré pour ce projet.</p>
+                <div class="text-center py-6 sm:py-8">
+                    <i class="fas fa-clipboard-list text-4xl sm:text-6xl text-gray-500 mb-3 sm:mb-4"></i>
+                    <p class="text-gray-400 text-base sm:text-lg">Aucun suivi d'exécution n'a été enregistré pour ce projet.</p>
                 </div>
             {% endif %}
         </div>
@@ -423,13 +487,13 @@
                 fileDescriptionsElement.innerHTML = '';
                 
                 for (let i = 0; i < input.files.length; i++) {
-                    fileNamesElement.innerHTML += `<div class="ml-2">${input.files[i].name}</div>`;
+                    fileNamesElement.innerHTML += `<div class="ml-2 text-xs sm:text-sm truncate">${input.files[i].name}</div>`;
                     
                     // Ajouter un champ de description pour chaque fichier
                     fileDescriptionsElement.innerHTML += `
                         <div>
-                            <label for="description_${i}" class="block text-sm font-medium text-[#AECBD6] mb-1">Description pour ${input.files[i].name}</label>
-                            <input type="text" class="form-control" 
+                            <label for="description_${i}" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-1">Description pour ${input.files[i].name}</label>
+                            <input type="text" class="form-control text-xs sm:text-sm" 
                                    id="description_${i}" name="description_${i}" 
                                    placeholder="Description optionnelle">
                         </div>
@@ -479,6 +543,13 @@
             formContainer.classList.remove('hidden');
             formContainer.classList.add('fade-in');
             toggleButton.classList.add('hidden');
+            
+            // Scroll vers le formulaire sur mobile
+            if (window.innerWidth < 768) {
+                setTimeout(() => {
+                    formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }, 100);
+            }
         });
 
         function hideForm() {
@@ -507,6 +578,13 @@
                 alert.style.display = 'none';
             });
         }, 5000);
+
+        // Réinitialiser l'état du formulaire lors du redimensionnement
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768 && formContainer.classList.contains('hidden')) {
+                toggleButton.classList.remove('hidden');
+            }
+        });
     </script>
 </body>
 </html>

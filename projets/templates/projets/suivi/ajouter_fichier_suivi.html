@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ajouter des fichiers - Suivi {{ suivi.titre }}</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { 
+      background-color: #2E2E2E; 
+      color: #AECBD6; 
+    }
+    .upload-area {
+      border: 2px dashed #6c757d;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      background: transparent;
+    }
+    .upload-area:hover {
+      border-color: #0dcaf0;
+      background-color: rgba(13, 202, 240, 0.05);
+    }
+    
+    /* Optimisations responsive */
+    @media (max-width: 768px) {
+      .upload-area {
+        padding: 15px;
+      }
+      .btn-responsive {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+      }
+      .text-responsive {
+        font-size: 0.875rem;
+      }
+      .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 0.5rem !important;
+      }
+      .upload-area {
+        padding: 10px;
+      }
+      .btn-responsive {
+        padding: 0.4rem 0.6rem;
+        font-size: 0.8rem;
+      }
+      .text-xs-mobile {
+        font-size: 0.75rem;
+      }
+      .fa-2x {
+        font-size: 1.5em !important;
+      }
+    }
+    
+    /* Styles personnalisés pour le dark theme */
+    .bg-custom-dark {
+      background-color: #1a1a1a;
+    }
+    .bg-custom-secondary {
+      background-color: #2d3748 !important;
+    }
+    .list-group-item-custom {
+      background-color: #2d3748;
+      color: #AECBD6;
+      border: 1px solid #4a5568;
+    }
+  </style>
+</head>
+<body class="p-3 p-md-4">
+  <div class="container">
+    <!-- En-tête -->
+    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center gap-2 gap-md-0 mb-3 mb-md-4">
+      <h1 class="text-info mb-0 h4 h-md-3">
+        <i class="fa-solid fa-paperclip me-2"></i> Ajouter des fichiers au suivi
+      </h1>
+      <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn btn-outline-info btn-responsive ms-md-auto">
+        <i class="fa-solid fa-arrow-left me-1"></i> 
+        <span class="d-none d-sm-inline">Retour au suivi</span>
+        <span class="d-sm-none">Retour</span>
+      </a>
+    </div>
+
+    <!-- Informations sur le suivi -->
+    <div class="card bg-custom-secondary text-light mb-3 mb-md-4">
+      <div class="card-body p-3 p-md-4">
+        <h5 class="card-title h5 h-md-5 text-info">{{ suivi.titre }}</h5>
+        <div class="d-flex flex-wrap gap-2 gap-md-3 mb-2 text-responsive">
+          <span class="badge bg-primary">{{ suivi.date|date:"d/m/Y" }}</span>
+          <span class="badge bg-secondary">{{ suivi.get_type_suivi_display }}</span>
+          {% if suivi.importance %}
+            <span class="badge 
+              {% if suivi.importance == 'faible' %}bg-success
+              {% elif suivi.importance == 'moyenne' %}bg-warning text-dark
+              {% else %}bg-danger{% endif %}">
+              {{ suivi.get_importance_display }}
+            </span>
+          {% endif %}
+        </div>
+        <p class="card-text text-responsive">{{ suivi.commentaire|truncatewords:30 }}</p>
+      </div>
+    </div>
+
+    <!-- Formulaire d'ajout de fichiers -->
+    <div class="card bg-custom-dark text-light">
+      <div class="card-body p-3 p-md-4">
+        <form method="post" enctype="multipart/form-data" id="uploadForm">
+          {% csrf_token %}
+          
+          <div class="mb-3 mb-md-4">
+            <label class="form-label text-responsive fw-bold">Fichiers à ajouter</label>
+            <div class="upload-area" onclick="document.getElementById('fichiers').click()">
+              <i class="fa-solid fa-cloud-upload-alt fa-2x text-info mb-2 mb-md-3"></i>
+              <p class="mb-1 mb-md-2 text-responsive">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
+              <p class="text-muted text-xs-mobile">
+                Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)
+              </p>
+            </div>
+            <input type="file" class="form-control d-none" id="fichiers" name="fichiers" multiple onchange="updateFileList(this)">
+          </div>
+
+          <div id="file-list" class="mb-3 mb-md-4"></div>
+
+          <div class="d-flex flex-column flex-sm-row gap-2">
+            <button type="submit" class="btn btn-success btn-responsive px-3 px-md-4 order-2 order-sm-1">
+              <i class="fa-solid fa-plus me-1 me-md-2"></i> 
+              <span class="d-none d-sm-inline">Ajouter les fichiers</span>
+              <span class="d-sm-none">Ajouter fichiers</span>
+            </button>
+            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn btn-secondary btn-responsive px-3 px-md-4 order-1 order-sm-2">
+              <span class="d-none d-sm-inline">Annuler</span>
+              <span class="d-sm-none">Annuler</span>
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Informations supplémentaires pour mobile -->
+    <div class="mt-3 d-block d-md-none">
+      <div class="alert alert-info text-responsive">
+        <small>
+          <i class="fa-solid fa-info-circle me-1"></i>
+          Vous pouvez sélectionner plusieurs fichiers à la fois en maintenant Ctrl (ou Cmd sur Mac)
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function updateFileList(input) {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
+      
+      if (input.files.length > 0) {
+        const heading = document.createElement('h6');
+        heading.className = 'text-info mb-2 text-responsive';
+        heading.textContent = `Fichiers sélectionnés (${input.files.length}):`;
+        fileList.appendChild(heading);
+        
+        const list = document.createElement('div');
+        list.className = 'list-group';
+        
+        for (let i = 0; i < input.files.length; i++) {
+          const listItem = document.createElement('div');
+          listItem.className = 'list-group-item list-group-item-custom d-flex justify-content-between align-items-center text-responsive';
+          
+          const fileInfo = document.createElement('div');
+          fileInfo.className = 'd-flex align-items-center min-w-0 flex-grow-1';
+          
+          // Icône du type de fichier
+          const icon = document.createElement('i');
+          const fileName = input.files[i].name.toLowerCase();
+          if (fileName.endsWith('.pdf')) {
+            icon.className = 'fa-solid fa-file-pdf text-danger me-2 flex-shrink-0';
+          } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
+            icon.className = 'fa-solid fa-file-word text-primary me-2 flex-shrink-0';
+          } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+            icon.className = 'fa-solid fa-file-excel text-success me-2 flex-shrink-0';
+          } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
+            icon.className = 'fa-solid fa-file-image text-warning me-2 flex-shrink-0';
+          } else if (fileName.endsWith('.zip')) {
+            icon.className = 'fa-solid fa-file-archive text-secondary me-2 flex-shrink-0';
+          } else {
+            icon.className = 'fa-solid fa-file text-info me-2 flex-shrink-0';
+          }
+          
+          const fileNameSpan = document.createElement('span');
+          fileNameSpan.className = 'text-truncate';
+          fileNameSpan.textContent = input.files[i].name;
+          fileNameSpan.title = input.files[i].name;
+          
+          fileInfo.appendChild(icon);
+          fileInfo.appendChild(fileNameSpan);
+          
+          const fileSize = document.createElement('small');
+          fileSize.className = 'text-muted text-nowrap ms-2 flex-shrink-0';
+          fileSize.textContent = formatFileSize(input.files[i].size);
+          
+          listItem.appendChild(fileInfo);
+          listItem.appendChild(fileSize);
+          list.appendChild(listItem);
+        }
+        
+        fileList.appendChild(list);
+
+        // Afficher le total des fichiers
+        const totalSize = Array.from(input.files).reduce((total, file) => total + file.size, 0);
+        const totalInfo = document.createElement('div');
+        totalInfo.className = 'mt-2 text-end text-muted text-responsive';
+        totalInfo.textContent = `Total: ${formatFileSize(totalSize)}`;
+        fileList.appendChild(totalInfo);
+      }
+    }
+    
+    function formatFileSize(bytes) {
+      if (bytes === 0) return '0 Bytes';
+      const k = 1024;
+      const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Gestion du drag and drop
+    const uploadArea = document.querySelector('.upload-area');
+    const fileInput = document.getElementById('fichiers');
+    
+    if (uploadArea && fileInput) {
+      uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#0dcaf0';
+        uploadArea.style.backgroundColor = 'rgba(13, 202, 240, 0.1)';
+      });
+      
+      uploadArea.addEventListener('dragleave', () => {
+        uploadArea.style.borderColor = '#6c757d';
+        uploadArea.style.backgroundColor = 'transparent';
+      });
+      
+      uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.style.borderColor = '#6c757d';
+        uploadArea.style.backgroundColor = 'transparent';
+        
+        if (e.dataTransfer.files.length) {
+          fileInput.files = e.dataTransfer.files;
+          updateFileList(fileInput);
+        }
+      });
+    }
+
+    // Validation de la taille des fichiers
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      const files = document.getElementById('fichiers').files;
+      
+      for (let i = 0; i < files.length; i++) {
+        if (files[i].size > maxSize) {
+          e.preventDefault();
+          alert(`Le fichier "${files[i].name}" dépasse la taille maximale autorisée de 10MB.`);
+          return;
+        }
+      }
+    });
+
+    // Adaptation responsive pour les noms de fichiers
+    function adaptFileNames() {
+      const fileNameSpans = document.querySelectorAll('.list-group-item span');
+      fileNameSpans.forEach(span => {
+        if (window.innerWidth < 768) {
+          span.classList.add('text-truncate');
+        } else {
+          span.classList.remove('text-truncate');
+        }
+      });
+    }
+
+    // Initial adaptation
+    adaptFileNames();
+    
+    // Re-adapt on resize
+    window.addEventListener('resize', adaptFileNames);
+  </script>
+</body>
+</html>

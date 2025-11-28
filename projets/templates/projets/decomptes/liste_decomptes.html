@@ -58,6 +58,7 @@
             font-weight: 600; 
             margin-right: 0.5rem;
         }
+
         .formulaire-decompte {
             transition: all 0.3s ease-in-out;
             overflow: hidden;
@@ -69,9 +70,14 @@
         }
         /* État EXPANDÉ (visible) */
         .formulaire-decompte.expanded {
-            max-height: 1000px;
+            max-height: none; /* Supprimer la limite de hauteur */
             opacity: 1;
+            padding: 1.5rem;
+            border: 1px solid #4B5563;
+            margin-bottom: 1rem;
+            overflow: visible; /* Permettre le défilement naturel */
         }
+
         .formulaire-decompte.collapsed {
             max-height: 0;
             opacity: 0;
@@ -82,7 +88,7 @@
             overflow: hidden;
             pointer-events: none;
         }
-        
+      
         .formulaire-decompte:focus-within {
             border-color: #22d3ee;
             box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
@@ -150,14 +156,143 @@
             transform: none;
             box-shadow: none;
         }
+
+        /* Optimisations responsive */
+        .btn-navigation {
+            background: #4B5563;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .btn-navigation:hover {
+            background: #374151;
+        }
+
+        .btn-amber {
+            background: #d97706;
+        }
+
+        .btn-amber:hover {
+            background: #b45309;
+        }
+
+        .btn-purple {
+            background: #7c3aed;
+        }
+
+        .btn-purple:hover {
+            background: #6d28d9;
+        }
+
+        .navigation-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filtres-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filtre-btn {
+            background: #3B3B3B;
+            color: #AECBD6;
+            border: 1px solid #4B5563;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .filtre-btn:hover {
+            border-color: #22d3ee;
+        }
+
+    @media (max-width: 768px) {
+            .formulaire-decompte {
+                padding: 1rem;
+            }
+            
+            .formulaire-decompte.expanded {
+                padding: 1rem;
+            }
+            
+            /* Ajuster les grilles pour mobile */
+            .formulaire-decompte .grid {
+                gap: 0.75rem;
+            }
+            
+            /* Assurer que les champs soient bien visibles */
+            .formulaire-decompte input,
+            .formulaire-decompte select,
+            .formulaire-decompte textarea {
+                font-size: 16px; /* Éviter le zoom automatique sur iOS */
+                min-height: 44px; /* Taille tactile minimale */
+            }
+            
+            /* Adapter les boutons pour mobile */
+            .formulaire-decompte .flex-wrap {
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .formulaire-decompte button,
+            .formulaire-decompte a {
+                min-height: 44px;
+                padding: 0.75rem 1rem;
+                font-size: 14px;
+            }
+        }
+    @media (max-width: 480px) {
+        .formulaire-decompte {
+            padding: 0.75rem;
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+        }
+        
+        .formulaire-decompte.expanded {
+            padding: 0.75rem;
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+        }
+        
+        /* Stack vertical pour les petits écrans */
+        .formulaire-decompte .grid {
+            grid-template-columns: 1fr !important;
+        }
+        
+        /* Agrandir les zones de saisie */
+        .formulaire-decompte textarea {
+            min-height: 100px;
+        }
+    }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 sm:p-6">
     <div class="max-w-7xl mx-auto">
         <!-- L'en-tête -->
         {% if from_attachement_list and attachement_cible %}
         <div class="mb-4 p-4 bg-purple-900/30 border border-purple-500 rounded-lg">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-file-contract text-purple-400 text-xl"></i>
                     <div>
@@ -183,7 +318,7 @@
             
             {% if action_type == 'ajouter' %}
             <div class="mt-3 pt-3 border-t border-purple-400/30">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-check-circle text-green-400"></i>
                         <span class="text-green-300">Attachement présélectionné</span>
@@ -201,20 +336,21 @@
             {% endif %}
         </div>
         {% endif %}
-        <!-- Dans liste_decomptes.html - section des boutons -->
-        <div class="flex justify-between items-center mb-6 flex-wrap gap-3">
+
+        <!-- Section des boutons de navigation - TOUJOURS VISIBLES -->
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
             <!-- Boutons de gauche -->
-            <div class="flex gap-3 flex-wrap">
-                <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+            <div class="navigation-container">
+                <a href="{% url 'home' %}" class="btn-navigation">
                     <i class="fas fa-house"></i> Accueil
                 </a>
-                <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <a href="{% url 'projets:liste_projets' %}" class="btn-navigation">
                     <i class="fas fa-arrow-left"></i> Retour aux projets
                 </a>
-                <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <a href="{% url 'projets:dashboard' projet.id %}" class="btn-navigation btn-amber">
                     <i class="fas fa-diagram-project"></i> Tableau de bord
                 </a>
-                <a href="{% url 'projets:liste_attachements' projet.id %}" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn-navigation btn-purple">
                     <i class="fas fa-file-contract"></i> Attachements
                 </a>
             </div>
@@ -222,20 +358,21 @@
             <!-- Bouton à droite -->
             {% if decompte_a_modifier or attachements_disponibles_count > 0 %}
             <button id="toggle-form-btn" 
-                    class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center gap-2 transition-colors">
+                    class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center gap-2 transition-colors whitespace-nowrap">
                 <span id="toggle-form-text">
                     {% if not decomptes %}Ajouter le premier décompte{% else %}Ajouter un décompte{% endif %}
                 </span>
                 <i id="toggle-form-icon" class="fas fa-chevron-down transition-transform"></i>
             </button>
             {% else %}
-            <div class="px-4 py-2 rounded-lg bg-gray-600 text-gray-300 font-medium flex items-center gap-2 cursor-not-allowed" 
+            <div class="px-4 py-2 rounded-lg bg-gray-600 text-gray-300 font-medium flex items-center gap-2 cursor-not-allowed whitespace-nowrap" 
                 title="Aucun attachement disponible pour créer un décompte">
                 <span>Aucun attachement disponible</span>
                 <i class="fas fa-ban"></i>
             </div>
             {% endif %}
         </div>
+
         <!-- Messages -->
         {% if messages %}
             <div class="mb-6 space-y-2">
@@ -251,9 +388,9 @@
         {% endif %}
 
         <!-- Informations projet -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-6">
+            <h2 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
@@ -270,28 +407,28 @@
 
         <!-- Résumé financier -->
         {% if decomptes %}
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
-                <div class="text-cyan-400 text-sm mb-1">Total HT</div>
-                <div class="text-xl font-bold text-white">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-3 sm:p-4 text-center">
+                <div class="text-cyan-400 text-xs sm:text-sm mb-1">Total HT</div>
+                <div class="text-base sm:text-xl font-bold text-white">
                     {{ decomptes_total_ht|default:0|format_quantity }} DH
                 </div>
             </div>
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
-                <div class="text-cyan-400 text-sm mb-1">Total TTC</div>
-                <div class="text-xl font-bold text-white">
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-3 sm:p-4 text-center">
+                <div class="text-cyan-400 text-xs sm:text-sm mb-1">Total TTC</div>
+                <div class="text-base sm:text-xl font-bold text-white">
                     {{ decomptes_total_ttc|default:0|format_quantity }} DH
                 </div>
             </div>
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
-                <div class="text-cyan-400 text-sm mb-1">Net à Payer</div>
-                <div class="text-xl font-bold text-white">
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-3 sm:p-4 text-center">
+                <div class="text-cyan-400 text-xs sm:text-sm mb-1">Net à Payer</div>
+                <div class="text-base sm:text-xl font-bold text-white">
                     {{ decomptes_total_net|default:0|format_quantity }} DH
                 </div>
             </div>
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 text-center">
-                <div class="text-cyan-400 text-sm mb-1">Décomptes Payés</div>
-                <div class="text-xl font-bold text-white">
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-3 sm:p-4 text-center">
+                <div class="text-cyan-400 text-xs sm:text-sm mb-1">Décomptes Payés</div>
+                <div class="text-base sm:text-xl font-bold text-white">
                     {{ decomptes_payes_count|default:0 }}/{{ decomptes.count }}
                 </div>
             </div>
@@ -299,24 +436,22 @@
         {% endif %}
 
         <!-- Filtres par statut -->
-        <div class="flex justify-between items-center mb-4">
-            <div class="flex gap-2">
-                <a href="?statut=PAYE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
-                    Payés ({{ decomptes_payes.count }})
-                </a>
-                <a href="?statut=EMIS" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
-                    Émis ({{ decomptes_emis.count }})
-                </a>
-                <a href="?statut=VALIDE" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
-                    Validés ({{ decomptes_valides.count }})
-                </a>
-                <a href="?statut=BROUILLON" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
-                    Brouillons ({{ decomptes_brouillons.count }})
-                </a>
-                <a href="?" class="px-4 py-2 rounded-lg bg-[#3B3B3B] border border-[#4B5563] text-sm hover:border-cyan-400">
-                    Tous ({{ decomptes.count }})
-                </a>
-            </div>
+        <div class="filtres-container">
+            <a href="?statut=PAYE" class="filtre-btn">
+                Payés ({{ decomptes_payes.count }})
+            </a>
+            <a href="?statut=EMIS" class="filtre-btn">
+                Émis ({{ decomptes_emis.count }})
+            </a>
+            <a href="?statut=VALIDE" class="filtre-btn">
+                Validés ({{ decomptes_valides.count }})
+            </a>
+            <a href="?statut=BROUILLON" class="filtre-btn">
+                Brouillons ({{ decomptes_brouillons.count }})
+            </a>
+            <a href="?" class="filtre-btn">
+                Tous ({{ decomptes.count }})
+            </a>
         </div>
 
         <!-- Liste des décomptes -->
@@ -324,9 +459,9 @@
             <div class="grid gap-4 mb-6">
                 {% for decompte in decomptes %}
                 <div class="decompte-card">
-                    <div class="flex justify-between items-start mb-3">
+                    <div class="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
                         <div class="flex-1">
-                            <div class="flex items-center gap-3 mb-2">
+                            <div class="flex flex-wrap items-center gap-2 mb-2">
                                 <span class="type-decompte-badge 
                                     {% if decompte.type_decompte == 'PROVISOIRE' %}bg-blue-600
                                     {% elif decompte.type_decompte == 'DEFINITIF' %}bg-green-600
@@ -348,21 +483,21 @@
                                 </span>
                                 {% endif %}
                             </div>
-                            <h3 class="text-xl font-semibold text-cyan-300">{{ decompte.numero }}</h3>
+                            <h3 class="text-lg sm:text-xl font-semibold text-cyan-300">{{ decompte.numero }}</h3>
                             <p class="text-[#2B9C62] font-medium">Attachement: {{ decompte.attachement.numero }}</p>
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-wrap gap-2 w-full sm:w-auto">
                             <a href="{% url 'projets:detail_decompte' decompte.id %}" 
-                               class="btn-info px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                               class="btn-info px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 whitespace-nowrap">
                                 <i class="fas fa-eye"></i> Détails
                             </a>
                             {% if decompte.statut != 'PAYE' %}
                             <a href="{% url 'projets:liste_decomptes' projet.id %}?modifier={{ decompte.id }}{% if from_attachement_list %}&from_attachements=true&attachement_id={{ decompte.attachement.id }}&action=modifier{% endif %}" 
-                                class="btn-warning px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                                class="btn-warning px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 whitespace-nowrap">
                                 <i class="fas fa-edit"></i> Modifier
                                 </a>
                             <a href="{% url 'projets:supprimer_decompte' decompte.id %}" 
-                               class="btn-danger px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
+                               class="btn-danger px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-2 whitespace-nowrap"
                                onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce décompte?')">
                                 <i class="fas fa-trash"></i> Supprimer
                             </a>
@@ -371,7 +506,7 @@
                     </div>
                     
                     <!-- Informations financières -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400 mb-3">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs sm:text-sm text-gray-400 mb-3">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-money-bill"></i>
                             <span>HT: {{ decompte.montant_situation_ht|format_quantity }} DH</span>
@@ -391,7 +526,7 @@
                     </div>
 
                     <!-- Informations supplémentaires -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs sm:text-sm text-gray-400">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-calendar"></i>
                             <span>Émission: {{ decompte.date_emission|date:"d/m/Y" }}</span>
@@ -425,8 +560,8 @@
                     <!-- Retenues -->
                     {% if decompte.montant_retenue_garantie or decompte.montant_ras or decompte.autres_retenues %}
                     <div class="mt-3 pt-3 border-t border-gray-600">
-                        <div class="text-sm text-amber-400 font-semibold mb-2">Retenues appliquées:</div>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-2 text-xs">
+                        <div class="text-xs sm:text-sm text-amber-400 font-semibold mb-2">Retenues appliquées:</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
                             {% if decompte.montant_retenue_garantie %}
                             <div>Garantie: {{ decompte.montant_situation_retenue_garantie|format_quantity }} DH ({{ decompte.taux_retenue_garantie }}%)</div>
                             {% endif %}
@@ -443,9 +578,9 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-8 text-center mb-6">
-                <i class="fas fa-calculator text-6xl text-gray-500 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-400 mb-2">Aucun décompte</h3>
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 sm:p-8 text-center mb-6">
+                <i class="fas fa-calculator text-4xl sm:text-6xl text-gray-500 mb-4"></i>
+                <h3 class="text-lg sm:text-xl font-semibold text-gray-400 mb-2">Aucun décompte</h3>
                 <p class="text-gray-500">Commencez par ajouter un décompte pour ce projet.</p>
             </div>
         {% endif %}
@@ -454,7 +589,7 @@
          {% if decompte_a_modifier or attachements_disponibles_count > 0 %}
         <div id="formulaire-decompte" 
              class="formulaire-decompte {% if not decomptes %}expanded{% else %}collapsed{% endif %}">
-            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+            <h3 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                 <i class="fas fa-plus-circle"></i> 
                 {% if decompte_a_modifier %}
                     Modifier le décompte
@@ -588,7 +723,7 @@
                 </div>
 
                 <!-- Taux et retenues -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                         <label for="taux_tva" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Taux TVA (%) *
@@ -645,9 +780,9 @@
                             placeholder="Observations supplémentaires...">{% if decompte_a_modifier %}{{ decompte_a_modifier.observations }}{% elif form.initial.observations %}{{ form.initial.observations }}{% endif %}</textarea>
                 </div>
                 
-                <div class="flex gap-3 pt-4">
+                <div class="flex flex-wrap gap-3 pt-4">
                     <button type="submit" 
-                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-save"></i>
                         {% if decompte_a_modifier %}
                             Modifier le décompte
@@ -656,18 +791,18 @@
                         {% endif %}
                     </button>
                     <a href="{% url 'projets:liste_decomptes' projet.id %}" 
-                    class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    class="bg-[#6b7280] hover:bg-[#4b5563] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>
             </form>
         </div>
         {% else %}
-        <div class="bg-amber-900/30 border border-amber-500 rounded-lg p-6 text-center">
-            <i class="fas fa-exclamation-triangle text-amber-400 text-2xl mb-3"></i>
-            <h3 class="text-lg font-semibold text-amber-300 mb-2">Aucun attachement disponible</h3>
-            <p class="text-amber-200">Tous les attachements ont déjà un décompte associé.</p>
-            <p class="text-amber-200 text-sm mt-2">
+        <div class="bg-amber-900/30 border border-amber-500 rounded-lg p-4 sm:p-6 text-center">
+            <i class="fas fa-exclamation-triangle text-amber-400 text-xl sm:text-2xl mb-3"></i>
+            <h3 class="text-base sm:text-lg font-semibold text-amber-300 mb-2">Aucun attachement disponible</h3>
+            <p class="text-amber-200 text-sm">Tous les attachements ont déjà un décompte associé.</p>
+            <p class="text-amber-200 text-xs sm:text-sm mt-2">
                 <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="underline hover:text-amber-100">
                     Ajouter un nouvel attachement
                 </a> pour créer un décompte.

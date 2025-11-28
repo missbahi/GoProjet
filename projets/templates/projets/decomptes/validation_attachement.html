@@ -10,144 +10,577 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { 
-            background-color: #2E2E2E; 
-            color: #AECBD6; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            min-height: 100vh;
+        /* Variables CSS */
+        :root {
+            --bg-dark: #2E2E2E;
+            --bg-card: #3B3B3B;
+            --bg-header: #1F2937;
+            --text-primary: #AECBD6;
+            --text-accent: #22d3ee;
+            --text-success: #10b981;
+            --text-warning: #f59e0b;
+            --text-danger: #ef4444;
+            --border-light: #4B5563;
+            --border-accent: #22d3ee;
         }
+
+        /* Reset et base */
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Effet glass */
         .glass-effect {
             background: rgba(59, 59, 59, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(34, 211, 238, 0.2);
             border-radius: 12px;
         }
-        .btn-primary { 
-            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
-            border: none; 
-            color: white; 
+
+        /* En-tête principal */
+        .main-header {
+            background: linear-gradient(135deg, var(--bg-header) 0%, #374151 100%);
+            border: 1px solid var(--border-accent);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
-        .btn-success { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-            border: none; 
-            color: white; 
+
+        .main-title {
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
         }
-        .btn-danger { 
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-            border: none; 
-            color: white; 
+
+        .header-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
         }
-        .btn-warning { 
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
-            border: none; 
-            color: white; 
+
+        .header-item {
+            text-align: center;
         }
-        .btn-info { 
-            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
-            border: none; 
-            color: white; 
+
+        .header-label {
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
         }
+
+        .header-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-accent);
+        }
+
+        /* Navigation */
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .amount-display {
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        /* Boutons */
         .btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
             border: none;
             cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
+
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
+
         .btn:active {
             transform: translateY(0);
         }
-        .form-control { 
-            background-color: #3B3B3B; 
-            border: 1px solid #4B5563; 
-            color: #AECBD6; 
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            width: 100%;
+
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); color: white; }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+
+        /* Messages */
+        .message-container {
+            margin-bottom: 1.5rem;
         }
-        .status-badge {
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
+
+        .message {
+            padding: 1rem;
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .message-success { background: #10b981; }
+        .message-error { background: #ef4444; }
+        .message-warning { background: #f59e0b; }
+        .message-info { background: #0ea5e9; }
+
+        .message-content {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Processus de validation */
+        .validation-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .validation-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .validation-step {
+            background: #374151;
+            border-radius: 12px;
+            padding: 1rem;
+            border-left: 4px solid;
+        }
+
+        .step-valid { border-left-color: #10b981; }
+        .step-rejected { border-left-color: #ef4444; }
+        .step-pending { border-left-color: #f59e0b; }
+        .step-correction { border-left-color: #8b5cf6; }
+
+        .step-header {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .step-number {
+            color: var(--text-accent);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .step-name {
+            font-size: 1.1rem;
             font-weight: 600;
-            font-size: 0.875rem;
+            color: white;
         }
-        .status-en-attente { background: #f59e0b; color: white; }
-        .status-valide { background: #10b981; color: white; }
-        .status-rejete { background: #ef4444; color: white; }
-        .status-correction { background: #8b5cf6; color: white; }
+
+        .step-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .badge-obligatoire { background: #ef4444; }
+        .badge-valide { background: #10b981; }
+        .badge-rejete { background: #ef4444; }
+        .badge-attente { background: #f59e0b; }
+        .badge-correction { background: #8b5cf6; }
+
+        .step-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .step-info {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .info-item {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .info-label {
+            color: var(--text-accent);
+            font-weight: 500;
+        }
+
+        .info-value {
+            color: white;
+        }
+
+        .text-warning { color: #f59e0b; }
+        .text-danger { color: #ef4444; }
+        .text-success { color: #10b981; }
+
+        /* Contenu des étapes */
+        .step-content {
+            margin-bottom: 0.75rem;
+        }
+
+        .comment-box {
+            background: #4B5563;
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .rejection-box {
+            background: rgba(239, 68, 68, 0.2);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 3px solid #ef4444;
+        }
+
+        /* Actions */
+        .step-actions {
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            min-height: 36px;
+        }
+
+        /* État vide */
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #6B7280;
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Détails de l'attachement */
+        .details-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .details-column {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .column-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-accent);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0;
+        }
+
+        .detail-label {
+            color: var(--text-accent);
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: white;
+            text-align: right;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            color: var(--text-accent);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--border-accent);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .main-title {
+                font-size: 2.25rem;
+            }
+
+            .header-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .nav-container {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .nav-buttons {
+                justify-content: flex-start;
+            }
+
+            .amount-display {
+                text-align: right;
+            }
+
+            .step-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .step-info {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .details-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .step-actions {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2rem;
+            }
+
+            .main-header {
+                padding: 2rem;
+            }
+
+            .validation-section,
+            .details-section {
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.5rem;
+            }
+
+            .main-header {
+                padding: 1rem;
+            }
+
+            .validation-section,
+            .details-section {
+                padding: 1rem;
+            }
+
+            .btn {
+                padding: 0.625rem 0.875rem;
+                font-size: 0.8rem;
+            }
+
+            .step-actions {
+                justify-content: center;
+            }
+
+            .modal-content {
+                padding: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="main-container max-w-6xl mx-auto p-6">
-        <!-- En-tête -->
-        <header class="glass-effect p-6 mb-6">
-            <div class="text-center">
-                <h1 class="text-3xl font-bold text-cyan-400 mb-4">
-                    <i class="fas fa-clipboard-check mr-3"></i>
-                    Processus de Validation d'Attachement
-                </h1>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                    <div>
-                        <span class="text-[#AECBD6]">Attachement :</span>
-                        <div class="text-xl font-bold text-cyan-300">{{ attachement.numero }}</div>
-                    </div>
-                    <div>
-                        <span class="text-[#AECBD6]">Projet :</span>
-                        <div class="text-xl font-bold text-cyan-300">{{ attachement.projet.nom }}</div>
-                    </div>
-                    <div>
-                        <span class="text-[#AECBD6]">Statut global :</span>
-                        <div class="text-xl font-bold 
-                            {% if attachement.statut == 'VALIDE' %}text-green-400
-                            {% elif attachement.statut == 'BROUILLON' %}text-yellow-400
-                            {% elif attachement.statut == 'TRANSMIS' %}text-blue-400
-                            {% else %}text-gray-400{% endif %}">
-                            {{ attachement.get_statut_display }}
-                        </div>
+    <div class="container">
+        <!-- En-tête principal -->
+        <header class="main-header">
+            <h1 class="main-title">
+                <i class="fas fa-clipboard-check"></i>
+                Processus de Validation d'Attachement
+            </h1>
+            <div class="header-grid">
+                <div class="header-item">
+                    <div class="header-label">Attachement</div>
+                    <div class="header-value">{{ attachement.numero }}</div>
+                </div>
+                <div class="header-item">
+                    <div class="header-label">Projet</div>
+                    <div class="header-value">{{ attachement.projet.nom }}</div>
+                </div>
+                <div class="header-item">
+                    <div class="header-label">Statut global</div>
+                    <div class="header-value 
+                        {% if attachement.statut == 'VALIDE' %}text-green-400
+                        {% elif attachement.statut == 'BROUILLON' %}text-yellow-400
+                        {% elif attachement.statut == 'TRANSMIS' %}text-blue-400
+                        {% else %}text-gray-400{% endif %}">
+                        {{ attachement.get_statut_display }}
                     </div>
                 </div>
             </div>
         </header>
 
-        <!-- Boutons navigation -->
-        <div class="flex justify-between items-center mb-6">
-            <div class="flex gap-3">
+        <!-- Navigation -->
+        <nav class="nav-container">
+            <div class="nav-buttons">
                 <button onclick="window.location.href='{% url 'projets:liste_attachements' attachement.projet.id %}'" 
                         class="btn btn-info">
-                    <i class="fa-solid fa-arrow-left"></i> Retour aux attachements
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Retour aux attachements
                 </button>
                 <button onclick="window.location.href='{% url 'projets:dashboard' attachement.projet.id %}'" 
                         class="btn btn-primary">
-                    <i class="fa-solid fa-diagram-project"></i> Retour au projet
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Retour au projet
                 </button>
             </div>
-            <div class="text-right">
+            <div class="amount-display">
                 <div class="text-cyan-400 font-semibold">
                     Montant total : <span class="text-white text-xl">{{ attachement.total_montant_ht|format_currency }}</span>
                 </div>
             </div>
-        </div>
+        </nav>
 
         <!-- Messages -->
         {% if messages %}
-            <div class="mb-6 space-y-3">
+            <div class="message-container">
                 {% for message in messages %}
-                    <div class="p-4 rounded-xl 
-                        {% if message.tags == 'success' %}bg-green-600
-                        {% elif message.tags == 'error' %}bg-red-600
-                        {% elif message.tags == 'warning' %}bg-yellow-600
-                        {% else %}bg-blue-600{% endif %} 
-                        text-white flex justify-between items-center shadow-lg">
-                        <div class="flex items-center gap-3">
+                    <div class="message message-{{ message.tags }}">
+                        <div class="message-content">
                             <i class="fas 
                                 {% if message.tags == 'success' %}fa-check-circle
                                 {% elif message.tags == 'error' %}fa-exclamation-circle
@@ -155,7 +588,7 @@
                                 {% else %}fa-info-circle{% endif %}"></i>
                             <span class="font-medium">{{ message }}</span>
                         </div>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -164,63 +597,62 @@
         {% endif %}
 
         <!-- Processus de validation -->
-        <div class="glass-effect p-6 mb-6">
-            <h2 class="text-2xl font-bold text-cyan-400 mb-6 flex items-center gap-2">
+        <section class="validation-section">
+            <h2 class="section-title">
                 <i class="fas fa-list-ol"></i>
                 Étapes de Validation
             </h2>
             
-            <div class="space-y-4">
+            <div class="validation-steps">
                 {% for validation in validations %}
-                <div class="bg-gray-800 rounded-xl p-4 border-l-4 
-                    {% if validation.statut_validation == 'VALIDE' %}border-green-500
-                    {% elif validation.statut_validation == 'REJETE' %}border-red-500
-                    {% elif validation.statut_validation == 'EN_ATTENTE' %}border-yellow-500
-                    {% else %}border-purple-500{% endif %}">
+                <div class="validation-step 
+                    {% if validation.statut_validation == 'VALIDE' %}step-valid
+                    {% elif validation.statut_validation == 'REJETE' %}step-rejected
+                    {% elif validation.statut_validation == 'EN_ATTENTE' %}step-pending
+                    {% else %}step-correction{% endif %}">
                     
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="flex items-center gap-3">
-                            <span class="text-cyan-400 font-bold text-lg">Étape {{ validation.ordre_validation }}</span>
-                            <h3 class="text-xl font-semibold text-white">{{ validation.get_type_validation_display }}</h3>
+                    <div class="step-header">
+                        <div class="step-title">
+                            <span class="step-number">Étape {{ validation.ordre_validation }}</span>
+                            <span class="step-name">{{ validation.get_type_validation_display }}</span>
                             {% if validation.est_obligatoire %}
-                                <span class="text-xs bg-red-500 text-white px-2 py-1 rounded">Obligatoire</span>
+                                <span class="step-badge badge-obligatoire">Obligatoire</span>
                             {% endif %}
                         </div>
-                        <div class="flex items-center gap-3">
-                            <span class="status-badge 
-                                {% if validation.statut_validation == 'VALIDE' %}bg-green-500
-                                {% elif validation.statut_validation == 'REJETE' %}bg-red-500
-                                {% elif validation.statut_validation == 'EN_ATTENTE' %}bg-yellow-500
-                                {% else %}bg-purple-500{% endif %} 
-                                text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        <div class="step-status">
+                            <span class="step-badge 
+                                {% if validation.statut_validation == 'VALIDE' %}badge-valide
+                                {% elif validation.statut_validation == 'REJETE' %}badge-rejete
+                                {% elif validation.statut_validation == 'EN_ATTENTE' %}badge-attente
+                                {% else %}badge-correction{% endif %}">
                                 {{ validation.get_statut_validation_display }}
                             </span>
                             {% if validation.est_en_retard %}
-                                <span class="text-red-400 text-sm font-semibold">
+                                <span class="text-danger font-semibold">
                                     <i class="fas fa-clock"></i> En retard
                                 </span>
                             {% endif %}
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-3">
-                        <div>
-                            <span class="text-cyan-400">Validateur :</span>
-                            <span class="text-white">
+                    <div class="step-info">
+                        <div class="info-item">
+                            <span class="info-label">Validateur :</span>
+                            <span class="info-value">
                                 {% if validation.validateur %}
                                     {{ validation.validateur.get_full_name|default:validation.validateur.username }}
                                 {% else %}
-                                    <span class="text-yellow-400">Non assigné</span>
+                                    <span class="text-warning">Non assigné</span>
                                 {% endif %}
                             </span>
                         </div>
-                        <div>
-                            <span class="text-cyan-400">Date limite :</span>
-                            <span class="text-white">
+                        <div class="info-item">
+                            <span class="info-label">Date limite :</span>
+                            <span class="info-value">
                                 {% if validation.date_limite %}
                                     {{ validation.date_limite|date:"d/m/Y" }}
                                     {% if validation.jours_restants is not None %}
-                                        <span class="{% if validation.jours_restants < 3 %}text-red-400{% else %}text-green-400{% endif %}">
+                                        <span class="{% if validation.jours_restants < 3 %}text-danger{% else %}text-success{% endif %}">
                                             ({{ validation.jours_restants }} jour{{ validation.jours_restants|pluralize }} restant{{ validation.jours_restants|pluralize }})
                                         </span>
                                     {% endif %}
@@ -232,42 +664,46 @@
                     </div>
 
                     {% if validation.commentaires %}
-                    <div class="mb-3">
-                        <span class="text-cyan-400">Commentaires :</span>
-                        <p class="text-white mt-1 bg-gray-700 p-3 rounded">{{ validation.commentaires }}</p>
+                    <div class="step-content">
+                        <span class="info-label">Commentaires :</span>
+                        <div class="comment-box">
+                            {{ validation.commentaires }}
+                        </div>
                     </div>
                     {% endif %}
 
                     {% if validation.motifs_rejet %}
-                    <div class="mb-3">
-                        <span class="text-red-400">Motifs de rejet :</span>
-                        <p class="text-white mt-1 bg-red-900/30 p-3 rounded">{{ validation.motifs_rejet }}</p>
+                    <div class="step-content">
+                        <span class="info-label text-danger">Motifs de rejet :</span>
+                        <div class="rejection-box">
+                            {{ validation.motifs_rejet }}
+                        </div>
                     </div>
                     {% endif %}
 
                     <!-- Actions -->
                     {% if validation.est_validable_par_utilisateur %}
-                    <div class="flex gap-3 mt-4 pt-4 border-t border-gray-600">
+                    <div class="step-actions">
                         <button onclick="openValidationModal('valider', {{ validation.id }})" 
-                                class="btn btn-success">
-                                {% if validation.etapes_validation %}
-                            <i class="fas fa-check"></i> Consulter les étapes de validation
-                                {% else %}
-                            <i class="fas fa-check"></i> Valider
-                                {% endif %}
+                                class="btn btn-success btn-action">
+                            {% if validation.etapes_validation %}
+                                <i class="fas fa-check"></i> Consulter
+                            {% else %}
+                                <i class="fas fa-check"></i> Valider
+                            {% endif %}
                         </button>
                         <button onclick="openValidationModal('rejeter', {{ validation.id }})" 
-                                class="btn btn-danger">
+                                class="btn btn-danger btn-action">
                             <i class="fas fa-times"></i> Rejeter
                         </button>
                         <button onclick="openValidationModal('correction', {{ validation.id }})" 
-                                class="btn btn-warning">
-                            <i class="fas fa-edit"></i> Demander correction
+                                class="btn btn-warning btn-action">
+                            <i class="fas fa-edit"></i> Correction
                         </button>
                     </div>
                     {% elif validation.est_en_attente %}
-                    <div class="mt-4 pt-4 border-t border-gray-600">
-                        <p class="text-yellow-400 text-sm">
+                    <div class="step-content">
+                        <p class="text-warning">
                             <i class="fas fa-clock"></i>
                             En attente de validation par {% if validation.validateur %}{{ validation.validateur.get_full_name|default:validation.validateur.username }}{% else %}un validateur{% endif %}
                         </p>
@@ -275,89 +711,109 @@
                     {% endif %}
                 </div>
                 {% empty %}
-                <div class="text-center py-8 text-gray-400">
-                    <i class="fas fa-info-circle text-4xl mb-4"></i>
+                <div class="empty-state">
+                    <i class="fas fa-info-circle empty-icon"></i>
                     <p>Aucun processus de validation défini pour cet attachement.</p>
+                    <p>Veuillez contacter l'administrateur du système pour configurer les étapes de validation.</p>
+                    <button onclick=transmitModal() 
+                            class="btn btn-primary mt-4">
+                        <i class="fas fa-edit"></i>
+                        Transmettre pour validation
+                    </button>
                     {% if attachement.statut == 'TRANSMIS' %}
                     <p class="mt-2">Le processus de validation devrait être initialisé automatiquement.</p>
                     {% endif %}
                 </div>
                 {% endfor %}
             </div>
-        </div>
+        </section>
 
         <!-- Informations détaillées de l'attachement -->
-        <div class="glass-effect p-6">
-            <h2 class="text-2xl font-bold text-cyan-400 mb-4">
-                <i class="fas fa-info-circle mr-2"></i>
+        <section class="details-section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
                 Détails de l'Attachement
             </h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-16 border border-gray-600 rounded-xl p-4">
-                <div class="mr-8">
-                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 border-b border-gray-500">Informations générales</h3>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Période :</span> {{ attachement.date_debut_periode|date:"d/m/Y" }} - {{ attachement.date_fin_periode|date:"d/m/Y" }}
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Date établissement :</span> {{ attachement.date_etablissement|date:"d/m/Y" }}
-                        </div> 
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Observations :</span> {{ attachement.observations|default:"Aucune" }}
-                        </div>
+            <div class="details-grid">
+                <div class="details-column">
+                    <h3 class="column-title">Informations générales</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Période :</span>
+                        <span class="detail-value">{{ attachement.date_debut_periode|date:"d/m/Y" }} - {{ attachement.date_fin_periode|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date établissement :</span>
+                        <span class="detail-value">{{ attachement.date_etablissement|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Observations :</span>
+                        <span class="detail-value">{{ attachement.observations|default:"Aucune" }}</span>
                     </div>
                 </div>
-                <div class="mr-8">
-                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 border-b border-gray-500">Montants</h3>
-                    <div class="space-y-2">
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Montant HT :</span><span>{{ attachement.total_montant_ht|format_currency }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Cumul précédent :</span><span>{{ attachement.montant_ht_attachement_precedent|format_currency }}</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-cyan-400">Situation actuelle :</span><span>{{ attachement.montant_situation|format_currency }}</span>
-                        </div>
+                <div class="details-column">
+                    <h3 class="column-title">Montants</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Montant HT :</span>
+                        <span class="detail-value">{{ attachement.total_montant_ht|format_currency }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Cumul précédent :</span>
+                        <span class="detail-value">{{ attachement.montant_ht_attachement_precedent|format_currency }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Situation actuelle :</span>
+                        <span class="detail-value">{{ attachement.montant_situation|format_currency }}</span>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 
     <!-- Modal pour les actions de validation -->
-    <div id="validationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-gray-800 rounded-xl p-6 w-full max-w-md">
-                <h3 id="modalTitle" class="text-xl font-bold text-cyan-400 mb-4"></h3>
-                <form id="validationForm" method="POST">
-                    {% csrf_token %}
-                    <input type="hidden" id="validationId" name="validation_id">
-                    <input type="hidden" id="actionType" name="action_type">
-                    
-                    <div class="mb-4">
-                        <label class="block text-cyan-400 mb-2">Commentaires :</label>
-                        <textarea id="commentaires" name="commentaires" rows="4" 
-                                  class="form-control" placeholder="Saisissez vos commentaires..."></textarea>
-                    </div>
-                    
-                    <div class="mb-4" id="motifsField" style="display: none;">
-                        <label class="block text-red-400 mb-2">Motifs de rejet :</label>
-                        <textarea id="motifs" name="motifs" rows="4" 
-                                  class="form-control" placeholder="Expliquez les motifs du rejet..."></textarea>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="block text-cyan-400 mb-2">Fichier justificatif (optionnel) :</label>
-                        <input type="file" id="fichier" name="fichier" class="form-control">
-                    </div>
-                    
-                    <div class="flex justify-end gap-3">
-                        <button type="button" onclick="closeModal()" class="btn btn-secondary">Annuler</button>
-                        <button type="submit" class="btn btn-primary">Confirmer</button>
-                    </div>
-                </form>
-            </div>
+    <div id="validationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <form id="validationForm" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="validationId" name="validation_id">
+                <input type="hidden" id="actionType" name="action_type">
+                
+                <div class="form-group">
+                    <label class="form-label">Commentaires :</label>
+                    <textarea id="commentaires" name="commentaires" rows="4" 
+                              class="form-control" placeholder="Saisissez vos commentaires..."></textarea>
+                </div>
+                
+                <div class="form-group" id="motifsField" style="display: none;">
+                    <label class="form-label text-danger">Motifs de rejet :</label>
+                    <textarea id="motifs" name="motifs" rows="4" 
+                              class="form-control" placeholder="Expliquez les motifs du rejet..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Fichier justificatif (optionnel) :</label>
+                    <input type="file" id="fichier" name="fichier" class="form-control">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Modal pour transmettre pour validation -->
+    <div id="transmitModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Transmettre l'attachement pour validation</h3>
+            <form id="transmitForm" method="POST" action="{% url 'projets:transmettre_validation_attachement' attachement.id %}">
+                {% csrf_token %}
+                <p>Êtes-vous sûr de vouloir transmettre cet attachement pour validation ?</p>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Transmettre</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -383,11 +839,17 @@
                 motifsField.style.display = 'none';
             }
             
-            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         }
-
+        
+        function transmitModal() {
+            const modal = document.getElementById('transmitModal');
+            modal.style.display = 'flex';
+        }
+        
         function closeModal() {
-            document.getElementById('validationModal').classList.add('hidden');
+            document.getElementById('validationModal').style.display = 'none';
+            document.getElementById('transmitModal').style.display = 'none';
             document.getElementById('validationForm').reset();
         }
 
@@ -407,6 +869,39 @@
                 e.preventDefault();
                 alert('Veuillez saisir les motifs du rejet.');
                 return;
+            }
+        });
+        
+        // Gérer la soumission du formulaire de transmission
+        document.getElementById('transmitForm').addEventListener('submit', function(e) {
+            // recuperer l'attachement
+            const attachement = {attachement };
+            if (attachement.statut === 'TRANSMIS') {
+                e.preventDefault();
+                alert('Cet attachement a déjà été transmis pour validation.');
+                closeModal();
+            }
+            else if (attachement.statut !== 'SIGNE') {
+                e.preventDefault();
+                // seulement les attachements signes peuvent etre transmis
+                alert('Seuls les attachements signés peuvent être transmis pour validation.');
+                // demander s'il faut signer maintenant
+
+                const signNow = confirm('Voulez-vous signer maintenant cet attachement ?');
+                if (signNow) {
+                    attachement.statut = 'SIGNE';
+                    alert('L\'attachement a été signé. Vous pouvez maintenant le transmettre pour validation.');
+                    closeModal();
+                    // permettre la soumission
+                    this.submit();
+                }
+            }
+            else {
+                // permettre la soumission
+                e.preventDefault();
+                alert('L\'attachement est transmis pour validation.');
+                closeModal();
+                this.submit();
             }
         });
     </script>

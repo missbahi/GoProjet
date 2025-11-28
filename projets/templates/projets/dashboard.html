@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Tableau de bord – {{ projet.nom }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   {% load static %}
   {% load formatters %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -16,8 +17,14 @@
       background: #3B3B3B;
       border: 1px solid #4B5563;
       border-radius: 8px;
-      padding: 1.5rem;
+      padding: 1rem;
       transition: all 0.3s ease;
+    }
+    
+    @media (min-width: 768px) {
+      .card-custom {
+        padding: 1.5rem;
+      }
     }
     
     .card-custom:hover {
@@ -70,16 +77,29 @@
     .decompte-card {
       background: linear-gradient(135deg, #2d3748, #4a5568);
       border-radius: 10px;
-      padding: 15px;
-      margin-bottom: 15px;
+      padding: 12px;
+      margin-bottom: 12px;
       border-left: 4px solid #22d3ee;
+    }
+    
+    @media (min-width: 768px) {
+      .decompte-card {
+        padding: 15px;
+        margin-bottom: 15px;
+      }
     }
     
     .decompte-statut {
       padding: 4px 8px;
       border-radius: 4px;
-      font-size: 0.8em;
+      font-size: 0.75em;
       font-weight: bold;
+    }
+    
+    @media (min-width: 768px) {
+      .decompte-statut {
+        font-size: 0.8em;
+      }
     }
     
     .statut-valide { background-color: #10b981; color: white; }
@@ -109,15 +129,27 @@
     .stat-card {
       background: linear-gradient(135deg, #374151, #4B5563);
       border-radius: 8px;
-      padding: 1.5rem;
+      padding: 1rem;
       text-align: center;
       border: 1px solid #4B5563;
     }
     
+    @media (min-width: 768px) {
+      .stat-card {
+        padding: 1.5rem;
+      }
+    }
+    
     .stat-card h4 {
-      font-size: 1.5rem;
+      font-size: 1.25rem;
       font-weight: bold;
       margin-bottom: 0.5rem;
+    }
+    
+    @media (min-width: 768px) {
+      .stat-card h4 {
+        font-size: 1.5rem;
+      }
     }
     
     .stat-card.total { border-top: 4px solid #22d3ee; }
@@ -129,12 +161,18 @@
     .module-card {
       background: linear-gradient(135deg, #374151, #4B5563);
       border-radius: 10px;
-      padding: 1.5rem;
+      padding: 1rem;
       transition: all 0.3s ease;
       border: 1px solid #4B5563;
       height: 100%;
       display: flex;
       flex-direction: column;
+    }
+    
+    @media (min-width: 768px) {
+      .module-card {
+        padding: 1.5rem;
+      }
     }
     
     .module-card:hover {
@@ -144,61 +182,137 @@
     }
     
     .module-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
+      font-size: 1.5rem;
+      margin-bottom: 0.75rem;
       background: linear-gradient(135deg, #22d3ee, #0ea5e9);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
     
+    @media (min-width: 768px) {
+      .module-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+    }
+    
     .module-title {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
       margin-bottom: 0.5rem;
       color: #E5E7EB;
     }
     
+    @media (min-width: 768px) {
+      .module-title {
+        font-size: 1.1rem;
+      }
+    }
+    
     .module-description {
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       color: #9CA3AF;
       flex-grow: 1;
       margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+    
+    @media (min-width: 768px) {
+      .module-description {
+        font-size: 0.9rem;
+      }
     }
     
     .module-actions {
       margin-top: auto;
     }
+
+    /* Styles pour mobile */
+    @media (max-width: 640px) {
+      .mobile-p-4 {
+        padding: 1rem;
+      }
+      
+      .mobile-text-sm {
+        font-size: 0.875rem;
+      }
+      
+      .mobile-text-xs {
+        font-size: 0.75rem;
+      }
+      
+      .mobile-flex-col {
+        flex-direction: column;
+      }
+      
+      .mobile-gap-2 {
+        gap: 0.5rem;
+      }
+      
+      .mobile-w-full {
+        width: 100%;
+      }
+    }
+
+    /* Améliorations pour les petits écrans */
+    @media (max-width: 480px) {
+      .mobile-stack {
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .mobile-stack > * {
+        margin-bottom: 0.5rem;
+      }
+      
+      .mobile-stack > *:last-child {
+        margin-bottom: 0;
+      }
+    }
+
+    /* Boutons responsive */
+    .btn-responsive {
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+    }
+    
+    @media (min-width: 768px) {
+      .btn-responsive {
+        padding: 0.5rem 1.5rem;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 
-<body class="p-6">
+<body class="p-4 md:p-6">
   <div class="max-w-7xl mx-auto">
     <!-- En-tête -->
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+    <div class="mb-6 md:mb-8">
+      <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2 mobile-text-sm">
         <i class="fas fa-diagram-project"></i>
         Tableau de bord du projet
       </h1>
     </div>
 
     <!-- Boutons navigation -->
-    <div class="flex gap-3 mb-6 flex-wrap">
-      <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+    <div class="flex gap-2 md:gap-3 mb-4 md:mb-6 flex-wrap mobile-stack">
+      <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
         <i class="fas fa-house"></i> Accueil
       </a>
-      <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+      <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
         <i class="fas fa-arrow-left"></i> Retour aux projets
       </a>
     </div>
 
     <!-- Carte infos projet -->
-    <div class="card-custom mb-6">
-      <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold text-cyan-300">{{ projet.nom }}</h2>
+    <div class="card-custom mb-4 md:mb-6">
+      <div class="flex justify-between items-center mb-4 mobile-flex-col mobile-gap-2">
+        <h2 class="text-lg md:text-xl font-semibold text-cyan-300 text-center md:text-left">{{ projet.nom }}</h2>
       </div>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mobile-text-sm">
         <div class="space-y-2">
           <div><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</div>
           <div><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</div>
@@ -216,20 +330,20 @@
       </div>
       
       <div class="mt-4 pt-4 border-t border-[#4B5563]">
-        <div class="font-bold text-amber-400 text-lg">
+        <div class="font-bold text-amber-400 text-base md:text-lg text-center md:text-left">
           <strong>Montant Marché TTC :</strong> {{ montant_total|default:"0.00"}} DH
         </div>
       </div>
     </div>
 
     <!-- Modules du projet -->
-    <div class="card-custom mb-6">
-      <h3 class="text-xl font-semibold text-cyan-300 mb-6 flex items-center gap-2">
+    <div class="card-custom mb-4 md:mb-6">
+      <h3 class="text-lg md:text-xl font-semibold text-cyan-300 mb-4 md:mb-6 flex items-center gap-2 justify-center md:justify-start">
         <i class="fas fa-toolbox"></i>
         Modules du projet
       </h3>
       
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
         <!-- Lot et Bordereaux -->
         <div class="module-card group">
           <div class="module-icon">
@@ -238,7 +352,7 @@
           <h4 class="module-title">Lots et Bordereaux</h4>
           <p class="module-description">Gérez les lots du projet et les bordereaux des prix unitaires</p>
           <div class="module-actions">
-            <a href="{% url 'projets:lots_projet' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:lots_projet' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
@@ -253,7 +367,7 @@
           <h4 class="module-title">Documents administratifs</h4>
           <p class="module-description">Consultez et gérez tous les documents liés au projet</p>
           <div class="module-actions">
-            <a href="{% url 'projets:documents' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:documents' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
@@ -268,7 +382,7 @@
           <h4 class="module-title">Suivi d'exécution</h4>
           <p class="module-description">Suivez l'avancement et les performances du projet</p>
           <div class="module-actions">
-            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
@@ -283,7 +397,7 @@
           <h4 class="module-title">Ordres de services</h4>
           <p class="module-description">Gérez les ordres de service et les modifications</p>
           <div class="module-actions">
-            <a href="{% url 'projets:ordres_service' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:ordres_service' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
@@ -298,7 +412,7 @@
           <h4 class="module-title">Fiche de Contrôle</h4>
           <p class="module-description">Consultez et gérez les fiches de contrôle qualité</p>
           <div class="module-actions">
-            <a href="{% url 'projets:fiche_controle' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:fiche_controle' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
@@ -320,12 +434,12 @@
           </p>
           <div class="module-actions">
             {% if attachements %}
-            <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn-primary w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Gérer</span>
             </a>
             {% else %}
-            <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="btn-success w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+            <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-plus"></i>
               <span>Créer</span>
             </a>
@@ -343,7 +457,7 @@
           <div class="module-actions">
             <button 
                 onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')" 
-                class="btn-warning w-full px-4 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center">
+                class="btn-warning w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                 <i class="fas fa-cog"></i>
                 <span>Modifier</span>
             </button>
@@ -354,19 +468,19 @@
 
     <!-- Section Décomptes -->
     <div class="card-custom">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+      <div class="flex justify-between items-center mb-4 md:mb-6 mobile-flex-col mobile-gap-3">
+        <h3 class="text-lg md:text-xl font-semibold text-cyan-300 flex items-center gap-2 justify-center md:justify-start">
           <i class="fas fa-file-invoice-dollar"></i>
           Décomptes du projet
         </h3>
         
         {% if attachements %}
-        <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-success px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+        <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-success px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
           <i class="fas fa-plus"></i>
           Gérer les décomptes
         </a>
         {% else %}
-        <div class="text-amber-400 text-sm max-w-md">
+        <div class="text-amber-400 text-xs md:text-sm max-w-md text-center md:text-left">
           <i class="fas fa-exclamation-triangle mr-2"></i>
           Il faut au moins un attachement pour gérer les décomptes
         </div>
@@ -374,52 +488,52 @@
       </div>
 
       <!-- Résumé des décomptes -->
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-4 md:mb-6">
         <div class="stat-card total">
           <h4 class="text-cyan-400">{{ total_decomptes|default:0 }}</h4>
-          <p class="text-gray-300 mb-0">Total Décomptes</p>
+          <p class="text-gray-300 mb-0 mobile-text-xs">Total Décomptes</p>
         </div>
         <div class="stat-card payes">
           <h4 class="text-green-400">{{ decomptes_payes|default:0 }}</h4>
-          <p class="text-gray-300 mb-0">Payés</p>
+          <p class="text-gray-300 mb-0 mobile-text-xs">Payés</p>
         </div>
         <div class="stat-card emis">
           <h4 class="text-amber-400">{{ decomptes_emis|default:0 }}</h4>
-          <p class="text-gray-300 mb-0">Émis</p>
+          <p class="text-gray-300 mb-0 mobile-text-xs">Émis</p>
         </div>
         <div class="stat-card retard">
           <h4 class="text-red-400">{{ decomptes_retard|default:0 }}</h4>
-          <p class="text-gray-300 mb-0">En retard</p>
+          <p class="text-gray-300 mb-0 mobile-text-xs">En retard</p>
         </div>
       </div>
 
       <!-- Liste des décomptes récents -->
       {% if decomptes_recents %}
-        <h5 class="text-cyan-300 mb-4 flex items-center gap-2">
+        <h5 class="text-cyan-300 mb-3 md:mb-4 flex items-center gap-2 justify-center md:justify-start">
           <i class="fas fa-clock"></i>
           Décomptes récents
         </h5>
         
-        <div class="space-y-4">
+        <div class="space-y-3 md:space-y-4">
           {% for decompte in decomptes_recents %}
             <div class="decompte-card">
-              <div class="flex justify-between items-start">
-                <div class="flex-1">
-                  <h6 class="text-white font-semibold mb-2">{{ decompte.numero }} - {{ decompte.get_type_decompte_display }}</h6>
-                  <div class="text-sm text-gray-300 space-y-1">
+              <div class="flex justify-between items-start mobile-flex-col mobile-gap-3">
+                <div class="flex-1 mobile-w-full">
+                  <h6 class="text-white font-semibold mb-2 mobile-text-sm">{{ decompte.numero }} - {{ decompte.get_type_decompte_display }}</h6>
+                  <div class="text-xs md:text-sm text-gray-300 space-y-1">
                     <p>Émis le: {{ decompte.date_emission|date:"d/m/Y" }}</p>
                     <p>Montant TTC: <strong class="text-amber-400">{{ decompte.montant_ttc|format_quantity }} DH</strong></p>
                   </div>
                 </div>
-                <div class="text-right">
-                  <span class="decompte-statut statut-{{ decompte.statut|lower }}">
+                <div class="text-right mobile-w-full mobile-text-center">
+                  <span class="decompte-statut statut-{{ decompte.statut|lower }} mobile-text-xs">
                     {{ decompte.get_statut_display }}
                   </span>
-                  <div class="flex gap-2 mt-3">
-                    <a href="{% url 'projets:detail_decompte' decompte.id %}" class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                  <div class="flex gap-2 mt-3 justify-center md:justify-end">
+                    <a href="{% url 'projets:detail_decompte' decompte.id %}" class="btn-info px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1">
                       <i class="fas fa-eye"></i>
                     </a>
-                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" class="btn-warning px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
+                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" class="btn-warning px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1">
                       <i class="fas fa-edit"></i>
                     </a>
                   </div>
@@ -430,19 +544,19 @@
         </div>
         
         {% if decomptes_recents|length < total_decomptes %}
-          <div class="text-center mt-6">
-            <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-outline px-6 py-2 rounded-lg font-medium">
+          <div class="text-center mt-4 md:mt-6">
+            <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-outline px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium btn-responsive mobile-w-full">
               Voir tous les décomptes ({{ total_decomptes }})
             </a>
           </div>
         {% endif %}
         
       {% else %}
-        <div class="text-center py-8">
-          <i class="fas fa-file-invoice-dollar text-6xl text-gray-500 mb-4"></i>
-          <p class="text-gray-400 text-lg mb-4">Aucun décompte créé pour ce projet</p>
+        <div class="text-center py-6 md:py-8">
+          <i class="fas fa-file-invoice-dollar text-4xl md:text-6xl text-gray-500 mb-3 md:mb-4"></i>
+          <p class="text-gray-400 text-base md:text-lg mb-3 md:mb-4">Aucun décompte créé pour ce projet</p>
           {% if attachements %}
-            <a href="{% url 'projets:projet_ajouter_decompte' projet.id %}" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2 inline-flex">
+            <a href="{% url 'projets:projet_ajouter_decompte' projet.id %}" class="btn-success px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 inline-flex btn-responsive">
               <i class="fas fa-plus"></i>
               Créer le premier décompte
             </a>
@@ -531,13 +645,57 @@
       }
     }
 
-    // Fonction de notification (identique aux autres templates)
+    // Fonction de notification améliorée pour mobile
     function showNotification(message, type = 'success') {
-      // Créer une notification temporaire si nécessaire
-      console.log(`${type}: ${message}`);
-      // Vous pouvez implémenter un système de notification visuel ici
-      alert(`${type.toUpperCase()}: ${message}`);
+      // Créer une notification toast temporaire
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg max-w-sm w-11/12 ${
+        type === 'success' ? 'bg-green-600 text-white' : 
+        type === 'error' ? 'bg-red-600 text-white' : 
+        'bg-blue-600 text-white'
+      }`;
+      
+      notification.innerHTML = `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'}-circle mr-2"></i>
+            <span class="text-sm">${message}</span>
+          </div>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Supprimer automatiquement après 5 secondes
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      }, 5000);
     }
+
+    // Adaptation responsive pour les modales
+    function adaptModalForMobile() {
+      const modals = document.querySelectorAll('.modal-content');
+      modals.forEach(modal => {
+        if (window.innerWidth < 768) {
+          modal.style.width = '95%';
+          modal.style.maxWidth = '95%';
+          modal.style.margin = '1rem';
+        }
+      });
+    }
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+      adaptModalForMobile();
+    });
+
+    // Adaptation au redimensionnement
+    window.addEventListener('resize', adaptModalForMobile);
   </script>
 </body>
 </html>

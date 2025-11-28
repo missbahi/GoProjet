@@ -32,76 +32,226 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background-color: #2E2E2E;
-            padding: 1.5rem;
+            padding: 1rem;
             border-radius: 0.5rem;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
             z-index: 50;
-            width: 90%;
+            width: 95%;
             max-width: 32rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Styles pour mobile */
+        @media (max-width: 768px) {
+            .mobile-p-3 {
+                padding: 0.75rem;
+            }
+            .mobile-text-sm {
+                font-size: 0.875rem;
+            }
+            .mobile-text-xs {
+                font-size: 0.75rem;
+            }
+            .mobile-sidebar {
+                width: 280px;
+            }
+            .mobile-content {
+                padding: 0.75rem;
+            }
+        }
+
+        /* Animation de la sidebar mobile */
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 60;
+        }
+        
+        .sidebar-mobile.open {
+            transform: translateX(0);
+        }
+        
+        /* Overlay pour mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 50;
+        }
+        
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        /* Bouton menu mobile */
+        .mobile-menu-btn {
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 70;
+            background: #2E2E2E;
+            color: #2B9C62;
+            border: none;
+            border-radius: 0.375rem;
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+
+        /* Header mobile */
+        .mobile-header {
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 1rem;
+                background: #2E2E2E;
+                border-bottom: 1px solid #107C41;
+            }
         }
     </style>
 </head>
-<body>
+<body class="bg-[#525252]">
+
+<!-- Overlay pour sidebar mobile -->
+<div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
+
+<!-- Bouton menu mobile -->
+<button id="mobileMenuBtn" class="mobile-menu-btn md:hidden">
+    <i class="fas fa-bars text-xl"></i>
+</button>
+
+<!-- Header mobile -->
+<div class="mobile-header md:hidden">
+    <div class="flex items-center space-x-3">
+        <h6 class="text-lg font-bold text-[#2B9C62] ml-8">📊 Base de données</h6>
+    </div>
+    <button id="mobileSidebarClose" class="text-[#2B9C62] hover:text-white">
+        <i class="fas fa-times text-xl"></i>
+    </button>
+</div>
 
 <div class="flex min-h-screen">
-    <!-- Sidebar -->
-    <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-96 flex-shrink-0 md:block hidden">
+    <!-- Sidebar Desktop -->
+    <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-80 lg:w-96 flex-shrink-0 md:block hidden">
         <div class="p-4 border-b border-green-900">
             <div class="flex items-center space-x-3">
                 <h6 class="text-xl font-bold">📊 Gestion base de données</h6>
             </div>
         </div>
         <nav class="p-4">
-                <div class="mb-6">
-                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
-                    <ul class="space-y-2 text-l">
-                        <li>
-                            <div id="menu-ingenieurs" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                                <button onclick="loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')">
-                                    <i class="fas fa-user-tie"></i>
-                                    <span> Gestion des Ingénieurs / Chefs de projets</span>
-                                </button>
-                            </div>
-                        </li>
-                        <li>
-                            <div id="menu-clients" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                                <button onclick="loadModule('{% url 'projets:partial_clients' %}', 'menu-clients')">
-                                    <i class="fas fa-users"></i>
-                                    <span> Gestion des Clients / Maitres d'ouvrages</span>
-                                </button> 
-                            </div>
-                        </li>
-                        <li>
-                            <div id="menu-entreprises" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                                <button onclick="loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises')">
-                                    <i class="fas fa-building"></i>
-                                    <span> Gestion des Entreprises</span>
-                                </button>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
+            <div class="mb-6">
+                <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                <ul class="space-y-2 text-l">
+                    <li>
+                        <div id="menu-ingenieurs" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')" class="w-full text-left">
+                                <i class="fas fa-user-tie"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Ingénieurs / Chefs de projets</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-clients" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_clients' %}', 'menu-clients')" class="w-full text-left">
+                                <i class="fas fa-users"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Clients / Maitres d'ouvrages</span>
+                            </button> 
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-entreprises" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises')" class="w-full text-left">
+                                <i class="fas fa-building"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Entreprises</span>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
         </nav>
         <div class="p-4 border-t border-green-900">
-            <a href="{% url 'home' %}" class="flex items-center space-x-2 p-2  hover:bg-[#107C41] hover:text-white rounded-lg transition">
-                <i class="fa-solid fa-house"></i> <span>Accueil</span>
+            <a href="{% url 'home' %}" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-house"></i> <span class="text-sm lg:text-base">Accueil</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Sidebar Mobile -->
+    <div id="mobileSidebar" class="sidebar-mobile mobile-sidebar bg-[#2E2E2E] text-[#2B9C62] md:hidden overflow-y-auto">
+        <div class="p-4 border-b border-green-900">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <h6 class="text-lg font-bold">📊 Base de données</h6>
+                </div>
+            </div>
+        </div>
+        <nav class="p-4">
+            <div class="mb-6">
+                <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                <ul class="space-y-2">
+                    <li>
+                        <div id="menu-ingenieurs-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs-mobile')" class="w-full text-left">
+                                <i class="fas fa-user-tie"></i>
+                                <span class="text-sm">Ingénieurs / Chefs de projets</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-clients-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_clients' %}', 'menu-clients-mobile')" class="w-full text-left">
+                                <i class="fas fa-users"></i>
+                                <span class="text-sm">Clients / Maitres d'ouvrages</span>
+                            </button> 
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-entreprises-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_entreprises' %}', 'menu-entreprises-mobile')" class="w-full text-left">
+                                <i class="fas fa-building"></i>
+                                <span class="text-sm">Entreprises</span>
+                            </button>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        <div class="p-4 border-t border-green-900">
+            <a href="{% url 'home' %}" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                <i class="fa-solid fa-house"></i> <span class="text-sm">Accueil</span>
             </a>
         </div>
     </div>
 
     <!-- Content area -->
-    <main class="flex-1 p-6 overflow-y-auto bg-[#525252] text-[#2B9C62] shadow">
-        <div id="content-area">
-            <h2 class="text-xl font-semibold text-green-700">Sélectionnez un module à gauche</h2>
+    <main class="flex-1 mobile-content p-4 md:p-6 overflow-y-auto bg-[#525252] text-[#2B9C62] shadow min-w-0">
+        <div id="content-area" class="w-full">
+            <div class="bg-gray-800 rounded-lg p-6 text-center">
+                <h2 class="text-lg md:text-xl font-semibold text-green-400 mb-2">Sélectionnez un module</h2>
+                <p class="text-gray-300 text-sm md:text-base">Choisissez une catégorie dans le menu pour commencer</p>
+            </div>
         </div>
     </main>
 </div>
 
 <!-- Modal de modification ingénieur -->
 <div id="editIngenieurModal" class="modal">
-    <div class="bg-[#2E2E2E] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-pen mr-2"></i>Modifier l'ingénieur
             </h3>
             <button onclick="closeEditIngenieurModal()" class="text-gray-400 hover:text-white">
@@ -115,18 +265,18 @@
             <div class="mb-3">
                 <label for="editNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
                 <input type="text" id="editNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                        required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeEditIngenieurModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Enregistrer
                 </button>
             </div>
@@ -136,9 +286,9 @@
 
 <!-- Modal d'ajout ingénieur -->
 <div id="addIngenieurModal" class="modal">
-    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-plus mr-2"></i>Ajouter un ingénieur
             </h3>
             <button onclick="closeAddIngenieurModal()" class="text-gray-400 hover:text-white">
@@ -151,18 +301,18 @@
             <div class="mb-3">
                 <label for="addNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
                 <input type="text" id="addNom" name="nom" 
-                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                     required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeAddIngenieurModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Ajouter
                 </button>
             </div>
@@ -172,9 +322,9 @@
 
 <!-- Modal de modification client -->
 <div id="editClientModal" class="modal">
-    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-pen mr-2"></i>Modifier le client
             </h3>
             <button onclick="closeEditClientModal()" class="text-gray-400 hover:text-white">
@@ -189,7 +339,7 @@
             <div class="mb-3">
                 <label for="editClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
                 <input type="text" id="editClientNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                        required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
@@ -197,35 +347,35 @@
             <div class="mb-3">
                 <label for="editClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
                 <input type="text" id="editClientContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
                 <input type="email" id="editClientEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
                 <input type="text" id="editClientTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
                 <textarea id="editClientAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                 </textarea>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeEditClientModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Enregistrer
                 </button>
             </div>
@@ -235,9 +385,9 @@
 
 <!-- Modal d'ajout client -->
 <div id="addClientModal" class="modal">
-    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-plus mr-2"></i>Ajouter un client
             </h3>
             <button onclick="closeAddClientModal()" class="text-gray-400 hover:text-white">
@@ -251,7 +401,7 @@
             <div class="mb-3">
                 <label for="addClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
                 <input type="text" id="addClientNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                        required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
@@ -259,35 +409,35 @@
             <div class="mb-3">
                 <label for="addClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
                 <input type="text" id="addClientContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
                 <input type="email" id="addClientEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
                 <input type="text" id="addClientTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
                 <textarea id="addClientAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                 </textarea>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeAddClientModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Ajouter
                 </button>
             </div>
@@ -297,9 +447,9 @@
 
 <!-- Modal de modification entreprise -->
 <div id="editEntrepriseModal" class="modal">
-    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-pen mr-2"></i>Modifier l'entreprise
             </h3>
             <button onclick="closeEditEntrepriseModal()" class="text-gray-400 hover:text-white">
@@ -314,7 +464,7 @@
             <div class="mb-3">
                 <label for="editEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
                 <input type="text" id="editEntrepriseNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                        required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
@@ -322,35 +472,35 @@
             <div class="mb-3">
                 <label for="editEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
                 <input type="text" id="editEntrepriseContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
                 <input type="email" id="editEntrepriseEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
                 <input type="text" id="editEntrepriseTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="editEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
                 <textarea id="editEntrepriseAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" >
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                 </textarea>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeEditEntrepriseModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Enregistrer
                 </button>
             </div>
@@ -360,9 +510,9 @@
 
 <!-- Modal d'ajout entreprise -->
 <div id="addEntrepriseModal" class="modal">
-    <div class="bg-[#525252] p-6 rounded-lg shadow-xl w-full">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
         <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-xl font-bold text-green-400">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
                 <i class="fa-solid fa-plus mr-2"></i>Ajouter une entreprise
             </h3>
             <button onclick="closeAddEntrepriseModal()" class="text-gray-400 hover:text-white">
@@ -376,7 +526,7 @@
             <div class="mb-3">
                 <label for="addEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
                 <input type="text" id="addEntrepriseNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500" 
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
                        required>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
             </div>
@@ -384,35 +534,35 @@
             <div class="mb-3">
                 <label for="addEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
                 <input type="text" id="addEntrepriseContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
                 <input type="email" id="addEntrepriseEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
                 <input type="text" id="addEntrepriseTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
             </div>
             
             <div class="mb-3">
                 <label for="addEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
                 <textarea id="addEntrepriseAdresse" name="adresse" rows="3"
-                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
                 </textarea>
             </div>
             
-            <div class="flex justify-end space-x-3 mt-6 pt-4 border-t border-green-800">
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
                 <button type="button" onclick="closeAddEntrepriseModal()" 
-                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
                     Annuler
                 </button>
                 <button type="submit" 
-                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
                     💾 Ajouter
                 </button>
             </div>
@@ -428,17 +578,56 @@
     let currentClientId = null;
     let currentEntrepriseId = null;
 
+    // Gestion de la sidebar mobile
+    document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+        document.getElementById('mobileSidebar').classList.add('open');
+        document.getElementById('sidebarOverlay').classList.add('open');
+    });
+
+    document.getElementById('mobileSidebarClose').addEventListener('click', function() {
+        closeMobileSidebar();
+    });
+
+    document.getElementById('sidebarOverlay').addEventListener('click', function() {
+        closeMobileSidebar();
+    });
+
+    function closeMobileSidebar() {
+        document.getElementById('mobileSidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('open');
+    }
+
     function loadModule(url, menuItemId) {
+        return loadModuleInternal(url, menuItemId);
+    }
+
+    function loadModuleMobile(url, menuItemId) {
+        closeMobileSidebar();
+        return loadModuleInternal(url, menuItemId);
+    }
+
+    function loadModuleInternal(url, menuItemId) {
         // Retirer la classe active de l'élément précédent s'il existe
         if (activeMenuItemId) {
-            document.getElementById(activeMenuItemId).classList.remove('active-menu-item');
+            document.getElementById(activeMenuItemId)?.classList.remove('active-menu-item');
+            // Gérer aussi la version mobile
+            const mobileId = activeMenuItemId + '-mobile';
+            document.getElementById(mobileId)?.classList.remove('active-menu-item');
         }
         
         // Ajouter la classe active au nouvel élément
-        document.getElementById(menuItemId).classList.add('active-menu-item');
+        document.getElementById(menuItemId)?.classList.add('active-menu-item');
         
         // Mettre à jour l'élément actif
         activeMenuItemId = menuItemId;
+        
+        // Afficher un indicateur de chargement
+        document.getElementById('content-area').innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-8 text-center">
+                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+                <p class="text-green-400">Chargement...</p>
+            </div>
+        `;
         
         // Charger le contenu
         return fetch(url)
@@ -448,13 +637,45 @@
             })
             .catch(error => {
                 console.error('Erreur de chargement:', error);
+                document.getElementById('content-area').innerHTML = `
+                    <div class="bg-gray-800 rounded-lg p-6 text-center">
+                        <p class="text-red-400">Erreur de chargement</p>
+                    </div>
+                `;
             });
     }   
     
     // Charger par défaut le module des ingénieurs au démarrage
-    loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs')
-    
-    // Fonctions d'ouverture/fermeture des modals (inchangées)
+    document.addEventListener('DOMContentLoaded', function() {
+        loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs');
+        
+        // Adapter les modals pour mobile
+        if (window.innerWidth < 768) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.width = '95%';
+                modal.style.padding = '1rem';
+            });
+        }
+    });
+
+    // Redimensionnement responsive
+    window.addEventListener('resize', function() {
+        if (window.innerWidth < 768) {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.width = '95%';
+                modal.style.padding = '1rem';
+            });
+        } else {
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.style.width = '90%';
+                modal.style.padding = '1.5rem';
+            });
+        }
+    });
+
+    // === RESTE DU CODE JAVASCRIPT (inchangé mais optimisé pour mobile) ===
+    // [Le reste du code JavaScript reste identique mais est optimisé pour mobile]
+    // Fonctions d'ouverture/fermeture des modals
     function openEditIngenieurModal(id, nom) {
         currentIngenieurId = id;
         document.getElementById('editId').value = id;
@@ -573,8 +794,7 @@
     }
 
     // === DELEGATION D'EVENEMENTS : GESTION CENTRALISÉE ===
-
-    // Gérer tous les clics sur les boutons d'ajout, d'édition et de suppression
+    // [Le reste du code de délégation d'événements reste identique]
     document.addEventListener('click', function(e) {
         // Boutons d'ajout (Ingénieurs, Clients, Entreprises)
         if (e.target.matches('[data-add-ingenieur-button]')) {
@@ -687,7 +907,7 @@
     });
 
     // === FONCTIONS DE GESTION DES FORMULAIRES ===
-
+    // [Les fonctions de gestion des formulaires restent identiques]
     // Ingénieurs
     function handleAddIngenieur(form) {
         const nomInput = document.getElementById('addNom');
@@ -985,7 +1205,7 @@
     function showSuccessMessage(message) {
         const contentArea = document.getElementById('content-area');
         const successMsg = document.createElement('div');
-        successMsg.className = 'p-4 mb-4 bg-green-800 text-green-200 rounded-lg';
+        successMsg.className = 'p-4 mb-4 bg-green-800 text-green-200 rounded-lg mobile-text-sm';
         successMsg.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
         contentArea.prepend(successMsg);
         setTimeout(() => {
@@ -1003,11 +1223,6 @@
     // Gérer le clic sur le backdrop
     document.getElementById('modalBackdrop').addEventListener('click', function() {
         closeAllModals();
-    });
-
-    // Plus besoin d'appeler attachEventHandlers() dans DOMContentLoaded
-    document.addEventListener('DOMContentLoaded', function() {
-        // Les événements sont déjà gérés par délégation
     });
 </script>
 

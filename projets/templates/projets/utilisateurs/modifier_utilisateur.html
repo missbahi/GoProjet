@@ -2,209 +2,656 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Modifier un Utilisateur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #2E2E2E;
+            --bg-medium: #525252;
+            --text-primary: #2B9C62;
+            --text-secondary: #AECBD6;
+            --accent-cyan: #22d3ee;
+            --accent-cyan-dark: #0ea5e9;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-medium);
+            color: var(--text-secondary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 42rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2rem;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-dark);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid #374151;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #374151;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .card-header, .card-body {
+                padding: 2rem;
+            }
+        }
+
+        /* Typography */
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+                text-align: left;
+            }
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 1rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid #4B5563;
+            text-align: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-secondary {
+            background-color: #4B5563;
+            color: white;
+            border: 1px solid #6B7280;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: #374151;
+            border: 1px solid #4B5563;
+            border-radius: var(--border-radius);
+            padding: 0.75rem 1rem;
+            color: white;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+            background-color: #2E2E2E;
+        }
+
+        .form-control::placeholder {
+            color: #9CA3AF;
+        }
+
+        /* File input styling */
+        .file-input {
+            padding: 0.5rem;
+        }
+
+        .file-input::-webkit-file-upload-button {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            margin-right: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .file-input::-webkit-file-upload-button:hover {
+            transform: translateY(-1px);
+        }
+
+        /* User header */
+        .user-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #374151;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .user-header {
+                flex-direction: row;
+                align-items: center;
+                text-align: left;
+            }
+        }
+
+        .avatar-container {
+            position: relative;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--accent-cyan);
+        }
+
+        @media (max-width: 639px) {
+            .avatar {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        .avatar-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--accent-cyan);
+            color: white;
+        }
+
+        @media (max-width: 639px) {
+            .avatar-placeholder {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        .user-info {
+            flex: 1;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .user-info {
+                text-align: left;
+            }
+        }
+
+        .username {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .badge-superadmin { background-color: #dc2626; color: white; }
+        .badge-staff { background-color: #2563eb; color: white; }
+        .badge-user { background-color: #059669; color: white; }
+        .badge-active { background-color: #059669; color: white; }
+        .badge-inactive { background-color: #dc2626; color: white; }
+
+        /* Grid layouts */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        @media (min-width: 640px) {
+            .nav-buttons {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 639px) {
+            .btn-group {
+                width: 100%;
+            }
+            
+            .btn-group .btn {
+                flex: 1;
+                min-width: 0;
+            }
+        }
+
+        /* Form actions */
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #374151;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .form-actions {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+        }
+
+        /* Helper text */
+        .helper-text {
+            color: #9CA3AF;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Status indicators */
+        .status-active {
+            color: #10b981;
+            font-weight: 600;
+        }
+
+        .status-inactive {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
+        /* Loading states */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 0.875rem 1rem;
+                font-size: 0.875rem;
+            }
+        }
+
+        /* Animation for form elements */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+    </style>
 </head>
-<body class="bg-[#525252] min-h-screen p-8">
-    <div class="container mx-auto px-4 py-6">
-        <!-- Carte du formulaire -->
-        <!-- En tête du formulaire -->
-        <div class="max-w-2xl mx-auto bg-[#2E2E2E] rounded-lg shadow-lg p-6 border-b border-gray-700 mb-4">
-            <!-- Titre de la page -->
-            <h2 class="mb-4 border-b border-gray-600 pb-2">
-                <i class="fas fa-edit"></i>
-                <i class="text-3xl text-center font-bold text-cyan-500">Modifier l'utilisateur</i>
-            </h2>
-            <!-- boutons : accueil et retour -->
-            <div class="flex justify-between items-center my-3">
-                <a href="{% url 'home' %}" 
-                class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
-                    <i class="fa-solid fa-house"></i> Accueil
-                </a>
-                <a href="{% url 'projets:liste_utilisateurs' %}" 
-                class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
-                    <i class="fa-solid fa-arrow-left"></i> Retour à la liste
-                </a>
+<body>
+    <div class="container">
+        <!-- Header Card -->
+        <div class="card animate-slide-in">
+            <div class="card-header">
+                <h1 class="page-title flex items-center justify-center md:justify-start gap-2">
+                    <i class="fas fa-edit"></i>
+                    Modifier l'utilisateur
+                </h1>
+                
+                <!-- Navigation Buttons -->
+                <div class="nav-buttons">
+                    <div class="btn-group">
+                        <a href="{% url 'home' %}" class="btn btn-secondary">
+                            <i class="fa-solid fa-house"></i>
+                            <span class="hidden sm:inline">Accueil</span>
+                        </a>
+                    </div>
+                    <div class="btn-group">
+                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            <span class="hidden sm:inline">Retour à la liste</span>
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
-            
-        <div class="max-w-2xl mx-auto bg-[#2E2E2E] rounded-lg shadow-lg p-6 border-b border-gray-700 mb-4">
-            <!-- En-tête avec avatar -->
-            <div class="flex items-center mb-6 pb-4 border-b border-gray-600">
-                {% if user.profile.avatar %}
-                    <img src="{{ user.profile.avatar.url }}" alt="Avatar actuel" class="w-16 h-16 rounded-full mr-4 border-2 border-cyan-500">
-                {% else %}
-                    <div class="w-16 h-16 rounded-full bg-cyan-600 flex items-center justify-center mr-4 border-2 border-cyan-500">
-                        <i class="fas fa-user text-2xl text-white"></i>
-                    </div>
-                {% endif %}
-                <div>
-                    <h2 class="text-2xl font-bold text-cyan-400">{{ user.username }}</h2>
-                    <p class="text-gray-400">
-                        {% if user.is_superuser %}
-                            <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs">Super Admin</span>
-                        {% elif user.is_staff %}
-                            <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs">Staff</span>
+
+        <!-- Main Form Card -->
+        <div class="card animate-slide-in" style="animation-delay: 0.1s;">
+            <div class="card-body">
+                <!-- User Header -->
+                <div class="user-header">
+                    <div class="avatar-container">
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="Avatar actuel" class="avatar">
                         {% else %}
-                            <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs">Utilisateur</span>
+                            <div class="avatar-placeholder">
+                                <i class="fas fa-user text-2xl"></i>
+                            </div>
                         {% endif %}
-                    </p>
+                    </div>
+                    <div class="user-info">
+                        <div class="username">{{ user.username }}</div>
+                        <div>
+                            {% if user.is_superuser %}
+                                <span class="badge badge-superadmin">Super Admin</span>
+                            {% elif user.is_staff %}
+                                <span class="badge badge-staff">Staff</span>
+                            {% else %}
+                                <span class="badge badge-user">Utilisateur</span>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Main Form -->
+                <form method="post" enctype="multipart/form-data" id="user-form">
+                    {% csrf_token %}
+
+                    <div class="form-grid">
+                        <!-- Left Column -->
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="email">
+                                    <i class="fas fa-envelope mr-2"></i>Email
+                                </label>
+                                <input type="email" name="email" id="email" value="{{ user.email }}" 
+                                    class="form-control" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="role">
+                                    <i class="fas fa-user-tag mr-2"></i>Rôle
+                                </label>
+                                <select name="role" id="role" class="form-control">
+                                    <option value="user" {% if not user.is_staff and not user.is_superuser %}selected{% endif %}>Utilisateur</option>
+                                    <option value="staff" {% if user.is_staff and not user.is_superuser %}selected{% endif %}>Staff</option>
+                                    <option value="admin" {% if user.is_superuser %}selected{% endif %}>Super Admin</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="password">
+                                    <i class="fas fa-lock mr-2"></i>Nouveau mot de passe
+                                </label>
+                                <input type="password" name="password" id="password" class="form-control">
+                                <p class="helper-text">
+                                    <i class="fas fa-info-circle mr-1"></i>Laisser vide pour ne pas modifier
+                                </p>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="avatar">
+                                    <i class="fas fa-camera mr-2"></i>Photo / Avatar
+                                </label>
+                                <input type="file" name="avatar" id="avatar" 
+                                    class="form-control file-input"
+                                    accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-times mr-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <i class="fas fa-save mr-2"></i>Enregistrer
+                        </button>
+                    </div>
+                </form>
             </div>
-
-            <form method="post" enctype="multipart/form-data" class="space-y-6">
-                {% csrf_token %}
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Colonne gauche -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="email" class="block text-cyan-300 font-semibold mb-2">
-                                <i class="fas fa-envelope mr-2"></i>Email
-                            </label>
-                            <input type="email" name="email" id="email" value="{{ user.email }}" 
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition" 
-                                required>
-                        </div>
-
-                        <div>
-                            <label for="role" class="block text-cyan-300 font-semibold mb-2">
-                                <i class="fas fa-user-tag mr-2"></i>Rôle
-                            </label>
-                            <select name="role" id="role" 
-                                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
-                                <option value="user" {% if not user.is_staff and not user.is_superuser %}selected{% endif %}>Utilisateur</option>
-                                <option value="staff" {% if user.is_staff and not user.is_superuser %}selected{% endif %}>Staff</option>
-                                <option value="admin" {% if user.is_superuser %}selected{% endif %}>Super Admin</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Colonne droite -->
-                    <div class="space-y-4">
-                        <div>
-                            <label for="password" class="block text-cyan-300 font-semibold mb-2">
-                                <i class="fas fa-lock mr-2"></i>Nouveau mot de passe
-                            </label>
-                            <input type="password" name="password" id="password" 
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition">
-                            <p class="text-gray-400 text-sm mt-1">
-                                <i class="fas fa-info-circle mr-1"></i>Laisser vide pour ne pas modifier
-                            </p>
-                        </div>
-
-                        <div>
-                            <label for="avatar" class="block text-cyan-300 font-semibold mb-2">
-                                <i class="fas fa-camera mr-2"></i>Photo / Avatar
-                            </label>
-                            <input type="file" name="avatar" id="avatar" 
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-cyan-600 file:text-white hover:file:bg-cyan-500 transition">
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Boutons d'action -->
-                <div class="flex space-x-4 justify-end pt-4 border-t border-gray-600">
-                    <a href="{% url 'projets:liste_utilisateurs' %}" 
-                    class="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-500 transition border border-gray-500">
-                        <i class="fas fa-times mr-2"></i>Annuler
-                    </a>
-                    <button type="submit" 
-                            class="bg-cyan-600 text-white px-6 py-3 rounded-lg hover:bg-cyan-500 transition border border-cyan-500 shadow-lg">
-                        <i class="fas fa-save mr-2"></i>Enregistrer
-                    </button>
-                </div>
-            </form>
         </div>
 
-        <!-- Informations complémentaires -->
-        <div class="max-w-2xl mx-auto bg-[#2E2E2E] rounded-lg shadow-lg p-6 border border-gray-700 mt-4">
-            <h2 class="text-xl font-bold text-cyan-400 mb-4 border-b border-gray-600 pb-2">
-                <i class="fas fa-info-circle mr-2"></i>Informations complémentaires
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-300">
-                <div>
-                    <p class="mb-2">
-                        <span class="text-cyan-300 font-semibold">Rôle actuel :</span>
-                        {% if user.is_superuser %} 
-                            <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs ml-2">Super Admin</span>
-                        {% elif user.is_staff %} 
-                            <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs ml-2">Staff</span>
-                        {% else %} 
-                            <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs ml-2">Utilisateur</span>
-                        {% endif %}
-                    </p>
-                </div>
-                <div>
-                    <p class="mb-2">
-                        <span class="text-cyan-300 font-semibold">Dernière connexion :</span>
-                        <span class="ml-2">{{ user.last_login|default:"Jamais" }}</span>
-                    </p>
-                </div>
-                <div>
-                    <p class="mb-2">
-                        <span class="text-cyan-300 font-semibold">Date d'inscription :</span>
-                        <span class="ml-2">{{ user.date_joined|date:"d/m/Y H:i" }}</span>
-                    </p>
-                </div>
-                <div>
-                    <p class="mb-2">
-                        <span class="text-cyan-300 font-semibold">Statut :</span>
-                        {% if user.is_active %}
-                            <span class="text-green-400 ml-2"><i class="fas fa-circle mr-1"></i>Actif</span>
-                        {% else %}
-                            <span class="text-red-400 ml-2"><i class="fas fa-circle mr-1"></i>Inactif</span>
-                        {% endif %}
-                    </p>
+        <!-- Information Card -->
+        <div class="card animate-slide-in" style="animation-delay: 0.2s;">
+            <div class="card-body">
+                <h2 class="section-title flex items-center gap-2">
+                    <i class="fas fa-info-circle"></i>
+                    Informations complémentaires
+                </h2>
+                
+                <div class="info-grid">
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-cyan-300 font-semibold">Rôle actuel :</span>
+                            <div class="mt-1">
+                                {% if user.is_superuser %}
+                                    <span class="badge badge-superadmin">Super Admin</span>
+                                {% elif user.is_staff %}
+                                    <span class="badge badge-staff">Staff</span>
+                                {% else %}
+                                    <span class="badge badge-user">Utilisateur</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <span class="text-cyan-300 font-semibold">Dernière connexion :</span>
+                            <div class="mt-1 text-gray-300">
+                                {{ user.last_login|default:"Jamais" }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <span class="text-cyan-300 font-semibold">Date d'inscription :</span>
+                            <div class="mt-1 text-gray-300">
+                                {{ user.date_joined|date:"d/m/Y H:i" }}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <span class="text-cyan-300 font-semibold">Statut :</span>
+                            <div class="mt-1">
+                                {% if user.is_active %}
+                                    <span class="status-active">
+                                        <i class="fas fa-circle mr-1 text-xs"></i>Actif
+                                    </span>
+                                {% else %}
+                                    <span class="status-inactive">
+                                        <i class="fas fa-circle mr-1 text-xs"></i>Inactif
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .bg-\[\#2E2E2E\] {
-            background-color: #2E2E2E;
-        }
-        
-        .bg-\[\#525252\] {
-            background-color: #525252;
-        }
-        
-        input, select {
-            transition: all 0.3s ease;
-        }
-        
-        input:focus, select:focus {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
-        }
-        
-        button, a {
-            transition: all 0.3s ease;
-        }
-        
-        button:hover, a:hover {
-            transform: translateY(-2px);
-        }
-    </style>
-
     <script>
-        // Animation pour les champs de formulaire
         document.addEventListener('DOMContentLoaded', function() {
-            const inputs = document.querySelectorAll('input, select');
+            const form = document.getElementById('user-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const inputs = document.querySelectorAll('.form-control');
+
+            // Enhanced focus effects
             inputs.forEach(input => {
                 input.addEventListener('focus', function() {
-                    this.parentElement.classList.add('ring-2', 'ring-cyan-500', 'rounded-lg');
+                    this.parentElement.classList.add('ring-2', 'ring-cyan-500', 'rounded-lg', 'p-1');
+                    this.style.transform = 'translateY(-1px)';
                 });
+                
                 input.addEventListener('blur', function() {
-                    this.parentElement.classList.remove('ring-2', 'ring-cyan-500', 'rounded-lg');
+                    this.parentElement.classList.remove('ring-2', 'ring-cyan-500', 'rounded-lg', 'p-1');
+                    this.style.transform = 'translateY(0)';
                 });
+            });
+
+            // Form submission handling
+            form.addEventListener('submit', function(e) {
+                const password = document.getElementById('password').value;
+                
+                if (password && password.length < 8) {
+                    e.preventDefault();
+                    alert('Le mot de passe doit contenir au moins 8 caractères');
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
+                submitBtn.classList.add('loading');
+                
+                // Re-enable after 3 seconds in case of error
+                setTimeout(() => {
+                    submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer';
+                    submitBtn.classList.remove('loading');
+                }, 3000);
+            });
+
+            // Avatar preview (if needed)
+            const avatarInput = document.getElementById('avatar');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        // You could add image preview functionality here
+                        console.log('Avatar file selected:', file.name);
+                    }
+                });
+            }
+
+            // Responsive adjustments
+            function handleResize() {
+                const isMobile = window.innerWidth < 768;
+                document.body.classList.toggle('mobile-view', isMobile);
+            }
+
+            window.addEventListener('resize', handleResize);
+            handleResize(); // Initial check
+
+            // Add smooth animations for form elements
+            const formElements = document.querySelectorAll('.form-group');
+            formElements.forEach((element, index) => {
+                element.style.animationDelay = `${index * 0.05}s`;
+                element.classList.add('animate-slide-in');
             });
         });
     </script>

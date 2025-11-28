@@ -2,107 +2,430 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liste des utilisateurs</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --bg-dark: #2E2E2E;
+            --bg-card: #525252;
+            --text-primary: #2B9C62;
+            --text-secondary: #AECBD6;
+            --accent-cyan: #22d3ee;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
         body { 
-            font-family: Arial, sans-serif; 
-            background-color: #2E2E2E; 
-            color: #2B9C62; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: var(--bg-dark); 
+            color: var(--text-primary);
+            line-height: 1.6;
         }
-        table {
-            border-collapse: separate;
-            border-spacing: 0;
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
         }
-        
-        th, td {
-            border: none;
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 6xl;
+            }
         }
-        
-        tbody tr:last-child td {
-            border-bottom: none;
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2rem;
+            }
         }
-        
-        .bg-\[\#2E2E2E\] {
-            background-color: #2E2E2E;
-        }
-        
-        .bg-\[\#525252\] {
-            background-color: #525252;
-        }
-        
-        .text-\[\#2B9C62\] {
-            color: #2B9C62;
-        }
-        
-        .text-\[\#AECBD6\] {
-            color: #AECBD6;
-        }
-        
+
+        /* Avatar styles */
         .avatar {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             object-fit: cover;
-            border: 2px solid #2B9C62;
+            border: 2px solid var(--text-primary);
         }
-        
+
+        @media (min-width: 768px) {
+            .avatar {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
         .avatar-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             background-color: #374151;
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 2px solid #2B9C62;
-            color: #2B9C62;
+            border: 2px solid var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        @media (min-width: 768px) {
+            .avatar-placeholder {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        /* Table responsive */
+        .table-container {
+            overflow-x: auto;
+            border-radius: var(--border-radius);
+            background-color: #1F2937;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            min-width: 600px;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        th, td {
+            border: none;
+            padding: 0.75rem;
+        }
+
+        @media (min-width: 768px) {
+            th, td {
+                padding: 1rem;
+            }
+        }
+
+        thead {
+            background-color: #374151;
+        }
+
+        th {
+            color: var(--text-primary);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 768px) {
+            th {
+                font-size: 0.875rem;
+            }
+        }
+
+        tbody tr {
+            transition: var(--transition);
+            border-bottom: 1px solid #374151;
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: #374151;
+        }
+
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .badge-superadmin { background-color: #dc2626; color: white; }
+        .badge-staff { background-color: #2563eb; color: white; }
+        .badge-user { background-color: #059669; color: white; }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            border: 1px solid #4B5563;
+            background-color: var(--bg-dark);
+            color: white;
+            text-align: center;
+            justify-content: center;
+        }
+
+        .btn:hover {
+            background-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, #0ea5e9 100%);
+            border: none;
+        }
+
+        /* Header */
+        .page-header {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .page-header {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+                text-align: left;
+            }
+        }
+
+        /* Navigation */
+        .nav-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        @media (min-width: 640px) {
+            .nav-buttons {
+                flex-direction: row;
+                justify-content: space-between;
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 639px) {
+            .btn-group {
+                width: 100%;
+            }
+            
+            .btn-group .btn {
+                flex: 1;
+                min-width: 0;
+            }
+        }
+
+        /* Actions */
+        .actions-cell {
+            display: flex;
+            justify-content: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+            text-decoration: none;
+            font-size: 1rem;
+        }
+
+        .action-edit { color: #60a5fa; background: rgba(96, 165, 250, 0.1); }
+        .action-edit:hover { color: white; background: #60a5fa; }
+
+        .action-projects { color: #34d399; background: rgba(52, 211, 153, 0.1); }
+        .action-projects:hover { color: white; background: #34d399; }
+
+        .action-delete { color: #f87171; background: rgba(248, 113, 113, 0.1); }
+        .action-delete:hover { color: white; background: #f87171; }
+
+        /* Empty state */
+        .empty-state {
+            padding: 3rem 1rem;
+            text-align: center;
+            color: #9CA3AF;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .user-info-mobile {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .user-role-mobile {
+                align-self: flex-start;
+            }
+            
+            .table-container {
+                margin: 0 -1rem;
+                width: calc(100% + 2rem);
+                border-radius: 0;
+            }
+        }
+
+        /* Card layout for mobile */
+        @media (max-width: 767px) {
+            .mobile-user-card {
+                display: block;
+                background: #374151;
+                border-radius: var(--border-radius);
+                padding: 1rem;
+                margin-bottom: 1rem;
+                border: 1px solid #4B5563;
+            }
+            
+            .desktop-table {
+                display: none;
+            }
+            
+            .mobile-cards {
+                display: block;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .desktop-table {
+                display: table;
+            }
+            
+            .mobile-cards {
+                display: none;
+            }
+        }
+
+        /* Mobile card styles */
+        .user-card {
+            background: #374151;
+            border-radius: var(--border-radius);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            border: 1px solid #4B5563;
+            transition: var(--transition);
+        }
+
+        .user-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .user-card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .user-card-info {
+            flex: 1;
+        }
+
+        .user-card-username {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-card-email {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-card-actions {
+            display: flex;
+            justify-content: space-around;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid #4B5563;
         }
     </style>
 </head>
-<body class="p-6">
-    <div class="container max-w-6xl mx-auto p-6 rounded-lg shadow-lg">
-        <!-- Titre de la page -->
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold text-cyan-500">Gestion des Utilisateurs</h1>
+<body>
+    <div class="container">
+        <!-- En-tête de page -->
+        <div class="page-header">
+            <h1 class="page-title">
+                <i class="fas fa-users mr-2"></i>Gestion des Utilisateurs
+            </h1>
         </div>
         
-        <!-- boutons : accueil et ajouter un nouvel utilisateur -->
-        <div class="flex justify-between items-center my-3">
-            <a href="{% url 'home' %}" 
-               class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
-                <i class="fa-solid fa-house"></i> Accueil
-            </a>
-            <a href="{% url 'projets:ajouter_utilisateur' %}" 
-               class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
-                <i class="fa-solid fa-plus"></i> Ajouter un utilisateur
-            </a>
+        <!-- Navigation -->
+        <div class="nav-buttons">
+            <div class="btn-group">
+                <a href="{% url 'home' %}" class="btn">
+                    <i class="fa-solid fa-house"></i>
+                    <span class="hidden sm:inline">Accueil</span>
+                </a>
+            </div>
+            <div class="btn-group">
+                <a href="{% url 'projets:ajouter_utilisateur' %}" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i>
+                    <span class="hidden sm:inline">Ajouter un utilisateur</span>
+                </a>
+            </div>
         </div>
 
-        <!-- Liste des utilisateurs -->
-        <div id="utilisateurs-container">
-            <div class="bg-gray-800 p-2 rounded-lg">
-                <table class="min-w-full bg-[#2E2E2E] rounded-lg overflow-hidden">
-                    <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
-                        <tr class="text-left text-m font-medium uppercase">
-                            <th class="text-left px-4 py-3">Avatar</th>
-                            <th class="text-left px-4 py-3">Nom d'utilisateur</th>
-                            <th class="text-left px-4 py-3">Email</th>
-                            <th class="text-left px-4 py-3">Rôle</th>
-                            <th class="px-4 py-3 text-center">Actions</th>
+        <!-- Liste des utilisateurs - Version Desktop -->
+        <div class="desktop-table">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Avatar</th>
+                            <th>Nom d'utilisateur</th>
+                            <th>Email</th>
+                            <th>Rôle</th>
+                            <th class="text-center">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-gray-800 divide-y divide-green-800">
+                    <tbody>
                         {% for utilisateur in utilisateurs %}
-                        <tr class="text-[#AECBD6] hover:bg-gray-700 transition-colors">
-                            <td class="px-4 py-3">
+                        <tr>
+                            <td>
                                 <div class="flex justify-center">
                                     {% if utilisateur.profile %}
                                         <img src="{{ utilisateur.profile.avatar_url }}" 
-                                        alt="Avatar" 
-                                        id="navbar-avatar"
-                                        class="avatar">
+                                             alt="Avatar de {{ utilisateur.username }}" 
+                                             class="avatar">
                                     {% else %} 
                                         <div class="avatar-placeholder">
                                             <i class="fas fa-user text-sm"></i>
@@ -110,46 +433,48 @@
                                     {% endif %}
                                 </div>
                             </td>
-                            <td class="px-4 py-3">
+                            <td>
                                 <div class="flex items-center text-cyan-500">
                                     <i class="fas fa-user-circle mr-2"></i>
                                     <span class="font-medium">{{ utilisateur.username }}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-3">{{ utilisateur.email }}</td>
-                            <td class="px-4 py-3">
+                            <td class="text-[#AECBD6]">{{ utilisateur.email }}</td>
+                            <td>
                                 {% if utilisateur.is_superuser %}
-                                    <span class="bg-red-600 text-white px-2 py-1 rounded-full text-xs">Super Admin</span>
+                                    <span class="badge badge-superadmin">Super Admin</span>
                                 {% elif utilisateur.is_staff %}
-                                    <span class="bg-blue-600 text-white px-2 py-1 rounded-full text-xs">Staff</span>
+                                    <span class="badge badge-staff">Staff</span>
                                 {% else %}
-                                    <span class="bg-green-600 text-white px-2 py-1 rounded-full text-xs">Utilisateur</span>
+                                    <span class="badge badge-user">Utilisateur</span>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3 text-center space-x-2">
-                                <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}" 
-                                class="text-blue-400 hover:text-blue-300 transition"
-                                title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}" 
-                                class="text-green-400 hover:text-green-300 transition"
-                                title="Gérer les projets">
-                                    <i class="fas fa-project-diagram"></i>
-                                </a>
-                                <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}" 
-                                class="text-red-400 hover:text-red-300 transition"
-                                onclick="return confirm('Confirmer la suppression ?')"
-                                title="Supprimer">
-                                    <i class="fas fa-trash"></i>
-                                </a>
+                            <td>
+                                <div class="actions-cell">
+                                    <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}" 
+                                       class="action-btn action-edit"
+                                       title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}" 
+                                       class="action-btn action-projects"
+                                       title="Gérer les projets">
+                                        <i class="fas fa-project-diagram"></i>
+                                    </a>
+                                    <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}" 
+                                       class="action-btn action-delete"
+                                       onclick="return confirm('Confirmer la suppression ?')"
+                                       title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
                             </td>
-
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="px-4 py-4 text-center text-gray-400">
-                                <i class="fas fa-users-slash mr-2"></i>Aucun utilisateur trouvé.
+                            <td colspan="5" class="empty-state">
+                                <i class="fas fa-users-slash"></i>
+                                <div>Aucun utilisateur trouvé.</div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -157,19 +482,113 @@
                 </table>
             </div>
         </div>
+
+        <!-- Liste des utilisateurs - Version Mobile -->
+        <div class="mobile-cards">
+            {% for utilisateur in utilisateurs %}
+            <div class="user-card">
+                <div class="user-card-header">
+                    <div class="flex justify-center">
+                        {% if utilisateur.profile %}
+                            <img src="{{ utilisateur.profile.avatar_url }}" 
+                                 alt="Avatar de {{ utilisateur.username }}" 
+                                 class="avatar">
+                        {% else %} 
+                            <div class="avatar-placeholder">
+                                <i class="fas fa-user text-sm"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="user-card-info">
+                        <div class="user-card-username">
+                            <i class="fas fa-user-circle mr-2"></i>
+                            {{ utilisateur.username }}
+                        </div>
+                        <div class="user-card-email">{{ utilisateur.email }}</div>
+                        <div class="user-role-mobile">
+                            {% if utilisateur.is_superuser %}
+                                <span class="badge badge-superadmin">Super Admin</span>
+                            {% elif utilisateur.is_staff %}
+                                <span class="badge badge-staff">Staff</span>
+                            {% else %}
+                                <span class="badge badge-user">Utilisateur</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="user-card-actions">
+                    <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}" 
+                       class="action-btn action-edit"
+                       title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}" 
+                       class="action-btn action-projects"
+                       title="Gérer les projets">
+                        <i class="fas fa-project-diagram"></i>
+                    </a>
+                    <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}" 
+                       class="action-btn action-delete"
+                       onclick="return confirm('Confirmer la suppression ?')"
+                       title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-users-slash"></i>
+                <div>Aucun utilisateur trouvé.</div>
+            </div>
+            {% endfor %}
+        </div>
     </div>
+
     <script>
-        // Ajout d'un effet de hover sur les lignes du tableau
         document.addEventListener('DOMContentLoaded', function() {
-            const rows = document.querySelectorAll('tbody tr');
-            rows.forEach(row => {
-                row.addEventListener('mouseenter', function() {
-                    this.style.backgroundColor = '#374151';
+            // Amélioration du hover pour les cartes mobiles
+            const userCards = document.querySelectorAll('.user-card');
+            userCards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-2px)';
+                    this.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
                 });
-                row.addEventListener('mouseleave', function() {
-                    this.style.backgroundColor = '';
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = 'none';
                 });
             });
+
+            // Animation d'apparition progressive
+            const cards = document.querySelectorAll('.user-card, tbody tr');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                
+                setTimeout(() => {
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Gestion responsive des boutons
+            function updateButtonText() {
+                const buttons = document.querySelectorAll('.btn span');
+                const isMobile = window.innerWidth < 640;
+                
+                buttons.forEach(btn => {
+                    if (isMobile) {
+                        btn.style.display = 'none';
+                    } else {
+                        btn.style.display = 'inline';
+                    }
+                });
+            }
+
+            // Initialisation et écouteur de redimensionnement
+            updateButtonText();
+            window.addEventListener('resize', updateButtonText);
         });
     </script>
 </body>

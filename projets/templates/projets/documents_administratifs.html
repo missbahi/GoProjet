@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Documents Administratifs - {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -12,10 +13,17 @@
             background: #3B3B3B; 
             border: 1px solid #4B5563; 
             border-radius: 8px; 
-            padding: 1.5rem; 
+            padding: 1rem; 
             margin-bottom: 1rem; 
             transition: all 0.3s ease; 
         }
+        
+        @media (min-width: 768px) {
+            .document-card {
+                padding: 1.5rem;
+            }
+        }
+        
         .document-card:hover { 
             border-color: #22d3ee; 
             box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
@@ -42,28 +50,49 @@
         .upload-area {
             border: 2px dashed #4B5563;
             border-radius: 8px;
-            padding: 2rem;
+            padding: 1.5rem;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             background: #2E2E2E;
         }
+        
+        @media (min-width: 768px) {
+            .upload-area {
+                padding: 2rem;
+            }
+        }
+        
         .upload-area:hover {
             border-color: #22d3ee;
             background: rgba(34, 211, 238, 0.05);
         }
         .file-icon {
-            font-size: 2.5rem;
+            font-size: 2rem;
             margin-bottom: 1rem;
         }
+        
+        @media (min-width: 768px) {
+            .file-icon {
+                font-size: 2.5rem;
+            }
+        }
+        
         .badge-type {
             display: inline-block;
             padding: 0.25rem 0.5rem;
             border-radius: 0.375rem;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: 600;
             margin-right: 0.5rem;
         }
+        
+        @media (min-width: 768px) {
+            .badge-type {
+                font-size: 0.75rem;
+            }
+        }
+        
         .badge-pdf { background-color: #dc2626; color: white; }
         .badge-word { background-color: #2563eb; color: white; }
         .badge-excel { background-color: #059669; color: white; }
@@ -83,43 +112,107 @@
         .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
         .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
         .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+
+        /* Styles pour mobile */
+        @media (max-width: 640px) {
+            .mobile-p-4 {
+                padding: 1rem;
+            }
+            
+            .mobile-text-sm {
+                font-size: 0.875rem;
+            }
+            
+            .mobile-text-xs {
+                font-size: 0.75rem;
+            }
+            
+            .mobile-flex-col {
+                flex-direction: column;
+            }
+            
+            .mobile-gap-2 {
+                gap: 0.5rem;
+            }
+            
+            .mobile-w-full {
+                width: 100%;
+            }
+            
+            .mobile-text-center {
+                text-align: center;
+            }
+        }
+
+        /* Boutons responsive */
+        .btn-responsive {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+        
+        @media (min-width: 768px) {
+            .btn-responsive {
+                padding: 0.5rem 1.5rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Améliorations pour les très petits écrans */
+        @media (max-width: 480px) {
+            .mobile-stack {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .mobile-stack > * {
+                margin-bottom: 0.5rem;
+            }
+            
+            .mobile-stack > *:last-child {
+                margin-bottom: 0;
+            }
+            
+            .mobile-small-gap {
+                gap: 0.25rem;
+            }
+        }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-6">
     <div class="max-w-6xl mx-auto">
         <!-- En-tête -->
-        <div class="mb-6">
-            <h1 class="text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+        <div class="mb-4 md:mb-6">
+            <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2 mobile-text-center md:justify-start">
                 <i class="fas fa-file-contract"></i>
                 Documents Administratifs
             </h1>
-            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
-            <div class="flex items-center mt-4 text-sm text-gray-400">
+            <h2 class="text-lg md:text-xl text-[#2B9C62] mobile-text-center md:text-left">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-3 md:mt-4 text-sm text-gray-400 mobile-justify-center md:justify-start">
                 <i class="fas fa-info-circle mr-2"></i>
-                <span>Gestion des documents administratifs du projet</span>
+                <span class="mobile-text-sm">Gestion des documents administratifs du projet</span>
             </div>
         </div>
 
         <!-- Boutons navigation -->
-        <div class="flex gap-3 mb-6 flex-wrap">
-            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+        <div class="flex gap-2 md:gap-3 mb-4 md:mb-6 flex-wrap mobile-stack">
+            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
                 <i class="fas fa-house"></i> Accueil
             </a>
-            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
                 <i class="fas fa-arrow-left"></i> Retour aux projets
             </a>
-            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 btn-responsive mobile-w-full justify-center">
                 <i class="fas fa-diagram-project"></i> Tableau de bord
             </a>
         </div>
 
         <!-- Messages -->
         {% if messages %}
-            <div class="mb-6 space-y-2">
+            <div class="mb-4 md:mb-6 space-y-2">
                 {% for message in messages %}
-                    <div class="alert-auto-dismiss p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center">
+                    <div class="alert-auto-dismiss p-3 md:p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center mobile-text-sm">
                         <span>{{ message }}</span>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 ml-2">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -128,26 +221,26 @@
         {% endif %}
 
         <!-- Informations projet -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold text-cyan-300 mb-4">{{ projet.nom }}</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+            <h2 class="text-lg md:text-xl font-semibold text-cyan-300 mb-3 md:mb-4 mobile-text-center md:text-left">{{ projet.nom }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm mobile-text-sm">
+                <div class="space-y-2">
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Numéro de marché :</strong> {{ projet.numero }}</p>
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Objet :</strong> {{ projet.objet }}</p>
                 </div>
-                <div>
+                <div class="space-y-2">
                     <p class="text-gray-400"><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
                     <p class="text-gray-400">
                         <strong class="text-[#AECBD6]">Statut :</strong> 
-                        <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs">{{ projet.get_statut_display }}</span>
+                        <span class="bg-[#4B5563] text-white px-2 py-1 rounded text-xs mobile-text-xs">{{ projet.get_statut_display }}</span>
                     </p>
                 </div>
             </div>
         </div>
 
         <!-- Section d'ajout de documents -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 mb-6">
-            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 md:p-6 mb-4 md:mb-6">
+            <h3 class="text-lg md:text-xl font-semibold text-cyan-300 mb-3 md:mb-4 flex items-center gap-2 justify-center md:justify-start">
                 <i class="fas fa-upload"></i>
                 Ajouter un document
             </h3>
@@ -156,12 +249,12 @@
             <form method="post" enctype="multipart/form-data" action="{% url 'projets:ajouter_document' projet.id %}" class="space-y-4">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                     <div>
-                        <label for="type_document" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="type_document" class="block text-sm font-medium text-[#AECBD6] mb-2 mobile-text-sm">
                             Type de document *
                         </label>
-                        <select class="form-control" id="type_document" name="type_document" required>
+                        <select class="form-control mobile-text-sm" id="type_document" name="type_document" required>
                             <option value="">Sélectionner un type...</option>
                             <option value="Attestation">Attestation</option>
                             <option value="Attestation d'enregistrement">Attestation d'enregistrement</option>
@@ -180,7 +273,7 @@
                             <option value="CCAP">Cahier des clauses administratives particulières (CCAP)</option>
                             <option value="Cahier des clauses administratives">Cahier des clauses administratives (CCA)</option>
                             <option value="BDP">Bordereau des prix (BDP)</option>
-                                                      
+                                                    
                             <option value="Contrat de garantie">Contrat de garantie</option>
                             <option value="Convention">Convention</option>
                             <option value="Autorisation">Autorisation</option>
@@ -192,46 +285,46 @@
                     </div>
                     
                     <div>
-                        <label for="date_remise" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="date_remise" class="block text-sm font-medium text-[#AECBD6] mb-2 mobile-text-sm">
                             Date de remise
                         </label>
-                        <input type="date" class="form-control" id="date_remise" name="date_remise">
+                        <input type="date" class="form-control mobile-text-sm" id="date_remise" name="date_remise">
                     </div>
                 </div>
                 
                 <div>
-                    <label for="fichier" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                    <label for="fichier" class="block text-sm font-medium text-[#AECBD6] mb-2 mobile-text-sm">
                         Fichier *
                     </label>
                     <div class="upload-area" onclick="document.getElementById('fichier').click()">
                         <i class="fas fa-cloud-upload-alt file-icon text-cyan-400"></i>
-                        <p class="mb-2 text-gray-400">Cliquez pour sélectionner un fichier ou glissez-déposez le ici</p>
-                        <p class="text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max. 20MB)</p>
+                        <p class="mb-2 text-gray-400 mobile-text-sm">Cliquez pour sélectionner un fichier ou glissez-déposez le ici</p>
+                        <p class="text-xs md:text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max. 20MB)</p>
                     </div>
                     <input type="file" class="hidden" id="fichier" name="fichier" required onchange="updateFileName(this)">
-                    <div id="file-name" class="mt-2 text-cyan-400 text-sm"></div>
+                    <div id="file-name" class="mt-2 text-cyan-400 text-sm mobile-text-xs"></div>
                 </div>
                 
-                <button type="submit" class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2 w-fit">
+                <button type="submit" class="btn-success px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2 w-fit btn-responsive mobile-w-full justify-center">
                     <i class="fas fa-plus"></i> Ajouter le document
                 </button>
             </form>
         </div>
 
         <!-- Liste des documents -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-semibold text-cyan-300 flex items-center gap-2">
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 md:p-6">
+            <div class="flex justify-between items-center mb-4 md:mb-6 mobile-flex-col mobile-gap-3">
+                <h3 class="text-lg md:text-xl font-semibold text-cyan-300 flex items-center gap-2 justify-center md:justify-start">
                     <i class="fas fa-folder"></i>
                     Documents existants
                 </h3>
-                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                <span class="bg-cyan-600 text-white px-3 py-1 rounded-full text-sm font-medium mobile-text-xs">
                     {{ documents.count }} document(s)
                 </span>
             </div>
             
             {% if documents %}
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
                     {% for document in documents %}
                         <div class="document-card">
                             <div class="text-center">
@@ -254,9 +347,9 @@
                                     {% endif %}
                                 {% endwith %}
                                 
-                                <h4 class="text-lg font-semibold text-cyan-300 mt-2">{{ document.type_document }}</h4>
+                                <h4 class="text-base md:text-lg font-semibold text-cyan-300 mt-2 mobile-text-sm">{{ document.type_document }}</h4>
                                 
-                                <p class="text-sm text-gray-400 mt-2">
+                                <p class="text-xs md:text-sm text-gray-400 mt-2">
                                     <i class="fas fa-calendar mr-1"></i>
                                     {% if document.date_remise %}
                                         {{ document.date_remise|date:"d/m/Y" }}
@@ -265,26 +358,26 @@
                                     {% endif %}
                                 </p>
                                 
-                                <p class="text-sm text-gray-400 truncate" title="{{ document.fichier.name }}">
-                                    {{ document.fichier.name|truncatechars:30 }}
+                                <p class="text-xs md:text-sm text-gray-400 truncate mobile-text-xs" title="{{ document.fichier.name }}">
+                                    {{ document.fichier.name|truncatechars:25 }}
                                 </p>
                             </div>
 
-                            <div class="flex justify-between items-center mt-4 pt-4 border-t border-[#4B5563]">
+                            <div class="flex justify-between items-center mt-3 md:mt-4 pt-3 md:pt-4 border-t border-[#4B5563] mobile-small-gap">
                                 <a href="{% url 'projets:afficher_document' document.id %}" 
                                     target="_blank" 
-                                    class="btn-info px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                    class="btn-info px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs"
                                     data-filename="{{ document.fichier.name }}">
-                                    <i class="fas fa-eye"></i> Voir
+                                    <i class="fas fa-eye"></i> <span class="hidden xs:inline">Voir</span>
                                 </a>
-                                <a href="{{ document.fichier.url }}" download class="btn-success px-3 py-1 rounded text-sm font-medium flex items-center gap-1">
-                                    <i class="fas fa-download"></i> Téléch.
+                                <a href="{{ document.fichier.url }}" download class="btn-success px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs">
+                                    <i class="fas fa-download"></i> <span class="hidden xs:inline">Téléch.</span>
                                 </a>
                                 <form method="post" action="{% url 'projets:supprimer_document' projet.id document.id %}" class="inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn-danger px-3 py-1 rounded text-sm font-medium flex items-center gap-1"
+                                    <button type="submit" class="btn-danger px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs"
                                             onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce document?')">
-                                        <i class="fas fa-trash"></i> Suppr.
+                                        <i class="fas fa-trash"></i> <span class="hidden xs:inline">Suppr.</span>
                                     </button>
                                 </form>
                             </div>
@@ -292,9 +385,9 @@
                     {% endfor %}
                 </div>
             {% else %}
-                <div class="text-center py-8">
-                    <i class="fas fa-folder-open text-6xl text-gray-500 mb-4"></i>
-                    <p class="text-gray-400 text-lg">Aucun document administratif n'a été ajouté pour ce projet.</p>
+                <div class="text-center py-6 md:py-8">
+                    <i class="fas fa-folder-open text-4xl md:text-6xl text-gray-500 mb-3 md:mb-4"></i>
+                    <p class="text-gray-400 text-base md:text-lg mobile-text-sm">Aucun document administratif n'a été ajouté pour ce projet.</p>
                 </div>
             {% endif %}
         </div>
@@ -345,6 +438,26 @@
                 alert.style.display = 'none';
             });
         }, 5000);
+
+        // Adaptation pour les très petits écrans
+        function adaptForMobile() {
+            if (window.innerWidth < 480) {
+                // Réduire encore plus les boutons sur très petits écrans
+                const buttons = document.querySelectorAll('.btn-responsive');
+                buttons.forEach(btn => {
+                    btn.classList.add('text-xs');
+                    btn.classList.add('px-2');
+                });
+            }
+        }
+
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            adaptForMobile();
+        });
+
+        // Adaptation au redimensionnement
+        window.addEventListener('resize', adaptForMobile);
     </script>
 </body>
 </html>

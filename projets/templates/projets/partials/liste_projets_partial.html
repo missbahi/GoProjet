@@ -1,6 +1,6 @@
-<div class="bg-gray-800 p-2 rounded-lg shadow">
-    <!-- Tableau des projets -->
-    <table class="min-w-full bg-[#2E2E2E]">
+<div class="bg-gray-800 p-4 rounded-lg shadow">
+    <!-- Tableau des projets avec largeur minimale garantie -->
+    <table class="min-w-full bg-[#2E2E2E] table-min-width">
         <thead class="bg-gray-700 text-[#2B9C62]">
             <tr class="text-left text-m font-medium uppercase">
                 <th class="px-6 py-3 sortable" onclick="sortTable('nom')" data-sort="nom">
@@ -27,27 +27,27 @@
                 <th class="px-6 py-3 sortable" onclick="sortTable('avancement')" data-sort="avancement">
                     Avancement<br>Workflow(%)
                 </th>
-                <th class="px-6 py-3 no-print">Actions</th>
+                <th class="px-6 py-3 no-print min-w-[140px]">Actions</th>
             </tr>
         </thead>
         <!-- Corps du tableau -->
         <tbody class="bg-gray-800 divide-y divide-green-800">
             {% for projet in projets %}
-            <tr class="text-[#AECBD6]">
-                <td class="px-4 py-2">
-                    <div><a href="{% url 'projets:dashboard' projet.id %}" class="text-cyan-500 hover:text-cyan-600">{{ projet.nom }}</a></div>
+            <tr class="text-[#AECBD6] hover:bg-[#3B3B3B] transition-colors">
+                <td class="px-4 py-3">
+                    <div><a href="{% url 'projets:dashboard' projet.id %}" class="text-cyan-500 hover:text-cyan-600 font-medium">{{ projet.nom }}</a></div>
                     <div class="text-xs text-gray-500">{{ projet.numero }}</div>
                 </td>
-                <td class="px-4 py-2">
+                <td class="px-4 py-3">
                     <div>{{ projet.maitre_ouvrage }}</div>
                     <div class="text-xs text-gray-500">{{ projet.entreprise }}</div>
                 </td>
-                <td class="px-4 py-2 text-right print-right">{{ projet.montant_total_formate }}</td>
-                <td class="px-4 py-2 text-center">
+                <td class="px-4 py-3 text-right print-right font-medium">{{ projet.montant_total_formate }}</td>
+                <td class="px-4 py-3 text-center">
                     {% if projet.attachements.all %}
                         <div>
                             <a href="{% url 'projets:liste_attachements' projet.id %}" 
-                            class="text-cyan-500 hover:text-cyan-600 font-medium">
+                            class="text-cyan-500 hover:text-cyan-600 font-medium text-lg">
                                 {{ projet.attachements.count }}
                             </a>
                         </div>
@@ -55,9 +55,9 @@
                         <span class="text-gray-500">-</span>
                     {% endif %}
                 </td>
-                <td class="px-4 py-2">{{ projet.localisation }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="px-2 inline-flex text-xs font-semibold rounded-full 
+                <td class="px-4 py-3">{{ projet.localisation }}</td>
+                <td class="px-6 py-3 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full 
                         {% if projet.statut == 'COURS' %}bg-blue-100 text-blue-800
                         {% elif projet.en_retard %}bg-yellow-100 text-yellow-800
                         {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}bg-green-100 text-green-800
@@ -65,10 +65,10 @@
                         {{ projet.get_statut_display }}
                     </span>
                 </td>
-                <td class="px-4 py-2">
-                    <div class="flex items-center space-x-2">
-                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                            <div class="h-4
+                <td class="px-4 py-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden flex-1">
+                            <div class="h-3
                                 {% if projet.avancement_workflow < 20 %}bg-red-500
                                 {% elif projet.avancement_workflow < 40 %}bg-orange-500
                                 {% elif projet.avancement_workflow < 60 %}bg-yellow-500
@@ -77,30 +77,39 @@
                                 style="width: {{ projet.avancement_workflow }}%">
                             </div>
                         </div>
-                        <span class="text-sm text-[#AECBD6]">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+                        <span class="text-sm text-[#AECBD6] font-medium min-w-[40px]">{{ projet.avancement_workflow|floatformat:0 }}%</span>
                     </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap no-print">
-                    <div class="flex justify-center items-center">
+                <td class="px-6 py-3 whitespace-nowrap no-print">
+                    <div class="flex justify-center items-center space-x-4">
                         <button onclick="openNotificationModal('{{ projet.id }}', '{{ projet.nom }}')" 
-                            class="text-indigo-600 hover:text-indigo-900 mr-3">
-                            <i class="fas fa-bell"></i>
+                            class="text-indigo-600 hover:text-indigo-900 p-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
+                            title="Créer une notification">
+                            <i class="fas fa-bell text-lg"></i>
                         </button>
                         <button onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')" 
-                            class="text-green-600 hover:text-green-900 mr-3">
-                            <i class="fas fa-eye"></i>
+                            class="text-green-600 hover:text-green-900 p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
+                            title="Voir/modifier le projet">
+                            <i class="fas fa-eye text-lg"></i>
                         </button>
                         <a href="{% url 'projets:supprimer_projet' projet.id %}" 
                            onclick="supprimerProjet(event, this)"
-                           class="text-red-600 hover:text-red-900">
-                            <i class="fas fa-trash-alt"></i>
+                           class="text-red-600 hover:text-red-900 p-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors inline-flex"
+                           title="Supprimer le projet">
+                            <i class="fas fa-trash-alt text-lg"></i>
                         </a>
                     </div>
                 </td>
             </tr>
             {% empty %}
             <tr>
-                <td colspan="7" class="px-4 py-2 text-center">Aucun projet disponible.</td>
+                <td colspan="8" class="px-4 py-8 text-center text-[#AECBD6] text-lg">
+                    <div class="flex flex-col items-center justify-center">
+                        <i class="fas fa-inbox text-4xl text-gray-500 mb-3"></i>
+                        <p class="font-medium">Aucun projet disponible</p>
+                        <p class="text-sm text-gray-400 mt-1">Cliquez sur "Ajouter un projet" pour commencer</p>
+                    </div>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

@@ -15,7 +15,7 @@
             background: #3B3B3B; 
             border: 1px solid #4B5563; 
             border-radius: 12px; 
-            padding: 2rem; 
+            padding: 1.5rem; 
             margin-bottom: 1.5rem;
             transition: all 0.3s ease; 
         }
@@ -125,6 +125,118 @@
             text-align: right;
         }
 
+        /* Optimisations responsive */
+        .btn-navigation {
+            background: #4B5563;
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .btn-navigation:hover {
+            background: #374151;
+        }
+
+        .btn-action {
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .navigation-container {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .actions-container {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .facture-card {
+                padding: 1rem;
+            }
+            
+            .btn-navigation {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .btn-action {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            .navigation-container {
+                gap: 8px;
+            }
+            
+            .actions-container {
+                gap: 8px;
+            }
+            
+            .facture-ligne {
+                padding: 0.5rem 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .facture-card {
+                padding: 0.75rem;
+            }
+            
+            .btn-navigation {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .btn-action {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .navigation-container {
+                gap: 6px;
+            }
+            
+            .actions-container {
+                gap: 6px;
+            }
+            
+            .facture-ligne {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .facture-montant {
+                min-width: auto;
+                text-align: left;
+            }
+        }
+
         /* Styles pour l'impression */
         @media print {
             body { 
@@ -227,32 +339,29 @@
                 page-break-inside: avoid !important;
             }
         }
- 
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 sm:p-6">
     <div class="max-w-4xl mx-auto">
         <!-- En-tête -->
         <div class="mb-6">
-            <div class="flex justify-between items-start mb-4">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-4 mb-4">
                 <div>
-                    <h1 class="text-3xl font-bold text-cyan-400 mb-2">Décompte {{ decompte.numero }}</h1>
-                    <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2">Décompte {{ decompte.numero }}</h1>
+                    <h2 class="text-lg sm:text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
                 </div>
-                <div class="flex gap-3 no-print">
-                    <a href="{% url 'projets:liste_decomptes' projet.id %}" 
-                       class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                <div class="navigation-container no-print">
+                    <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-navigation">
                         <i class="fas fa-arrow-left"></i> Retour aux décomptes
                     </a>
-                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" 
-                       class="btn-warning px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <a href="{% url 'projets:modifier_decompte' decompte.id %}" class="btn-navigation btn-warning">
                         <i class="fas fa-edit"></i> Modifier
                     </a>
                 </div>
             </div>
             
             <!-- Badges type et statut -->
-            <div class="flex items-center gap-4 mb-4">
+            <div class="flex flex-wrap items-center gap-3 mb-4">
                 <span class="type-decompte-badge 
                     {% if decompte.type_decompte == 'PROVISOIRE' %}bg-blue-600
                     {% elif decompte.type_decompte == 'DEFINITIF' %}bg-green-600
@@ -269,7 +378,7 @@
                     {{ decompte.get_statut_display }}
                 </span>
                 {% if decompte.est_en_retard %}
-                <span class="retard-badge bg-red-500 text-white text-sm px-3 py-1 rounded-full flex items-center gap-2">
+                <span class="retard-badge bg-red-500 text-white text-sm px-3 py-1 rounded-full flex items-center gap-2 whitespace-nowrap">
                     <i class="fas fa-exclamation-triangle"></i> En retard de paiement
                 </span>
                 {% endif %}
@@ -293,9 +402,9 @@
         <!-- Carte Facture unique -->
         <div class="facture-card">
             <!-- En-tête de la facture - Version horizontale optimisée -->
-            <div class="decompte-info-grid grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <div class="decompte-info-grid grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 sm:mb-8">
                 <div class="decompte-info-item">
-                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-file-invoice"></i> INFORMATIONS DÉCOMPTE
                     </h3>
                     <div class="space-y-2 text-sm">
@@ -315,7 +424,7 @@
                 </div>
                 
                 <div class="decompte-info-item">
-                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-calendar-alt"></i> DATES
                     </h3>
                     <div class="space-y-2 text-sm">
@@ -343,7 +452,7 @@
                 </div>
                 
                 <div class="decompte-info-item">
-                    <h3 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                    <h3 class="text-base sm:text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
                         <i class="fas fa-info-circle"></i> RÉFÉRENCES
                     </h3>
                     <div class="space-y-2 text-sm">
@@ -367,7 +476,7 @@
             </div>
 
             <!-- Corps de la facture -->
-            <div class="bg-[#2E2E2E] rounded-lg p-4">
+            <div class="bg-[#2E2E2E] rounded-lg p-3 sm:p-4">
                 <!-- Montant HT -->
                 <div class="facture-ligne">
                     <span class="facture-libelle text-gray-400">Montant situation HT</span>
@@ -412,7 +521,7 @@
                 </div>
 
                 <!-- DÉDUCTIONS -->
-                <div class="mt-6">
+                <div class="mt-4 sm:mt-6">
                     <!-- RAS -->
                     {% if decompte.montant_ras %}
                     <div class="ligne-deduction">
@@ -439,13 +548,13 @@
 
                 <!-- NET À PAYER -->
                 <div class="facture-ligne">
-                    <span class="facture-libelle text-[#2B9C62] text-xl font-bold">NET À PAYER</span>
-                    <span class="facture-montant text-[#2B9C62] text-xl font-bold">{{ decompte.montant_situation_net_a_payer|format_quantity }} DH</span>
+                    <span class="facture-libelle text-[#2B9C62] text-lg sm:text-xl font-bold">NET À PAYER</span>
+                    <span class="facture-montant text-[#2B9C62] text-lg sm:text-xl font-bold">{{ decompte.montant_situation_net_a_payer|format_quantity }} DH</span>
                 </div>
                 <!-- Afficher le montant en lettre -->
                 <div class="ligne-separation"></div>
                 <div>
-                    <h3 class="text-gray-400 text-m">Net à payer toutes taxes comprises : </h3>
+                    <h3 class="text-gray-400 text-sm sm:text-base">Net à payer toutes taxes comprises : </h3>
                     <span id ="net-a-payer-lettres" class="text-white font-semibold"></span>
                 </div>
             </div>
@@ -453,10 +562,10 @@
             <!-- Observations -->
             {% if decompte.observations %}
             <div class="mt-4 pt-4">
-                <h4 class="text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
+                <h4 class="text-base sm:text-lg font-semibold text-cyan-300 mb-3 flex items-center gap-2">
                     <i class="fas fa-sticky-note"></i> OBSERVATIONS
                 </h4>
-                <div class="text-gray-300 bg-[#2E2E2E] p-4 rounded-lg border border-gray-600">
+                <div class="text-gray-300 bg-[#2E2E2E] p-3 sm:p-4 rounded-lg border border-gray-600">
                     {{ decompte.observations|linebreaks }}
                 </div>
             </div>
@@ -465,27 +574,23 @@
 
         <!-- Actions -->
         <div class="facture-card no-print">
-            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+            <h3 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                 <i class="fas fa-cogs"></i> Actions
             </h3>
-            <div class="flex gap-3 flex-wrap">
-                <a href="{% url 'projets:modifier_decompte' decompte.id %}" 
-                   class="btn-warning px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+            <div class="actions-container">
+                <a href="{% url 'projets:modifier_decompte' decompte.id %}" class="btn-action btn-warning">
                     <i class="fas fa-edit"></i> Modifier ce décompte
                 </a>
                 
-                <a href="{% url 'projets:liste_decomptes' projet.id %}" 
-                   class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                <a href="{% url 'projets:liste_decomptes' projet.id %}" class="btn-action bg-[#4B5563] hover:bg-[#374151] text-white">
                     <i class="fas fa-list"></i> Voir tous les décomptes
                 </a>
                 
-                <a href="{% url 'projets:detail_attachement' decompte.attachement.id %}" 
-                   class="btn-info px-6 py-3 rounded-lg font-medium flex items-center gap-2">
+                <a href="{% url 'projets:detail_attachement' decompte.attachement.id %}" class="btn-action btn-info">
                     <i class="fas fa-external-link-alt"></i> Voir l'attachement
                 </a>
                 
-                <a href="{% url 'projets:supprimer_decompte' decompte.id %}" 
-                   class="btn-danger px-6 py-3 rounded-lg font-medium flex items-center gap-2"
+                <a href="{% url 'projets:supprimer_decompte' decompte.id %}" class="btn-action btn-danger"
                    onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce décompte ? Cette action est irréversible.')">
                     <i class="fas fa-trash"></i> Supprimer
                 </a>

@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lots du projet - {{ projet.nom }}</title>
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
@@ -10,7 +11,7 @@
         body {
             background-color: #2E2E2E;
             color: #AECBD6;
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .lot-card {
             background: #3B3B3B;
@@ -23,6 +24,7 @@
         .lot-card:hover {
             border-color: #22d3ee;
             box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1);
+            transform: translateY(-2px);
         }
         .btn-primary {
             background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
@@ -31,30 +33,48 @@
         }
         .btn-primary:hover {
             background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            transform: translateY(-1px);
         }
         .btn-warning {
             background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
             border: none;
             color: white;
         }
+        .btn-warning:hover {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            transform: translateY(-1px);
+        }
         .btn-danger {
             background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
             border: none;
             color: white;
+        }
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            transform: translateY(-1px);
         }
         .btn-success {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
             border: none;
             color: white;
         }
+        .btn-success:hover {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            transform: translateY(-1px);
+        }
         .form-control {
             background-color: #2E2E2E;
             border: 1px solid #4B5563;
             color: #AECBD6;
+            border-radius: 6px;
+            padding: 0.75rem;
+            width: 100%;
+            transition: all 0.3s ease;
         }
         .form-control:focus {
             border-color: #22d3ee;
             box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+            outline: none;
         }
         .edit-form {
             background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
@@ -66,27 +86,100 @@
         .hidden {
             display: none;
         }
+
+        /* Styles responsives */
+        @media (max-width: 768px) {
+            .lot-card {
+                padding: 1rem;
+            }
+            
+            .btn-responsive {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            .btn-responsive i {
+                margin-right: 0.25rem;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+            
+            .action-buttons a,
+            .action-buttons button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .header-buttons {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .header-buttons a {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .lot-card {
+                margin-bottom: 0.75rem;
+            }
+            
+            .grid-cols-1 {
+                grid-template-columns: 1fr;
+            }
+            
+            .text-xl {
+                font-size: 1.25rem;
+            }
+            
+            .text-3xl {
+                font-size: 1.75rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .lot-info-grid {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+            
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
-<body class="p-6">
+<body class="p-4 md:p-6">
     <div class="max-w-6xl mx-auto">
         <!-- En-tête -->
-        <div class="mb-4">
-            <h1 class="text-3xl font-bold text-cyan-400 mb-2">Lots du projet</h1>
-            <h2 class="text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
-            <div class="flex items-center mt-4 text-sm text-gray-400">
+        <div class="mb-6">
+            <h1 class="text-2xl md:text-3xl font-bold text-cyan-400 mb-2">Lots du projet</h1>
+            <h2 class="text-lg md:text-xl text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-3 text-sm text-gray-400">
                 <i class="fas fa-info-circle mr-2"></i>
                 <span>Gestion des lots et bordereaux de prix</span>
             </div>
         </div>
-        <div class="flex gap-3 flex-wrap mb-4">
-            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+
+        <!-- Boutons de navigation -->
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 header-buttons">
+            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
                 <i class="fas fa-house"></i> Accueil
             </a>
-            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
                 <i class="fas fa-arrow-left"></i> Retour aux projets
             </a>
-            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
                 <i class="fas fa-diagram-project"></i> Tableau de bord
             </a>
         </div>
@@ -95,8 +188,8 @@
         {% if messages %}
             <div class="mb-6 space-y-3">
                 {% for message in messages %}
-                    <div class="p-4 rounded-xl {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% elif message.tags == 'warning' %}bg-yellow-600{% else %}bg-blue-600{% endif %} text-white flex justify-between items-center shadow-lg">
-                        <div class="flex items-center gap-3">
+                    <div class="p-3 md:p-4 rounded-xl {% if message.tags == 'success' %}bg-green-600{% elif message.tags == 'error' %}bg-red-600{% elif message.tags == 'warning' %}bg-yellow-600{% else %}bg-blue-600{% endif %} text-white flex justify-between items-center shadow-lg">
+                        <div class="flex items-center gap-2 md:gap-3">
                             {% if message.tags == 'success' %}
                                 <i class="fas fa-check-circle"></i>
                             {% elif message.tags == 'error' %}
@@ -106,47 +199,48 @@
                             {% else %}
                                 <i class="fas fa-info-circle"></i>
                             {% endif %}
-                            <span class="font-medium">{{ message }}</span>
+                            <span class="font-medium text-sm md:text-base">{{ message }}</span>
                         </div>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg flex-shrink-0">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                 {% endfor %}
             </div>
         {% endif %}
+
         <!-- Liste des lots -->
         {% if lots %}
-            <div class="grid gap-4 mb-8">
+            <div class="space-y-3 md:space-y-4 mb-8">
                 {% for lot in lots %}
                 <div class="lot-card" id="lot-{{ lot.id }}">
-                    <div class="flex justify-between items-start mb-3">
-                        <div>
-                            <h3 class="text-xl font-semibold text-cyan-300">{{ lot.nom }}</h3>
-                            <p class="text-[#2B9C62] font-medium">{{ lot.montant_formate }}</p>
+                    <div class="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-3 mb-3">
+                        <div class="flex-1">
+                            <h3 class="text-lg md:text-xl font-semibold text-cyan-300">{{ lot.nom }}</h3>
+                            <p class="text-[#2B9C62] font-medium text-sm md:text-base">{{ lot.montant_formate }}</p>
                             {% if lot.description %}
-                                <p class="text-gray-400 text-sm mt-1">{{ lot.description }}</p>
+                                <p class="text-gray-400 text-xs md:text-sm mt-1">{{ lot.description }}</p>
                             {% endif %}
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex flex-col sm:flex-row gap-2 action-buttons">
                             <a href="{% url 'projets:saisie_bordereau' projet.id lot.id %}" 
-                               class="btn-primary px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                               class="btn-primary px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive">
                                 <i class="fas fa-edit"></i> Bordereau
                             </a>
-                            <button onclick="showEditForm({{ lot.id }}, '{{ lot.nom }}', '{{ lot.description|default:"" }}')" 
-                               class="btn-warning px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+                            <button onclick="showEditForm({{ lot.id }}, '{{ lot.nom|escapejs }}', '{{ lot.description|default:""|escapejs }}')" 
+                               class="btn-warning px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive">
                                 <i class="fas fa-cog"></i> Modifier
                             </button>
                             <a href="{% url 'projets:supprimer_lot' projet.id lot.id %}" 
-                               class="btn-danger px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2"
-                               onclick="return confirm('Supprimer ce lot ?')">
+                               class="btn-danger px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive"
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce lot ?')">
                                 <i class="fas fa-trash"></i> Supprimer
                             </a>
                         </div>
                     </div>
                     
                     <!-- Informations supplémentaires -->
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-400">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 md:gap-4 text-xs md:text-sm text-gray-400 lot-info-grid">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-hashtag"></i>
                             <span>Réf: {{ lot.numero }}</span>
@@ -164,23 +258,23 @@
                 {% endfor %}
             </div>
         {% else %}
-            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-8 text-center mb-8">
-                <i class="fas fa-inbox text-6xl text-gray-500 mb-4"></i>
-                <h3 class="text-xl font-semibold text-gray-400 mb-2">Aucun lot défini</h3>
-                <p class="text-gray-500">Commencez par ajouter un lot pour ce projet.</p>
+            <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6 md:p-8 text-center mb-8">
+                <i class="fas fa-inbox text-4xl md:text-6xl text-gray-500 mb-3 md:mb-4"></i>
+                <h3 class="text-lg md:text-xl font-semibold text-gray-400 mb-2">Aucun lot défini</h3>
+                <p class="text-gray-500 text-sm md:text-base">Commencez par ajouter un lot pour ce projet.</p>
             </div>
         {% endif %}
+
         <!-- Formulaire d'édition de lot -->
-         <!-- Formulaire d'édition de lot (caché par défaut) -->
         <div id="edit-lot-form" class="edit-form hidden">
-            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+            <h3 class="text-lg md:text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                 <i class="fas fa-edit"></i> Modifier le lot
             </h3>   
             <form method="POST" action="{% url 'projets:modifier_lot' projet.id 0 %}" id="edit-form" class="space-y-4">
                 {% csrf_token %}
                 <input type="hidden" id="edit-lot-id" name="lot_id">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 form-grid">
                     <div>
                         <label for="edit-nom" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Nom du lot *
@@ -188,7 +282,7 @@
                         <input type="text" 
                                 id="edit-nom" 
                                 name="nom" 
-                                class="form-control w-full px-3 py-2 rounded-lg" 
+                                class="form-control" 
                                 required
                                 placeholder="Nom du lot">
                     </div>
@@ -199,19 +293,19 @@
                         <input type="text" 
                                 id="edit-description" 
                                 name="description" 
-                                class="form-control w-full px-3 py-2 rounded-lg" 
+                                class="form-control" 
                                 placeholder="Description du lot">
                     </div>
                 </div>
 
-                <div class="flex gap-3 pt-4">
+                <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-4">
                     <button type="submit" 
-                            class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                            class="btn-success px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 order-2 sm:order-1">
                         <i class="fas fa-save"></i> Enregistrer
                     </button>
                     <button type="button" 
                             onclick="hideEditForm()"
-                            class="bg-[#4B5563] hover:bg-[#374151] text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                            class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 order-1 sm:order-2">
                         <i class="fas fa-times"></i> Annuler
                     </button>
                 </div>
@@ -219,15 +313,15 @@
         </div>
         
         <!-- Formulaire d'ajout de lot -->
-        <div  id="add-lot-form" class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-6">
-            <h3 class="text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
+        <div id="add-lot-form" class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 md:p-6">
+            <h3 class="text-lg md:text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                 <i class="fas fa-plus-circle"></i> Ajouter un nouveau lot
             </h3>
             
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 form-grid">
                     <div>
                         <label for="nom" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Nom du lot *
@@ -235,7 +329,7 @@
                         <input type="text" 
                                id="nom" 
                                name="nom" 
-                               class="form-control w-full px-3 py-2 rounded-lg" 
+                               class="form-control" 
                                required
                                placeholder="Ex: Lot unique, Avenant 01, Terrassements, Chaussée...">
                     </div>
@@ -246,14 +340,14 @@
                         <input type="text" 
                                id="description" 
                                name="description" 
-                               class="form-control w-full px-3 py-2 rounded-lg" 
+                               class="form-control" 
                                placeholder="Description du lot">
                     </div>
                 </div>
 
                 <div class="flex gap-3 pt-4">
                     <button type="submit" 
-                            class="btn-success px-6 py-2 rounded-lg font-medium flex items-center gap-2">
+                            class="btn-success px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center gap-2">
                         <i class="fas fa-plus"></i> Ajouter le lot
                     </button>
                 </div>
@@ -279,13 +373,15 @@
             // Masquer Add-lot-Form
             document.getElementById('add-lot-form').classList.add('hidden');
             // Faire défiler jusqu'au formulaire
-            document.getElementById('edit-lot-form').scrollIntoView({ behavior: 'smooth' });
+            document.getElementById('edit-lot-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Fonction pour masquer le formulaire d'édition et afficher le formulaire d'ajout
         function hideEditForm() {
             document.getElementById('edit-lot-form').classList.add('hidden');
             document.getElementById('add-lot-form').classList.remove('hidden');
+            // Faire défiler jusqu'au formulaire d'ajout
+            document.getElementById('add-lot-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Validation du formulaire
@@ -303,7 +399,7 @@
 
             // Masquer automatiquement les messages après 5 secondes
             setTimeout(function() {
-                const alerts = document.querySelectorAll('.p-4.rounded-xl');
+                const alerts = document.querySelectorAll('.p-3.rounded-xl, .p-4.rounded-xl');
                 alerts.forEach(alert => {
                     alert.style.display = 'none';
                 });
@@ -314,6 +410,15 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 hideEditForm();
+            }
+        });
+
+        // Gestion du redimensionnement de la fenêtre
+        window.addEventListener('resize', function() {
+            // Réorganiser l'interface si nécessaire
+            const editForm = document.getElementById('edit-lot-form');
+            if (!editForm.classList.contains('hidden')) {
+                editForm.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         });
     </script>

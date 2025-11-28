@@ -10,66 +10,155 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-900 text-gray-200">
-
     <!-- HEADER -->
-    <header class="bg-gray-800 shadow-md py-4 flex justify-center border-b border-gray-700">
-        <divv class="bg-white rounded-lg shadow-lg p-4">
-            <img src="{% static 'images/LOGO MEGAP.jpg' %}" alt="Logo MEGAP BTP" class="h-16 w-auto">
+    <header class="bg-gray-800 shadow-md py-4 px-4 border-b border-gray-700">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Logo -->
+            <div class="bg-white rounded-lg shadow-lg p-2 md:p-4">
+                <img src="{% static 'images/LOGO MEGAP.jpg' %}" alt="Logo MEGAP BTP" class="h-12 md:h-16 w-auto">
+            </div>
+            
+            <!-- Section utilisateur -->
+            <div class="flex items-center space-x-2 md:space-x-4">
+                {% if user.is_authenticated %}
+                    <!-- UTILISATEUR CONNECTÉ -->
+                    <div class="relative"> <!-- Menu utilisateur -->
+                        <button id="userMenuBtn" class="flex items-center space-x-2 text-lg p-2 rounded-lg hover:bg-gray-700 transition">
+                            <img src="{{ user.profile.avatar_url }}" 
+                                alt="Avatar" 
+                                id="navbar-avatar"
+                                class="w-8 h-8 rounded-full object-cover"
+                                onerror="handleNavbarAvatarError(this)">
+                            <span class="hidden md:inline text-[#2B9C62] truncate max-w-32">{{ user.username }}</span>
+                            <i class="fas fa-chevron-down text-xs text-[#2B9C62]"></i>
+                        </button>
+                        
+                        <div id="userMenuDropdown" 
+                            class="hidden absolute bg-gray-800 bg-opacity-95 right-0 mt-2 w-56 rounded-md shadow-lg py-1 z-20">
+                            <!-- Lien Profil avec HTMX -->
+                            <a href="#" 
+                                hx-get="{% url 'projets:profile_modal' %}"
+                                hx-target="#modals-container"
+                                hx-swap="innerHTML"
+                                class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                <i class="fas fa-user-circle mr-2"></i> Profil
+                            </a>
+                            
+                            {% if user.is_superuser %}
+                            <a href="{% url 'projets:liste_utilisateurs' %}" 
+                                class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                <i class="fas fa-users-cog mr-2"></i> Utilisateurs
+                            </a>
+                            {% endif %}
+                            
+                            <div class="border-t border-gray-600 my-1"></div>
+                            
+                            <form action="{% url 'logout' %}" method="post" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" 
+                                        class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                    <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                                </button>
+                            </form>
+                        </div>                            
+                    </div>
+                    <a href="{% url 'home' %}" 
+                        class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition duration-300 font-semibold shadow-lg text-sm md:text-base whitespace-nowrap">
+                        <i class="fas fa-users-cog mr-2"></i><span>Accueil</span>
+                    </a>
+
+                {% else %}
+                    <!-- Version tooltip pour utilisateur non connecté -->
+                    <div class="relative group">
+                        <!-- Icône notifications désactivée -->
+                        <button class="text-gray-500 cursor-not-allowed relative p-2" title="Connectez-vous pour voir les notifications">
+                            <i class="fas fa-bell text-lg md:text-xl"></i>
+                            <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                <i class="fas fa-lock text-xs"></i>
+                            </span>
+                        </button>
+                        
+                        <!-- Tooltip -->
+                        <div class="absolute right-0 mt-2 w-64 bg-gray-800 text-white text-sm rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20">
+                            <div class="flex items-start space-x-2">
+                                <i class="fas fa-info-circle text-blue-400 mt-0.5"></i>
+                                <div>
+                                    <p class="font-semibold">Fonctionnalité réservée</p>
+                                    <p class="text-gray-300 mt-1">Connectez-vous pour accéder à l'application.</p>
+                                    <a href="{% url 'login' %}" class="inline-block mt-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold transition">
+                                        Se connecter
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bouton de connexion principal -->
+                    <a href="{% url 'login' %}" 
+                    class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition duration-300 font-semibold shadow-lg text-sm md:text-base whitespace-nowrap">
+                        <i class="fas fa-sign-in-alt mr-2"></i><span>Connexion</span>
+                    </a>
+                    
+                {% endif %}
+            </div>
         </div>
     </header>
 
-    <!-- TITRE -->
-    <section class="text-center mt-10 mb-6">
-        <h2 class="text-3xl font-bold text-green-400">
-            À propos de notre bureau d'études
-        </h2>
-    </section>
-
-    <!-- EXPERTISE & SERVICES -->
-    <section class="container mx-auto bg-gray-800 rounded-lg shadow-lg p-8 mb-8 border border-gray-700">
-        <h3 class="text-2xl font-semibold mb-4 flex items-center text-yellow-400">
-            <i class="fa-solid fa-lightbulb mr-2"></i> Notre Expertise
-        </h3>
-        <p class="mb-6 text-gray-300 leading-relaxed">
-            Fort d'une expérience confirmée, <strong class="text-green-400">MEGAPERFORMANCE</strong> accompagne ses clients 
-            dans la conception, la planification et le suivi des projets de construction.
-            Nous assurons une gestion rigoureuse, de l'appel d'offres à la réception définitive.
-        </p>
-
-        <h3 class="text-2xl font-semibold mb-4 flex items-center text-green-400">
-            <i class="fa-solid fa-tools mr-2"></i> Nos Services
-        </h3>
-        <ul class="list-disc pl-6 space-y-2 text-gray-300">
-            <li>Études techniques approfondies</li>
-            <li>Suivi et contrôle des chantiers</li>
-            <li>Assistance à la maîtrise d'ouvrage</li>
-            <li>Gestion documentaire complète</li>
-            <li>Élaboration de rapports et reporting personnalisé</li>
-        </ul>
-    </section>
-
-    <!-- CONTACT -->
-    <section class="container mx-auto bg-gray-800 rounded-lg shadow-lg p-8 mb-12 border border-gray-700">
-        <h3 class="text-2xl font-semibold mb-4 flex items-center text-blue-400">
-            <i class="fa-solid fa-envelope mr-2"></i> Contact
-        </h3>
-        <p class="mb-2 text-gray-300">
-            <i class="fa-solid fa-paper-plane mr-2 text-blue-400"></i>
-            Email : 
-            <a href="mailto:megaperformance2020@gmail.com" class="text-blue-400 hover:underline">
-                megaperformance2020@gmail.com
-            </a>
-        </p>
-        <p class="mb-4 text-gray-300">
-            <i class="fa-solid fa-phone mr-2 text-green-400"></i>
-            Téléphone/Fax : +212 5 21 00 31 97
-        </p>
+    <!-- CONTENU PRINCIPAL -->
+    <main class="container mx-auto px-4 py-6">
+        <!-- TITRE -->
+        <section class="text-center mt-4 mb-6">
+            <h2 class="text-2xl md:text-3xl font-bold text-green-400">
+                À propos de notre bureau d'études
+            </h2>
+        </section>
         
-        <a href="{% url 'home' %}" 
-        class="inline-flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-500 transition">
-            <i class="fa-solid fa-house mr-2"></i> Retour à la page d'accueil
-        </a>
-    </section>
+        <!-- EXPERTISE & SERVICES -->
+        <section class="bg-gray-800 rounded-lg shadow-lg p-6 md:p-8 mb-8 border border-gray-700">
+            <h3 class="text-xl md:text-2xl font-semibold mb-4 flex items-center text-yellow-400">
+                <i class="fa-solid fa-lightbulb mr-2"></i> Notre Expertise
+            </h3>
+            <p class="mb-6 text-gray-300 leading-relaxed">
+                Fort d'une expérience confirmée, <strong class="text-green-400">MEGAPERFORMANCE</strong> accompagne ses clients 
+                dans la conception, la planification et le suivi des projets de construction.
+                Nous assurons une gestion rigoureuse, de l'appel d'offres à la réception définitive.
+            </p>
+
+            <h3 class="text-xl md:text-2xl font-semibold mb-4 flex items-center text-green-400">
+                <i class="fa-solid fa-tools mr-2"></i> Nos Services
+            </h3>
+            <ul class="list-disc pl-6 space-y-2 text-gray-300">
+                <li>Études techniques approfondies</li>
+                <li>Suivi et contrôle des chantiers</li>
+                <li>Assistance à la maîtrise d'ouvrage</li>
+                <li>Gestion documentaire complète</li>
+                <li>Élaboration de rapports et reporting personnalisé</li>
+            </ul>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="bg-gray-800 rounded-lg shadow-lg p-6 md:p-8 mb-8 border border-gray-700">
+            <h3 class="text-xl md:text-2xl font-semibold mb-4 flex items-center text-blue-400">
+                <i class="fa-solid fa-envelope mr-2"></i> Contact
+            </h3>
+            <p class="mb-2 text-gray-300">
+                <i class="fa-solid fa-paper-plane mr-2 text-blue-400"></i>
+                Email : 
+                <a href="mailto:megaperformance2020@gmail.com" class="text-blue-400 hover:underline">
+                    megaperformance2020@gmail.com
+                </a>
+            </p>
+            <p class="mb-4 text-gray-300">
+                <i class="fa-solid fa-phone mr-2 text-green-400"></i>
+                Téléphone/Fax : +212 5 21 00 31 97
+            </p>
+            
+            <!-- <a href="{% url 'home' %}" 
+            class="inline-flex items-center bg-green-600 text-white px-4 py-2 rounded-lg shadow hover:bg-green-500 transition">
+                <i class="fa-solid fa-house mr-2"></i> Retour à la page d'accueil
+            </a> -->
+        </section>
+    </main>
 
     <!-- FOOTER -->
     <footer class="bg-gray-800 text-center py-4 text-sm text-gray-400 border-t border-gray-700">
@@ -78,3 +167,22 @@
 
 </body>
 </html>
+<script>
+    function handleNavbarAvatarError(img) {
+        img.onerror = null;
+        const username = "{{ user.username|default:'User' }}";
+        const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=10B981&color=fff&size=64`;
+        img.src = defaultAvatarUrl;
+    }
+    
+    // Fermer les dropdowns quand on clique ailleurs
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('#userMenuBtn') && !event.target.closest('#userMenuDropdown')) {
+            document.getElementById('userMenuDropdown').classList.add('hidden');
+        }
+    });
+    
+    document.getElementById('userMenuBtn').addEventListener('click', function() {
+        document.getElementById('userMenuDropdown').classList.toggle('hidden');
+    });
+</script>

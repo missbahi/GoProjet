@@ -521,7 +521,8 @@ def ajouter_projet_modal(request):
     }
         
     return render(request, 'projets/modals/ajouter_projet_modal.html', context)
-@permission_required('auth.add_user')
+
+@chef_projet_required
 def modifier_projet_modal(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     if request.method == 'POST':
@@ -557,7 +558,7 @@ def modifier_projet_modal(request, projet_id):
         'entreprises': Entreprise.objects.all(),
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
-@permission_required('auth.add_user')
+@chef_projet_required
 def modifier_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -598,7 +599,7 @@ def modifier_projet(request, projet_id):
     # if request.GET.get('modal'):
     #     return render(request, 'projets/modifier_projet.html', context)
     return render(request, 'projets/modifier_projet.html', context)
-@permission_required('auth.add_user')
+@chef_projet_required
 def supprimer_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     projet.delete()
@@ -719,6 +720,7 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
 class ModifierTacheView(LoginRequiredMixin, UpdateView):
     model = Tache
     form_class = TacheForm
+    template_name = 'projets/taches/modifier_tache.html'
     success_url = reverse_lazy('projets:liste_taches')
     queryset = Tache.objects.select_related('projet', 'responsable')
 
@@ -781,7 +783,6 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
 class DetailTacheView(DetailView):
     model = Tache
     queryset = Tache.objects.select_related('projet', 'responsable')
-    # template_name = 'projets/taches/detail_tache'
     template_name = 'projets/taches/tache_details.html'
     context_object_name = 'tache'  # Important pour le template HTML
 
@@ -2318,6 +2319,17 @@ def reouvrir_attachement(request, attachement_id):
     
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 
+def transmettre_validation_attachement(request, attachement_id):
+    attachement = get_object_or_404(Attachement, id=attachement_id)
+    
+    try:
+        attachement.statut = 'SIGNE'
+        attachement.transmettre(request.user)
+        messages.success(request, f"L'attachement {attachement.numero} a été transmis pour validation.")
+    except Exception as e:
+        messages.error(request, f"Erreur lors de la transmission : {str(e)}")
+    
+    return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 # ------------------------ Views pour Décomptes ------------------------
 @login_required
 def liste_decomptes(request, projet_id):
@@ -2369,9 +2381,6 @@ def liste_decomptes(request, projet_id):
     dernier_decompte = Decompte.objects.filter(attachement__projet=projet).order_by('-id').first() # Dernier Decompte
 
     # Calcul des totaux
-    # total_ht = decomptes.aggregate(total=Sum('montant_ht'))['total'] or 0
-    # total_ttc = decomptes.aggregate(total=Sum('montant_ttc'))['total'] or 0
-    # total_net = decomptes.aggregate(total=Sum('montant_net_a_payer'))['total'] or 0
     total_ht = dernier_decompte.montant_ht if dernier_decompte else 0
     total_ttc = dernier_decompte.montant_ttc if dernier_decompte else 0
     total_net = dernier_decompte.montant_net_a_payer if dernier_decompte else 0
@@ -2403,7 +2412,7 @@ def liste_decomptes(request, projet_id):
         
         if request.method == 'POST':
             form = DecompteForm(request.POST, instance=decompte_a_modifier)
-        else:
+        else: 
             form = DecompteForm(instance=decompte_a_modifier)
         
         # Limiter les attachements disponibles (attachements sans décompte + attachement actuel)

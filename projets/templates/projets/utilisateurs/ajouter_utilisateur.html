@@ -2,245 +2,702 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ajouter un Utilisateur</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #111827;
+            --bg-card: #1F2937;
+            --bg-medium: #374151;
+            --text-primary: #22d3ee;
+            --text-secondary: #D1D5DB;
+            --accent-cyan: #22d3ee;
+            --accent-cyan-dark: #0ea5e9;
+            --accent-blue: #2563eb;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-secondary);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                max-width: 42rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 2rem;
+            }
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--border-radius);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid #374151;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            padding: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .card-body {
+                padding: 2rem;
+            }
+        }
+
+        /* Typography */
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #9CA3AF;
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .page-title {
+                font-size: 2rem;
+            }
+        }
+
+        .section-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            color: var(--accent-cyan);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .form-control {
+            width: 100%;
+            background-color: var(--bg-medium);
+            border: 1px solid #4B5563;
+            border-radius: var(--border-radius);
+            padding: 0.875rem 1rem;
+            color: white;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
+            background-color: #1F2937;
+        }
+
+        .form-control::placeholder {
+            color: #9CA3AF;
+        }
+
+        /* Avatar section */
+        .avatar-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid #374151;
+        }
+
+        .avatar-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: var(--bg-medium);
+            border: 3px solid var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+            overflow: hidden;
+        }
+
+        @media (max-width: 767px) {
+            .avatar-preview {
+                width: 80px;
+                height: 80px;
+            }
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-preview i {
+            color: var(--accent-cyan);
+            font-size: 2rem;
+        }
+
+        .avatar-upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .avatar-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        /* Grid layouts */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+
+        /* Permissions section */
+        .permissions-section {
+            background-color: var(--bg-medium);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border: 1px solid #4B5563;
+        }
+
+        .permission-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 1rem 0;
+            border-bottom: 1px solid #4B5563;
+        }
+
+        .permission-item:last-child {
+            border-bottom: none;
+        }
+
+        .permission-checkbox {
+            margin-top: 0.25rem;
+            accent-color: var(--accent-cyan);
+        }
+
+        .permission-label {
+            flex: 1;
+        }
+
+        .permission-title {
+            font-weight: 600;
+            color: white;
+            margin-bottom: 0.25rem;
+        }
+
+        .permission-description {
+            color: #9CA3AF;
+            font-size: 0.875rem;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            text-align: center;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) {
+            .btn {
+                width: auto;
+            }
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: var(--bg-medium);
+            color: white;
+            border: 1px solid #4B5563;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Form actions */
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid #374151;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .form-actions {
+                flex-direction: row;
+            }
+            
+            .form-actions .btn {
+                flex: 1;
+            }
+        }
+
+        /* Helper text */
+        .helper-text {
+            color: #9CA3AF;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Password match indicator */
+        .password-match {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            font-weight: 600;
+        }
+
+        .password-match.valid {
+            color: #10B981;
+        }
+
+        .password-match.invalid {
+            color: #EF4444;
+        }
+
+        /* Checkbox styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            accent-color: var(--accent-cyan);
+            width: 1.125rem;
+            height: 1.125rem;
+        }
+
+        .checkbox-group label {
+            color: var(--text-secondary);
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+        }
+
+        /* Info message */
+        .info-message {
+            text-align: center;
+            color: #9CA3AF;
+            font-size: 0.875rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background-color: var(--bg-medium);
+            border-radius: var(--border-radius);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .container {
+                padding: 0.5rem;
+            }
+            
+            .card-body {
+                padding: 1.25rem;
+            }
+            
+            .permissions-section {
+                padding: 1rem;
+            }
+            
+            .permission-item {
+                padding: 0.75rem 0;
+            }
+        }
+
+        /* Focus states for accessibility */
+        .form-control:focus-visible,
+        .btn:focus-visible,
+        .avatar-upload-btn:focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
+    </style>
 </head>
-<body class="bg-gray-900 min-h-screen p-6">
-    <div class="max-w-2xl mx-auto">
-        <!-- En-tête -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-cyan-400 mb-2">
-                <i class="fas fa-user-plus mr-3"></i>Ajouter un Nouvel Utilisateur
+<body>
+    <div class="container">
+        <!-- Page Header -->
+        <div class="text-center mb-6 animate-fade-in">
+            <h1 class="page-title flex items-center justify-center gap-2">
+                <i class="fas fa-user-plus"></i>
+                Ajouter un Nouvel Utilisateur
             </h1>
-            <p class="text-gray-400">Créez un nouveau compte utilisateur dans le système</p>
+            <p class="page-subtitle">Créez un nouveau compte utilisateur dans le système</p>
         </div>
 
-        <!-- Carte du formulaire -->
-        <div class="bg-gray-800 rounded-xl shadow-2xl border border-gray-700 overflow-hidden">
-            <!-- En-tête de la carte -->
-            <div class="bg-gradient-to-r from-cyan-600 to-blue-600 p-4">
-                <h2 class="text-white text-lg font-semibold">
-                    <i class="fas fa-user-circle mr-2"></i>Informations de l'utilisateur
+        <!-- Main Form Card -->
+        <div class="card animate-fade-in" style="animation-delay: 0.1s;">
+            <div class="card-header">
+                <h2 class="section-title flex items-center gap-2">
+                    <i class="fas fa-user-circle"></i>
+                    Informations de l'utilisateur
                 </h2>
             </div>
 
-            <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
-                {% csrf_token %}
-                
-                <!-- Avatar -->
-                <div class="text-center mb-6">
-                    <div class="relative inline-block">
-                        <div id="avatar-preview" class="w-24 h-24 rounded-full bg-gray-700 border-2 border-cyan-500 flex items-center justify-center mb-3 mx-auto">
-                            <i class="fas fa-user text-cyan-400 text-2xl"></i>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="user-form">
+                    {% csrf_token %}
+
+                    <!-- Avatar Section -->
+                    <div class="avatar-section">
+                        <div class="avatar-preview" id="avatar-preview">
+                            <i class="fas fa-user"></i>
                         </div>
-                        <input type="file" name="avatar" id="avatar" accept="image/*" 
-                               class="hidden" onchange="previewAvatar(this)">
-                        <label for="avatar" class="cursor-pointer bg-cyan-600 hover:bg-cyan-700 text-white px-3 py-1 rounded-full text-sm transition-colors">
-                            <i class="fas fa-camera mr-1"></i>Choisir un avatar
+                        <input type="file" name="avatar" id="avatar" accept="image/*" class="hidden">
+                        <label for="avatar" class="avatar-upload-btn">
+                            <i class="fas fa-camera"></i>
+                            Choisir un avatar
                         </label>
                     </div>
-                </div>
 
-                <!-- Nom d'utilisateur -->
-                <div>
-                    <label for="username" class="block text-cyan-300 font-medium mb-2">
-                        <i class="fas fa-user mr-2"></i>Nom d'utilisateur *
-                    </label>
-                    <input type="text" name="username" id="username" 
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                           placeholder="Entrez le nom d'utilisateur" required>
-                    <p class="text-gray-400 text-sm mt-1">Le nom d'utilisateur doit être unique</p>
-                </div>
+                    <!-- Form Grid -->
+                    <div class="form-grid">
+                        <!-- Left Column -->
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="username">
+                                    <i class="fas fa-user mr-2"></i>Nom d'utilisateur *
+                                </label>
+                                <input type="text" name="username" id="username" 
+                                       class="form-control"
+                                       placeholder="Entrez le nom d'utilisateur" required>
+                                <p class="helper-text">Le nom d'utilisateur doit être unique</p>
+                            </div>
 
-                <!-- Email -->
-                <div>
-                    <label for="email" class="block text-cyan-300 font-medium mb-2">
-                        <i class="fas fa-envelope mr-2"></i>Adresse email
-                    </label>
-                    <input type="email" name="email" id="email" 
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                           placeholder="utilisateur@exemple.com">
-                </div>
+                            <div class="form-group">
+                                <label for="email">
+                                    <i class="fas fa-envelope mr-2"></i>Adresse email
+                                </label>
+                                <input type="email" name="email" id="email" 
+                                       class="form-control"
+                                       placeholder="utilisateur@exemple.com">
+                            </div>
 
-                <!-- Prénom et Nom -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="first_name" class="block text-cyan-300 font-medium mb-2">
-                            <i class="fas fa-signature mr-2"></i>Prénom
-                        </label>
-                        <input type="text" name="first_name" id="first_name" 
-                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                               placeholder="Prénom">
-                    </div>
-                    <div>
-                        <label for="last_name" class="block text-cyan-300 font-medium mb-2">
-                            <i class="fas fa-signature mr-2"></i>Nom
-                        </label>
-                        <input type="text" name="last_name" id="last_name" 
-                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                               placeholder="Nom">
-                    </div>
-                </div>
-
-                <!-- Mot de passe -->
-                <div>
-                    <label for="password" class="block text-cyan-300 font-medium mb-2">
-                        <i class="fas fa-lock mr-2"></i>Mot de passe *
-                    </label>
-                    <input type="password" name="password" id="password" 
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                           placeholder="Mot de passe sécurisé" required>
-                    <div class="flex items-center mt-2">
-                        <input type="checkbox" id="show-password" class="mr-2" onchange="togglePassword()">
-                        <label for="show-password" class="text-gray-400 text-sm cursor-pointer">Afficher le mot de passe</label>
-                    </div>
-                </div>
-
-                <!-- Confirmation mot de passe -->
-                <div>
-                    <label for="confirm_password" class="block text-cyan-300 font-medium mb-2">
-                        <i class="fas fa-lock mr-2"></i>Confirmer le mot de passe *
-                    </label>
-                    <input type="password" name="confirm_password" id="confirm_password" 
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                           placeholder="Confirmez le mot de passe" required>
-                    <p id="password-match" class="text-sm mt-1 hidden"></p>
-                </div>
-
-                <!-- Rôle et permissions -->
-                <div class="bg-gray-750 p-4 rounded-lg border border-gray-600">
-                    <h3 class="text-cyan-300 font-medium mb-3">
-                        <i class="fas fa-user-shield mr-2"></i>Rôle et Permissions
-                    </h3>
-                    
-                    <div class="space-y-3">
-                        <div class="flex items-center">
-                            <input type="checkbox" name="is_staff" id="is_staff" class="mr-3 rounded text-cyan-500">
-                            <label for="is_staff" class="text-gray-300 cursor-pointer">
-                                <span class="font-medium">Accès staff</span>
-                                <p class="text-gray-400 text-sm">Accès à l'interface d'administration</p>
-                            </label>
+                            <div class="form-group">
+                                <label for="first_name">
+                                    <i class="fas fa-signature mr-2"></i>Prénom
+                                </label>
+                                <input type="text" name="first_name" id="first_name" 
+                                       class="form-control"
+                                       placeholder="Prénom">
+                            </div>
                         </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="last_name">
+                                    <i class="fas fa-signature mr-2"></i>Nom
+                                </label>
+                                <input type="text" name="last_name" id="last_name" 
+                                       class="form-control"
+                                       placeholder="Nom">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password">
+                                    <i class="fas fa-lock mr-2"></i>Mot de passe *
+                                </label>
+                                <input type="password" name="password" id="password" 
+                                       class="form-control"
+                                       placeholder="Mot de passe sécurisé" required>
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="show-password">
+                                    <label for="show-password">Afficher le mot de passe</label>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirm_password">
+                                    <i class="fas fa-lock mr-2"></i>Confirmer le mot de passe *
+                                </label>
+                                <input type="password" name="confirm_password" id="confirm_password" 
+                                       class="form-control"
+                                       placeholder="Confirmez le mot de passe" required>
+                                <p id="password-match" class="password-match"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Information -->
+                    <div class="form-group">
+                        <label for="phone">
+                            <i class="fas fa-phone mr-2"></i>Téléphone
+                        </label>
+                        <input type="tel" name="phone" id="phone" 
+                               class="form-control"
+                               placeholder="+33 1 23 45 67 89">
+                    </div>
+
+                    <!-- Permissions Section -->
+                    <div class="permissions-section animate-slide-in">
+                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-2">
+                            <i class="fas fa-user-shield"></i>
+                            Rôle et Permissions
+                        </h3>
                         
-                        <div class="flex items-center">
-                            <input type="checkbox" name="is_superuser" id="is_superuser" class="mr-3 rounded text-cyan-500">
-                            <label for="is_superuser" class="text-gray-300 cursor-pointer">
-                                <span class="font-medium">Super administrateur</span>
-                                <p class="text-gray-400 text-sm">Toutes les permissions sans restriction</p>
-                            </label>
-                        </div>
-                        
-                        <div class="flex items-center">
-                            <input type="checkbox" name="is_active" id="is_active" checked class="mr-3 rounded text-cyan-500">
-                            <label for="is_active" class="text-gray-300 cursor-pointer">
-                                <span class="font-medium">Compte actif</span>
-                                <p class="text-gray-400 text-sm">L'utilisateur peut se connecter</p>
-                            </label>
+                        <div class="space-y-2">
+                            <div class="permission-item">
+                                <input type="checkbox" name="is_staff" id="is_staff" class="permission-checkbox">
+                                <div class="permission-label">
+                                    <div class="permission-title">Accès staff</div>
+                                    <div class="permission-description">Accès à l'interface d'administration</div>
+                                </div>
+                            </div>
+                            
+                            <div class="permission-item">
+                                <input type="checkbox" name="is_superuser" id="is_superuser" class="permission-checkbox">
+                                <div class="permission-label">
+                                    <div class="permission-title">Super administrateur</div>
+                                    <div class="permission-description">Toutes les permissions sans restriction</div>
+                                </div>
+                            </div>
+                            
+                            <div class="permission-item">
+                                <input type="checkbox" name="is_active" id="is_active" checked class="permission-checkbox">
+                                <div class="permission-label">
+                                    <div class="permission-title">Compte actif</div>
+                                    <div class="permission-description">L'utilisateur peut se connecter</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Informations supplémentaires -->
-                <div>
-                    <label for="phone" class="block text-cyan-300 font-medium mb-2">
-                        <i class="fas fa-phone mr-2"></i>Téléphone
-                    </label>
-                    <input type="tel" name="phone" id="phone" 
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all"
-                           placeholder="+33 1 23 45 67 89">
-                </div>
-
-                <!-- Boutons d'action -->
-                <div class="flex flex-col sm:flex-row gap-4 pt-4 border-t border-gray-700">
-                    <button type="submit" 
-                            class="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 focus:ring-offset-gray-800">
-                        <i class="fas fa-user-plus mr-2"></i>Créer l'utilisateur
-                    </button>
-                    <a href="{% url 'projets:liste_utilisateurs' %}" 
-                       class="flex-1 bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 text-center border border-gray-600">
-                        <i class="fas fa-times mr-2"></i>Annuler
-                    </a>
-                </div>
-            </form>
+                    <!-- Form Actions -->
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary" id="submit-btn">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Créer l'utilisateur
+                        </button>
+                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
+                            <i class="fas fa-times mr-2"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </form>
+            </div>
         </div>
 
-        <!-- Message d'information -->
-        <div class="mt-6 text-center text-gray-400 text-sm">
-            <p><i class="fas fa-info-circle mr-1"></i>Les champs marqués d'un * sont obligatoires</p>
+        <!-- Info Message -->
+        <div class="info-message animate-fade-in" style="animation-delay: 0.3s;">
+            <i class="fas fa-info-circle mr-1"></i>
+            Les champs marqués d'un * sont obligatoires
         </div>
     </div>
 
     <script>
-        // Prévisualisation de l'avatar
-        function previewAvatar(input) {
-            const preview = document.getElementById('avatar-preview');
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    preview.innerHTML = `<img src="${e.target.result}" class="w-full h-full rounded-full object-cover">`;
-                }
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        // Afficher/masquer le mot de passe
-        function togglePassword() {
-            const passwordField = document.getElementById('password');
-            const confirmField = document.getElementById('confirm_password');
-            const showPassword = document.getElementById('show-password');
-            
-            if (showPassword.checked) {
-                passwordField.type = 'text';
-                confirmField.type = 'text';
-            } else {
-                passwordField.type = 'password';
-                confirmField.type = 'password';
-            }
-        }
-
-        // Vérification de la correspondance des mots de passe
-        document.getElementById('confirm_password').addEventListener('input', function() {
-            const password = document.getElementById('password').value;
-            const confirmPassword = this.value;
-            const matchMessage = document.getElementById('password-match');
-            
-            if (confirmPassword === '') {
-                matchMessage.classList.add('hidden');
-            } else if (password === confirmPassword) {
-                matchMessage.textContent = '✓ Les mots de passe correspondent';
-                matchMessage.className = 'text-sm mt-1 text-green-400';
-                matchMessage.classList.remove('hidden');
-            } else {
-                matchMessage.textContent = '✗ Les mots de passe ne correspondent pas';
-                matchMessage.className = 'text-sm mt-1 text-red-400';
-                matchMessage.classList.remove('hidden');
-            }
-        });
-
-        // Animation au chargement
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelector('form').classList.add('animate-fade-in');
+            const form = document.getElementById('user-form');
+            const submitBtn = document.getElementById('submit-btn');
+            const avatarInput = document.getElementById('avatar');
+            const avatarPreview = document.getElementById('avatar-preview');
+            const showPasswordCheckbox = document.getElementById('show-password');
+            const passwordField = document.getElementById('password');
+            const confirmPasswordField = document.getElementById('confirm_password');
+            const passwordMatch = document.getElementById('password-match');
+
+            // Avatar preview
+            avatarInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+            // Toggle password visibility
+            showPasswordCheckbox.addEventListener('change', function() {
+                const type = this.checked ? 'text' : 'password';
+                passwordField.type = type;
+                confirmPasswordField.type = type;
+            });
+
+            // Password match validation
+            function validatePasswordMatch() {
+                const password = passwordField.value;
+                const confirmPassword = confirmPasswordField.value;
+
+                if (confirmPassword === '') {
+                    passwordMatch.textContent = '';
+                    passwordMatch.className = 'password-match';
+                } else if (password === confirmPassword) {
+                    passwordMatch.textContent = '✓ Les mots de passe correspondent';
+                    passwordMatch.className = 'password-match valid';
+                } else {
+                    passwordMatch.textContent = '✗ Les mots de passe ne correspondent pas';
+                    passwordMatch.className = 'password-match invalid';
+                }
+            }
+
+            passwordField.addEventListener('input', validatePasswordMatch);
+            confirmPasswordField.addEventListener('input', validatePasswordMatch);
+
+            // Form submission
+            form.addEventListener('submit', function(e) {
+                const password = passwordField.value;
+                const confirmPassword = confirmPasswordField.value;
+
+                // Validate password match
+                if (password !== confirmPassword) {
+                    e.preventDefault();
+                    alert('Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie.');
+                    confirmPasswordField.focus();
+                    return;
+                }
+
+                // Validate password length
+                if (password.length < 8) {
+                    e.preventDefault();
+                    alert('Le mot de passe doit contenir au moins 8 caractères.');
+                    passwordField.focus();
+                    return;
+                }
+
+                // Show loading state
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Création en cours...';
+                submitBtn.classList.add('loading');
+            });
+
+            // Add focus effects to form controls
+            const formControls = document.querySelectorAll('.form-control');
+            formControls.forEach(control => {
+                control.addEventListener('focus', function() {
+                    this.parentElement.classList.add('ring-2', 'ring-cyan-500', 'rounded-lg');
+                });
+                
+                control.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('ring-2', 'ring-cyan-500', 'rounded-lg');
+                });
+            });
+
+            // Responsive adjustments
+            function handleResize() {
+                const isMobile = window.innerWidth < 768;
+                document.body.classList.toggle('mobile-view', isMobile);
+            }
+
+            window.addEventListener('resize', handleResize);
+            handleResize(); // Initial check
         });
     </script>
-
-    <style>
-        .animate-fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        input:focus, button:focus {
-            outline: none;
-        }
-        
-        .bg-gray-750 {
-            background-color: #374151;
-        }
-    </style>
 </body>
 </html>

@@ -4,7 +4,9 @@
 {% block content %}
 <div class="max-w-4xl mx-auto px-4 py-8">
     <!-- En-tête avec statut et actions -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-gray-500 border-b">
+     
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 border-gray-500 border-b">
+        
         <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
                 <span class="px-3 py-1 rounded-full text-sm font-semibold
@@ -24,18 +26,18 @@
                     {{ tache.get_priorite_display }}
                 </span>
             </div>
+
             <h1 class="text-3xl font-bold text-green-500">{{ tache.titre }}</h1>
             <!-- <p class="text-green-600 mt-1">Projet : {{ tache.projet.nom }}</p> -->
+
              <div class="text-xl font-semibold mb-4 text-cyan-600">
-              <span>Projet : </h2>
-            <a href="{% url 'projets:dashboard' tache.projet.pk %}" class="text-cyan-500 hover:text-cyan-600">
-                {{ tache.projet.nom }}
-            </a>  
+              <span>Projet : </span>
+                <a href="{% url 'projets:dashboard' tache.projet.pk %}" class="text-cyan-500 hover:text-cyan-600">
+                    {{ tache.projet.nom }}
+                </a>  
              </div>
-            
         </div>
-        
-        <div class="flex gap-2">
+        <div class="flex gap-2 mb-4">
             <a href="{% url 'projets:liste_taches' %}" 
                class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg flex items-center transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i> Retour
@@ -43,8 +45,9 @@
             <!-- <a href="{% url 'projets:modifier_tache' tache.pk %}" 
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
                 <i class="fas fa-edit mr-2"></i> Modifier
-            </a> -->
+            </a>  -->
         </div>
+        
     </div>
 
     <!-- Grille principale -->

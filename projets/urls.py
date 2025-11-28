@@ -101,7 +101,7 @@ urlpatterns = [
     path('fichier_suivi/<int:fichier_id>/afficher/', views.afficher_fichier_suivi, name='afficher_fichier_suivi'),
     path('fichier_suivi/<int:fichier_id>/telecharger/', views.telecharger_fichier_suivi, name='telecharger_fichier_suivi'),
     path('fichier_suivi/<int:fichier_id>/supprimer/', views.supprimer_fichier_suivi, name='supprimer_fichier_suivi'),
-    path('projet/<int:projet_id>/suivi/<int:suivi_id>/fichiers/ajouter/', views.ajouter_fichier_suivi, name='ajouter_fichiers_suivi'),
+    path('projet/<int:projet_id>/suivi/<int:suivi_id>/fichiers/ajouter/', views.ajouter_fichier_suivi, name='ajouter_fichier_suivi'),
     
     # API pour lister les taches 
     path('api/get-form-data/', views.get_form_data, name='get_form_data'),
@@ -122,6 +122,7 @@ urlpatterns = [
     path('attachements/<int:attachement_id>/ajouter_decompte/', views.attachements_ajouter_decompte, name='attachements_ajouter_decompte'),
     path('attachement/<int:attachement_id>/validation/', views.validation_attachement, name='validation_attachement'),
     path('attachement/<int:attachement_id>/reouvrir/', views.reouvrir_attachement, name='reouvrir_attachement'),
+    path('attachement/<int:attachement_id>/transmettre-validation/', views.transmettre_validation_attachement, name='transmettre_validation_attachement'),
         
     # Décomptes
     path('projet/<int:projet_id>/decomptes/', views.liste_decomptes, name='liste_decomptes'),
@@ -142,6 +143,7 @@ urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/notifier/', views.notifier_ordre_service, name='notifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', views.annuler_ordre_service, name='annuler_ordre_service'),
     path('api/projets/<int:projet_id>/jours-decoules/', views.api_jours_decoules, name='api_jours_decoules'),
+     
  ] 
 
 

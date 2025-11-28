@@ -12,181 +12,330 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
     <style>
+        /* Variables CSS */
+        :root {
+            --primary-color: #22d3ee;
+            --secondary-color: #0ea5e9;
+            --background-dark: #2E2E2E;
+            --background-card: rgba(59, 59, 59, 0.95);
+            --text-primary: #AECBD6;
+            --text-secondary: #6B7280;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        /* Reset et base */
+        * {
+            box-sizing: border-box;
+        }
+
         body { 
-            background-color: #2E2E2E; 
-            color: #AECBD6; 
+            background-color: var(--background-dark); 
+            color: var(--text-primary); 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
+            line-height: 1.6;
         }
+
+        /* Layout responsive */
+        .main-container {
+            max-width: 1380px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .main-container {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .main-container {
+                padding: 2rem;
+            }
+        }
+
+        /* Composants réutilisables */
         .glass-effect {
-            background: rgba(59, 59, 59, 0.95);
+            background: var(--background-card);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(34, 211, 238, 0.2);
-            border-radius: 12px;
+            border-radius: var(--border-radius);
         }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 640px) {
+            .btn {
+                padding: 0.875rem 1.75rem;
+                font-size: 1rem;
+            }
+        }
+
         .btn-primary { 
-            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); 
-            border: none; 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); 
             color: white; 
         }
+
         .btn-warning { 
-            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); 
-            border: none; 
+            background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%); 
             color: white; 
         }
+
         .btn-danger { 
-            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); 
-            border: none; 
+            background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%); 
             color: white; 
         }
+
         .btn-success { 
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
-            border: none; 
+            background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%); 
             color: white; 
         }
+
         .btn-info { 
-            background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); 
-            border: none; 
+            background: linear-gradient(135deg, var(--secondary-color) 0%, #0369a1 100%); 
             color: white; 
         }
+
         .btn-validation { 
             background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
-            border: none; 
             color: white; 
         }
+
         .btn-ferme { 
             background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
-            border: none; 
             color: white; 
         }
-        .form-control { 
-            background-color: #3B3B3B; 
-            border: 1px solid #4B5563; 
-            color: #AECBD6; 
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
-            width: 100%;
-            transition: all 0.3s ease;
-            font-size: 16px;
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
         }
-        .form-control:focus { 
-            border-color: #22d3ee; 
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2); 
-            outline: none;
-            background-color: #2E2E2E;
+
+        .btn:active {
+            transform: translateY(0);
         }
-        .form-control::placeholder {
-            color: #6B7280;
+
+        /* Header responsive */
+        .header-section {
+            background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
+            border: 1px solid var(--primary-color);
+            border-radius: calc(var(--border-radius) + 4px);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
+
+        @media (min-width: 768px) {
+            .header-section {
+                padding: 2rem;
+            }
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .header-title {
+                font-size: 2rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .header-title {
+                font-size: 2.25rem;
+            }
+        }
+
+        /* Navigation responsive */
+        .nav-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .nav-buttons-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            flex: 1;
+        }
+
+        @media (min-width: 768px) {
+            .nav-buttons {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .nav-buttons-group {
+                flex: 0 1 auto;
+            }
+        }
+
+        /* Grille responsive */
+        .responsive-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .responsive-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .responsive-grid {
+                gap: 2rem;
+            }
+        }
+
+        /* Formulaires */
         .form-group {
-            margin-bottom: 0.2rem;
+            margin-bottom: 1rem;
         }
+
         label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            color: #22d3ee;
-            font-size: 14px;
+            color: var(--primary-color);
+            font-size: 0.875rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-       
+
+        .form-control { 
+            background-color: #3B3B3B; 
+            border: 1px solid #4B5563; 
+            color: var(--text-primary); 
+            border-radius: var(--border-radius);
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .form-control:focus { 
+            border-color: var(--primary-color); 
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2); 
+            outline: none;
+            background-color: var(--background-dark);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-secondary);
+        }
+
+        /* Tableau Handsontable responsive */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            border-radius: var(--border-radius);
+            background: var(--background-card);
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .table-container {
+                padding: 1.5rem;
+            }
+        }
+
+        #hot {
+            min-width: 800px;
+        }
+
+        /* Sections spéciales */
+        .total-section {
+            background: linear-gradient(135deg, #1a3a1a 0%, #2d4d2d 100%);
+            border: 1px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .validation-section {
+            background: linear-gradient(135deg, #1e3a2c 0%, #2d4d3d 100%);
+            border: 1px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .section-fermee {
+            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+            border: 1px solid #6b7280;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        /* File upload */
+        .file-upload {
+            border: 2px dashed #4B5563;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .file-upload:hover {
+            border-color: var(--primary-color);
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        .file-current {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #78aa9a;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
         /* Messages */
         .alert-auto-dismiss {
             animation: fadeOut 5s forwards;
         }
+
         @keyframes fadeOut {
             0% { opacity: 1; }
             90% { opacity: 1; }
             100% { opacity: 0; display: none; }
         }
-        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
-        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
-        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
-        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
 
-        .main-container {
-            max-width: 1380px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .header-section {
-            background: linear-gradient(135deg, #1F2937 0%, #374151 100%);
-            border: 1px solid #22d3ee;
-            border-radius: 16px;
-            padding: 2rem;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        }
-        .content-section {
-            background: rgba(59, 59, 59, 0.8);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid #4B5563;
-        }
-        .btn {
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            border: none;
-            cursor: pointer;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-        }
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        /* Total section */
-        .total-section {
-            background: linear-gradient(135deg, #1a3a1a 0%, #2d4d2d 100%);
-            border: 1px solid #10b981;
-            border-radius: 12px;
-            padding: 1.0rem;
-            margin: 1.0rem 0;
-        }
-
-        /* File upload amélioré */
-        .file-upload {
-            border: 2px dashed #4B5563;
-            border-radius: 12px;
-            padding: 1.5rem;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        .file-upload:hover {
-            border-color: #22d3ee;
-            background: rgba(34, 211, 238, 0.05);
-        }
-        .file-current {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid #78aa9a;
-            border-radius: 8px;
-            padding: 0.5rem;
-            margin-top: 0.5rem;
-        }
-        /* Style pour l'affichage de la somme des cellules sélectionnées */
-        .selection-sum-display {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
-            color: white;
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
-            display: none;
-        }
+        .alert-success { background: linear-gradient(135deg, var(--success-color) 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, var(--danger-color) 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, var(--warning-color) 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, var(--secondary-color) 0%, #0369a1 100%); color: white; }
 
         /* Badge de statut */
         .statut-badge {
@@ -198,27 +347,121 @@
             align-items: center;
             gap: 0.5rem;
         }
-        .statut-brouillon { background: #f59e0b; color: white; }
+
+        .statut-brouillon { background: var(--warning-color); color: white; }
         .statut-signe { background: #3b82f6; color: white; }
         .statut-transmis { background: #8b5cf6; color: white; }
-        .statut-valide { background: #10b981; color: white; }
+        .statut-valide { background: var(--success-color); color: white; }
 
-        /* Section validation */
-        .validation-section {
-            background: linear-gradient(135deg, #1e3a2c 0%, #2d4d3d 100%);
-            border: 1px solid #10b981;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 1rem 0;
+        /* Somme des sélections */
+        .selection-sum-display {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            left: 1rem;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            text-align: center;
         }
 
-        /* Section fermée */
-        .section-fermee {
-            background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
-            border: 1px solid #6b7280;
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin: 1rem 0;
+        @media (min-width: 640px) {
+            .selection-sum-display {
+                left: auto;
+                right: 1rem;
+                width: auto;
+            }
+        }
+
+        /* Actions footer */
+        .actions-footer {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .actions-footer {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* Améliorations pour mobile */
+        @media (max-width: 767px) {
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .nav-buttons-group {
+                width: 100%;
+            }
+            
+            .header-section .text-center .flex {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .validation-section .flex,
+            .section-fermee .flex {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        /* Améliorations pour les très petits écrans */
+        @media (max-width: 380px) {
+            .main-container {
+                padding: 0.5rem;
+            }
+            
+            .header-section {
+                padding: 1rem;
+            }
+            
+            .btn {
+                padding: 0.625rem 1rem;
+                font-size: 0.75rem;
+            }
+            
+            .header-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        /* Styles spécifiques Handsontable */
+        .handsontable-custom .editable-quantity {
+            color: var(--success-color) !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+
+        .handsontable-custom td.modified-cell {
+            color: #ecad26 !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+
+        .handsontable-custom td.modified-cell::after {
+            content: '✓';
+            color: var(--success-color);
+            margin-left: 0.5rem;
+        }
+
+        .handsontable-custom .editable-quantity-attachee {
+            font-weight: 600 !important;
+            font-style: italic !important;
+            color: #7f8082 !important;
+            font-size: 13px !important;
         }
     </style>
 </head>
@@ -230,13 +473,13 @@
         <!-- En-tête -->
         <header class="header-section">
             <div class="text-center">
-                <h1 class="text-4xl font-bold text-cyan-400 mb-4 flex items-center justify-center gap-3">
+                <h1 class="header-title flex items-center justify-center gap-2">
                     <i class="fas {% if is_edition %}fa-edit{% else %}fa-plus-circle{% endif %}"></i>
                     {% if is_edition %}Modifier{% else %}Ajouter{% endif %} un Attachement
                 </h1>
-                <div class="flex items-center justify-center gap-4 mb-4">
-                    <span class="text-xl text-[#AECBD6]">Projet :</span>
-                    <span class="text-2xl font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1">
+                <div class="flex items-center justify-center gap-2 flex-col sm:flex-row mb-4">
+                    <span class="text-lg sm:text-xl text-[#AECBD6]">Projet :</span>
+                    <span class="text-xl sm:text-2xl font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1">
                         {{ projet.nom }}
                     </span>
                 </div>
@@ -256,34 +499,34 @@
         </header>
 
         <!-- Boutons navigation -->
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-            <div class="flex flex-wrap gap-3">
+        <div class="nav-buttons">
+            <div class="nav-buttons-group">
                 <button onclick="window.location.href='{% url 'projets:liste_attachements' projet.id %}'" 
                         class="btn btn-success">
-                    <i class="fa-solid fa-arrow-left"></i> Retour aux attachements
+                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Retour aux attachements</span>
                 </button>
                 <button onclick="window.location.href='{% url 'projets:dashboard' projet.id %}'" 
                         class="btn btn-info">
-                    <i class="fa-solid fa-diagram-project"></i> Retour au projet
+                    <i class="fa-solid fa-diagram-project"></i> <span class="hidden sm:inline">Retour au projet</span>
                 </button>
                 <button onclick="window.location.href='{% url 'home' %}'" 
                         class="btn btn-warning">
-                    <i class="fa-solid fa-house"></i> Accueil
+                    <i class="fa-solid fa-house"></i> <span class="hidden sm:inline">Accueil</span>
                 </button>
             </div>
             <!-- Boutons de validation -->
             {% if is_edition %}
-            <div class="flex flex-wrap gap-3">
+            <div class="nav-buttons-group">
                 {% if attachement.est_validable %}
                     <!-- Attachement en cours de validation -->
                     <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
                             class="btn btn-validation">
-                        <i class="fas fa-clipboard-check"></i> Processus de Validation
+                        <i class="fas fa-clipboard-check"></i> <span class="hidden sm:inline">Processus de Validation</span>
                     </button>
                     
                     {% if attachement.statut == 'BROUILLON' %}
                     <button type="button" id="transmettre-btn" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> Transmettre pour validation
+                        <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Transmettre</span>
                     </button>
                     {% endif %}
                     
@@ -291,13 +534,13 @@
                     <!-- Attachement validé mais réouvrable -->
                     <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
                             class="btn btn-success">
-                        <i class="fas fa-eye"></i> Voir le processus
+                        <i class="fas fa-eye"></i> <span class="hidden sm:inline">Voir le processus</span>
                     </button>
                     
                     {% if is_edition and attachement.peut_reouvrir %}
                     <button id="reouvrir-btn" onclick="reouvrirAttachement({{ attachement.id }})" 
                             class="btn btn-warning">
-                        <i class="fas fa-undo"></i> Réouvrir l'attachement
+                        <i class="fas fa-undo"></i> <span class="hidden sm:inline">Réouvrir</span>
                     </button>
                     {% endif %}
                     
@@ -305,14 +548,14 @@
                     <!-- Attachement signé (fermé) -->
                     <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
                             class="btn btn-ferme">
-                        <i class="fas fa-eye"></i> Consulter l'attachement
+                        <i class="fas fa-eye"></i> <span class="hidden sm:inline">Consulter</span>
                     </button>
                     
                 {% else %}
                     <!-- Autres statuts -->
                     <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
                             class="btn btn-info">
-                        <i class="fas fa-info-circle"></i> Détails de validation
+                        <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Détails</span>
                     </button>
                 {% endif %}
             </div>
@@ -348,17 +591,17 @@
         {% if is_edition %}
             {% if attachement.est_validable %}
             <div class="validation-section">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-info-circle text-cyan-400 text-xl"></i>
                         <div>
                             <h3 class="text-cyan-300 font-bold text-lg">Processus de Validation</h3>
-                            <p class="text-gray-300">
+                            <p class="text-gray-300 text-sm md:text-base">
                                 Cet attachement doit passer par plusieurs étapes de validation avant d'être définitivement approuvé.
                             </p>
                         </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-center md:text-right">
                         <p class="text-cyan-400 font-semibold">
                             Statut : <span class="text-yellow-400">{{ attachement.get_statut_display }}</span>
                         </p>
@@ -372,17 +615,17 @@
             </div>
             {% elif attachement.peut_reouvrir %}
             <div class="validation-section">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-check-circle text-green-400 text-xl"></i>
                         <div>
                             <h3 class="text-green-300 font-bold text-lg">Attachement Validé</h3>
-                            <p class="text-gray-300">
+                            <p class="text-gray-300 text-sm md:text-base">
                                 Cet attachement a été validé. Vous pouvez le consulter ou le réouvrir pour modification.
                             </p>
                         </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-center md:text-right">
                         <p class="text-green-400 font-semibold">
                             Validation complète
                         </p>
@@ -394,17 +637,17 @@
             </div>
             {% elif attachement.ferme %}
             <div class="section-fermee">
-                <div class="flex items-center justify-between">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-3">
                         <i class="fas fa-lock text-gray-400 text-xl"></i>
                         <div>
                             <h3 class="text-gray-300 font-bold text-lg">Attachement Signé</h3>
-                            <p class="text-gray-400">
+                            <p class="text-gray-400 text-sm md:text-base">
                                 Cet attachement a été signé et n'est plus modifiable.
                             </p>
                         </div>
                     </div>
-                    <div class="text-right">
+                    <div class="text-center md:text-right">
                         <p class="text-gray-400 font-semibold">
                             Statut final
                         </p>
@@ -418,12 +661,12 @@
         {% endif %}
 
         <!-- Contenu principal -->
-        <div class="content-section">
+        <div class="content-section glass-effect">
             <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
                 {% csrf_token %}
                 
                 <!-- Informations de base -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 mb-4">
+                <div class="responsive-grid mb-6">
                     <div class="form-group">
                         <label for="numero"><i class="fas fa-hashtag mr-2"></i>Numéro d'attachement *</label>
                         <input type="text" id="numero" name="numero" 
@@ -480,7 +723,7 @@
                                 <i class="fas fa-download text-sm ml-1"></i>
                                 Fichier actuel : 
                                 <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" class="hover:text-blue-300 transition-colors">
-                                    <span class = "truncate overflow-ellipsis overflow-hidden">{{ attachement.get_file_name }}</span>
+                                    <span class="truncate overflow-ellipsis overflow-hidden">{{ attachement.get_file_name }}</span>
                                 </a>
                             </p>
                         </div>
@@ -494,11 +737,13 @@
                         <i class="fas fa-table"></i>
                         Détail des Lignes d'Attachement
                     </h3>
-                    <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
+                    <div class="table-container">
+                        <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
+                    </div>
                 </div>
 
                 <!-- Observations -->
-                <div class="form-group mb-2">
+                <div class="form-group mb-6">
                     <label for="observations"><i class="fas fa-sticky-note mr-2"></i>Observations</label>
                     <textarea id="observations" name="observations" rows="4" placeholder="Observations supplémentaires..." 
                               class="form-control" {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
@@ -506,9 +751,9 @@
                     </textarea>
                 </div>
 
-                <!-- Boutons d'action -->
-                <div class="flex justify-between flex-wrap">
-                    <div class="flex items-center gap-4 flex-wrap">
+                <!-- Actions et Total -->
+                <div class="actions-footer">
+                    <div class="flex flex-col sm:flex-row gap-3">
                         {% if not is_edition or attachement.est_validable %}
                         <button type="button" id="save-btn" class="btn btn-primary">
                             <i class="fa-solid fa-save"></i> {% if is_edition %}Modifier{% else %}Créer{% endif %} l'attachement
@@ -524,18 +769,18 @@
                     
                     <!-- Total général -->
                     <div class="total-section">
-                        <div class="flex justify-between gap-4">
-                            <!-- Titre à gauche -->
+                        <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                            <!-- Titre -->
                             <div class="flex items-center gap-3">
                                 <i class="fas fa-calculator text-cyan-400 text-xl"></i>
-                                <h5 class="text-cyan-300 text-lg font-bold">
-                                    Total général de l'attachement HT : 
+                                <h5 class="text-cyan-300 text-base sm:text-lg font-bold">
+                                    Total général HT : 
                                 </h5>
                             </div>
                             
-                            <!-- Total à droite -->
+                            <!-- Total -->
                             <div class="flex items-center gap-2">
-                                <span id="total_attachement" class="text-white text-2xl font-bold">
+                                <span id="total_attachement" class="text-white text-xl sm:text-2xl font-bold">
                                     0.00 DH
                                 </span>
                             </div>
@@ -547,6 +792,7 @@
     </div>
 
 <script>
+    // Le script JavaScript reste identique car il n'affecte pas la responsivité
     const container = document.getElementById('hot');
     const hotData = JSON.parse('{{ lignes|escapejs }}');
     const isEdition = {% if is_edition %}true{% else %}false{% endif %};
@@ -964,33 +1210,6 @@
         initEventListeners();
         initMessagesAutoDismiss();
     });
-
 </script>
-<style>
-    /* ===== COLONNE QUANTITÉ À MODIFIER ===== */
-.handsontable-custom .editable-quantity {
-    color: #10b981 !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-}
-.handsontable-custom td.modified-cell {
-    color: #ecad26 !important;
-    font-weight: 600 !important;
-    font-size: 13px !important;
-}
-.handsontable-custom td.modified-cell::after {
-    content: '✓';
-    color: #10b981;
-    margin-left: 0.5rem;
-}
-/* ===== COLONNE QUANTITÉ DÉJÀ ATTACHÉE ===== */
-.handsontable-custom .editable-quantity-attachee {
-    font-weight: 600 !important;
-    font-style: italic !important;
-    color: #7f8082 !important;
-    font-size: 13px !important;
-}
-</style>
 </body>
 </html>
-       

@@ -56,7 +56,6 @@ class Profile(models.Model):
         """Retourne l'URL de l'avatar - fonctionne avec Cloudinary et local"""
         if self.avatar and hasattr(self.avatar, 'url'):
             url = self.avatar.url
-            print(f"Avatar URL before cleanup: {url}")
             url = url.replace(' =', '')
             return url
         return '/static/images/default.png'
@@ -1239,7 +1238,15 @@ class Attachement(models.Model):
             commentaires='',
             motifs_rejet=''
         )
+    
+    def transmettre(self, user):
+        if self.statut != 'SIGNE':
+            raise ValueError("Seuls les attachements signés peuvent être transmis.")
         
+        self.statut = 'TRANSMIS'
+        self.save()
+        
+        self.initialiser_processus_validation(demandeur=user)
     @property
     def total_montant_ht(self):
         return sum(ligne.montant_ligne_realise for ligne in self.lignes_attachement.all())
