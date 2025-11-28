@@ -123,7 +123,14 @@ urlpatterns = [
     path('attachement/<int:attachement_id>/validation/', views.validation_attachement, name='validation_attachement'),
     path('attachement/<int:attachement_id>/reouvrir/', views.reouvrir_attachement, name='reouvrir_attachement'),
     path('attachement/<int:attachement_id>/transmettre-validation/', views.transmettre_validation_attachement, name='transmettre_validation_attachement'),
-        
+    path('attachement/<int:attachement_id>/validation_technique/', views.validation_technique_attachement, name='validation_technique_attachement'),
+    path('etape/<int:etape_id>/valider/', views.valider_etape, name='valider_etape'),
+    path('etape/<int:etape_id>/passer/', views.passer_etape, name='passer_etape'),
+    path('etape/<int:etape_id>/modifier/',  views.modifier_etape, name='modifier_etape'),
+    path('etape/<int:etape_id>/reinitialiser/', views.reinitialiser_etape,  name='reinitialiser_etape'),
+    path('etape/<int:etape_id>/supprimer/', views.supprimer_etape, name='supprimer_etape'),
+    path('processus/<int:process_id>/ajouter_etape/', views.ajouter_etape, name='ajouter_etape'),
+    
     # Décomptes
     path('projet/<int:projet_id>/decomptes/', views.liste_decomptes, name='liste_decomptes'),
     path('projet/<int:projet_id>/decomptes/ajouter/', views.projet_ajouter_decompte, name='projet_ajouter_decompte'),

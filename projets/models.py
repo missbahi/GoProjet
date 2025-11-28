@@ -1416,14 +1416,15 @@ class ProcessValidation(models.Model):
         return self.statut_validation == 'VALIDE'
     
     def verifier_etapes_validation(self):
-        toutes_valides = self.etapes.filter(is_validated=False).count() == 0
+        toutes_valides = self.etapes.filter(est_validee=False).count() == 0
         return toutes_valides
             
     def valider(self, user, commentaires="", fichier=None):
         if not self.peut_etre_valide_par(user):
             raise PermissionError("Cet utilisateur ne peut pas valider cette étape")
         if not self.verifier_etapes_validation():
-            raise ValueError("Toutes les étapes de validation doivent être validées avant de valider cet attachement")
+            return False
+            #raise ValueError("Toutes les étapes de validation doivent être validées avant de valider cet attachement")
         
         self.statut_validation = 'VALIDE'
         self.validateur = user
@@ -1431,6 +1432,7 @@ class ProcessValidation(models.Model):
         if fichier:
             self.fichier_validation = fichier
         self.save()
+        return True
 
     def rejeter(self, user, motifs, fichier=None):
         if not self.peut_etre_valide_par(user):
@@ -1467,7 +1469,7 @@ class ProcessValidation(models.Model):
     def initier_etapes_techniques_par_defaut(self):
         etapes_standardes = [
             ('Validation du levé topographique', 1),
-            ('Vérification des plans d\'eattachement', 2),
+            ('Vérification des plans d\'attachement', 2),
             ('Agrément des matériaux par le laboratoire', 3),
             ('Contrôle des travaux par le laboratoire', 4),
             ('Vérification du métré sur site', 5),

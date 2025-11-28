@@ -17,7 +17,7 @@ from projets.decorators import chef_projet_required, superuser_required
 from projets.manager import BordereauTreeManager
 
 from .forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
-from .models import Attachement, Decompte, Entreprise, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
+from .models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
 from .models import  LotProjet, LigneAttachement, LigneBordereau, Client, DocumentAdministratif, Tache
 from .models import Attachement, ProcessValidation
 
@@ -2319,6 +2319,250 @@ def reouvrir_attachement(request, attachement_id):
     
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 
+
+@login_required
+def validation_technique_attachement(request, attachement_id):
+    """Affiche la page de validation technique"""
+    attachement = get_object_or_404(Attachement, id=attachement_id)
+    validation_technique = attachement.validations.filter(type_validation='TECHNIQUE').first()
+    
+    if not validation_technique:
+        messages.error(request, "Aucun processus de validation technique trouvé.")
+        return redirect('projets:modifier_attachement', attachement_id=attachement_id)
+    
+    etapes = validation_technique.etapes.all().order_by('ordre')
+    
+    context = {
+        'attachement': attachement,
+        'validation_technique': validation_technique,
+        'etapes': etapes,
+        'peut_valider': validation_technique.peut_etre_valide_par(request.user),
+    }
+    return render(request, 'projets/decomptes/validation_technique_attachement.html', context)
+
+# views.py
+@login_required
+def ajouter_etape(request, process_id):
+    """Ajoute une nouvelle étape au processus de validation"""
+    try:
+        process_validation = ProcessValidation.objects.get(id=process_id)
+        attachement_id = process_validation.attachement.id
+        
+        # Vérifications de sécurité
+        if not process_validation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+        
+        if request.method == 'POST':
+            nom = request.POST.get('nom')
+            obligatoire = request.POST.get('obligatoire') == 'true'
+            commentaire = request.POST.get('commentaire', '')
+            
+            if not nom:
+                messages.error(request, "❌ Le nom de l'étape est obligatoire.")
+                return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+            
+            # Déterminer le prochain ordre
+            dernier_ordre = process_validation.etapes.aggregate(models.Max('ordre'))['ordre__max']
+            nouvel_ordre = (dernier_ordre or 0) + 1
+            
+            # Créer la nouvelle étape
+            nouvelle_etape = EtapeValidation.objects.create(
+                processValidation=process_validation,
+                nom=nom,
+                ordre=nouvel_ordre,
+                obligatoire=obligatoire,
+                commentaire=commentaire
+            )
+            
+            messages.success(request, f"✅ Nouvelle étape '{nom}' ajoutée avec succès !")
+            return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+        
+    except ProcessValidation.DoesNotExist:
+        messages.error(request, "❌ Processus de validation non trouvé.")
+        return redirect('projets:liste_attachements')
+    
+    return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+
+@login_required
+def valider_etape(request, etape_id):
+    """Valide une étape spécifique"""
+    try:
+        etape = EtapeValidation.objects.get(id=etape_id)
+        
+        # Vérification des permissions
+        if not etape.processValidation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect_to_attachement(etape)
+        
+        if request.method == 'POST':
+            commentaire = request.POST.get('commentaire', '')
+            
+            # ✅ UTILISATION DE VOTRE MÉTHODE valider()
+            etape.valider(request.user, commentaire)
+            messages.success(request, f"✅ Étape '{etape.nom}' validée avec succès !")
+        
+    except EtapeValidation.DoesNotExist:
+        messages.error(request, "❌ Étape de validation non trouvée.")
+        return redirect('projets:liste_attachements')
+    
+    return redirect_to_attachement(etape)
+
+@login_required
+def passer_etape(request, etape_id):
+    """Passe une étape optionnelle"""
+    try:
+        etape = EtapeValidation.objects.get(id=etape_id)
+        
+        # Vérifications
+        if not etape.processValidation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect_to_attachement(etape)
+        
+        if etape.obligatoire:
+            messages.error(request, "❌ Impossible de passer une étape obligatoire.")
+            return redirect_to_attachement(etape)
+        
+        if request.method == 'POST':
+            commentaire = request.POST.get('commentaire', '')
+            
+            # Marquer comme validée sans la logique métier complète
+            etape.est_validee = True
+            etape.valide_par = request.user
+            etape.date_validation = timezone.now()
+            etape.commentaire = commentaire if commentaire else "Étape passée"
+            etape.save()
+            
+            messages.warning(request, f"⚠️ Étape '{etape.nom}' passée.")
+        
+    except EtapeValidation.DoesNotExist:
+        messages.error(request, "❌ Étape de validation non trouvée.")
+        return redirect('projets:liste_attachements')
+    
+    return redirect_to_attachement(etape)
+
+# views.py
+@login_required
+def modifier_etape(request, etape_id):
+    """Modifie une étape non validée"""
+    try:
+        etape = EtapeValidation.objects.get(id=etape_id)
+        
+        # Vérifications
+        if not etape.processValidation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect_to_attachement(etape)
+        
+        if etape.est_validee:
+            messages.error(request, "❌ Impossible de modifier une étape déjà validée.")
+            return redirect_to_attachement(etape)
+        
+        if request.method == 'POST':
+            nouveau_nom = request.POST.get('nom')
+            nouveau_commentaire = request.POST.get('commentaire', '')
+            nouvelle_obligatoire = request.POST.get('obligatoire') == 'true'
+            
+            if nouveau_nom:
+                etape.nom = nouveau_nom
+            etape.commentaire = nouveau_commentaire
+            etape.obligatoire = nouvelle_obligatoire
+            etape.save()
+            
+            messages.success(request, f"✏️ Étape '{etape.nom}' modifiée avec succès.")
+            return redirect_to_attachement(etape)
+        
+    except EtapeValidation.DoesNotExist:
+        messages.error(request, "❌ Étape non trouvée.")
+    
+    return redirect_to_attachement(etape)
+
+@login_required
+def reinitialiser_etape(request, etape_id):
+    """Réinitialise une étape validée pour reprendre le processus"""
+    try:
+        etape = EtapeValidation.objects.get(id=etape_id)
+        
+        # Vérifications
+        if not etape.processValidation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect_to_attachement(etape)
+        
+        if not etape.est_validee:
+            messages.warning(request, "ℹ️ Cette étape n'est pas encore validée.")
+            return redirect_to_attachement(etape)
+        
+        # Réinitialiser l'étape
+        etape.est_validee = False
+        etape.valide_par = None
+        etape.date_validation = None
+        etape.save()
+        
+        # Réinitialiser aussi les étapes suivantes
+        etapes_suivantes = etape.processValidation.etapes.filter(ordre__gt=etape.ordre)
+        etapes_suivantes.update(
+            est_validee=False,
+            valide_par=None,
+            date_validation=None
+        )
+        
+        messages.warning(request, f"🔄 Étape '{etape.nom}' réinitialisée. Le processus a repris depuis cette étape.")
+        
+    except EtapeValidation.DoesNotExist:
+        messages.error(request, "❌ Étape non trouvée.")
+    
+    return redirect_to_attachement(etape)
+
+# views.py
+@login_required
+def supprimer_etape(request, etape_id):
+    """Supprime une étape de validation"""
+    try:
+        etape = EtapeValidation.objects.get(id=etape_id)
+        process_validation = etape.processValidation
+        attachement_id = process_validation.attachement.id
+        
+        # Vérifications de sécurité
+        if not process_validation.peut_etre_valide_par(request.user):
+            messages.error(request, "❌ Permission refusée.")
+            return redirect_to_attachement(etape)
+        
+        # Empêcher la suppression si l'étape est validée
+        if etape.est_validee:
+            messages.error(request, "❌ Impossible de supprimer une étape déjà validée.")
+            return redirect_to_attachement(etape)
+        
+        # Empêcher la suppression si c'est la seule étape
+        total_etapes = process_validation.etapes.count()
+        if total_etapes <= 1:
+            messages.error(request, "❌ Impossible de supprimer la dernière étape du processus.")
+            return redirect_to_attachement(etape)
+        
+        # Sauvegarder le nom pour le message
+        nom_etape = etape.nom
+        
+        # Supprimer l'étape
+        etape.delete()
+        
+        # Réorganiser l'ordre des étapes restantes
+        etapes_restantes = process_validation.etapes.order_by('ordre')
+        for index, etape_restante in enumerate(etapes_restantes, start=1):
+            if etape_restante.ordre != index:
+                etape_restante.ordre = index
+                etape_restante.save()
+        
+        messages.success(request, f"🗑️ Étape '{nom_etape}' supprimée avec succès.")
+        
+    except EtapeValidation.DoesNotExist:
+        messages.error(request, "❌ Étape non trouvée.")
+    
+    return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+
+def redirect_to_attachement(etape):
+    """Redirige vers l'attachement parent de l'étape"""
+    return redirect('projets:validation_technique_attachement', 
+                   attachement_id=etape.processValidation.attachement.id)
+
+@login_required
 def transmettre_validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     
