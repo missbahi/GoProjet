@@ -17,7 +17,7 @@ urlpatterns = [
     path('projets/', views.liste_projets, name='liste_projets'),
     path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
     
-    path('projet/<int:projet_id>/modifier/', views.modifier_projet, name='modifier_projet'),
+    # path('projet/<int:projet_id>/modifier/', views.modifier_projet, name='modifier_projet'),
     path('projet/<int:projet_id>/supprimer/', views.supprimer_projet, name='supprimer_projet'),
     
     path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),

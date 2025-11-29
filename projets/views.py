@@ -441,7 +441,8 @@ def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
     sort_order = request.GET.get('order', 'asc')
-    if request.user.is_superuser:
+    can_handler = request.user.is_superuser
+    if can_handler:
         # Superuser voit tous les projets
         projets = Projet.objects.all().order_by('nom')
     else:
@@ -478,6 +479,7 @@ def liste_projets(request):
             projets = projets.order_by(order_field)
     
     context = {
+        'can_handler': can_handler,
         'projets': projets,
         'notification_types': Notification.TYPE_NOTIFICATION,
         'search_term': search_term,  # Pour l'affichage dans le template
@@ -559,7 +561,7 @@ def modifier_projet_modal(request, projet_id):
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
 @chef_projet_required
-def modifier_projet(request, projet_id):
+def modifier_projet11(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
     if request.method == 'POST':
@@ -622,6 +624,39 @@ class ListeTachesView(LoginRequiredMixin, ListView):
     model = Tache
     template_name = 'projets/taches/liste_taches.html'
     context_object_name = 'taches'
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Tache.objects.select_related('projet', 'responsable')
+        
+        # Filtrage simple : superuser voit tout, sinon seulement les tâches de ses projets
+        if not user.is_superuser:
+            queryset = queryset.filter(projet__users=user)
+        
+        # Application des filtres
+        filters = {
+            'responsable_id': self.request.GET.get('responsable'),
+            'terminee': {'true': True, 'false': False}.get(self.request.GET.get('terminee')),
+            'priorite': self.request.GET.get('priorite')
+        }
+        
+        return queryset.filter(**{k: v for k, v in filters.items() if v is not None})
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Responsables : superuser voit tous, sinon seulement les utilisateurs de ses projets
+        if user.is_superuser:
+            context['responsables'] = User.objects.filter(tache__isnull=False).distinct()
+        else:
+            context['responsables'] = User.objects.filter(projets__in=user.projets.all()).distinct()
+        
+        return context
+class ListeTachesView1(LoginRequiredMixin, ListView):
+    model = Tache
+    template_name = 'projets/taches/liste_taches.html'
+    context_object_name = 'taches'
     queryset = Tache.objects.select_related('projet', 'responsable')
 
     def get_queryset(self):
@@ -643,9 +678,18 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         ).distinct().order_by('username')
         return context
 def get_form_data(request):
-    projets = Projet.objects.values('id', 'nom')
-    responsables = User.objects.values('id', 'username')
-    
+    user = request.user
+    # Récupérer les projets et utilisateurs liés à l'utilisateur connecté
+    if user.is_superuser:
+        # Superutilisateur voit tous les projets et tous les utilisateurs
+        projets = Projet.objects.all().values('id', 'nom')
+        responsables = User.objects.all().values('id', 'username')
+    else:
+        # Utilisateur normal voit seulement ses projets
+        projets = user.projets.all().values('id', 'nom')
+        # Et seulement lui-même comme responsable possible
+        responsables = User.objects.filter(id=user.id).values('id', 'username')
+            
     # CORRECTION: Format explicite pour les priorités
     priorites = [
         {'value': value, 'label': label} 
@@ -900,7 +944,9 @@ def dashboard_projet(request, projet_id):
     decomptes_retard = decomptes.filter(statut='EN_RETARD').count()
     decomptes_recents = decomptes.order_by('-date_emission')[:5]  # 5 plus récents
     attachements = Attachement.objects.filter(projet=projet)
+    can_handler = request.user.is_superuser
     context = {
+        'can_handler': can_handler,
         'projet': projet,
         'lots': lots,
         'montant_total': mnt_txt,
@@ -952,7 +998,7 @@ def indent_node(request, lot_id, node_id):
         tree_manager = BordereauTreeManager(lot)
         success = tree_manager.indent_node(node_id)
         return JsonResponse({'success': success})
-@login_required
+
 def outdent_node(request, lot_id, node_id):
     """API pour outdenter un node"""
     if request.method == 'POST':
@@ -1480,6 +1526,7 @@ def supprimer_entreprise(request, entreprise_id):
     return redirect("projets:partial_entreprises")
 
 # ------  Lots ------
+@chef_projet_required
 def modifier_lot(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     
@@ -1500,10 +1547,12 @@ def modifier_lot(request, projet_id, lot_id):
         'projet_id': projet_id,
     }
     return render(request, 'projets/lots/modifier_lot.html', context)
+@chef_projet_required
 def supprimer_lot(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     lot.delete()
     return redirect('projets:lots_projet', projet_id=projet_id)
+@chef_projet_required
 def lots_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
 
@@ -1514,7 +1563,7 @@ def lots_projet(request, projet_id):
 
         return redirect('projets:lots_projet', projet_id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
-    # lots = projet.lots.all().order_by('id')
+
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
 
 # ------  Documents et Suivi ------
@@ -2318,7 +2367,6 @@ def reouvrir_attachement(request, attachement_id):
         messages.error(request, f"Erreur lors de la réouverture : {str(e)}")
     
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
-
 
 @login_required
 def validation_technique_attachement(request, attachement_id):

@@ -263,6 +263,7 @@
            class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
             <i class="fa-solid fa-house"></i> Accueil
         </a>
+        {% if can_handler %}
         <a href="#"
             hx-get="{% url 'projets:ajouter_projet_modal' %}"
             hx-target="#ajouterProjetModal-container"
@@ -270,6 +271,7 @@
             class="bg-[#2E2E2E] hover:bg-cyan-600 text-white rounded-lg border border-gray-600 px-4 py-2">
             <i class="fa-solid fa-plus"></i> <span>Ajouter un projet</span>
         </a>
+        {% endif %}
     </div>
     
     <!-- Barre de recherche -->

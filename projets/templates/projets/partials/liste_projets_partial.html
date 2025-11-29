@@ -87,6 +87,7 @@
                             title="Créer une notification">
                             <i class="fas fa-bell text-lg"></i>
                         </button>
+                        {% if can_handler %}
                         <button onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')" 
                             class="text-green-600 hover:text-green-900 p-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
                             title="Voir/modifier le projet">
@@ -98,6 +99,7 @@
                            title="Supprimer le projet">
                             <i class="fas fa-trash-alt text-lg"></i>
                         </a>
+                        {% endif %}
                     </div>
                 </td>
             </tr>

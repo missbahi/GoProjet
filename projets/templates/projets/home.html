@@ -109,6 +109,7 @@
                 <div class="mb-6">
                     <p class="text-xs uppercase text-green-400 font-semibold my-3">Paramètres</p>
                     <ul class="space-y-2 text-lg">
+                        {% if user.is_superuser %}
                         <li>
                             <a href="{% url 'projets:base_donnees' %}" 
                             class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
@@ -123,6 +124,7 @@
                                 <span>Administration</span>
                             </a>
                         </li>
+                        {% endif %}
                         <li>
                             <a href="{% url 'projets:apropos' %}" 
                             class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
@@ -179,6 +181,7 @@
                 <div class="mb-6">
                     <p class="text-xs uppercase text-green-400 font-semibold my-3">Paramètres</p>
                     <ul class="space-y-2 text-lg">
+                        {% if user.is_superuser %}
                         <li>
                             <a href="{% url 'projets:base_donnees' %}" 
                             class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
@@ -193,6 +196,7 @@
                                 <span>Administration</span>
                             </a>
                         </li>
+                        {% endif %}
                         <li>
                             <a href="{% url 'projets:apropos' %}" 
                             class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">

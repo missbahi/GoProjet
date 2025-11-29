@@ -344,7 +344,9 @@
       </h3>
       
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
+
         <!-- Lot et Bordereaux -->
+       {% if can_handler %}
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-cubes"></i>
@@ -358,6 +360,7 @@
             </a>
           </div>
         </div>
+        {% endif %}
 
         <!-- Documents -->
         <div class="module-card group">
@@ -448,6 +451,7 @@
         </div>
 
         <!-- Modification des informations -->
+         {% if can_handler %}
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-edit"></i>
@@ -463,6 +467,7 @@
             </button>
           </div>
         </div>
+        {% endif %}
       </div>
     </div>
 
