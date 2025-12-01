@@ -33,10 +33,10 @@ urlpatterns = [
     path('api/lot/<int:lot_id>/save/', views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
     
     # Gestion des nodes
-    path('lot/<int:lot_id>/node/<int:node_id>/toggle/', views.toggle_node, name='toggle_node'),
-    path('lot/<int:lot_id>/node/<int:node_id>/indent/', views.indent_node, name='indent_node'),
-    path('lot/<int:lot_id>/node/<int:node_id>/outdent/', views.outdent_node, name='outdent_node'),
-    path('lot/<int:lot_id>/node/<int:node_id>/children/', views.get_children, name='get_children'),
+    # path('lot/<int:lot_id>/node/<int:node_id>/toggle/', views.toggle_node, name='toggle_node'),
+    # path('lot/<int:lot_id>/node/<int:node_id>/indent/', views.indent_node, name='indent_node'),
+    # path('lot/<int:lot_id>/node/<int:node_id>/outdent/', views.outdent_node, name='outdent_node'),
+    # path('lot/<int:lot_id>/node/<int:node_id>/children/', views.get_children, name='get_children'),
     
     # Apropos et base de données
     path('apropos/', views.apropos, name='apropos'),

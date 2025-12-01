@@ -795,7 +795,7 @@ class LineBPU(Line):
         return None
     
     def __str__(self):
-        return f"{self.id} - {self.numero} - {self.designation} | {self.unite} | {self.quantite} | {self.pu} | {self.amount()}"
+        return f"{self.id} | {self.numero} | {self.designation} | {self.unite} | {self.quantite} | {self.pu} | {self.amount()}"
     
     def amount(self):
         if self.has_children():
@@ -1492,7 +1492,13 @@ class EtapeValidation(models.Model):
     valide_par = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     commentaire = models.TextField(blank=True)
     obligatoire = models.BooleanField(default=True)
-    
+        # Champ compatible Cloudinary
+    if getattr(settings, 'USE_CLOUDINARY', False):
+        from cloudinary.models import CloudinaryField
+        fichier_validation = CloudinaryField('raw', folder='validations_attachements_etapes', resource_type='raw', null=True, blank=True)
+    else:
+        fichier_validation = models.FileField(upload_to='validations_attachements_etapes/%Y/%m/', null=True, blank=True, verbose_name="Fichier de validation")
+
     class Meta:
         verbose_name = "Étape de validation"
         verbose_name_plural = "Étapes de validation"

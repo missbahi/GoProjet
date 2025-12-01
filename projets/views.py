@@ -14,7 +14,7 @@ from django.utils.translation import gettext as _
 from django.views import View
 
 from projets.decorators import chef_projet_required, superuser_required
-from projets.manager import BordereauTreeManager
+# from projets.manager import BordereauTreeManager, LineManager
 
 from .forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
 from .models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
@@ -991,40 +991,40 @@ def saisie_bordereau(request, projet_id, lot_id):
         'lignes': json_str,
     })
 
-def indent_node(request, lot_id, node_id):
-    """API pour indenter un node"""
-    if request.method == 'POST':
-        lot = get_object_or_404(LotProjet, id=lot_id)
-        tree_manager = BordereauTreeManager(lot)
-        success = tree_manager.indent_node(node_id)
-        return JsonResponse({'success': success})
+# def indent_node(request, lot_id, node_id):
+#     """API pour indenter un node"""
+#     if request.method == 'POST':
+#         lot = get_object_or_404(LotProjet, id=lot_id)
+#         tree_manager = BordereauTreeManager(lot)
+#         success = tree_manager.indent_node(node_id)
+#         return JsonResponse({'success': success})
 
-def outdent_node(request, lot_id, node_id):
-    """API pour outdenter un node"""
-    if request.method == 'POST':
-        lot = get_object_or_404(LotProjet, id=lot_id)
-        tree_manager = BordereauTreeManager(lot)
-        success = tree_manager.outdent_node(node_id)
-        return JsonResponse({'success': success})
+# def outdent_node(request, lot_id, node_id):
+#     """API pour outdenter un node"""
+#     if request.method == 'POST':
+#         lot = get_object_or_404(LotProjet, id=lot_id)
+#         tree_manager = BordereauTreeManager(lot)
+#         success = tree_manager.outdent_node(node_id)
+#         return JsonResponse({'success': success})
 
-def toggle_node(request, lot_id, node_id):
-    """API pour basculer un node"""
-    if request.method == 'POST':
-        lot = get_object_or_404(LotProjet, id=lot_id)
-        tree_manager = BordereauTreeManager(lot)
+# def toggle_node(request, lot_id, node_id):
+#     """API pour basculer un node"""
+#     if request.method == 'POST':
+#         lot = get_object_or_404(LotProjet, id=lot_id)
+#         tree_manager = BordereauTreeManager(lot)
         
-        expanded = request.POST.get('expanded') == 'true'
-        success = tree_manager.toggle_node(node_id, expanded)
+#         expanded = request.POST.get('expanded') == 'true'
+#         success = tree_manager.toggle_node(node_id, expanded)
         
-        return JsonResponse({'success': success, 'expanded': expanded})
+#         return JsonResponse({'success': success, 'expanded': expanded})
 
-def get_children(request, lot_id, node_id):
-    """API pour récupérer les enfants d'un node"""
-    lot = get_object_or_404(LotProjet, id=lot_id)
-    tree_manager = BordereauTreeManager(lot)
+# def get_children(request, lot_id, node_id):
+#     """API pour récupérer les enfants d'un node"""
+#     lot = get_object_or_404(LotProjet, id=lot_id)
+#     tree_manager = BordereauTreeManager(lot)
     
-    children_ids = tree_manager.get_children_ids(node_id)
-    return JsonResponse({'children': children_ids})
+#     children_ids = tree_manager.get_children_ids(node_id)
+#     return JsonResponse({'children': children_ids})
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
@@ -2146,10 +2146,6 @@ def modifier_attachement(request, attachement_id):
     lignes_data = []
     # recuperer l'attachement qui un id avant attachement_id
     attachement_avant = attachement.get_previous_attachement()
-    # if attachement_avant is not None: 
-    #     print("date de fin de l'attachement avant : ", attachement_avant.date_fin_periode)
-    # else:
-    #     print("pas d'attachement avant")
     for ligne in lignes_bordereau:
         ligne_att_avant = LigneAttachement.objects.filter(attachement=attachement_avant, ligne_lot=ligne).first()
         ligne_cet_att = LigneAttachement.objects.filter(attachement=attachement, ligne_lot=ligne).first()
@@ -2230,6 +2226,7 @@ def detail_attachement(request, attachement_id):
     total_lignes = 0
     
     for lot in lots:
+        
         # Récupérer les lignes d'attachement pour ce lot
         lignes = LigneAttachement.objects.filter(attachement=attachement, ligne_lot__lot=lot).order_by('id')
         # Calculer le total du lot
@@ -2242,17 +2239,19 @@ def detail_attachement(request, attachement_id):
         lignes_data = []
         for ligne in lignes:
             montant_ligne = (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0)
-            lignes_data.append({
-                'numero': ligne.numero,
-                'designation': ligne.designation,
-                'unite': ligne.unite,
-                'quantite_realisee': ligne.quantite_realisee if not ligne.is_title else None,
-                'prix_unitaire': ligne.prix_unitaire if not ligne.is_title else None,
-                'montant': montant_ligne if not ligne.is_title else None,
-                'is_title': ligne.is_title,
-            })
+            if montant_ligne > 0:
+                lignes_data.append({
+                    'numero': ligne.numero,
+                    'designation': ligne.designation,
+                    'unite': ligne.unite,
+                    'quantite_realisee': ligne.quantite_realisee if not ligne.is_title else None,
+                    'prix_unitaire': ligne.prix_unitaire if not ligne.is_title else None,
+                    'montant': montant_ligne if not ligne.is_title else None,
+                    'is_title': ligne.is_title,
+                })
         while lignes_data and lignes_data[-1]['is_title']:
             lignes_data.pop() # Retirer les titres de la fin
+
         lots_data.append({
             'lot': lot,
             'lignes': lignes_data,
@@ -2260,7 +2259,7 @@ def detail_attachement(request, attachement_id):
         })
         
         montant_total += total_lot
-        total_lignes += len(lignes)
+        total_lignes += len(lignes_data)
     
     context = {
         'attachement': attachement,
@@ -2309,20 +2308,16 @@ def validation_attachement(request, attachement_id):
     for validation in validations:
         validation.est_validable_par_utilisateur = validation.peut_etre_valide_par(request.user)
         etapes = validation.etapes.all()
-        # print("Validation ID:", validation.id, "Type:", validation.type_validation, "Nombre d'étapes existantes:", etapes.count())
+
         if validation.type_validation == 'TECHNIQUE':
             if not etapes.exists():
                 # Si aucune étape, initier les étapes standards du processus Validation Technique
                 validation.initier_etapes_techniques_par_defaut()
                 validation.etapes_validation = validation.etapes.all().order_by('ordre')
-                # print("Initialisation des étapes techniques par défaut pour la validation ID:", validation.id)
             else:
                 validation.etapes_validation = etapes.order_by('ordre') 
-           
-            # print("Étapes du processus de validation technique :", [etape.id for etape in validation.etapes_validation])
         else:
             validation.etapes_validation = None
-    
     
     if request.method == 'POST':
         validation_id = request.POST.get('validation_id')
@@ -2508,12 +2503,15 @@ def modifier_etape(request, etape_id):
         if request.method == 'POST':
             nouveau_nom = request.POST.get('nom')
             nouveau_commentaire = request.POST.get('commentaire', '')
-            nouvelle_obligatoire = request.POST.get('obligatoire') == 'true'
+            obligatoire_value = request.POST.get('obligatoire')
+            
+            nouvelle_obligatoire = obligatoire_value == 'on'  # ou 'true' selon votre HTML
             
             if nouveau_nom:
                 etape.nom = nouveau_nom
             etape.commentaire = nouveau_commentaire
             etape.obligatoire = nouvelle_obligatoire
+            
             etape.save()
             
             messages.success(request, f"✏️ Étape '{etape.nom}' modifiée avec succès.")

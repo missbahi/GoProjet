@@ -1,4 +1,3 @@
-
 <!-- validation_technique_attachement.html -->
 {% load static %}
 <!DOCTYPE html>
@@ -436,17 +435,14 @@
         .modal-shake {
             animation: shake 0.5s ease-in-out;
         }
-    
-
-        /* Ajouter dans votre CSS existant */
-        .modal-content {
-            max-width: 500px; /* Légèrement plus large pour le formulaire d'ajout */
-        }
 
         /* Style pour les checkboxes personnalisées */
         .form-checkbox {
             border-radius: 0.25rem;
             border: 2px solid #4B5563;
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
         }
 
         .form-checkbox:checked {
@@ -480,7 +476,37 @@
             background: rgba(34, 211, 238, 0.05);
         }
 
+        /* Messages */
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
 
+        .message-success {
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .message-error {
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .message-warning {
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .message-info {
+            background: rgba(34, 211, 238, 0.1);
+            border-left-color: var(--text-accent);
+            color: var(--text-accent);
+        }
     </style>
 </head>
 <body>
@@ -489,22 +515,6 @@
         <header class="header-section">
             <h1 class="main-title">{{ validation_technique.get_type_validation_display }}</h1>
             <div class="text-lg text-cyan-300">{{ attachement.numero }} - {{ attachement.projet.nom }}</div>
-            <section class="glass-card">
-                <div class="flex justify-between items-center">
-                    <h2 class="section-title">
-                        <i class="fas fa-list-ol"></i>
-                        Étapes de Validation ({{ etapes.count }})
-                    </h2>
-                    
-                    {% if peut_valider %}
-                    <button onclick="openAjoutEtapeModal({{ validation_technique.id }})" 
-                            class="btn btn-primary">
-                        <i class="fas fa-plus-circle"></i>
-                        Ajouter une étape
-                    </button>
-                    {% endif %}
-                </div>
-            </section>
         </header>
         
         <!-- Navigation -->
@@ -525,16 +535,29 @@
         </div>
         {% endif %}
 
-        <!-- Étapes de validation -->
+        <!-- Section Étapes de Validation -->
         <section class="glass-card">
-            <h2 class="section-title">Étapes de Validation</h2>
+            <div class="flex justify-between items-center">
+                <h2 class="section-title">
+                    <i class="fas fa-list-ol"></i>
+                    Étapes de Validation ({{ etapes.count }})
+                </h2>
+                
+                {% if peut_valider %}
+                <button onclick="openAjoutEtapeModal({{ validation_technique.id }})" 
+                        class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i>
+                    Ajouter une étape
+                </button>
+                {% endif %}
+            </div>
             
             <div class="etapes-container">
                 {% for etape in etapes %}
                 <div class="etape-card 
                             {% if etape.est_validee %}etape-validee
                             {% elif forloop.last and messages and 'ajoutée' in messages.0 %}etape-nouvelle
-                            {% else %}etape-en_attente{% endif %}">
+                            {% else %}etape-en-attente{% endif %}">
                     
                     <div class="etape-header">
                         <div class="etape-title">
@@ -584,85 +607,30 @@
                     <div class="etape-actions">
                         {% if peut_valider %}
                             {% if not etape.est_validee %}
-                                <!-- Vérifier si l'étape est accessible -->
-                                {% if forloop.first %}
-                                    <!-- Première étape - toujours accessible -->
-                                    <div class="flex flex-wrap gap-2">
-                                        <button onclick="openValidationModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                class="btn btn-success btn-sm">
-                                            <i class="fas fa-check"></i> Valider
-                                        </button>
-                                        
-                                        {% if not etape.obligatoire %}
-                                        <button onclick="openPasserModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                class="btn btn-warning btn-sm">
-                                            <i class="fas fa-forward"></i> Passer
-                                        </button>
-                                        {% endif %}
-                                        
-                                        <!-- Boutons Modifier/Supprimer TOUJOURS visibles pour étapes non validées -->
-                                        <button onclick="openModificationModal({{ etape.id }}, '{{ etape.nom }}', '{{ etape.commentaire|default:"" }}', {{ etape.obligatoire|yesno:"true,false" }})" 
-                                                class="btn btn-info btn-sm">
-                                            <i class="fas fa-edit"></i> Modifier
-                                        </button>
-                                        
-                                        <button onclick="openSuppressionModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                class="btn btn-danger btn-sm">
-                                            <i class="fas fa-trash"></i> Supprimer
-                                        </button>
-                                    </div>
-                                {% else %}
-                                    <!-- Étapes suivantes - vérifier si la précédente est validée -->
-                                    {% with prev_index=forloop.counter0|add:"-1" %}
-                                    {% with etape_precedente=etapes|slice:prev_index|last %}
-                                    {% if etape_precedente.est_validee %}
-                                        <div class="flex flex-wrap gap-2">
-                                            <button onclick="openValidationModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                    class="btn btn-success btn-sm">
-                                                <i class="fas fa-check"></i> Valider
-                                            </button>
-                                            
-                                            {% if not etape.obligatoire %}
-                                            <button onclick="openPasserModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                    class="btn btn-warning btn-sm">
-                                                <i class="fas fa-forward"></i> Passer
-                                            </button>
-                                            {% endif %}
-                                            
-                                            <!-- Boutons Modifier/Supprimer aussi pour les étapes suivantes -->
-                                            <button onclick="openModificationModal({{ etape.id }}, '{{ etape.nom }}', '{{ etape.commentaire|default:"" }}', {{ etape.obligatoire|yesno:"true,false" }})" 
-                                                    class="btn btn-info btn-sm">
-                                                <i class="fas fa-edit"></i> Modifier
-                                            </button>
-                                            
-                                            <button onclick="openSuppressionModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                    class="btn btn-danger btn-sm">
-                                                <i class="fas fa-trash"></i> Supprimer
-                                            </button>
-                                        </div>
-                                    {% else %}
-                                        <div class="flex items-center gap-3">
-                                            <p class="text-warning text-sm">
-                                                <i class="fas fa-info-circle"></i>
-                                                En attente de validation de l'étape précédente
-                                            </p>
-                                            <!-- Mais on peut quand même modifier/supprimer l'étape -->
-                                            <div class="flex gap-2">
-                                                <button onclick="openModificationModal({{ etape.id }}, '{{ etape.nom }}', '{{ etape.commentaire|default:"" }}', {{ etape.obligatoire|yesno:"true,false" }})" 
-                                                        class="btn btn-info btn-sm">
-                                                    <i class="fas fa-edit"></i> Modifier
-                                                </button>
-                                                
-                                                <button onclick="openSuppressionModal({{ etape.id }}, '{{ etape.nom }}')" 
-                                                        class="btn btn-danger btn-sm">
-                                                    <i class="fas fa-trash"></i> Supprimer
-                                                </button>
-                                            </div>
-                                        </div>
+                                <!-- Toutes les étapes non validées sont accessibles directement -->
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="openValidationModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Valider
+                                    </button>
+                                    
+                                    {% if not etape.obligatoire %}
+                                    <button onclick="openPasserModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-warning btn-sm">
+                                        <i class="fas fa-forward"></i> Passer
+                                    </button>
                                     {% endif %}
-                                    {% endwith %}
-                                    {% endwith %}
-                                {% endif %}
+                                    
+                                    <button onclick="openModificationModal({{ etape.id }}, '{{ etape.nom|escapejs }}', '{{ etape.commentaire|default:""|escapejs }}', {{ etape.obligatoire|yesno:"true,false" }})" 
+                                            class="btn btn-info btn-sm">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </button>
+                                    
+                                    <button onclick="openSuppressionModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                </div>
                             {% else %}
                                 <!-- Actions pour étape validée -->
                                 <div class="flex flex-wrap gap-2 items-center">
@@ -673,8 +641,7 @@
                                         {% endif %}
                                     </span>
                                     
-                                    <!-- Bouton Réinitialiser -->
-                                    <button onclick="reinitialiserEtape({{ etape.id }}, '{{ etape.nom }}')" 
+                                    <button onclick="reinitialiserEtape({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
                                             class="btn btn-outline-warning btn-sm">
                                         <i class="fas fa-undo"></i> Reprendre
                                     </button>
@@ -712,6 +679,7 @@
         </section>
     </div>
 
+    <!-- Modal de Modification -->
     <div id="modificationModal" class="modal-overlay">
         <div class="modal-content">
             <h3 class="modal-title">
@@ -827,6 +795,10 @@
                     <label class="form-label">Commentaire</label>
                     <textarea name="commentaire" class="form-control" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Fichier justificatif (optionnel) :</label>
+                    <input type="file" id="fichier" name="fichier" class="form-control">
+                </div>
                 <div class="modal-actions">
                     <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
                     <button type="submit" class="btn btn-success">Valider</button>
@@ -922,7 +894,16 @@
     </div>
 
     <script>
+        // Fonction pour fermer tous les modals
+        function closeAllModals() {
+            const modals = document.querySelectorAll('.modal-overlay');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
         function openValidationModal(etapeId, etapeNom) {
+            closeAllModals();
             const form = document.getElementById('validationForm');
             form.action = "{% url 'projets:valider_etape' etape_id=0 %}".replace('0', etapeId);
             document.getElementById('modalTitle').textContent = 'Valider : ' + etapeNom;
@@ -930,26 +911,26 @@
         }
 
         function openPasserModal(etapeId, etapeNom) {
+            closeAllModals();
             const form = document.getElementById('passerForm');
             form.action = "{% url 'projets:passer_etape' etape_id=0 %}".replace('0', etapeId);
             document.getElementById('passerModal').style.display = 'flex';
         }
 
-        // Ouvrir modal de modification
         function openModificationModal(etapeId, etapeNom, commentaire, obligatoire) {
+            closeAllModals();
             const form = document.getElementById('modificationForm');
             form.action = "{% url 'projets:modifier_etape' etape_id=0 %}".replace('0', etapeId);
             
-            // Pré-remplir les champs
-            document.getElementById('modifNom').value = etapeNom;
+            document.getElementById('modifNom').value = etapeNom || '';
             document.getElementById('modifCommentaire').value = commentaire || '';
-            document.getElementById('modifObligatoire').checked = obligatoire;
+            document.getElementById('modifObligatoire').checked = obligatoire === true || obligatoire === 'true';
             
             document.getElementById('modificationModal').style.display = 'flex';
         }
 
-        // Ouvrir modal de réinitialisation
         function reinitialiserEtape(etapeId, etapeNom) {
+            closeAllModals();
             const form = document.getElementById('reinitialisationForm');
             form.action = "{% url 'projets:reinitialiser_etape' etape_id=0 %}".replace('0', etapeId);
             
@@ -959,8 +940,8 @@
             document.getElementById('reinitialisationModal').style.display = 'flex';
         }
 
-        // Ouvrir modal de suppression
         function openSuppressionModal(etapeId, etapeNom) {
+            closeAllModals();
             const form = document.getElementById('suppressionForm');
             form.action = "{% url 'projets:supprimer_etape' etape_id=0 %}".replace('0', etapeId);
             
@@ -970,55 +951,38 @@
             document.getElementById('suppressionModal').style.display = 'flex';
         }
 
+        function openAjoutEtapeModal(processId) {
+            closeAllModals();
+            const form = document.getElementById('ajoutEtapeForm');
+            form.action = "{% url 'projets:ajouter_etape' process_id=0 %}".replace('0', processId);
+            
+            form.reset();
+            document.getElementById('nouvelleObligatoire').checked = true;
+            
+            document.getElementById('ajoutEtapeModal').style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('nouveauNom').focus();
+            }, 300);
+        }
+
+        function closeModal() {
+            closeAllModals();
+        }
+
         // Gérer la fermeture en cliquant à l'extérieur
         document.addEventListener('click', function(e) {
             if (e.target.classList.contains('modal-overlay')) {
-                closeModal();
+                closeAllModals();
             }
         });
 
         // Touche Échap pour fermer
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
-                closeModal();
+                closeAllModals();
             }
         });
-    
-            // Ouvrir modal d'ajout d'étape
-        function openAjoutEtapeModal(processId) {
-            const form = document.getElementById('ajoutEtapeForm');
-            form.action = "{% url 'projets:ajouter_etape' process_id=0 %}".replace('0', processId);
-            
-            // Réinitialiser le formulaire
-            form.reset();
-            document.getElementById('nouvelleObligatoire').checked = true;
-            
-            document.getElementById('ajoutEtapeModal').style.display = 'flex';
-            
-            // Focus sur le champ nom
-            setTimeout(() => {
-                document.getElementById('nouveauNom').focus();
-            }, 300);
-        }
-
-        // Mettre à jour la fonction closeModal pour inclure le nouveau modal
-        function closeModal() {
-            const modals = [
-                'validationModal',
-                'passerModal', 
-                'modificationModal',
-                'reinitialisationModal',
-                'suppressionModal',
-                'ajoutEtapeModal'
-            ];
-            
-            modals.forEach(modalId => {
-                const modal = document.getElementById(modalId);
-                if (modal) {
-                    modal.style.display = 'none';
-                }
-            });
-        }
 
         // Validation en temps réel du formulaire d'ajout
         document.addEventListener('DOMContentLoaded', function() {
@@ -1034,16 +998,12 @@
                         return;
                     }
                     
-                    // Ajouter un indicateur de chargement
                     const submitBtn = this.querySelector('button[type="submit"]');
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
                     submitBtn.disabled = true;
                 });
             }
-});
-    
-    
-    
+        });
     </script>
 </body>
 </html>

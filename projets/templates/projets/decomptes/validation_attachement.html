@@ -596,7 +596,7 @@
             </div>
         {% endif %}
 
-        <!-- Processus de validation -->
+        <!-- Processus de validation  -->
         <section class="validation-section">
             <h2 class="section-title">
                 <i class="fas fa-list-ol"></i>
@@ -687,7 +687,7 @@
                         {% if validation.etapes_validation %}
                             <button onclick="window.location.href='{% url 'projets:validation_technique_attachement' attachement.id %}'"
                                 class="btn btn-info btn-action">
-                                <i class="fas fa-eye"></i> Consulter
+                                <i class="fas fa-eye"></i> Valider étapes
                             </button>
                         {% else %}
                         <button onclick="openValidationModal('valider', {{ validation.id }})" 
