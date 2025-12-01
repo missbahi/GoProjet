@@ -20,7 +20,7 @@
                 class="space-y-6">
 
                 {% csrf_token %}
-                
+                 
                 <!-- Avatar -->
                 <div class="text-center">
                     <label class="block text-sm font-medium text-gray-300 mb-3">Photo de profil</label>
@@ -28,7 +28,7 @@
                         <!-- Prévisualisation -->
                         <div class="relative">
                             <img id="avatarPreview" 
-                                src="{{ user.profile.avatar.url }}" 
+                                src="{{ user.profile.avatar_url }}" 
                                 class="w-24 h-24 rounded-full border-4 border-green-500 object-cover shadow-lg"
                                 onerror="this.src='{% static 'images/default.png' %}'">
                             <div class="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1 shadow-lg">

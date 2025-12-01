@@ -1,0 +1,123 @@
+<div class="relative" x-data="{ open: false, notifications: [], loading: true }">
+    <!-- Bouton de notification -->
+    <button @click="open = !open; if(open) loadNotifications()" 
+            class="relative p-2 text-gray-400 hover:text-green-500 transition">
+        <i class="fas fa-bell text-xl"></i>
+        <template x-if="notifications.filter(n => !n.lue).length > 0">
+            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                  x-text="notifications.filter(n => !n.lue).length"></span>
+        </template>
+    </button>
+
+    <!-- Dropdown des notifications -->
+    <div x-show="open" @click.outside="open = false" 
+         class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+        
+        <!-- En-tête -->
+        <div class="p-4 border-b">
+            <h3 class="text-lg font-semibold text-gray-800">Notifications</h3>
+        </div>
+
+        <!-- Liste des notifications -->
+        <div x-show="loading" class="p-4 text-center">
+            <i class="fas fa-spinner fa-spin text-green-500"></i>
+        </div>
+
+        <div x-show="!loading && notifications.length === 0" class="p-4 text-center text-gray-500">
+            Aucune notification
+        </div>
+
+        <template x-for="notification in notifications" :key="notification.id">
+            <div class="border-b last:border-b-0">
+                <a :href="notification.action_url || '#'"
+                   @click="markAsRead(notification.id)"
+                   class="block p-4 hover:bg-gray-50 transition"
+                   :class="{
+                       'bg-yellow-50': notification.urgence === 'ELEVE',
+                       'bg-red-50': notification.urgence === 'CRITIQUE'
+                   }">
+                    <div class="flex justify-between items-start">
+                        <h4 class="font-semibold text-gray-800" x-text="notification.titre"></h4>
+                        <span class="text-xs text-gray-500" x-text="notification.date_creation"></span>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1" x-text="notification.message"></p>
+                    <div class="flex justify-between items-center mt-2">
+                        <span class="text-xs px-2 py-1 rounded-full"
+                              :class="{
+                                  'bg-green-100 text-green-800': notification.urgence === 'FAIBLE',
+                                  'bg-yellow-100 text-yellow-800': notification.urgence === 'MOYEN',
+                                  'bg-orange-100 text-orange-800': notification.urgence === 'ELEVE',
+                                  'bg-red-100 text-red-800': notification.urgence === 'CRITIQUE'
+                              }"
+                              x-text="notification.urgence"></span>
+                        <template x-if="notification.est_recente">
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                        </template>
+                    </div>
+                </a>
+            </div>
+        </template>
+
+        <!-- Pied -->
+        <div class="p-4 border-t">
+            <button @click="markAllAsRead()" 
+                    class="w-full text-center text-sm text-green-600 hover:text-green-700 font-medium">
+                Tout marquer comme lu
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+function notificationComponent() {
+    return {
+        open: false,
+        notifications: [],
+        loading: true,
+
+        async loadNotifications() {
+            this.loading = true;
+            try {
+                const response = await fetch('/notifications/json/');
+                const data = await response.json();
+                this.notifications = data.notifications || [];
+            } catch (error) {
+                console.error('Erreur chargement notifications:', error);
+            }
+            this.loading = false;
+        },
+
+        async markAsRead(notificationId) {
+            try {
+                await fetch(`/notifications/${notificationId}/marquer-lue/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                // Retirer de la liste
+                this.notifications = this.notifications.filter(n => n.id !== notificationId);
+            } catch (error) {
+                console.error('Erreur marquage comme lu:', error);
+            }
+        },
+
+        async markAllAsRead() {
+            try {
+                await fetch('/notifications/tout-marquer-lue/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json',
+                    },
+                });
+                this.notifications = [];
+            } catch (error) {
+                console.error('Erreur marquage tout comme lu:', error);
+            }
+        }
+    }
+}
+</script>

@@ -291,7 +291,7 @@
                                 <div id="userMenuDropdown" 
                                     class="hidden absolute bg-gray-800 bg-opacity-95 right-0 mt-2 w-56 rounded-md shadow-lg py-1 z-20">
                                     <!-- Lien Profil avec HTMX -->
-                                    <a href="#" 
+                                    <a href="#"  
                                         hx-get="{% url 'projets:profile_modal' %}"
                                         hx-target="#modals-container"
                                         hx-swap="innerHTML"
@@ -594,19 +594,20 @@
         document.getElementById('mobileSidebar').classList.remove('open');
         this.classList.remove('open');
     });
-
+    
     // Toggle notifications dropdown
     document.getElementById('notificationBtn').addEventListener('click', function() {
-        document.getElementById('notificationDropdown').classList.toggle('hidden');
+        const dropdown = document.getElementById('notificationDropdown');
+        dropdown.classList.toggle('hidden');
         document.getElementById('userMenuDropdown').classList.add('hidden');
         
         // Marquer les notifications comme lues lorsqu'on ouvre le dropdown
-        if (!document.getElementById('notificationDropdown').classList.contains('hidden')) {
-            fetch("{% url 'projets:mark_all_notifications_as_read' %}", {
+        if (!dropdown.classList.contains('hidden')) {
+            fetch(NOTIFICATION_API_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': '{{ csrf_token }}'
+                    'X-CSRFToken': CSRF_TOKEN
                 },
                 credentials: 'same-origin'
             }).then(response => {
@@ -616,11 +617,54 @@
                     if(badge) {
                         badge.remove();
                     }
+                    
+                    // Afficher une notification toast de confirmation
+                    showNotification('Toutes les notifications ont été marquées comme lues', 'success');
                 }
+            }).catch(error => {
+                showNotification('Erreur lors de la mise à jour des notifications', 'error');
             });
         }
     });
 
+    // Fonction pour afficher une notification toast depuis le backend
+    function showBackendNotification(type, message) {
+        const typeMap = {
+            'success': 'success',
+            'error': 'error',
+            'warning': 'warning',
+            'info': 'info',
+            'RETARD': 'warning',
+            'NOUVEAU_AO': 'info',
+            'RECEPTION': 'success',
+            'VALIDATION_ATTACHEMENT': 'warning'
+        };
+        
+        showNotification(message, typeMap[type] || 'info');
+    }
+
+    // Gestion des clics sur les notifications
+    document.querySelectorAll('.notification').forEach(notification => {
+        notification.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.href;
+            
+            // Marquer cette notification comme lue spécifiquement
+            const notificationId = this.dataset.notificationId;
+            if (notificationId) {
+                fetch(`/notifications/${notificationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': CSRF_TOKEN
+                    }
+                });
+            }
+            
+            // Rediriger
+            window.location.href = url;
+        });
+    });
+   
     // Toggle user menu dropdown
     document.getElementById('userMenuBtn').addEventListener('click', function() {
         document.getElementById('userMenuDropdown').classList.toggle('hidden');
@@ -697,7 +741,11 @@
     });
 
 </script>
-
+<script>
+    // Variables globales pour les notifications
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const NOTIFICATION_API_URL = "{% url 'projets:mark_all_notifications_as_read' %}";
+</script>
 <!-- scripts des modals -->
 <script src="{% static 'projets/js/modals.js' %}"></script>
 <script src="{% static 'projets/js/profile.js' %}"></script>

@@ -1,23 +1,21 @@
 # projets/urls.py
 
 from django.urls import path
-from . import views
-from django.contrib.auth.views import LogoutView
-from django.contrib.auth import views as auth_views
-# This file defines the URL patterns for the 'projets' app.
+from .views import views
+from .views import notifications
+# from django.contrib.auth.views import LogoutView
+# from django.contrib.auth import views as auth_views
 
 app_name = "projets"
 
 urlpatterns = [
     # Home
     path('', views.home, name='home'),
-    path('diagnostic/', views.diagnostic, name='diagnostic'),
 
     # Gestion des projets
     path('projets/', views.liste_projets, name='liste_projets'),
     path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
     
-    # path('projet/<int:projet_id>/modifier/', views.modifier_projet, name='modifier_projet'),
     path('projet/<int:projet_id>/supprimer/', views.supprimer_projet, name='supprimer_projet'),
     
     path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),
@@ -31,13 +29,7 @@ urlpatterns = [
     path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', views.supprimer_lot, name='supprimer_lot'),
     path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', views.saisie_bordereau, name='saisie_bordereau'),
     path('api/lot/<int:lot_id>/save/', views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
-    
-    # Gestion des nodes
-    # path('lot/<int:lot_id>/node/<int:node_id>/toggle/', views.toggle_node, name='toggle_node'),
-    # path('lot/<int:lot_id>/node/<int:node_id>/indent/', views.indent_node, name='indent_node'),
-    # path('lot/<int:lot_id>/node/<int:node_id>/outdent/', views.outdent_node, name='outdent_node'),
-    # path('lot/<int:lot_id>/node/<int:node_id>/children/', views.get_children, name='get_children'),
-    
+        
     # Apropos et base de données
     path('apropos/', views.apropos, name='apropos'),
     path('base-donnees/', views.base_donnees, name='base_donnees'),
@@ -150,7 +142,10 @@ urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/notifier/', views.notifier_ordre_service, name='notifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', views.annuler_ordre_service, name='annuler_ordre_service'),
     path('api/projets/<int:projet_id>/jours-decoules/', views.api_jours_decoules, name='api_jours_decoules'),
-     
+    
+    path('notifications/json/', notifications.notifications_json, name='notifications_json'),
+    path('notifications/<int:notification_id>/marquer-lue/', notifications.marquer_comme_lue, name='marquer_notification_lue'),
+    path('notifications/tout-marquer-lue/', notifications.tout_marquer_comme_lue, name='tout_marquer_lue'),
  ] 
 
 

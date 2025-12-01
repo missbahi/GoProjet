@@ -16,10 +16,10 @@ from django.views import View
 from projets.decorators import chef_projet_required, superuser_required
 # from projets.manager import BordereauTreeManager, LineManager
 
-from .forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
-from .models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
-from .models import  LotProjet, LigneAttachement, LigneBordereau, Client, DocumentAdministratif, Tache
-from .models import Attachement, ProcessValidation
+from projets.forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
+from projets.models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
+from projets.models import  LotProjet, LigneAttachement, LigneBordereau, Client, DocumentAdministratif, Tache
+from projets.models import Attachement, ProcessValidation
 
 from django.views.generic import ListView
 
@@ -66,6 +66,8 @@ def get_projet_from_instance(instance):
         return instance.suivi.projet
     elif hasattr(instance, 'attachement'):
         return instance.attachement.projet
+    elif hasattr(instance,'processValidation'):
+        return instance.processValidation.attachement.projet
     return None
 
 def extract_filename_from_url(url):
@@ -80,6 +82,19 @@ def extract_filename_from_url(url):
         filename = filename.split('._')[0] + '.' + filename.split('.')[-1]
     
     return filename
+def clean_url(url, replace_https=True):
+    """Nettoie l'URL en supprimant les espaces et forçant le https"""
+    # Verifie si l'une de ces caracteres se trouvent dans l'url : ' ', '=', '%20' 
+    check_chars:bool = any(char in url for char in [' ', '=', '%20'])
+    if check_chars:
+        url = url.replace(' ', '').replace('=', '').replace('%20', '')
+        print(f"🔧 URL nettoyée: {url}")
+    if replace_https:
+        if url.startswith('http://'):
+            url = url.replace('http://', 'https://')
+            print(f"🔧 URL modifiée: {url}")
+    return url
+
 @login_required
 def secure_download(request, model_name, object_id):
     """
@@ -121,8 +136,8 @@ def secure_download(request, model_name, object_id):
         return serve_file_with_original_name(file_field, original_filename)
     else:        
         # On récupère l'URL du fichier
-        url = file_field.url
-        url = url.replace(' =', '')
+        url = clean_url(file_field.url)
+
         # Redirection vers Cloudinary
         return HttpResponseRedirect(url)
 
@@ -132,15 +147,15 @@ def serve_file_with_original_name(file_field, original_filename):
         import requests
         import urllib.parse
         
-        cloudinary_url = file_field.url
+        cloudinary_url = clean_url(file_field.url)
 
-        if ' =' in cloudinary_url:
-            cloudinary_url = cloudinary_url.replace(' =', '')
-            print(f"🔧 URL nettoyée: {cloudinary_url}")
+        # if ' =' in cloudinary_url:
+        #     cloudinary_url = cloudinary_url.replace(' =', '')
+        #     print(f"🔧 URL nettoyée: {cloudinary_url}")
 
-        if '%20=' in cloudinary_url:
-            cloudinary_url = cloudinary_url.replace('%20=', '')
-            print(f"🔧 URL nettoyée: {cloudinary_url}")
+        # if '%20=' in cloudinary_url:
+        #     cloudinary_url = cloudinary_url.replace('%20=', '')
+        #     print(f"🔧 URL nettoyée: {cloudinary_url}")
         
         response = requests.get(cloudinary_url, stream=True)
         response.raise_for_status()
@@ -158,61 +173,8 @@ def serve_file_with_original_name(file_field, original_filename):
     except Exception as e:
         print(f"Erreur téléchargement: {e}")
         return HttpResponseRedirect(file_field.url)
-    
-@csrf_exempt
-def diagnostic(request):
-    """Page de diagnostic complète pour Railway"""
-    
-    # Test des fichiers statiques
-    static_tests = {}
-    js_files_to_check = [
-        'projets/js/modals.js',
-        'projets/js/chart.js', 
-        'projets/js/profile.js',
-        'projets/js/notification-handler.js',
-        'projets/images/default.png'
-    ]
-    
-    for file_path in js_files_to_check:
-        full_path = os.path.join(settings.STATIC_ROOT, file_path)
-        static_tests[file_path] = {
-            'exists': os.path.exists(full_path),
-            'path': full_path,
-            'in_static_root': os.path.exists(settings.STATIC_ROOT)
-        }
-    
-    # Informations système
-    system_info = {
-        'django_version': django.get_version(),
-        'debug_mode': settings.DEBUG,
-        'static_root': settings.STATIC_ROOT,
-        'static_url': settings.STATIC_URL,
-        'staticfiles_dirs': [str(p) for p in settings.STATICFILES_DIRS],
-        'installed_apps': [app for app in settings.INSTALLED_APPS if 'django' not in app],
-        'database': settings.DATABASES['default']['ENGINE'],
-        'whitenoise_in_middleware': 'whitenoise.middleware.WhiteNoiseMiddleware' in settings.MIDDLEWARE
-    }
-    
-    # Test URLs
-    base_url = request.build_absolute_uri('/')[:-1]
-    test_urls = {
-        'home_page': f"{base_url}/",
-        'login_page': f"{base_url}/accounts/login/",
-        'static_modals_js': f"{base_url}/static/projets/js/modals.js",
-        'static_chart_js': f"{base_url}/static/projets/js/chart.js",
-        'diagnostic_page': f"{base_url}/diagnostic/",
-    }
-    
-    context = {
-        'system_info': system_info,
-        'static_tests': static_tests,
-        'test_urls': test_urls,
-        'base_url': base_url,
-    }
-
-    return render(request, 'projets/diagnostic.html', context)
-
-#------------------ Puur la Gestion de login ------------------
+ 
+#------------------ Pour la Gestion de login ------------------
 class CustomLoginView(auth_views.LoginView):
     template_name = 'authentification/login.html'
     
@@ -677,6 +639,7 @@ class ListeTachesView1(LoginRequiredMixin, ListView):
             tache__isnull=False
         ).distinct().order_by('username')
         return context
+@login_required
 def get_form_data(request):
     user = request.user
     # Récupérer les projets et utilisateurs liés à l'utilisateur connecté
@@ -990,41 +953,6 @@ def saisie_bordereau(request, projet_id, lot_id):
         'root': lot_root,
         'lignes': json_str,
     })
-
-# def indent_node(request, lot_id, node_id):
-#     """API pour indenter un node"""
-#     if request.method == 'POST':
-#         lot = get_object_or_404(LotProjet, id=lot_id)
-#         tree_manager = BordereauTreeManager(lot)
-#         success = tree_manager.indent_node(node_id)
-#         return JsonResponse({'success': success})
-
-# def outdent_node(request, lot_id, node_id):
-#     """API pour outdenter un node"""
-#     if request.method == 'POST':
-#         lot = get_object_or_404(LotProjet, id=lot_id)
-#         tree_manager = BordereauTreeManager(lot)
-#         success = tree_manager.outdent_node(node_id)
-#         return JsonResponse({'success': success})
-
-# def toggle_node(request, lot_id, node_id):
-#     """API pour basculer un node"""
-#     if request.method == 'POST':
-#         lot = get_object_or_404(LotProjet, id=lot_id)
-#         tree_manager = BordereauTreeManager(lot)
-        
-#         expanded = request.POST.get('expanded') == 'true'
-#         success = tree_manager.toggle_node(node_id, expanded)
-        
-#         return JsonResponse({'success': success, 'expanded': expanded})
-
-# def get_children(request, lot_id, node_id):
-#     """API pour récupérer les enfants d'un node"""
-#     lot = get_object_or_404(LotProjet, id=lot_id)
-#     tree_manager = BordereauTreeManager(lot)
-    
-#     children_ids = tree_manager.get_children_ids(node_id)
-#     return JsonResponse({'children': children_ids})
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
@@ -1129,6 +1057,7 @@ def creer_notification(request):
             messages.error(request, _(f"Erreur: {str(e)}"))
     
     return redirect('projets:liste_projets')
+@login_required
 def liste_notifications(request):
     notifications = Notification.objects.filter(utilisateur=request.user).order_by('-date_creation')
     return render(request, 'projets/liste_notifications.html', {'notifications': notifications})
@@ -1138,6 +1067,7 @@ def mark_notification_as_read(request, notification_id):
     notification.lue = True
     notification.save()
     return redirect('projets:liste_notifications')
+@login_required
 def mark_all_notifications_as_read(request):
     Notification.objects.filter(utilisateur=request.user, lue=False).update(lue=True)
     return redirect('projets:liste_notifications')
@@ -1234,7 +1164,7 @@ def avatar_upload_modal(request):
     }
     return render(request, 'projets/modals/avatar_upload_modal.html', context)
 
-from .forms import AvatarUpdateForm
+from projets.forms import AvatarUpdateForm
 @login_required
 def profile_view(request):
     profile = request.user.profile
@@ -1285,7 +1215,7 @@ def profile_update(request):
             return HttpResponseBadRequest(f"Erreur: {str(e)}")
     
     return HttpResponseBadRequest("Méthode non autorisée")
-
+@login_required
 def profile_modal(request):
     return render(request, 'projets/modals/profile_modal.html', {
         'user': request.user
@@ -1329,7 +1259,7 @@ def partial_calendiers(request):
     return render(request, 'projets/partials/calendrier.html', context)
 
 # ------  Ingenieurs ------
-@permission_required('auth.add_user')
+@superuser_required
 def ajouter_ingenieur(request):
     if request.method == 'POST':
         form = IngenieurForm(request.POST)
@@ -1356,7 +1286,7 @@ def ajouter_ingenieur(request):
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/ingenieurs.html', {'form': form})
     # Ajoutez du debug temporaire
-@permission_required('auth.add_user')
+@superuser_required
 def modifier_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     
@@ -1375,7 +1305,7 @@ def modifier_ingenieur(request, ingenieur_id):
                 }, status=400)
     
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
-@permission_required('auth.add_user')
+@superuser_required
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     ingenieur.delete()
@@ -1387,6 +1317,7 @@ def supprimer_ingenieur(request, ingenieur_id):
     return redirect("projets:partial_ingenieurs")
 
 # -------- Clients --------
+@superuser_required
 def ajouter_client(request):
     if request.method == 'POST':
         form = ClientForm(request.POST)
@@ -1412,6 +1343,7 @@ def ajouter_client(request):
     
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/clients.html', {'form': form})
+@superuser_required
 def modifier_client(request, client_id):
     client = Client.objects.get(id=client_id)
     
@@ -1437,6 +1369,7 @@ def modifier_client(request, client_id):
         form = ClientForm(instance=client)
     # Pour les requêtes non-AJAX
     return render(request, "projets/partials/clients.html", {"form": form})
+@superuser_required
 def supprimer_client(request, client_id):
     client = get_object_or_404(Client, id=client_id)
     client.delete()
@@ -1447,6 +1380,7 @@ def supprimer_client(request, client_id):
     return redirect("projets:partial_clients")
 
 # -------- Entreprises --------
+@superuser_required
 def ajouter_entreprise(request):
     if request.method == 'POST':
         form = EntrepriseForm(request.POST)
@@ -1473,6 +1407,7 @@ def ajouter_entreprise(request):
         'form': form, 
         'entreprise': entreprise
     })
+@superuser_required
 def modifier_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
     
@@ -1513,6 +1448,7 @@ def modifier_entreprise(request, entreprise_id):
         'form': form, 
         'entreprise': entreprise
     })
+@superuser_required
 def supprimer_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
     entreprise.delete()
@@ -1567,6 +1503,7 @@ def lots_projet(request, projet_id):
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
 
 # ------  Documents et Suivi ------
+@login_required
 def documents_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     documents = projet.documents_administratifs.all()
@@ -1587,14 +1524,11 @@ def supprimer_document(request, projet_id, document_id):
     # Si ce n'est pas une requête POST, rediriger
     return redirect('projets:documents', projet_id=projet_id)
 def telecharger_document(request, document_id):
-    document = get_object_or_404(DocumentAdministratif, id=document_id)
-    return secure_download(request, 'DocumentAdministratif', document_id)
-
-    file_path = document.fichier.path
-    if os.path.exists(file_path):
-        return FileResponse(open(file_path, 'rb'), as_attachment=False)
-    else:
-        raise Http404("Le document n'existe pas")
+    try:
+        return secure_download(request, 'DocumentAdministratif', document_id)
+    except Exception as e:
+        messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
+        raise Http404("Erreur lors du téléchargement du document")
 
 def ajouter_document(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1649,50 +1583,13 @@ import requests
 
 class AfficherDocumentView(View):
     """Vue avec téléchargement direct depuis Cloudinary"""
-    
     def get(self, request, document_id):
         try:
             res = secure_download(request, 'DocumentAdministratif', document_id)
             return res
-        
-        
-        
-            document = get_object_or_404(DocumentAdministratif, id=document_id)
-            projet = document.projet
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                # 🔥 TÉLÉCHARGEMENT DIRECT
-                if hasattr(document.fichier, 'url') or isinstance(document.fichier, str):
-                    
-                    # Récupérer l'URL Cloudinary
-                    if hasattr(document.fichier, 'url'):
-                        file_url = document.fichier.url
-                    else:
-                        from cloudinary import CloudinaryResource
-                        resource = CloudinaryResource(str(document.fichier))
-                        file_url = resource.build_url(resource_type="raw", sign_url=True)
-                                        
-                    # Télécharger le fichier depuis Cloudinary
-                    response = requests.get(file_url, stream=True)
-
-                    if response.status_code == 200:
-                        # Créer la réponse Django avec le contenu
-                        django_response = HttpResponse(
-                            response.content,
-                            content_type=response.headers.get('content-type', 'application/octet-stream'))
-                        
-                        # Nom du fichier pour le téléchargement
-                        filename = f"{document.type_document}.pdf"
-                        django_response['Content-Disposition'] = f'inline; filename="{filename}"'
-                        
-                        return django_response
-                    else:
-                        print(f"❌ Erreur téléchargement Cloudinary: {response.status_code}")
-                        raise Http404("Erreur de téléchargement")
-            
-            raise Http404("Document non accessible")
             
         except Exception as e:
-            print(f"❌ Erreur: {e}")
+            messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
             raise Http404("Erreur lors du chargement du document")
             
 #----------------------- Suivi d'exécution ---------------------------
@@ -1828,14 +1725,12 @@ def supprimer_fichier_suivi(request, projet_id, fichier_id):
     
     return redirect('projets:suivi_execution', projet_id=projet_id)
 def telecharger_fichier_suivi(request, fichier_id):
-    fichier = get_object_or_404(FichierSuivi, id=fichier_id)
-    return secure_download(request, 'FichierSuivi', fichier_id)
-
-    file_path = fichier.fichier.path
-    if os.path.exists(file_path):
-        return FileResponse(open(file_path, 'rb'), as_attachment=False)
-    else:
-        raise Http404("Le fichier n'existe pas")
+    try:
+        fichier = get_object_or_404(FichierSuivi, id=fichier_id)
+        return secure_download(request, 'FichierSuivi', fichier_id)
+    except Exception as e:
+        messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
+        return redirect('projets:suivi_execution', projet_id=fichier.suivi.projet.id)
 def ajouter_fichier_suivi(request, projet_id, suivi_id):
     """
     Vue pour ajouter des fichiers à un suivi d'exécution existant avec Cloudinary
@@ -2383,7 +2278,7 @@ def validation_technique_attachement(request, attachement_id):
     }
     return render(request, 'projets/decomptes/validation_technique_attachement.html', context)
 
-# views.py
+# ------------------------ Views pour Processus de Validation ------------------------
 @login_required
 def ajouter_etape(request, process_id):
     """Ajoute une nouvelle étape au processus de validation"""
@@ -2426,7 +2321,6 @@ def ajouter_etape(request, process_id):
         return redirect('projets:liste_attachements')
     
     return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
-
 @login_required
 def valider_etape(request, etape_id):
     """Valide une étape spécifique"""
@@ -2450,7 +2344,6 @@ def valider_etape(request, etape_id):
         return redirect('projets:liste_attachements')
     
     return redirect_to_attachement(etape)
-
 @login_required
 def passer_etape(request, etape_id):
     """Passe une étape optionnelle"""
@@ -2483,8 +2376,6 @@ def passer_etape(request, etape_id):
         return redirect('projets:liste_attachements')
     
     return redirect_to_attachement(etape)
-
-# views.py
 @login_required
 def modifier_etape(request, etape_id):
     """Modifie une étape non validée"""
@@ -2521,7 +2412,6 @@ def modifier_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect_to_attachement(etape)
-
 @login_required
 def reinitialiser_etape(request, etape_id):
     """Réinitialise une étape validée pour reprendre le processus"""
@@ -2557,8 +2447,6 @@ def reinitialiser_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect_to_attachement(etape)
-
-# views.py
 @login_required
 def supprimer_etape(request, etape_id):
     """Supprime une étape de validation"""
@@ -2602,12 +2490,10 @@ def supprimer_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
-
 def redirect_to_attachement(etape):
     """Redirige vers l'attachement parent de l'étape"""
     return redirect('projets:validation_technique_attachement', 
                    attachement_id=etape.processValidation.attachement.id)
-
 @login_required
 def transmettre_validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2620,6 +2506,19 @@ def transmettre_validation_attachement(request, attachement_id):
         messages.error(request, f"Erreur lors de la transmission : {str(e)}")
     
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
+def telecharger_document_validation(request, etape_id):
+    """Télécharge le document associé à une étape de validation"""
+    etape = get_object_or_404(EtapeValidation, id=etape_id)
+    
+    if not etape.fichier:
+        messages.error(request, "Aucun fichier associé à cette étape.")
+        return redirect_to_attachement(etape)
+    
+    try:
+        return secure_download(request, 'EtapeValidation', etape_id)
+    except Exception as e:
+        messages.error(request, f"Erreur lors du téléchargement : {str(e)}")
+        return redirect_to_attachement(etape)
 # ------------------------ Views pour Décomptes ------------------------
 @login_required
 def liste_decomptes(request, projet_id):
@@ -3055,18 +2954,18 @@ def ordres_service(request, projet_id):
                                 folder="ordres_services",
                                 resource_type="raw"
                             )
-                            ordre.documents = upload_result['public_id']
+                            ordre.fichier = upload_result['public_id']
                         else:
-                            ordre.documents = fichier_document
+                            ordre.fichier = fichier_document
                             
                     if not ordre_a_modifier: # Création 
                         ordre.statut = 'BROUILLON'
                         
                     if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
-                        if ordre.documents:
-                            if os.path.isfile(ordre.documents.path):
-                                os.remove(ordre.documents.path)
-                            ordre.documents = None
+                        if ordre.fichier:
+                            if os.path.isfile(ordre.fichier.path):
+                                os.remove(ordre.fichier.path)
+                            ordre.fichier = None
                     
                     if ordre.statut == 'NOTIFIE':
                         ordre.full_clean()
@@ -3167,11 +3066,11 @@ def modifier_ordre_service(request, projet_id, ordre_id):
             
             # Gestion de la suppression du document
             if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
-                if ordre_modifie.documents:
+                if ordre_modifie.fichier:
                     # Supprimer le fichier physique
-                    if os.path.isfile(ordre_modifie.documents.path):
-                        os.remove(ordre_modifie.documents.path)
-                    ordre_modifie.documents = None
+                    if os.path.isfile(ordre_modifie.fichier.path):
+                        os.remove(ordre_modifie.fichier.path)
+                    ordre_modifie.fichier = None
             
             ordre_modifie.save()
             messages.success(request, f"L'ordre de service {ordre_modifie.reference} a été modifié avec succès.")
@@ -3203,9 +3102,9 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
     if request.method == 'POST':
         reference = ordre.reference
         # Supprimer le fichier document s'il existe
-        if ordre.documents:
-            if os.path.isfile(ordre.documents.path):
-                os.remove(ordre.documents.path)
+        if ordre.fichier:
+            if os.path.isfile(ordre.fichier.path):
+                os.remove(ordre.fichier.path)
         ordre.delete()
         messages.success(request, f"L'ordre de service {reference} a été supprimé avec succès.")
         return redirect('projets:ordres_service', projet_id=projet.id)
@@ -3313,14 +3212,8 @@ def annuler_ordre_service(request, projet_id, ordre_id):
     return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
 def telecharger_document_os(request, ordre_id):
     ordre = get_object_or_404(OrdreService, id=ordre_id)
-    #path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),  
-    return secure_download(request, 'OrdreService', ordre.id)
-
-    if ordre.documents and os.path.exists(ordre.documents.path):
-        with open(ordre.documents.path, 'rb') as file:
-            response = HttpResponse(file.read(), content_type='application/octet-stream')
-            response['Content-Disposition'] = f'attachment; filename="{os.path.basename(ordre.documents.name)}"'
-            return response
-    else:
-        messages.error(request, "Le document n'existe pas.")
+    try:
+        return secure_download(request, 'OrdreService', ordre_id)
+    except Exception as e:
+        messages.error(request, f"❌ Erreur lors du telechargement: {e}")
         return redirect('projets:details_ordre_service', projet_id=ordre.projet.id, ordre_id=ordre.id)

@@ -148,16 +148,16 @@
                 <h2 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-3 sm:mb-4 flex items-center gap-2">
                     <i class="fas fa-file"></i> Documents joints
                 </h2>
-                {% if ordre.documents %}
+                {% if ordre.fichier %}
                     <div class="flex flex-col sm:flex-row sm:items-center gap-3 p-3 bg-[#2E2E2E] rounded-lg">
                         <div class="flex items-center gap-3">
                             <i class="fas fa-file-pdf text-red-400 text-lg sm:text-xl"></i>
                             <div class="flex-1 min-w-0">
-                                <p class="text-white text-sm sm:text-base break-words">{{ ordre.documents.name }}</p>
-                                <p class="text-xs sm:text-sm text-gray-400">Taille: {{ ordre.documents.size|filesizeformat }}</p>
+                                <p class="text-white text-sm sm:text-base break-words">{{ ordre.fichier.name }}</p>
+                                <p class="text-xs sm:text-sm text-gray-400">Taille: {{ ordre.fichier.size|filesizeformat }}</p>
                             </div>
                         </div>
-                        <a href="{{ ordre.documents.url }}" 
+                        <a href="{{ ordre.fichier.url }}" 
                            target="_blank"
                            class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive mt-2 sm:mt-0">
                             <i class="fas fa-download"></i> Télécharger

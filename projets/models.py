@@ -508,10 +508,18 @@ class OrdreService(models.Model):
     # Champ compatible Cloudinary
     if getattr(settings, 'USE_CLOUDINARY', False):
         from cloudinary.models import CloudinaryField
-        documents = CloudinaryField('raw', folder='ordres_services', resource_type='raw', null=True, blank=True)
+        fichier = CloudinaryField('raw', 
+                                    folder='ordres_services', 
+                                    resource_type='raw', 
+                                    null=True, 
+                                    blank=True,
+                                    db_column='documents')
     else:
-        documents = models.FileField(upload_to='ordres_services/', null=True, blank=True)
-    
+        fichier = models.FileField(upload_to='ordres_services/', 
+                                     null=True, 
+                                     blank=True,
+                                     db_column='documents')
+    original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='BROUILLON')
     ordre_sequence = models.IntegerField(help_text="Ordre dans la séquence du projet")
     
@@ -525,7 +533,15 @@ class OrdreService(models.Model):
     class Meta:
         unique_together = ['projet', 'reference']
         ordering = ['projet', 'ordre_sequence', 'date_publication']
-
+    @property
+    def get_file_name(self):
+        if self.original_filename:
+            return self.original_filename
+        elif self.fichier:
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                return self.__str__()
+            return os.path.basename(self.fichier.name)
+        return ""
     def __str__(self):
         return f"{self.reference} - {self.titre}"
     
@@ -587,9 +603,9 @@ class OrdreService(models.Model):
         if errors:
             raise ValidationError(errors)
     def download_url(self):
-        if not self.documents:
+        if not self.fichier:
             return None
-        return self.documents.build_url(flags='attahement')
+        return self.fichier.build_url(flags='attahement')
     @property
     def influence_delai(self):
         return self.type_os.code in ['OSC', 'OSA', 'OSR']
@@ -647,15 +663,25 @@ class DocumentAdministratif(models.Model):
         fichier = CloudinaryField('raw', folder='documents_administratifs', resource_type='raw', default=None)
     else:
         fichier = models.FileField(_("Fichier"), upload_to=document_upload_path)
-    
+        
+    original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     type_document = models.CharField(_("Type de document"), max_length=100)
     date_remise = models.DateField(_("Date de remise"), null=True, blank=True)
-    
+    description = models.TextField(_("Description"), blank=True)
+
     class Meta:
         verbose_name = _("Document administratif")
         verbose_name_plural = _("Documents administratifs")
         ordering = ['type_document']
-
+    @property
+    def get_file_name(self):
+        if self.original_filename:
+            return self.original_filename
+        elif self.fichier:
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                return self.__str__()
+            return os.path.basename(self.fichier.name)
+        return ""
     def __str__(self):
         return f"{self.type_document} - {self.projet.nom}"
 
@@ -940,57 +966,343 @@ class LigneBordereau(models.Model):
 # ------------------------ Notification ------------------------
 class Notification(models.Model):
     TYPE_NOTIFICATION = [
+        # TÂCHES (Nouveaux types)
+        ('NOUVELLE_TACHE', 'Nouvelle tâche créée'),
+        ('TACHE_ASSIGNEE', 'Tâche assignée'),
+        ('TACHE_MODIFIEE', 'Tâche modifiée'),
+        ('TACHE_TERMINEE', 'Tâche terminée'),
+        ('TACHE_URGENTE', 'Tâche devenue urgente'),
+        ('TACHE_ECHEANCE', 'Échéance tâche approchante'),
+        ('TACHE_EN_RETARD', 'Tâche en retard'),
+        
+        # PROJETS (Types existants améliorés)
         ('RETARD', 'Projet en retard'),
         ('NOUVEAU_AO', "Nouvel appel d'offres"),
         ('RECEPTION', 'Réception validée'),
         ('REUNION', 'Rendez-vous'),
         ('ECHEANCE', 'Échéance approchante'),
+        
+        # ORDRES DE SERVICE
         ('OS_NOTIFIE', 'Ordre de service notifié'),
         ('OS_ANNULE', 'Ordre de service annulé'),
         ('OS_ECHEANCE', 'Échéance OS approchante'),
+        
+        # VALIDATIONS
+        ('VALIDATION_ATTACHEMENT', 'Validation attachement requise'),
+        ('ETAPE_VALIDEE', 'Étape de validation terminée'),
+        ('DOCUMENT_A_SIGNER', 'Document à signer'),
+        
+        # FICHIERS
+        ('FICHIER_MODIFIE', 'Fichier modifié'),
+        ('FICHIER_SUPPRIME', 'Fichier supprimé'),
+        
+        # UTILISATEURS
+        ('NOUVEL_UTILISATEUR', 'Nouvel utilisateur ajouté'),
+        ('ROLE_MODIFIE', 'Rôle modifié'),
+        
         ('AUTRE', 'Autre'),
     ]
-
+    
+    NIVEAU_URGENCE = [
+        ('INFO', 'Information'),
+        ('FAIBLE', 'Faible'),
+        ('MOYEN', 'Moyen'),
+        ('ELEVE', 'Élevé'),
+        ('CRITIQUE', 'Critique'),
+    ]
+    
+    # Champs existants
     utilisateur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
-    projet = models.ForeignKey(Projet, on_delete=models.CASCADE, null=True, blank=True)
-    type_notification = models.CharField(max_length=20, choices=TYPE_NOTIFICATION)
+    projet = models.ForeignKey('Projet', on_delete=models.CASCADE, null=True, blank=True)
+    type_notification = models.CharField(max_length=30, choices=TYPE_NOTIFICATION)
     titre = models.CharField(max_length=100)
     message = models.TextField()
     lue = models.BooleanField(default=False)
+    niveau_urgence = models.CharField(max_length=10, choices=NIVEAU_URGENCE, default='MOYEN')
+    action_url = models.CharField(max_length=200, blank=True, null=True)
     date_creation = models.DateTimeField(auto_now_add=True)
     date_echeance = models.DateField(null=True, blank=True)
-
+    date_lue = models.DateTimeField(null=True, blank=True)
+    
+    # NOUVEAUX CHAMPS
+    emetteur = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='notifications_envoyees',
+        verbose_name="Émetteur de la notification"
+    )
+    
+    objet_id = models.PositiveIntegerField(null=True, blank=True, help_text="ID de l'objet concerné")
+    objet_type = models.CharField(
+        max_length=50, 
+        blank=True, 
+        help_text="Type d'objet (ex: 'tache', 'document', 'reunion')"
+    )
+    
+    expire_le = models.DateTimeField(
+        null=True, 
+        blank=True, 
+        help_text="Date d'expiration de la notification"
+    )
+    
+    prioritaire = models.BooleanField(
+        default=False,
+        help_text="Notification prioritaire (s'affiche en premier)"
+    )
+    
+    can_be_closed = models.BooleanField(
+        default=True,
+        help_text="L'utilisateur peut fermer cette notification"
+    )
+    
+    # Relations optionnelles pour plus de flexibilité
+    tache = models.ForeignKey(
+        'Tache', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    
+    document = models.ForeignKey(
+        'DocumentAdministratif', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    
+    ordre_service = models.ForeignKey(
+        'OrdreService', 
+        on_delete=models.CASCADE, 
+        null=True, 
+        blank=True,
+        related_name='notifications'
+    )
+    
     class Meta:
-        ordering = ['-date_creation']
-        verbose_name = _("Notification")
-        verbose_name_plural = _("Notifications")
+        ordering = ['-prioritaire', '-date_creation']
+        indexes = [
+            models.Index(fields=['utilisateur', 'lue']),
+            models.Index(fields=['utilisateur', 'prioritaire']),
+            models.Index(fields=['date_creation']),
+            models.Index(fields=['expire_le']),
+            models.Index(fields=['type_notification']),
+            models.Index(fields=['objet_type', 'objet_id']),
+        ]
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
 
     def __str__(self):
-        return f"{self.titre} - {self.utilisateur.username}"
+        return f"{self.titre} - {self.utilisateur.username} ({'Lue' if self.lue else 'Non lue'})"
 
-    @classmethod
-    def creer_notification_projet(cls, projet: Projet, type_notif):
-        users = User.objects.all()
-        titre_map = {
-            'RETARD': f"Projet en retard: {projet.nom}",
-            'NOUVEAU_AO': f"Nouvel appel d'offres: {projet.nom}",
-            'RECEPTION': f"Réception validée: {projet.nom}",
-            'ECHEANCE': f"Échéance approchante: {projet.nom}",
+    def marquer_comme_lue(self, save=True):
+        """Marque la notification comme lue"""
+        if not self.lue:
+            self.lue = True
+            self.date_lue = timezone.now()
+            if save:
+                self.save()
+            return True
+        return False
+
+    def marquer_comme_non_lue(self, save=True):
+        """Marque la notification comme non lue"""
+        if self.lue:
+            self.lue = False
+            self.date_lue = None
+            if save:
+                self.save()
+            return True
+        return False
+
+    @property
+    def est_recente(self):
+        """Vérifie si la notification a été créée il y a moins de 24h"""
+        return (timezone.now() - self.date_creation).total_seconds() < 86400  # 24h
+
+    @property
+    def est_expiree(self):
+        """Vérifie si la notification est expirée"""
+        if self.expire_le:
+            return timezone.now() > self.expire_le
+        return False
+
+    @property
+    def jours_restants(self):
+        """Retourne le nombre de jours avant expiration"""
+        if self.date_echeance:
+            delta = self.date_echeance - timezone.now().date()
+            return delta.days if delta.days > 0 else 0
+        return None
+
+    @property
+    def badge_color(self):
+        """Retourne la couleur du badge selon le type"""
+        colors = {
+            'NOUVELLE_TACHE': 'primary',
+            'TACHE_ASSIGNEE': 'info',
+            'TACHE_TERMINEE': 'success',
+            'TACHE_URGENTE': 'danger',
+            'TACHE_EN_RETARD': 'warning',
+            'OS_NOTIFIE': 'info',
+            'OS_ANNULE': 'danger',
+            'VALIDATION_ATTACHEMENT': 'warning',
+            'DOCUMENT_A_SIGNER': 'primary',
+        }
+        return colors.get(self.type_notification, 'secondary')
+
+    @property
+    def icon_class(self):
+        """Retourne la classe d'icône selon le type"""
+        icons = {
+            'NOUVELLE_TACHE': 'fas fa-tasks',
+            'TACHE_ASSIGNEE': 'fas fa-user-check',
+            'TACHE_TERMINEE': 'fas fa-check-circle',
+            'TACHE_URGENTE': 'fas fa-exclamation-triangle',
+            'TACHE_EN_RETARD': 'fas fa-clock',
+            'OS_NOTIFIE': 'fas fa-file-contract',
+            'OS_ANNULE': 'fas fa-ban',
+            'VALIDATION_ATTACHEMENT': 'fas fa-file-upload',
+            'DOCUMENT_A_SIGNER': 'fas fa-signature',
+            'REUNION': 'fas fa-calendar-alt',
+            'ECHEANCE': 'fas fa-calendar-times',
+        }
+        return icons.get(self.type_notification, 'fas fa-bell')
+
+    def get_absolute_url(self):
+        """Retourne l'URL de l'objet concerné"""
+        if self.action_url:
+            return self.action_url
+        
+        # URLs par défaut selon le type d'objet
+        url_map = {
+            'tache': f'/taches/{self.objet_id}/',
+            'document': f'/documents/{self.objet_id}/',
+            'projet': f'/projets/{self.projet_id}/' if self.projet_id else None,
+            'ordre_service': f'/ordres-service/{self.objet_id}/',
         }
         
-        for user in users:
-            cls.objects.create(
-                utilisateur=user,
-                projet=projet,
-                type_notification=type_notif,
-                titre=titre_map.get(type_notif, "Notification projet"),
-                message=f"Le projet {projet.nom} ({projet.numero}) nécessite votre attention.",
-                date_echeance=projet.date_limite_soumission if type_notif == 'ECHEANCE' else None
-            )
+        return url_map.get(self.objet_type, '#')
+
+    # ==================== MÉTHODES DE CLASSE AMÉLIORÉES ====================
 
     @classmethod
-    def creer_notification_os(cls, ordre_service, type_notif, utilisateurs_cibles=None):
+    def creer_notification_tache(cls, tache, type_notif, emetteur=None, utilisateurs_cibles=None):
+        """Crée une notification pour une tâche"""
         if utilisateurs_cibles is None:
+            # Par défaut, notifier le responsable et les utilisateurs du projet
+            utilisateurs_cibles = set(tache.projet.users.all())
+            if tache.responsable:
+                utilisateurs_cibles.add(tache.responsable)
+        
+        titre_map = {
+            'NOUVELLE_TACHE': f"Nouvelle tâche : {tache.titre}",
+            'TACHE_ASSIGNEE': f"Tâche assignée : {tache.titre}",
+            'TACHE_MODIFIEE': f"Tâche modifiée : {tache.titre}",
+            'TACHE_TERMINEE': f"Tâche terminée : {tache.titre}",
+            'TACHE_URGENTE': f"⚠️ Tâche urgente : {tache.titre}",
+            'TACHE_ECHEANCE': f"Échéance approchante : {tache.titre}",
+            'TACHE_EN_RETARD': f"Tâche en retard : {tache.titre}",
+        }
+        
+        message_map = {
+            'NOUVELLE_TACHE': f"Une nouvelle tâche a été créée dans le projet {tache.projet.nom}",
+            'TACHE_ASSIGNEE': f"Vous avez été assigné à la tâche '{tache.titre}'",
+            'TACHE_MODIFIEE': f"La tâche '{tache.titre}' a été modifiée",
+            'TACHE_TERMINEE': f"La tâche '{tache.titre}' a été marquée comme terminée",
+            'TACHE_URGENTE': f"La tâche '{tache.titre}' a été marquée comme URGENTE",
+            'TACHE_ECHEANCE': f"La tâche '{tache.titre}' approche de son échéance ({tache.date_fin})",
+            'TACHE_EN_RETARD': f"La tâche '{tache.titre}' est en retard de {tache.jours_retard} jour(s)",
+        }
+        
+        niveau_urgence_map = {
+            'NOUVELLE_TACHE': 'MOYEN',
+            'TACHE_ASSIGNEE': 'MOYEN',
+            'TACHE_MODIFIEE': 'FAIBLE',
+            'TACHE_TERMINEE': 'INFO',
+            'TACHE_URGENTE': 'CRITIQUE',
+            'TACHE_ECHEANCE': 'ELEVE',
+            'TACHE_EN_RETARD': 'CRITIQUE',
+        }
+        
+        notifications = []
+        for user in utilisateurs_cibles:
+            notification = cls(
+                utilisateur=user,
+                projet=tache.projet,
+                tache=tache,
+                emetteur=emetteur,
+                type_notification=type_notif,
+                titre=titre_map.get(type_notif, f"Notification tâche"),
+                message=message_map.get(type_notif, f"Notification pour la tâche {tache.titre}"),
+                niveau_urgence=niveau_urgence_map.get(type_notif, 'MOYEN'),
+                action_url=f"/taches/{tache.id}/",
+                objet_id=tache.id,
+                objet_type='tache',
+                date_echeance=tache.date_fin if type_notif in ['TACHE_ECHEANCE', 'TACHE_EN_RETARD'] else None,
+                prioritaire=type_notif in ['TACHE_URGENTE', 'TACHE_EN_RETARD'],
+                can_be_closed=type_notif not in ['TACHE_URGENTE', 'TACHE_EN_RETARD']
+            )
+            notifications.append(notification)
+        
+        cls.objects.bulk_create(notifications)
+        
+        # Log pour le débogage
+        print(f"📢 {len(notifications)} notifications créées pour la tâche {tache.titre}")
+        
+        return notifications
+
+    @classmethod
+    def creer_notification_projet(cls, projet, type_notif, emetteur=None, utilisateurs_cibles=None):
+        """Crée une notification pour un projet"""
+        if utilisateurs_cibles is None:
+            utilisateurs_cibles = projet.users.all()
+        
+        titre_map = {
+            'RETARD': f"⏰ Projet en retard: {projet.nom}",
+            'NOUVEAU_AO': f"📄 Nouvel appel d'offres: {projet.nom}",
+            'RECEPTION': f"✅ Réception validée: {projet.nom}",
+            'ECHEANCE': f"📅 Échéance approchante: {projet.nom}",
+            'REUNION': f"👥 Rendez-vous projet: {projet.nom}",
+        }
+        
+        message_map = {
+            'RETARD': f"Le projet {projet.nom} ({projet.numero}) est en retard.",
+            'NOUVEAU_AO': f"Un nouvel appel d'offres a été créé pour le projet {projet.nom}.",
+            'RECEPTION': f"La réception du projet {projet.nom} a été validée.",
+            'ECHEANCE': f"L'échéance du projet {projet.nom} approche ({projet.date_limite_soumission}).",
+            'REUNION': f"Un nouveau rendez-vous a été planifié pour le projet {projet.nom}.",
+        }
+        
+        notifications = []
+        for user in utilisateurs_cibles:
+            notification = cls(
+                utilisateur=user,
+                projet=projet,
+                emetteur=emetteur,
+                type_notification=type_notif,
+                titre=titre_map.get(type_notif, f"Notification projet"),
+                message=message_map.get(type_notif, f"Notification pour le projet {projet.nom}"),
+                action_url=f"/projets/{projet.id}/",
+                objet_id=projet.id,
+                objet_type='projet',
+                date_echeance=projet.date_limite_soumission if type_notif == 'ECHEANCE' else None,
+                prioritaire=type_notif in ['RETARD', 'ECHEANCE'],
+                can_be_closed=True
+            )
+            notifications.append(notification)
+        
+        cls.objects.bulk_create(notifications)
+        return notifications
+
+    @classmethod
+    def creer_notification_os(cls, ordre_service, type_notif, emetteur=None, utilisateurs_cibles=None):
+        """Crée une notification pour un ordre de service"""
+        if utilisateurs_cibles is None:
+            # Notifier les utilisateurs du projet et les admins
             from django.db.models import Q
             utilisateurs_cibles = User.objects.filter(
                 Q(profile__projets=ordre_service.projet) | 
@@ -998,9 +1310,9 @@ class Notification(models.Model):
             ).distinct()
         
         titre_map = {
-            'OS_NOTIFIE': f"OS notifié: {ordre_service.reference}",
-            'OS_ANNULE': f"OS annulé: {ordre_service.reference}",
-            'OS_ECHEANCE': f"Échéance OS: {ordre_service.reference}",
+            'OS_NOTIFIE': f"📋 OS notifié: {ordre_service.reference}",
+            'OS_ANNULE': f"❌ OS annulé: {ordre_service.reference}",
+            'OS_ECHEANCE': f"⏰ Échéance OS: {ordre_service.reference}",
         }
         
         message_map = {
@@ -1014,71 +1326,66 @@ class Notification(models.Model):
             notification = cls(
                 utilisateur=user,
                 projet=ordre_service.projet,
+                ordre_service=ordre_service,
+                emetteur=emetteur,
                 type_notification=type_notif,
                 titre=titre_map.get(type_notif, "Notification OS"),
                 message=message_map.get(type_notif, f"Notification pour l'OS {ordre_service.reference}"),
-                date_echeance=ordre_service.date_limite if type_notif == 'OS_ECHEANCE' else None
+                action_url=f"/ordres-service/{ordre_service.id}/",
+                objet_id=ordre_service.id,
+                objet_type='ordre_service',
+                date_echeance=ordre_service.date_limite if type_notif == 'OS_ECHEANCE' else None,
+                prioritaire=type_notif in ['OS_ANNULE', 'OS_ECHEANCE'],
+                can_be_closed=True
             )
             notifications.append(notification)
         
         cls.objects.bulk_create(notifications)
-        return len(notifications)
+        return notifications
 
-@receiver(post_save, sender=Projet)
-def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
-    if not created:
-        ancien_projet = Projet.objects.get(pk=instance.pk)
-        
-        if instance.en_retard and not ancien_projet.en_retard:
-            Notification.creer_notification_projet(instance, 'RETARD')
-        
-        if instance.a_traiter and not ancien_projet.a_traiter:
-            Notification.creer_notification_projet(instance, 'NOUVEAU_AO')
-        
-        if instance.reception_validee and not ancien_projet.reception_validee:
-            Notification.creer_notification_projet(instance, 'RECEPTION')
-        
-        if instance.date_limite_soumission and instance.date_limite_soumission != ancien_projet.date_limite_soumission:
-            jours_restants = (instance.date_limite_soumission - date.today()).days
-            if 0 < jours_restants <= 7:
-                Notification.creer_notification_projet(instance, 'ECHEANCE')
+    @classmethod
+    def nettoyer_notifications_expirees(cls):
+        """Supprime les notifications expirées"""
+        expired = cls.objects.filter(expire_le__lt=timezone.now())
+        count = expired.count()
+        expired.delete()
+        return count
 
-@receiver(pre_save, sender=Projet)
-def mettre_a_jour_indicateurs(sender, instance, **kwargs):
-    if not getattr(instance, '_updating_flags', False):
-        instance.update_status_flags(force_save=False)
-
-@receiver(post_save, sender=OrdreService)
-def gerer_notifications_os(sender, instance: OrdreService, created, **kwargs):
-    if created:
-        Notification.creer_notification_os(
-            instance, 
-            'AUTRE',
-            utilisateurs_cibles=User.objects.filter(
-                profile__role__in=['ADMIN', 'CHEF_PROJET']
-            )
+    @classmethod
+    def marquer_toutes_comme_lues(cls, utilisateur):
+        """Marque toutes les notifications d'un utilisateur comme lues"""
+        updated = cls.objects.filter(
+            utilisateur=utilisateur, 
+            lue=False
+        ).update(
+            lue=True, 
+            date_lue=timezone.now()
         )
-    else:
-        try:
-            ancien_os = OrdreService.objects.get(pk=instance.pk)
-            
-            if instance.statut == 'NOTIFIE' and ancien_os.statut != 'NOTIFIE':
-                Notification.creer_notification_os(instance, 'OS_NOTIFIE')
-            elif instance.statut == 'ANNULE' and ancien_os.statut != 'ANNULE':
-                Notification.creer_notification_os(instance, 'OS_ANNULE')
-        except OrdreService.DoesNotExist:
-            pass
+        return updated
 
-@receiver(post_save, sender=OrdreService)
-def verifier_echeances_os(sender, instance: OrdreService, **kwargs):
-    if instance.date_limite:
-        jours_restants = (instance.date_limite - timezone.now().date()).days
+    @classmethod
+    def get_notifications_non_lues(cls, utilisateur):
+        """Retourne les notifications non lues d'un utilisateur"""
+        return cls.objects.filter(
+            utilisateur=utilisateur,
+            lue=False,
+            expire_le__isnull=True
+        ).exclude(
+            expire_le__lt=timezone.now()
+        ).order_by('-prioritaire', '-date_creation')
+
+    @classmethod
+    def get_statistiques(cls, utilisateur):
+        """Retourne des statistiques sur les notifications"""
+        notifications = cls.objects.filter(utilisateur=utilisateur)
         
-        if jours_restants == 7:
-            Notification.creer_notification_os(instance, 'OS_ECHEANCE')
-        elif jours_restants == 1:
-            Notification.creer_notification_os(instance, 'OS_ECHEANCE')
-
+        return {
+            'total': notifications.count(),
+            'non_lues': notifications.filter(lue=False).count(),
+            'prioritaires': notifications.filter(prioritaire=True, lue=False).count(),
+            'urgentes': notifications.filter(niveau_urgence='CRITIQUE', lue=False).count(),
+            'recentes': notifications.filter(date_creation__gte=timezone.now() - timedelta(days=1)).count(),
+        }
 # ------------------------ Client ------------------------
 class Client(models.Model):
     nom = models.CharField(max_length=100)
@@ -1144,7 +1451,7 @@ class FichierSuivi(models.Model):
         fichier = CloudinaryField('raw', folder='suivis_execution', resource_type='raw', default=None)
     else:
         fichier = models.FileField(_("Fichier"), upload_to=upload_path)
-    
+    original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     description = models.CharField(_("Description"), max_length=255, blank=True)
     date_ajout = models.DateTimeField(_("Date d'ajout"), default=timezone.now)
 
@@ -1152,7 +1459,15 @@ class FichierSuivi(models.Model):
         verbose_name = _("Fichier joint au suivi")
         verbose_name_plural = _("Fichiers joints au suivi")
         ordering = ['-date_ajout']
-
+    @property
+    def get_file_name(self):
+        if self.original_filename:
+            return self.original_filename
+        elif self.fichier:
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                return self.__str__()
+            return os.path.basename(self.fichier.name)
+        return ""
     def __str__(self):
         return f"{self.fichier.name}"
 
@@ -1326,6 +1641,7 @@ class ProcessValidation(models.Model):
     ]
     
     attachement = models.ForeignKey('Attachement', on_delete=models.CASCADE, related_name='validations', verbose_name="Attachement à valider")
+    tache_associee = models.OneToOneField('Tache', on_delete=models.SET_NULL, null=True, blank=True, related_name='validation_associee',  verbose_name="Tâche associée")
     type_validation = models.CharField(max_length=20, choices=TYPE_VALIDATION_CHOICES, default='TECHNIQUE', verbose_name="Type de validation")
     statut_validation = models.CharField(max_length=15, choices=STATUT_VALIDATION_CHOICES, default='EN_ATTENTE', verbose_name="Statut de la validation")
     validateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='validations_effectuees', verbose_name="Validateur")
@@ -1339,15 +1655,34 @@ class ProcessValidation(models.Model):
     # Champ compatible Cloudinary
     if getattr(settings, 'USE_CLOUDINARY', False):
         from cloudinary.models import CloudinaryField
-        fichier_validation = CloudinaryField('raw', folder='validations_attachements', resource_type='raw', null=True, blank=True)
+        fichier= CloudinaryField('raw', 
+                                folder='validations_attachements', 
+                                resource_type='raw', 
+                                null=True, 
+                                blank=True,
+                                db_column='fichier_validation',)
     else:
-        fichier_validation = models.FileField(upload_to='validations_attachements/%Y/%m/', null=True, blank=True, verbose_name="Fichier de validation")
+        fichier = models.FileField(upload_to='validations_attachements/%Y/%m/', 
+                                   null=True, 
+                                   blank=True, 
+                                   verbose_name="Fichier de validation",
+                                   db_column='fichier_validation',)
     
     ordre_validation = models.PositiveIntegerField(default=1, verbose_name="Ordre dans le processus de validation")
     est_obligatoire = models.BooleanField(default=True, verbose_name="Validation obligatoire")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
+    @property
+    def get_file_name(self):
+        if self.original_filename:
+            return self.original_filename
+        elif self.fichier:
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                return self.__str__()
+            return os.path.basename(self.fichier.name)
+        return ""
+    
     class Meta:
         verbose_name = "Processus de validation"
         verbose_name_plural = "Processus de validation"
@@ -1358,7 +1693,7 @@ class ProcessValidation(models.Model):
             models.Index(fields=['validateur', 'statut_validation']),
             models.Index(fields=['date_limite']),
         ]
-
+    
     def __str__(self):
         return f"Validation {self.get_type_validation_display()} - {self.attachement.numero} ({self.get_statut_validation_display()})"
 
@@ -1430,7 +1765,7 @@ class ProcessValidation(models.Model):
         self.validateur = user
         self.commentaires = commentaires
         if fichier:
-            self.fichier_validation = fichier
+            self.fichier = fichier
         self.save()
         return True
 
@@ -1442,7 +1777,7 @@ class ProcessValidation(models.Model):
         self.validateur = user
         self.motifs_rejet = motifs
         if fichier:
-            self.fichier_validation = fichier
+            self.fichier = fichier
         self.save()
 
     def demander_correction(self, user, commentaires):
@@ -1495,10 +1830,28 @@ class EtapeValidation(models.Model):
         # Champ compatible Cloudinary
     if getattr(settings, 'USE_CLOUDINARY', False):
         from cloudinary.models import CloudinaryField
-        fichier_validation = CloudinaryField('raw', folder='validations_attachements_etapes', resource_type='raw', null=True, blank=True)
+        fichier = CloudinaryField('raw', 
+                                    folder='validations_attachements_etapes', 
+                                    resource_type='raw', 
+                                    null=True, 
+                                    blank=True,
+                                    db_column='fichier_validation')
     else:
-        fichier_validation = models.FileField(upload_to='validations_attachements_etapes/%Y/%m/', null=True, blank=True, verbose_name="Fichier de validation")
-
+        fichier = models.FileField(upload_to='validations_attachements_etapes/%Y/%m/', 
+                                    null=True, 
+                                    blank=True, 
+                                    verbose_name="Fichier de validation",
+                                    db_column='fichier_validation')
+    original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
+    @property
+    def get_file_name(self):
+        if self.original_filename:
+            return self.original_filename
+        elif self.fichier:
+            if getattr(settings, 'USE_CLOUDINARY', False):
+                return self.__str__()
+            return os.path.basename(self.fichier.name)
+        return ""
     class Meta:
         verbose_name = "Étape de validation"
         verbose_name_plural = "Étapes de validation"

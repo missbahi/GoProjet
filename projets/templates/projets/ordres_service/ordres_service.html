@@ -320,8 +320,8 @@
                         <div class="flex items-center gap-2">
                             <i class="fas fa-file text-xs"></i>
                             <span>
-                                {% if ordre.documents %}
-                                    <a href="{{ ordre.documents.url }}" class="text-cyan-400 hover:underline break-all">Document</a>
+                                {% if ordre.fichier %}
+                                    <a href="{{ ordre.fichier.url }}" class="text-cyan-400 hover:underline break-all">Document</a>
                                 {% else %}
                                     Aucun document
                                 {% endif %}
@@ -506,11 +506,11 @@
                     </label>
                     <input type="file" id="documents" name="documents" 
                            class="form-control w-full px-3 py-2 rounded-lg text-sm sm:text-base">
-                    {% if ordre_a_modifier and ordre_a_modifier.documents %}
+                    {% if ordre_a_modifier and ordre_a_modifier.fichier %}
                         <div class="mt-2 text-xs sm:text-sm text-cyan-400">
                             <i class="fas fa-file mr-2"></i>
                             Document actuel: 
-                            <a href="{{ ordre_a_modifier.documents.url }}" class="underline break-all">{{ ordre_a_modifier.documents.name }}</a>
+                            <a href="{{ ordre_a_modifier.fichier.url }}" class="underline break-all">{{ ordre_a_modifier.fichier.name }}</a>
                             <label class="ml-2 sm:ml-4 text-gray-400 block sm:inline-block mt-1 sm:mt-0">
                                 <input type="checkbox" name="supprimer_document" value="1"> Supprimer le document
                             </label>
