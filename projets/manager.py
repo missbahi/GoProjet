@@ -417,3 +417,184 @@ class LineManager:
                 self.invalidate_cache()
                 return True
         return False
+
+class LigneHierarchique:
+    def __init__(self, data):
+        self.id = data['id']
+        self.parent_id = data['parent_id']
+        self.numero = data['numero']
+        self.designation = data['designation']
+        self.unite = data['unite']
+        self.quantite_realisee = data['quantite_realisee']
+        self.prix_unitaire = data['prix_unitaire']
+        self.montant = data['montant']
+        self.children = []
+        self.parent = None
+        self.collapsed = False
+    
+    def ajouter_enfant(self, enfant):
+        """Ajoute un enfant et met à jour son niveau"""
+        enfant.parent = self
+        self.children.append(enfant)
+    
+    def collapser(self):
+        self.collapsed = True
+        for enfant in self.children:
+            enfant.collapser()
+    @property
+    def has_children(self):
+        return len(self.children) > 0
+    
+    @property
+    def level(self):
+        level = 0
+        currentNode = self
+        while (currentNode.parent):
+            level += 1
+            currentNode = currentNode.parent
+        
+        return level
+    def collecter_tous_enfants(self):
+        """Collecte tous les enfants et petits-enfants de manière récursive"""
+        result = [self]
+        for enfant in self.children:
+            result.extend(enfant.collecter_tous_enfants())
+        return result
+    
+    def collecter_ids_enfants(self):
+        """Collecte tous les IDs des enfants (utile pour suppression)"""
+        ids = [self.id]
+        for enfant in self.children:
+            ids.extend(enfant.collecter_ids_enfants())
+        return ids
+    
+    def est_parent(self):
+        """Vérifie si la ligne a des enfants"""
+        return self.has_children
+    
+    def amount(self):
+        if self.has_children:
+            return sum(child.amount() for child in self.children)
+        return self.montant
+    
+    def export_to_table(self):
+        """
+        Exporte la ligne et ses enfants sous forme de tableau plat
+        avec les niveaux hiérarchiques préservés
+        """
+        result = []
+        
+        # Ajouter la ligne actuelle
+        result.append({
+            'id': self.id,
+            'parent_id': self.parent_id,
+            'numero': self.numero,
+            'designation': self.designation,
+            'unite': self.unite,
+            'quantite_realisee': self.quantite_realisee,
+            'prix_unitaire': self.prix_unitaire,
+            'montant': self.montant,
+            'level': self.level,
+            'has_children': self.has_children,
+            'is_parent': self.est_parent(),
+            'children_count': len(self.children),
+            'children_ids': [child.id for child in self.children]
+        })
+        
+        # Ajouter récursivement les enfants
+        for enfant in self.children:
+            result.extend(enfant.export_to_table())
+        
+        return result
+    
+    def export_to_json(self):
+        """Exporte en format JSON pour le template"""
+        return {
+            'id': self.id,
+            'parent_id': self.parent_id,
+            'numero': self.numero,
+            'designation': self.designation,
+            'unite': self.unite,
+            'quantite_realisee': self.quantite_realisee,
+            'prix_unitaire': self.prix_unitaire,
+            'montant': self.montant,
+            'level': self.level,
+            'has_children': self.has_children,
+            'is_parent': self.est_parent(),
+            'children': [child.export_to_json() for child in self.children]
+        }
+    
+    def trouver_par_id(self, ligne_id):
+        """Trouve une ligne par son ID dans l'arbre"""
+        if self.id == ligne_id:
+            return self
+        
+        for enfant in self.children:
+            result = enfant.trouver_par_id(ligne_id)
+            if result:
+                return result
+        
+        return None
+    
+    # Fonction utilitaire pour construire la hiérarchie
+def construire_hierarchie(lignes_data):
+    """
+    Convertit une liste plate de lignes en structure hiérarchique
+    
+    Args:
+        lignes_data: Liste de dictionnaires avec id et parent_id
+    
+    Returns:
+        Tuple: (racines, dict_reference)
+    """
+    
+    lignes_objects = {}
+    racines = []
+    
+    # Vérifier si la liste est vide
+    if not lignes_data:
+        return racines, lignes_objects
+    
+    # 1. Créer tous les objets
+    for ligne_data in lignes_data:
+        try:
+            ligne_obj = LigneHierarchique(ligne_data)
+            lignes_objects[ligne_obj.id] = ligne_obj
+        except KeyError as e:
+            print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
+            continue
+    
+    # 2. Construire la hiérarchie
+    for ligne_obj in list(lignes_objects.values()):
+        if ligne_obj.parent_id:
+            parent = lignes_objects.get(ligne_obj.parent_id)
+            if parent:
+                parent.ajouter_enfant(ligne_obj)
+            else:
+                # Parent non trouvé, traiter comme racine
+                racines.append(ligne_obj)
+        else:
+            racines.append(ligne_obj)
+    
+    # 3. Trier les racines par ID
+    racines.sort(key=lambda x: x.id)
+    
+    # 4. Trier les enfants récursivement
+    def trier_enfants(noeud):
+        noeud.children.sort(key=lambda x: x.id)
+        for enfant in noeud.children:
+            trier_enfants(enfant)
+    
+    for racine in racines:
+        trier_enfants(racine)
+    
+    # 5. Collapser les lignes avec montant zéro
+    # for racine in racines:
+    #     if racine.amount() == 0:
+    #         racine.collapser()
+    for ligne in lignes_objects.values():
+        ligne.montant = ligne.amount()
+        if ligne.montant == 0:
+            ligne.collapsed = True
+
+    return racines, lignes_objects

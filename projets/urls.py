@@ -51,13 +51,7 @@ urlpatterns = [
     path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
     
     path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),    
-    
-    # Gestion des notifications
-    path('notifications/', views.liste_notifications, name='liste_notifications'),
-    path('notifications/mark-as-read/<int:notification_id>/', views.mark_notification_as_read, name='mark_notification_as_read'),
-    path('notifications/mark-all-as-read/', views.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
-    path('notifications/create/', views.creer_notification, name='creer_notification'),
-    
+        
     # Gestion des ingénieurs
     path('ingenieurs/ajouter/', views.ajouter_ingenieur, name='ajouter_ingenieur'),
     path('ingenieurs/modifier/<int:ingenieur_id>/', views.modifier_ingenieur, name='modifier_ingenieur'),
@@ -143,9 +137,29 @@ urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', views.annuler_ordre_service, name='annuler_ordre_service'),
     path('api/projets/<int:projet_id>/jours-decoules/', views.api_jours_decoules, name='api_jours_decoules'),
     
-    path('notifications/json/', notifications.notifications_json, name='notifications_json'),
-    path('notifications/<int:notification_id>/marquer-lue/', notifications.marquer_comme_lue, name='marquer_notification_lue'),
-    path('notifications/tout-marquer-lue/', notifications.tout_marquer_comme_lue, name='tout_marquer_lue'),
+    # Gestion des notifications
+    path('notifications/', notifications.liste_notifications, name='liste_notifications'),
+    path('notifications/marquer-lue/<int:notification_id>/', 
+         notifications.mark_notification_as_read, name='mark_notification_as_read'),
+    path('notifications/marquer-non-lue/<int:notification_id>/', 
+         notifications.mark_notification_as_unread, name='mark_notification_as_unread'),
+    path('notifications/supprimer/<int:notification_id>/', 
+         notifications.delete_notification, name='delete_notification'),
+    
+    # Actions groupées
+    path('notifications/marquer-selection-lues/', 
+         notifications.mark_selected_as_read, name='mark_selected_as_read'),
+    path('notifications/supprimer-selection/', 
+         notifications.delete_selected_notifications, name='delete_selected_notifications'),
+    path('notifications/supprimer-toutes-lues/', 
+         notifications.delete_all_read_notifications, name='delete_all_read_notifications'),
+    path ('nitifications/creer-notification/', 
+         notifications.creer_notification, name='creer_notification'),
+    # Actions globales (existant déjà)
+    path('notifications/marquer-toutes-lues/', 
+         notifications.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
+    path('notifications/supprimer-toutes/', 
+         notifications.delete_all_notifications, name='delete_all_notifications'),
  ] 
 
 

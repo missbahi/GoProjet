@@ -1030,48 +1030,6 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                 'traceback': traceback.format_exc()
             }, status=500)
 
-#------------------ Gestion des notifications ------------------
-@login_required
-def creer_notification(request):
-    if request.method == 'POST':
-        projet_id = request.POST.get('projet_id')
-        type_notif = request.POST.get('type_notification')
-        message = request.POST.get('message')
-        
-        try:
-            projet = Projet.objects.get(id=projet_id)
-            
-            Notification.objects.create(
-                utilisateur=request.user,
-                projet=projet,
-                type_notification=type_notif,
-                titre=f"Notification manuelle - {projet.nom}",
-                message=message,
-                date_echeance=request.POST.get('date_echeance')
-            )
-            
-            messages.success(request, _("Notification créée avec succès!"))
-        except Projet.DoesNotExist:
-            messages.error(request, _("Projet introuvable"))
-        except Exception as e:
-            messages.error(request, _(f"Erreur: {str(e)}"))
-    
-    return redirect('projets:liste_projets')
-@login_required
-def liste_notifications(request):
-    notifications = Notification.objects.filter(utilisateur=request.user).order_by('-date_creation')
-    return render(request, 'projets/liste_notifications.html', {'notifications': notifications})
-@login_required
-def mark_notification_as_read(request, notification_id):
-    notification = get_object_or_404(Notification, id=notification_id, utilisateur=request.user)
-    notification.lue = True
-    notification.save()
-    return redirect('projets:liste_notifications')
-@login_required
-def mark_all_notifications_as_read(request):
-    Notification.objects.filter(utilisateur=request.user, lue=False).update(lue=True)
-    return redirect('projets:liste_notifications')
-
 #------------------ Gestion du profil ------------------
 
 def serve_avatar(request, filename):
@@ -2119,6 +2077,7 @@ def detail_attachement(request, attachement_id):
     lots_data = []
     montant_total = 0
     total_lignes = 0
+    from projets.manager import construire_hierarchie
     
     for lot in lots:
         
@@ -2133,38 +2092,60 @@ def detail_attachement(request, attachement_id):
         # Préparer les données des lignes avec le montant calculé
         lignes_data = []
         for ligne in lignes:
-            montant_ligne = (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0)
-            if montant_ligne > 0:
-                lignes_data.append({
-                    'numero': ligne.numero,
-                    'designation': ligne.designation,
-                    'unite': ligne.unite,
-                    'quantite_realisee': ligne.quantite_realisee if not ligne.is_title else None,
-                    'prix_unitaire': ligne.prix_unitaire if not ligne.is_title else None,
-                    'montant': montant_ligne if not ligne.is_title else None,
-                    'is_title': ligne.is_title,
-                })
-        while lignes_data and lignes_data[-1]['is_title']:
-            lignes_data.pop() # Retirer les titres de la fin
+            # Vérifier si c'est une ligne de détail (a des valeurs de quantité et prix)
+            is_detail = ligne.quantite_realisee is not None and ligne.prix_unitaire is not None
+            montant_ligne = (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0) if is_detail else 0
 
+            lignes_data.append({
+                'id': ligne.ligne_lot.id,
+                'parent_id': ligne.ligne_lot.parent.id if ligne.ligne_lot.parent else None,
+                'numero': ligne.numero,
+                'designation': ligne.designation,
+                'unite': ligne.unite,
+                'quantite_realisee': ligne.quantite_realisee if is_detail else None,
+                'prix_unitaire': ligne.prix_unitaire if is_detail else None,
+                'montant': montant_ligne
+            })
+    
+        # Supprimer les lignes vides à la fin (titres sans détails)
+        while lignes_data and lignes_data[-1]['quantite_realisee'] is None and lignes_data[-1]['prix_unitaire'] is None:
+            lignes_data.pop()
+        
+        
+        # Construire la hiérarchie
+        racines, references = construire_hierarchie(lignes_data)
+
+        # Exporter en tableau pour le template
+        lignes_table = []
+        for racine in racines:
+            lignes_table.extend(racine.export_to_table())
+        
+        # Calculer le total du lot (uniquement les lignes de détail)
+        total_lot = sum(
+            ligne['montant'] for ligne in lignes_table 
+            if ligne['quantite_realisee'] is not None
+        )
+        
         lots_data.append({
             'lot': lot,
-            'lignes': lignes_data,
-            'total_lot': total_lot
+            'lignes_hierarchiques': [racine.export_to_json() for racine in racines],  # Pour navigation hiérarchique
+            'lignes_table': lignes_table,  # Pour affichage en tableau avec niveaux
+            'total_lot': total_lot,
+            'references': references,  # Pour accès rapide aux objets
         })
         
         montant_total += total_lot
-        total_lignes += len(lignes_data)
+        total_lignes += len(lignes_table)
     
     context = {
         'attachement': attachement,
-        'lots_data': lots_data,
+        'lots_data': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot, references
         'montant_total': montant_total,
-        'total_lots': len(lots),
+        'total_lots': len(lots_data),
         'total_lignes': total_lignes,
     }
-    
     return render(request, 'projets/decomptes/detail_attachement.html', context)
+    
 @login_required
 def supprimer_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
