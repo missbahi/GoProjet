@@ -82,9 +82,10 @@
                 </td>
                 <td class="px-6 py-3 whitespace-nowrap no-print">
                     <div class="flex justify-center items-center space-x-4">
-                        <button onclick="openNotificationModal('{{ projet.id }}', '{{ projet.nom }}')" 
-                            class="text-indigo-600 hover:text-indigo-900 p-2 bg-indigo-50 hover:bg-indigo-100 rounded-lg transition-colors"
-                            title="Créer une notification">
+                        <button class="btn-create-notification"
+                                data-projet-id="{{ projet.id }}"
+                                data-projet-nom="{{ projet.nom|escapejs }}"
+                                title="Créer une notification">
                             <i class="fas fa-bell text-lg"></i>
                         </button>
                         {% if can_handler %}
@@ -140,4 +141,14 @@
             .catch(error => console.error('Error:', error));
         }
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.btn-create-notification').forEach(button => {
+            button.addEventListener('click', function() {
+                const projetId = this.dataset.projetId;
+                const projetNom = this.dataset.projetNom;
+                openNotificationModal(projetId, projetNom);
+            });
+        });
+    });
 </script>

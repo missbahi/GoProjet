@@ -13,13 +13,13 @@ def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
         from projets.services.notification_service import NotificationService
         NotificationService.creer_notification_personnalisee(
             utilisateur=instance.chef_projet,
-            type_notif='NOUVEAU_AO',
+            type_notif='PROJET_MODIFIE',
             titre=f"Nouveau projet: {instance.nom}",
             message=f"Le projet {instance.nom} a été créé.",
             projet=instance,
             niveau_urgence='MOYEN'
         )
-    else:
+    else: 
         ancien_projet = Projet.objects.get(pk=instance.pk)
         
         if instance.en_retard and not ancien_projet.en_retard:
@@ -38,16 +38,39 @@ def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
                 Notification.creer_notification_projet(instance, 'ECHEANCE')
 
 @receiver(post_save, sender=Attachement)
-def notifier_validation_attachement(sender, instance: Attachement, created, **kwargs):
-    if instance.statut == 'TRANSMIS':
-        from projets.services.notification_service import NotificationService
-        # Notifier les validateurs techniques
-        validateurs = User.objects.filter(
-            profile__role__in=['TECHNICIEN', 'ADMIN'],
-            is_active=True
-        )
-        for validateur in validateurs:
-            NotificationService.notifier_validation_attachement(instance, validateur)
+def notifier_attachement_modifie(sender, instance: Attachement, created, **kwargs):
+    print('notifier_validation_attachement')
+    from projets.services.notification_service import NotificationService
+    users = User.objects.filter(projets__id=instance.projet_id)
+    type_notif = ''
+    statut = instance.statut
+    if created:
+        type_notif = 'NOUVEL_ATTACHEMENT'
+    elif statut == 'BROUILLON':
+        type_notif = 'ATTACHEMENT_BROUILLON'
+    elif statut == 'SIGNE':
+        type_notif = 'ATTACHEMENT_SIGNE'
+    elif statut == 'TRANSMIS':
+        type_notif = 'ATTACHEMENT_TRANSMIS'
+    elif statut == 'VALIDE':
+        type_notif = 'ATTACHEMENT_VALIDE'
+    elif statut == 'REFUSE':
+        type_notif = 'ATTACHEMENT_REFUSE'
+    elif statut == 'MODIFIE':
+        type_notif = 'ATTACHEMENT_MODIFIE'
+    else:
+        return
+    
+    # TODO: notifier les validateurs techniques
+    # en attendant on prend tous les utilisateurs du projet
+    if hasattr(instance, 'modifie_par') and instance.modifie_par:
+        user_projet = instance.modifie_par
+    else:
+        user_projet = None
+
+    for user in users:
+        NotificationService.notifier_attachement_modifie(instance, user_projet, user, type_notif)
+            
    
 @receiver(pre_save, sender=Projet)
 def mettre_a_jour_indicateurs(sender, instance, **kwargs):

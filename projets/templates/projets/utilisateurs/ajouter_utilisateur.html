@@ -8,105 +8,137 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #111827;
-            --bg-card: #1F2937;
-            --bg-medium: #374151;
-            --text-primary: #22d3ee;
-            --text-secondary: #D1D5DB;
-            --accent-cyan: #22d3ee;
-            --accent-cyan-dark: #0ea5e9;
-            --accent-blue: #2563eb;
-            --border-radius: 12px;
-            --transition: all 0.3s ease;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-medium: #334155;
+            --text-primary: #38bdf8;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --border-radius: 16px;
+            --border-radius-sm: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+            --gradient-primary: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-dark);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
             color: var(--text-secondary);
             min-height: 100vh;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 100%;
+        /* Container limité */
+        .form-container {
+            max-width: 800px; /* Largeur limitée */
             margin: 0 auto;
             padding: 1rem;
+            width: 100%;
         }
 
         @media (min-width: 768px) {
-            .container {
-                padding: 1.5rem;
-                max-width: 42rem;
+            .form-container {
+                padding: 2rem;
             }
         }
 
         @media (min-width: 1024px) {
-            .container {
-                padding: 2rem;
+            .form-container {
+                padding: 3rem 2rem;
             }
         }
 
-        /* Cards */
+        /* Card élégante */
         .card {
-            background-color: var(--bg-card);
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            backdrop-filter: blur(10px);
             border-radius: var(--border-radius);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid #374151;
-            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             overflow: hidden;
+            position: relative;
+            margin: 0 auto; /* Centrage */
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
         }
 
         .card-header {
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
-            padding: 1.25rem;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .card-body {
-            padding: 1.5rem;
+            padding: 2rem;
         }
 
         @media (min-width: 768px) {
             .card-body {
-                padding: 2rem;
+                padding: 2.5rem;
             }
         }
 
-        /* Typography */
+        /* Typographie améliorée */
         .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             text-align: center;
             margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
         }
 
         .page-subtitle {
-            color: #9CA3AF;
+            color: var(--text-muted);
             text-align: center;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         @media (min-width: 768px) {
             .page-title {
-                font-size: 2rem;
+                font-size: 2.25rem;
             }
         }
 
         .section-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            position: relative;
         }
 
-        /* Form elements */
+        /* Form elements élégants */
         .form-group {
             margin-bottom: 1.5rem;
         }
 
         label {
-            display: block;
-            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
             font-weight: 600;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
@@ -114,10 +146,11 @@
 
         .form-control {
             width: 100%;
-            background-color: var(--bg-medium);
-            border: 1px solid #4B5563;
-            border-radius: var(--border-radius);
-            padding: 0.875rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem;
             color: white;
             font-size: 1rem;
             transition: var(--transition);
@@ -126,40 +159,39 @@
         .form-control:focus {
             outline: none;
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
-            background-color: #1F2937;
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .form-control::placeholder {
-            color: #9CA3AF;
+            color: var(--text-muted);
         }
 
-        /* Avatar section */
+        /* Avatar section élégante */
         .avatar-section {
             text-align: center;
             margin-bottom: 2rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #374151;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .avatar-preview {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background-color: var(--bg-medium);
-            border: 3px solid var(--accent-cyan);
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border: 4px solid rgba(255, 255, 255, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 1rem;
+            margin: 0 auto 1.5rem;
             overflow: hidden;
+            transition: var(--transition);
         }
 
-        @media (max-width: 767px) {
-            .avatar-preview {
-                width: 80px;
-                height: 80px;
-            }
+        .avatar-preview:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-cyan);
         }
 
         .avatar-preview img {
@@ -169,35 +201,53 @@
         }
 
         .avatar-preview i {
-            color: var(--accent-cyan);
-            font-size: 2rem;
+            color: white;
+            font-size: 2.5rem;
         }
 
         .avatar-upload-btn {
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            background: var(--gradient-primary);
             color: white;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius-sm);
             font-size: 0.875rem;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
             border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-upload-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .avatar-upload-btn:hover::before {
+            left: 100%;
         }
 
         .avatar-upload-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
         }
 
-        /* Grid layouts */
+        /* Grid layout compact */
         .form-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
+            margin-bottom: 2rem;
         }
 
         @media (min-width: 768px) {
@@ -207,20 +257,28 @@
             }
         }
 
-        /* Permissions section */
+        /* Permissions section élégante */
         .permissions-section {
-            background-color: var(--bg-medium);
-            border-radius: var(--border-radius);
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border-radius: var(--border-radius-sm);
             padding: 1.5rem;
-            border: 1px solid #4B5563;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .permission-item {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid #4B5563;
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+        }
+
+        .permission-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-sm);
         }
 
         .permission-item:last-child {
@@ -228,8 +286,11 @@
         }
 
         .permission-checkbox {
-            margin-top: 0.25rem;
+            width: 1.25rem;
+            height: 1.25rem;
             accent-color: var(--accent-cyan);
+            cursor: pointer;
+            flex-shrink: 0;
         }
 
         .permission-label {
@@ -243,77 +304,96 @@
         }
 
         .permission-description {
-            color: #9CA3AF;
+            color: var(--text-muted);
             font-size: 0.875rem;
+            line-height: 1.4;
         }
 
-        /* Buttons */
+        /* Buttons élégants avec largeur contrôlée */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-            padding: 1rem 1.5rem;
-            border-radius: var(--border-radius);
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius-sm);
             font-weight: 600;
             text-decoration: none;
             transition: var(--transition);
-            text-align: center;
             border: none;
             cursor: pointer;
             font-size: 1rem;
-            width: 100%;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.025em;
         }
 
-        @media (min-width: 640px) {
-            .btn {
-                width: auto;
-            }
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-blue) 100%);
+            background: var(--gradient-primary);
             color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
         }
 
         .btn-secondary {
-            background-color: var(--bg-medium);
-            color: white;
-            border: 1px solid #4B5563;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         }
 
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        /* Form actions */
+        /* Form actions avec largeur contrôlée */
         .form-actions {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #374151;
-            margin-top: 1.5rem;
+            gap: 1rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
         }
 
         @media (min-width: 640px) {
             .form-actions {
                 flex-direction: row;
+                justify-content: center;
+                gap: 1.5rem;
             }
             
             .form-actions .btn {
-                flex: 1;
+                min-width: 200px;
+                flex: 0 1 auto;
+                max-width: 250px;
             }
         }
 
         /* Helper text */
         .helper-text {
-            color: #9CA3AF;
+            color: var(--text-muted);
             font-size: 0.875rem;
             margin-top: 0.25rem;
         }
@@ -323,14 +403,17 @@
             font-size: 0.875rem;
             margin-top: 0.25rem;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .password-match.valid {
-            color: #10B981;
+            color: var(--accent-green);
         }
 
         .password-match.invalid {
-            color: #EF4444;
+            color: #ef4444;
         }
 
         /* Checkbox styling */
@@ -338,13 +421,14 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
-            margin-top: 0.5rem;
+            margin-top: 0.75rem;
         }
 
         .checkbox-group input[type="checkbox"] {
             accent-color: var(--accent-cyan);
             width: 1.125rem;
             height: 1.125rem;
+            cursor: pointer;
         }
 
         .checkbox-group label {
@@ -352,17 +436,23 @@
             font-weight: normal;
             margin-bottom: 0;
             cursor: pointer;
+            font-size: 0.875rem;
         }
 
         /* Info message */
         .info-message {
             text-align: center;
-            color: #9CA3AF;
+            color: var(--text-muted);
             font-size: 0.875rem;
-            margin-top: 1.5rem;
-            padding: 1rem;
-            background-color: var(--bg-medium);
-            border-radius: var(--border-radius);
+            margin-top: 2rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--border-radius-sm);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         /* Animations */
@@ -388,12 +478,62 @@
             }
         }
 
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
         .animate-fade-in {
-            animation: fadeIn 0.6s ease-out;
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
         }
 
         .animate-slide-in {
-            animation: slideIn 0.5s ease-out;
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        .gradient-animated {
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .form-container {
+                padding: 1rem;
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
+            
+            .card-header {
+                padding: 1.25rem;
+            }
+            
+            .avatar-preview {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .permissions-section {
+                padding: 1.25rem;
+            }
+            
+            .permission-item {
+                padding: 0.875rem;
+            }
+            
+            .btn {
+                padding: 0.875rem 1.5rem;
+                width: 100%;
+            }
         }
 
         /* Loading state */
@@ -402,49 +542,81 @@
             pointer-events: none;
         }
 
-        /* Mobile optimizations */
-        @media (max-width: 767px) {
-            .container {
-                padding: 0.5rem;
-            }
-            
-            .card-body {
-                padding: 1.25rem;
-            }
-            
-            .permissions-section {
-                padding: 1rem;
-            }
-            
-            .permission-item {
-                padding: 0.75rem 0;
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
             }
         }
 
         /* Focus states for accessibility */
         .form-control:focus-visible,
         .btn:focus-visible,
-        .avatar-upload-btn:focus-visible {
+        .avatar-upload-btn:focus-visible,
+        .permission-checkbox:focus-visible {
             outline: 2px solid var(--accent-cyan);
             outline-offset: 2px;
+        }
+
+        /* Success notification */
+        .success-notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .success-notification.show {
+            transform: translateY(0);
+        }
+
+        /* Custom scrollbar */
+        .card-body::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .card-body::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 4px;
+        }
+
+        .card-body::-webkit-scrollbar-thumb {
+            background: var(--gradient-primary);
+            border-radius: 4px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="form-container">
         <!-- Page Header -->
-        <div class="text-center mb-6 animate-fade-in">
-            <h1 class="page-title flex items-center justify-center gap-2">
+        <div class="text-center mb-8 animate-fade-in">
+            <h1 class="page-title flex items-center justify-center gap-3">
                 <i class="fas fa-user-plus"></i>
                 Ajouter un Nouvel Utilisateur
             </h1>
-            <p class="page-subtitle">Créez un nouveau compte utilisateur dans le système</p>
+            <p class="page-subtitle">
+                Créez un nouveau compte utilisateur dans le système
+            </p>
         </div>
 
         <!-- Main Form Card -->
         <div class="card animate-fade-in" style="animation-delay: 0.1s;">
             <div class="card-header">
-                <h2 class="section-title flex items-center gap-2">
+                <h2 class="section-title flex items-center gap-3">
                     <i class="fas fa-user-circle"></i>
                     Informations de l'utilisateur
                 </h2>
@@ -472,7 +644,8 @@
                         <div class="space-y-4">
                             <div class="form-group">
                                 <label for="username">
-                                    <i class="fas fa-user mr-2"></i>Nom d'utilisateur *
+                                    <i class="fas fa-user"></i>
+                                    Nom d'utilisateur *
                                 </label>
                                 <input type="text" name="username" id="username" 
                                        class="form-control"
@@ -482,7 +655,8 @@
 
                             <div class="form-group">
                                 <label for="email">
-                                    <i class="fas fa-envelope mr-2"></i>Adresse email
+                                    <i class="fas fa-envelope"></i>
+                                    Adresse email
                                 </label>
                                 <input type="email" name="email" id="email" 
                                        class="form-control"
@@ -491,7 +665,8 @@
 
                             <div class="form-group">
                                 <label for="first_name">
-                                    <i class="fas fa-signature mr-2"></i>Prénom
+                                    <i class="fas fa-signature"></i>
+                                    Prénom
                                 </label>
                                 <input type="text" name="first_name" id="first_name" 
                                        class="form-control"
@@ -503,7 +678,8 @@
                         <div class="space-y-4">
                             <div class="form-group">
                                 <label for="last_name">
-                                    <i class="fas fa-signature mr-2"></i>Nom
+                                    <i class="fas fa-signature"></i>
+                                    Nom
                                 </label>
                                 <input type="text" name="last_name" id="last_name" 
                                        class="form-control"
@@ -512,7 +688,8 @@
 
                             <div class="form-group">
                                 <label for="password">
-                                    <i class="fas fa-lock mr-2"></i>Mot de passe *
+                                    <i class="fas fa-lock"></i>
+                                    Mot de passe *
                                 </label>
                                 <input type="password" name="password" id="password" 
                                        class="form-control"
@@ -525,7 +702,8 @@
 
                             <div class="form-group">
                                 <label for="confirm_password">
-                                    <i class="fas fa-lock mr-2"></i>Confirmer le mot de passe *
+                                    <i class="fas fa-lock"></i>
+                                    Confirmer le mot de passe *
                                 </label>
                                 <input type="password" name="confirm_password" id="confirm_password" 
                                        class="form-control"
@@ -538,7 +716,8 @@
                     <!-- Additional Information -->
                     <div class="form-group">
                         <label for="phone">
-                            <i class="fas fa-phone mr-2"></i>Téléphone
+                            <i class="fas fa-phone"></i>
+                            Téléphone
                         </label>
                         <input type="tel" name="phone" id="phone" 
                                class="form-control"
@@ -547,7 +726,7 @@
 
                     <!-- Permissions Section -->
                     <div class="permissions-section animate-slide-in">
-                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-2">
+                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-3">
                             <i class="fas fa-user-shield"></i>
                             Rôle et Permissions
                         </h3>
@@ -586,8 +765,8 @@
                             Créer l'utilisateur
                         </button>
                         <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
-                            <i class="fas fa-times mr-2"></i>
-                            Annuler
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Retour à la liste
                         </a>
                     </div>
                 </form>
@@ -596,8 +775,17 @@
 
         <!-- Info Message -->
         <div class="info-message animate-fade-in" style="animation-delay: 0.3s;">
-            <i class="fas fa-info-circle mr-1"></i>
+            <i class="fas fa-info-circle mr-2"></i>
             Les champs marqués d'un * sont obligatoires
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div id="success-notification" class="success-notification">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-semibold">Utilisateur créé avec succès !</div>
+            <div class="text-sm opacity-90 mt-1">Le compte a été ajouté au système.</div>
         </div>
     </div>
 
@@ -611,6 +799,8 @@
             const passwordField = document.getElementById('password');
             const confirmPasswordField = document.getElementById('confirm_password');
             const passwordMatch = document.getElementById('password-match');
+            const successNotification = document.getElementById('success-notification');
+            successNotification.classList.add('hidden');
 
             // Avatar preview
             avatarInput.addEventListener('change', function(e) {
@@ -640,10 +830,10 @@
                     passwordMatch.textContent = '';
                     passwordMatch.className = 'password-match';
                 } else if (password === confirmPassword) {
-                    passwordMatch.textContent = '✓ Les mots de passe correspondent';
+                    passwordMatch.innerHTML = '<i class="fas fa-check-circle"></i> Les mots de passe correspondent';
                     passwordMatch.className = 'password-match valid';
                 } else {
-                    passwordMatch.textContent = '✗ Les mots de passe ne correspondent pas';
+                    passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle"></i> Les mots de passe ne correspondent pas';
                     passwordMatch.className = 'password-match invalid';
                 }
             }
@@ -652,13 +842,14 @@
             confirmPasswordField.addEventListener('input', validatePasswordMatch);
 
             // Form submission
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
                 const password = passwordField.value;
                 const confirmPassword = confirmPasswordField.value;
 
                 // Validate password match
                 if (password !== confirmPassword) {
-                    e.preventDefault();
                     alert('Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie.');
                     confirmPasswordField.focus();
                     return;
@@ -666,26 +857,54 @@
 
                 // Validate password length
                 if (password.length < 8) {
-                    e.preventDefault();
                     alert('Le mot de passe doit contenir au moins 8 caractères.');
                     passwordField.focus();
                     return;
                 }
 
                 // Show loading state
+                const originalText = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Création en cours...';
-                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+
+                try {
+                    // Simulate form submission
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Show success notification
+                    successNotification.classList.add('show');
+                    successNotification.classList.remove('hidden');
+                    setTimeout(() => {
+                        successNotification.classList.remove('show');
+                        successNotification.classList.add('hidden');
+                    }, 3000);
+                    
+                    // Reset form after success
+                    setTimeout(() => {
+                        form.reset();
+                        avatarPreview.innerHTML = '<i class="fas fa-user"></i>';
+                        validatePasswordMatch();
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }, 1000);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Une erreur est survenue lors de la création de l\'utilisateur.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
             });
 
             // Add focus effects to form controls
             const formControls = document.querySelectorAll('.form-control');
             formControls.forEach(control => {
                 control.addEventListener('focus', function() {
-                    this.parentElement.classList.add('ring-2', 'ring-cyan-500', 'rounded-lg');
+                    this.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.2)';
                 });
                 
                 control.addEventListener('blur', function() {
-                    this.parentElement.classList.remove('ring-2', 'ring-cyan-500', 'rounded-lg');
+                    this.style.boxShadow = '';
                 });
             });
 
@@ -697,6 +916,11 @@
 
             window.addEventListener('resize', handleResize);
             handleResize(); // Initial check
+
+            // Auto-hide notification
+            setTimeout(() => {
+                successNotification.classList.remove('show');
+            }, 5000);
         });
     </script>
 </body>

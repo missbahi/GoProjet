@@ -3,8 +3,6 @@
 from django.urls import path
 from .views import views
 from .views import notifications
-# from django.contrib.auth.views import LogoutView
-# from django.contrib.auth import views as auth_views
 
 app_name = "projets"
 
@@ -147,19 +145,20 @@ urlpatterns = [
          notifications.delete_notification, name='delete_notification'),
     
     # Actions groupées
-    path('notifications/marquer-selection-lues/', 
-         notifications.mark_selected_as_read, name='mark_selected_as_read'),
-    path('notifications/supprimer-selection/', 
-         notifications.delete_selected_notifications, name='delete_selected_notifications'),
-    path('notifications/supprimer-toutes-lues/', 
-         notifications.delete_all_read_notifications, name='delete_all_read_notifications'),
-    path ('nitifications/creer-notification/', 
-         notifications.creer_notification, name='creer_notification'),
-    # Actions globales (existant déjà)
-    path('notifications/marquer-toutes-lues/', 
-         notifications.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
-    path('notifications/supprimer-toutes/', 
-         notifications.delete_all_notifications, name='delete_all_notifications'),
+    path('notifications/marquer-selection-lues/', notifications.mark_selected_as_read, name='mark_selected_as_read'),
+    path('notifications/supprimer-selection/', notifications.delete_selected_notifications, name='delete_selected_notifications'),
+    path('notifications/supprimer-toutes-lues/', notifications.delete_all_read_notifications, name='delete_all_read_notifications'),
+    path ('nitifications/creer-notification/', notifications.creer_notification, name='creer_notification'),
+    # Actions globales
+    path('notifications/marquer-toutes-lues/', notifications.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
+    path('notifications/supprimer-toutes/', notifications.delete_all_notifications, name='delete_all_notifications'),
+    # API Notifications
+    path('api/projets/<int:projet_id>/notification-data/', notifications.notification_data_api, name='notification_data_api' ),
+    path('api/notifications/non-lues/', notifications.notifications_non_lues_api, name='notifications_non_lues_api'),
+    path('api/notifications/<int:notification_id>/marquer-lue/',notifications.marquer_notification_lue, name='marquer_notification_lue'),
+    
+    # Vue de création
+    path('notifications/creer/', notifications.creer_notification, name='creer_notification'),
  ] 
 
 

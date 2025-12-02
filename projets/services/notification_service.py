@@ -1,12 +1,15 @@
 from django.db import transaction
-from datetime import timedelta, timezone
-
+from datetime import timedelta
+from django.utils import timezone
 from projets.models import Notification
 
 class NotificationService:
     
     @staticmethod
     def creer_notification_personnalisee(utilisateur, type_notif, titre, message, projet=None, niveau_urgence='MOYEN', action_url=None):
+        ''' Créer une notification personnalisée '''
+        print(utilisateur, type_notif, titre, message, projet, niveau_urgence, action_url)
+        
         return Notification.objects.create(
             utilisateur=utilisateur,
             projet=projet,
@@ -18,15 +21,15 @@ class NotificationService:
         )
     
     @staticmethod
-    def notifier_validation_attachement(attachement, validateur):
+    def notifier_validation_attachement(attachement, validateur, type_notif='VALIDATION_ATTACHEMENT'):
         """Notification pour une validation d'attachement requise"""
-        titre = f"Validation requise: {attachement.numero}"
+        titre = f"Validation d'attachement: {attachement.numero}"
         message = f"L'attachement {attachement.numero} du projet {attachement.projet.nom} nécessite votre validation."
         action_url = f"/projets/attachement/{attachement.id}/validation/"
-        
+         
         return NotificationService.creer_notification_personnalisee(
             utilisateur=validateur,
-            type_notif='VALIDATION_ATTACHEMENT',
+            type_notif=type_notif,
             titre=titre,
             message=message,
             projet=attachement.projet,
@@ -34,6 +37,30 @@ class NotificationService:
             action_url=action_url
         )
     
+    @staticmethod
+    def notifier_attachement_modifie(attachement, emetteur, destinataire, type_notif='ATTACHEMENT_MODIFIE'):
+        """Notification pour un attachement modifié"""
+        TYPE_NOTIFICATION = Notification.TYPE_NOTIFICATION  # défini dans model Notification
+        notifs = dict(TYPE_NOTIFICATION)
+        
+        titre = notifs[type_notif]
+        if not emetteur:
+            source = "Sytème"
+        else:
+            source = emetteur.get_full_name()
+        titre = f"Statut de l'attachement: {attachement.numero} : {titre}"
+        message = f"L'attachement {attachement.numero} du projet {attachement.projet.nom} a été mis à jour par {source}."
+        action_url = f"/attachements/{attachement.id}/"
+
+        return NotificationService.creer_notification_personnalisee(
+            utilisateur=destinataire,
+            type_notif=type_notif,
+            titre=titre,
+            message=message,
+            projet=attachement.projet,
+            niveau_urgence='MOYEN',
+            action_url=action_url
+        )
     @staticmethod
     def notifier_etape_validee(etape_validation):
         """Notification quand une étape est validée"""

@@ -443,6 +443,7 @@ def liste_projets(request):
     context = {
         'can_handler': can_handler,
         'projets': projets,
+        'notification_urgency_levels': Notification.NIVEAU_URGENCE,
         'notification_types': Notification.TYPE_NOTIFICATION,
         'search_term': search_term,  # Pour l'affichage dans le template
     }
@@ -522,47 +523,6 @@ def modifier_projet_modal(request, projet_id):
         'entreprises': Entreprise.objects.all(),
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
-@chef_projet_required
-def modifier_projet11(request, projet_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    
-    if request.method == 'POST':
-        form = ProjetForm(request.POST, instance=projet)
-        if form.is_valid():
-            projet = form.save()
-            
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('modal'):
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Projet modifié avec succès!',
-                    'projet': {
-                        'nom': projet.nom,
-                        'avancement': projet.avancement,
-                        'statut': projet.get_statut_display()
-                    }
-                })
-            return redirect('projets:liste_projets')
-        else:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.GET.get('modal'):
-                return JsonResponse({
-                    'success': False,
-                    'errors': form.errors.get_json_data(),
-                    'message': 'Veuillez corriger les erreurs ci-dessous'
-                }, status=400)
-    
-    form = ProjetForm(instance=projet)
-    
-    context = {
-        'form': form,
-        'projet': projet,
-        'statuts': Projet.Statut.choices,
-        'entreprises': Entreprise.objects.all(),
-        'is_modal': request.GET.get('modal')
-    }
-    
-    # if request.GET.get('modal'):
-    #     return render(request, 'projets/modifier_projet.html', context)
-    return render(request, 'projets/modifier_projet.html', context)
 @chef_projet_required
 def supprimer_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1810,7 +1770,7 @@ def ajouter_attachement(request, projet_id):
                         resource_type="raw"
                     )
                     attachement.fichier = upload_result['public_id']
-                
+                attachement.modifie_par = request.user
                 attachement.save()
                 
                 lignes_data_json = request.POST.get('lignes_attachement')
@@ -1851,6 +1811,7 @@ def ajouter_attachement(request, projet_id):
             except Exception as e:
                 messages.error(request, f"Erreur lors de la création : {str(e)}")
         else:
+            print(form.errors)
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     
     else:           
@@ -1942,17 +1903,19 @@ def modifier_attachement(request, attachement_id):
     lignes_bordereau = LigneBordereau.objects.filter(
         lot__projet=projet
     ).select_related('lot').order_by('lot__id', 'id')
-
+    
     if request.method == 'POST':
         form = AttachementForm(request.POST, request.FILES, instance=attachement)
         if form.is_valid():
             try:
+
+                attachement.modifie_par = request.user
                 attachement = form.save(commit=False)
                 attachement.save()
-                
+
                 # Supprimer les anciennes lignes de cet attachement
                 LigneAttachement.objects.filter(attachement=attachement).delete()
-                
+
                 lignes_data_json = request.POST.get('lignes_attachement')
                 if lignes_data_json:
                     lignes_data = json.loads(lignes_data_json)
@@ -1960,7 +1923,7 @@ def modifier_attachement(request, attachement_id):
                     # Retirer les titres de la fin (lignes orphelines)
                     while lignes_data and lignes_data[-1].get('is_title'):
                         lignes_data.pop()
-                        
+                    
                     for ligne_data in lignes_data:
                         # Convertir en Decimal pour éviter les problèmes de type
                         quantite_realisee = Decimal(str(ligne_data.get('quantite_realisee', 0)))
@@ -1985,7 +1948,6 @@ def modifier_attachement(request, attachement_id):
                                 quantite_realisee=quantite_realisee if not is_title else Decimal('0'),
                                 quantite_cumulee=quantite_cumulee,
                             )
-                
                 messages.success(request, "Attachement modifié avec succès !")
                 return redirect('projets:liste_attachements', projet_id=projet.id)
                 
@@ -2658,10 +2620,11 @@ def liste_decomptes(request, projet_id):
             else:
                 return redirect('projets:liste_decomptes', projet_id=projet.id)
         else:
+            print(form.errors)
             messages.error(request, "Veuillez corriger les erreurs dans le formulaire.")
     
     attachements_disponibles_count = attachements_sans_decompte.count()
-    
+
     context = {
         'projet': projet,
         'decomptes': decomptes,

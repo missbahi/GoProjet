@@ -3,7 +3,8 @@ from django import forms
 from .models import Client, Decompte, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService, TypeOrdreService
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
-from django.db.models import  Q 
+from django.db.models import  Q
+from django.utils import timezone
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
@@ -150,7 +151,6 @@ class AttachementForm(forms.ModelForm):
             }),
             'original_filename': forms.TextInput(attrs={
                 'class': 'form-input',
-                'readonly': True
             }),
             'observations': forms.Textarea(attrs={
                 'class': 'form-input form-textarea',
@@ -166,6 +166,7 @@ class AttachementForm(forms.ModelForm):
         self.fields['date_etablissement'].label = 'Date d\'établissement'
         self.fields['date_debut_periode'].label = 'Date début période'
         self.fields['date_fin_periode'].label = 'Date fin période'
+        self.fields['fichier'].required = False
 
 class DecompteForm(forms.ModelForm):
     class Meta:
@@ -189,6 +190,27 @@ class DecompteForm(forms.ModelForm):
             'autres_retenues': forms.NumberInput(attrs={'step': '0.01', 'min': '0'}),
         }
     
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Ajouter des classes CSS à tous les champs
+        for field_name, field in self.fields.items():
+            if field_name not in ['observations']:  # Sauf textarea
+                field.widget.attrs.update({'class': 'form-control'})
+            else:
+                field.widget.attrs.update({'class': 'form-control'})
+        
+        # Valeurs par défaut pour la création uniquement
+        if not self.instance.pk:  # Nouveau décompte
+            self.fields['taux_tva'].initial = 20.0
+            self.fields['taux_retenue_garantie'].initial = 10.0
+            self.fields['taux_ras'].initial = 0.0
+            self.fields['autres_retenues'].initial = 0.0
+            self.fields['type_decompte'].initial = 'PROVISOIRE'
+            self.fields['statut'].initial = 'BROUILLON'
+            
+            # Date d'émission par défaut = aujourd'hui
+            self.fields['date_emission'].initial = timezone.now().date()
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.attachements_disponibles_count = kwargs.pop('attachements_disponibles_count', None)

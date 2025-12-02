@@ -8,136 +8,137 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
-            --bg-dark: #2E2E2E;
-            --bg-medium: #525252;
-            --text-primary: #2B9C62;
-            --text-secondary: #AECBD6;
-            --accent-cyan: #22d3ee;
-            --accent-cyan-dark: #0ea5e9;
-            --border-radius: 12px;
-            --transition: all 0.3s ease;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-medium: #334155;
+            --text-primary: #38bdf8;
+            --text-secondary: #cbd5e1;
+            --text-muted: #94a3b8;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --border-radius: 16px;
+            --border-radius-sm: 12px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
+            --gradient-primary: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-medium);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
             color: var(--text-secondary);
             min-height: 100vh;
             line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 100%;
+        /* Container limité */
+        .form-container {
+            max-width: 800px;
             margin: 0 auto;
             padding: 1rem;
+            width: 100%;
         }
 
         @media (min-width: 768px) {
-            .container {
-                padding: 1.5rem;
-                max-width: 42rem;
+            .form-container {
+                padding: 2rem;
             }
         }
 
         @media (min-width: 1024px) {
-            .container {
-                padding: 2rem;
+            .form-container {
+                padding: 3rem 2rem;
             }
         }
 
-        /* Cards */
+        /* Card élégante */
         .card {
-            background-color: var(--bg-dark);
+            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
+            backdrop-filter: blur(10px);
             border-radius: var(--border-radius);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            border: 1px solid #374151;
-            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255, 255, 255, 0.05);
             overflow: hidden;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
         }
 
         .card-header {
-            padding: 1.5rem;
-            border-bottom: 1px solid #374151;
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
         .card-body {
-            padding: 1.5rem;
+            padding: 2rem;
         }
 
         @media (min-width: 768px) {
-            .card-header, .card-body {
-                padding: 2rem;
+            .card-body {
+                padding: 2.5rem;
             }
         }
 
-        /* Typography */
+        /* Typographie améliorée */
         .page-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
+            font-size: 1.75rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 1rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         @media (min-width: 768px) {
             .page-title {
-                font-size: 2rem;
-                text-align: left;
+                font-size: 2.25rem;
             }
         }
 
         .section-title {
             font-size: 1.25rem;
-            font-weight: 600;
-            color: var(--accent-cyan);
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: 1rem;
+            position: relative;
         }
 
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            text-decoration: none;
-            transition: var(--transition);
-            border: 1px solid #4B5563;
-            text-align: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
-            color: white;
-            border: none;
-        }
-
-        .btn-secondary {
-            background-color: #4B5563;
-            color: white;
-            border: 1px solid #6B7280;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        /* Form elements */
+        /* Form elements élégants */
         .form-group {
             margin-bottom: 1.5rem;
         }
 
         label {
-            display: block;
-            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-primary);
             font-weight: 600;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
@@ -145,10 +146,11 @@
 
         .form-control {
             width: 100%;
-            background-color: #374151;
-            border: 1px solid #4B5563;
-            border-radius: var(--border-radius);
-            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius-sm);
+            padding: 1rem;
             color: white;
             font-size: 1rem;
             transition: var(--transition);
@@ -157,32 +159,230 @@
         .form-control:focus {
             outline: none;
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2);
-            background-color: #2E2E2E;
+            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .form-control::placeholder {
-            color: #9CA3AF;
+            color: var(--text-muted);
         }
 
-        /* File input styling */
-        .file-input {
-            padding: 0.5rem;
+        /* Avatar section élégante */
+        .avatar-section {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .file-input::-webkit-file-upload-button {
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-            margin-right: 1rem;
-            cursor: pointer;
+        .avatar-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+            border: 4px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            overflow: hidden;
             transition: var(--transition);
         }
 
-        .file-input::-webkit-file-upload-button:hover {
-            transform: translateY(-1px);
+        .avatar-preview:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-cyan);
+        }
+
+        .avatar-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-preview i {
+            color: white;
+            font-size: 2.5rem;
+        }
+
+        .avatar-upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .avatar-upload-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .avatar-upload-btn:hover::before {
+            left: 100%;
+        }
+
+        .avatar-upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        /* Grid layout compact */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (min-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 2rem;
+            }
+        }
+
+        /* Buttons élégants avec largeur contrôlée */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: var(--border-radius-sm);
+            font-weight: 600;
+            text-decoration: none;
+            transition: var(--transition);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.025em;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Form actions avec largeur contrôlée */
+        .form-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 2rem;
+        }
+
+        @media (min-width: 640px) {
+            .form-actions {
+                flex-direction: row;
+                justify-content: center;
+                gap: 1.5rem;
+            }
+            
+            .form-actions .btn {
+                min-width: 200px;
+                flex: 0 1 auto;
+                max-width: 250px;
+            }
+        }
+
+        /* Helper text */
+        .helper-text {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        /* Checkbox styling */
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            accent-color: var(--accent-cyan);
+            width: 1.125rem;
+            height: 1.125rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            color: var(--text-secondary);
+            font-weight: normal;
+            margin-bottom: 0;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+
+        /* Info message */
+        .info-message {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 2rem;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--border-radius-sm);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         /* User header */
@@ -190,10 +390,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 1px solid #374151;
-            margin-bottom: 1.5rem;
+            gap: 1.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 2rem;
         }
 
         @media (min-width: 640px) {
@@ -209,37 +409,25 @@
         }
 
         .avatar {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid var(--accent-cyan);
-        }
-
-        @media (max-width: 639px) {
-            .avatar {
-                width: 100px;
-                height: 100px;
-            }
+            border: 4px solid var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(6, 182, 212, 0.3);
         }
 
         .avatar-placeholder {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-cyan) 0%, var(--accent-cyan-dark) 100%);
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            border: 3px solid var(--accent-cyan);
+            border: 4px solid var(--accent-cyan);
             color: white;
-        }
-
-        @media (max-width: 639px) {
-            .avatar-placeholder {
-                width: 100px;
-                height: 100px;
-            }
+            font-size: 2.5rem;
         }
 
         .user-info {
@@ -254,56 +442,195 @@
         }
 
         .username {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--accent-cyan);
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
         }
 
         /* Badges */
         .badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 9999px;
-            font-size: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius-sm);
+            font-size: 0.875rem;
             font-weight: 600;
             text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
-        .badge-superadmin { background-color: #dc2626; color: white; }
-        .badge-staff { background-color: #2563eb; color: white; }
-        .badge-user { background-color: #059669; color: white; }
-        .badge-active { background-color: #059669; color: white; }
-        .badge-inactive { background-color: #dc2626; color: white; }
+        .badge-superadmin { 
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(185, 28, 28, 0.2) 100%);
+            color: #fca5a5;
+            border-color: rgba(220, 38, 38, 0.3);
+        }
+        .badge-staff { 
+            background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(29, 78, 216, 0.2) 100%);
+            color: #93c5fd;
+            border-color: rgba(37, 99, 235, 0.3);
+        }
+        .badge-user { 
+            background: linear-gradient(135deg, rgba(5, 150, 105, 0.2) 0%, rgba(4, 120, 87, 0.2) 100%);
+            color: #6ee7b7;
+            border-color: rgba(5, 150, 105, 0.3);
+        }
 
-        /* Grid layouts */
-        .form-grid {
+        /* Select styling */
+        select.form-control {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2394a3b8' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+            padding-right: 2.5rem;
+        }
+
+        /* Info grid */
+        .info-grid {
             display: grid;
             grid-template-columns: 1fr;
             gap: 1.5rem;
         }
 
         @media (min-width: 768px) {
-            .form-grid {
+            .info-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 2rem;
             }
         }
 
-        .info-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
+        /* Status indicators */
+        .status-active {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-green);
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid rgba(16, 185, 129, 0.2);
         }
 
-        @media (min-width: 768px) {
-            .info-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 1.5rem;
+        .status-inactive {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #ef4444;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            background: rgba(239, 68, 68, 0.1);
+            border-radius: var(--border-radius-sm);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
 
-        /* Navigation */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        .animate-slide-in {
+            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 767px) {
+            .form-container {
+                padding: 1rem;
+            }
+            
+            .card-body {
+                padding: 1.5rem;
+            }
+            
+            .card-header {
+                padding: 1.25rem;
+            }
+            
+            .avatar-preview, .avatar, .avatar-placeholder {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .btn {
+                padding: 0.875rem 1.5rem;
+                width: 100%;
+            }
+            
+            .username {
+                font-size: 1.5rem;
+            }
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Success notification */
+        .success-notification {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius-sm);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 400px;
+        }
+
+        .success-notification.show {
+            transform: translateY(0);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Navigation buttons */
         .nav-buttons {
             display: flex;
             flex-direction: column;
@@ -334,92 +661,81 @@
             }
         }
 
-        /* Form actions */
-        .form-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            padding-top: 1.5rem;
-            border-top: 1px solid #374151;
-            margin-top: 1.5rem;
-        }
-
-        @media (min-width: 640px) {
-            .form-actions {
-                flex-direction: row;
-                justify-content: flex-end;
-            }
-        }
-
-        /* Helper text */
-        .helper-text {
-            color: #9CA3AF;
+        /* Password match indicator */
+        .password-match {
             font-size: 0.875rem;
             margin-top: 0.25rem;
-        }
-
-        /* Status indicators */
-        .status-active {
-            color: #10b981;
             font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .status-inactive {
+        .password-match.valid {
+            color: var(--accent-green);
+        }
+
+        .password-match.invalid {
             color: #ef4444;
-            font-weight: 600;
-        }
-
-        /* Loading states */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 767px) {
-            .container {
-                padding: 0.5rem;
-            }
-            
-            .card-body {
-                padding: 1rem;
-            }
-            
-            .btn {
-                padding: 0.875rem 1rem;
-                font-size: 0.875rem;
-            }
-        }
-
-        /* Animation for form elements */
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-slide-in {
-            animation: slideIn 0.5s ease-out;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header Card -->
-        <div class="card animate-slide-in">
+    <div class="form-container">
+        <!-- Page Header -->
+        <div class="text-center mb-8 animate-fade-in">
+            <h1 class="page-title flex items-center justify-center gap-3">
+                <i class="fas fa-user-edit"></i>
+                Modifier l'Utilisateur
+            </h1>
+            <p class="page-subtitle">
+                Modifiez les informations du compte utilisateur existant
+            </p>
+        </div>
+
+        <!-- Main Form Card -->
+        <div class="card animate-fade-in" style="animation-delay: 0.1s;">
             <div class="card-header">
-                <h1 class="page-title flex items-center justify-center md:justify-start gap-2">
-                    <i class="fas fa-edit"></i>
-                    Modifier l'utilisateur
-                </h1>
-                
+                <h2 class="section-title flex items-center gap-3">
+                    <i class="fas fa-user-circle"></i>
+                    Informations de l'utilisateur
+                </h2>
+            </div>
+
+            <div class="card-body">
+                <!-- User Header -->
+                <div class="user-header">
+                    <div class="avatar-container">
+                        {% if user.profile.avatar %}
+                            <img src="{{ user.profile.avatar.url }}" alt="Avatar actuel" class="avatar">
+                        {% else %}
+                            <div class="avatar-placeholder">
+                                <i class="fas fa-user"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <div class="username">{{ user.username }}</div>
+                        <div>
+                            {% if user.is_superuser %}
+                                <span class="badge badge-superadmin">
+                                    <i class="fas fa-crown"></i>Super Admin
+                                </span>
+                            {% elif user.is_staff %}
+                                <span class="badge badge-staff">
+                                    <i class="fas fa-user-shield"></i>Staff
+                                </span>
+                            {% else %}
+                                <span class="badge badge-user">
+                                    <i class="fas fa-user"></i>Utilisateur
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Navigation Buttons -->
-                <div class="nav-buttons">
+                <div class="nav-buttons mb-6">
                     <div class="btn-group">
                         <a href="{% url 'home' %}" class="btn btn-secondary">
                             <i class="fa-solid fa-house"></i>
@@ -433,36 +749,6 @@
                         </a>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- Main Form Card -->
-        <div class="card animate-slide-in" style="animation-delay: 0.1s;">
-            <div class="card-body">
-                <!-- User Header -->
-                <div class="user-header">
-                    <div class="avatar-container">
-                        {% if user.profile.avatar %}
-                            <img src="{{ user.profile.avatar.url }}" alt="Avatar actuel" class="avatar">
-                        {% else %}
-                            <div class="avatar-placeholder">
-                                <i class="fas fa-user text-2xl"></i>
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="user-info">
-                        <div class="username">{{ user.username }}</div>
-                        <div>
-                            {% if user.is_superuser %}
-                                <span class="badge badge-superadmin">Super Admin</span>
-                            {% elif user.is_staff %}
-                                <span class="badge badge-staff">Staff</span>
-                            {% else %}
-                                <span class="badge badge-user">Utilisateur</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
 
                 <!-- Main Form -->
                 <form method="post" enctype="multipart/form-data" id="user-form">
@@ -473,15 +759,41 @@
                         <div class="space-y-4">
                             <div class="form-group">
                                 <label for="email">
-                                    <i class="fas fa-envelope mr-2"></i>Email
+                                    <i class="fas fa-envelope"></i>
+                                    Adresse email
                                 </label>
                                 <input type="email" name="email" id="email" value="{{ user.email }}" 
-                                    class="form-control" required>
+                                    class="form-control"
+                                    placeholder="utilisateur@exemple.com">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="first_name">
+                                    <i class="fas fa-signature"></i>
+                                    Prénom
+                                </label>
+                                <input type="text" name="first_name" id="first_name" value="{{ user.first_name|default:'' }}"
+                                    class="form-control"
+                                    placeholder="Prénom">
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-4">
+                            <div class="form-group">
+                                <label for="last_name">
+                                    <i class="fas fa-signature"></i>
+                                    Nom
+                                </label>
+                                <input type="text" name="last_name" id="last_name" value="{{ user.last_name|default:'' }}"
+                                    class="form-control"
+                                    placeholder="Nom">
                             </div>
 
                             <div class="form-group">
                                 <label for="role">
-                                    <i class="fas fa-user-tag mr-2"></i>Rôle
+                                    <i class="fas fa-user-tag"></i>
+                                    Rôle
                                 </label>
                                 <select name="role" id="role" class="form-control">
                                     <option value="user" {% if not user.is_staff and not user.is_superuser %}selected{% endif %}>Utilisateur</option>
@@ -490,26 +802,76 @@
                                 </select>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Right Column -->
-                        <div class="space-y-4">
+                    <!-- Password Section -->
+                    <div class="permissions-section animate-slide-in mb-6">
+                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-3">
+                            <i class="fas fa-key"></i>
+                            Modifier le mot de passe
+                        </h3>
+                        
+                        <div class="form-grid">
                             <div class="form-group">
                                 <label for="password">
-                                    <i class="fas fa-lock mr-2"></i>Nouveau mot de passe
+                                    <i class="fas fa-lock"></i>
+                                    Nouveau mot de passe
                                 </label>
-                                <input type="password" name="password" id="password" class="form-control">
+                                <input type="password" name="password" id="password" 
+                                    class="form-control"
+                                    placeholder="Laisser vide pour ne pas modifier">
+                                <div class="checkbox-group">
+                                    <input type="checkbox" id="show-password">
+                                    <label for="show-password">Afficher le mot de passe</label>
+                                </div>
                                 <p class="helper-text">
-                                    <i class="fas fa-info-circle mr-1"></i>Laisser vide pour ne pas modifier
+                                    <i class="fas fa-info-circle mr-1"></i>Minimum 8 caractères
                                 </p>
                             </div>
 
                             <div class="form-group">
-                                <label for="avatar">
-                                    <i class="fas fa-camera mr-2"></i>Photo / Avatar
+                                <label for="confirm_password">
+                                    <i class="fas fa-lock"></i>
+                                    Confirmer le mot de passe
                                 </label>
-                                <input type="file" name="avatar" id="avatar" 
-                                    class="form-control file-input"
-                                    accept="image/*">
+                                <input type="password" name="confirm_password" id="confirm_password" 
+                                    class="form-control"
+                                    placeholder="Confirmez le nouveau mot de passe">
+                                <p id="password-match" class="password-match"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Avatar Section -->
+                    <div class="avatar-section">
+                        <div class="avatar-preview" id="avatar-preview">
+                            {% if user.profile.avatar %}
+                                <img src="{{ user.profile.avatar.url }}" alt="Avatar preview">
+                            {% else %}
+                                <i class="fas fa-user"></i>
+                            {% endif %}
+                        </div>
+                        <input type="file" name="avatar" id="avatar" accept="image/*" class="hidden">
+                        <label for="avatar" class="avatar-upload-btn">
+                            <i class="fas fa-camera"></i>
+                            Changer l'avatar
+                        </label>
+                    </div>
+
+                    <!-- Status Section -->
+                    <div class="permissions-section animate-slide-in">
+                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-3">
+                            <i class="fas fa-user-shield"></i>
+                            Statut du compte
+                        </h3>
+                        
+                        <div class="space-y-2">
+                            <div class="permission-item">
+                                <input type="checkbox" name="is_active" id="is_active" {% if user.is_active %}checked{% endif %} class="permission-checkbox">
+                                <div class="permission-label">
+                                    <div class="permission-title">Compte actif</div>
+                                    <div class="permission-description">L'utilisateur peut se connecter</div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -517,10 +879,12 @@
                     <!-- Form Actions -->
                     <div class="form-actions">
                         <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
-                            <i class="fas fa-times mr-2"></i>Annuler
+                            <i class="fas fa-times mr-2"></i>
+                            Annuler
                         </a>
                         <button type="submit" class="btn btn-primary" id="submit-btn">
-                            <i class="fas fa-save mr-2"></i>Enregistrer
+                            <i class="fas fa-save mr-2"></i>
+                            Enregistrer les modifications
                         </button>
                     </div>
                 </form>
@@ -528,31 +892,39 @@
         </div>
 
         <!-- Information Card -->
-        <div class="card animate-slide-in" style="animation-delay: 0.2s;">
-            <div class="card-body">
-                <h2 class="section-title flex items-center gap-2">
+        <div class="card animate-fade-in" style="animation-delay: 0.2s;">
+            <div class="card-header">
+                <h2 class="section-title flex items-center gap-3">
                     <i class="fas fa-info-circle"></i>
                     Informations complémentaires
                 </h2>
-                
+            </div>
+            
+            <div class="card-body">
                 <div class="info-grid">
                     <div class="space-y-3">
                         <div>
                             <span class="text-cyan-300 font-semibold">Rôle actuel :</span>
-                            <div class="mt-1">
+                            <div class="mt-2">
                                 {% if user.is_superuser %}
-                                    <span class="badge badge-superadmin">Super Admin</span>
+                                    <span class="badge badge-superadmin">
+                                        <i class="fas fa-crown"></i>Super Admin
+                                    </span>
                                 {% elif user.is_staff %}
-                                    <span class="badge badge-staff">Staff</span>
+                                    <span class="badge badge-staff">
+                                        <i class="fas fa-user-shield"></i>Staff
+                                    </span>
                                 {% else %}
-                                    <span class="badge badge-user">Utilisateur</span>
+                                    <span class="badge badge-user">
+                                        <i class="fas fa-user"></i>Utilisateur
+                                    </span>
                                 {% endif %}
                             </div>
                         </div>
                         
                         <div>
                             <span class="text-cyan-300 font-semibold">Dernière connexion :</span>
-                            <div class="mt-1 text-gray-300">
+                            <div class="mt-2 text-gray-300">
                                 {{ user.last_login|default:"Jamais" }}
                             </div>
                         </div>
@@ -561,21 +933,21 @@
                     <div class="space-y-3">
                         <div>
                             <span class="text-cyan-300 font-semibold">Date d'inscription :</span>
-                            <div class="mt-1 text-gray-300">
+                            <div class="mt-2 text-gray-300">
                                 {{ user.date_joined|date:"d/m/Y H:i" }}
                             </div>
                         </div>
                         
                         <div>
                             <span class="text-cyan-300 font-semibold">Statut :</span>
-                            <div class="mt-1">
+                            <div class="mt-2">
                                 {% if user.is_active %}
                                     <span class="status-active">
-                                        <i class="fas fa-circle mr-1 text-xs"></i>Actif
+                                        <i class="fas fa-circle mr-2 text-xs"></i>Actif
                                     </span>
                                 {% else %}
                                     <span class="status-inactive">
-                                        <i class="fas fa-circle mr-1 text-xs"></i>Inactif
+                                        <i class="fas fa-circle mr-2 text-xs"></i>Inactif
                                     </span>
                                 {% endif %}
                             </div>
@@ -584,76 +956,126 @@
                 </div>
             </div>
         </div>
+
+        <!-- Info Message -->
+        <div class="info-message animate-fade-in" style="animation-delay: 0.3s;">
+            <i class="fas fa-info-circle mr-2"></i>
+            Les modifications seront appliquées immédiatement après enregistrement
+        </div>
+    </div>
+
+    <!-- Success Notification -->
+    <div id="success-notification" class="success-notification hidden">
+        <i class="fas fa-check-circle text-xl"></i>
+        <div>
+            <div class="font-semibold">Modifications enregistrées !</div>
+            <div class="text-sm opacity-90 mt-1">Les modifications ont été appliquées avec succès.</div>
+        </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('user-form');
             const submitBtn = document.getElementById('submit-btn');
-            const inputs = document.querySelectorAll('.form-control');
+            const avatarInput = document.getElementById('avatar');
+            const avatarPreview = document.getElementById('avatar-preview');
+            const showPasswordCheckbox = document.getElementById('show-password');
+            const passwordField = document.getElementById('password');
+            const confirmPasswordField = document.getElementById('confirm_password');
+            const passwordMatch = document.getElementById('password-match');
+            const successNotification = document.getElementById('success-notification');
 
-            // Enhanced focus effects
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.parentElement.classList.add('ring-2', 'ring-cyan-500', 'rounded-lg', 'p-1');
-                    this.style.transform = 'translateY(-1px)';
-                });
-                
-                input.addEventListener('blur', function() {
-                    this.parentElement.classList.remove('ring-2', 'ring-cyan-500', 'rounded-lg', 'p-1');
-                    this.style.transform = 'translateY(0)';
-                });
+            // Avatar preview
+            avatarInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar preview">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
             });
 
-            // Form submission handling
-            form.addEventListener('submit', function(e) {
-                const password = document.getElementById('password').value;
-                
-                if (password && password.length < 8) {
-                    e.preventDefault();
-                    alert('Le mot de passe doit contenir au moins 8 caractères');
+            // Toggle password visibility
+            showPasswordCheckbox.addEventListener('change', function() {
+                const type = this.checked ? 'text' : 'password';
+                passwordField.type = type;
+                confirmPasswordField.type = type;
+            });
+
+            // Password match validation
+            function validatePasswordMatch() {
+                const password = passwordField.value;
+                const confirmPassword = confirmPasswordField.value;
+
+                if (password === '' && confirmPassword === '') {
+                    passwordMatch.textContent = '';
+                    passwordMatch.className = 'password-match';
                     return;
                 }
 
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
-                submitBtn.classList.add('loading');
+                if (confirmPassword === '') {
+                    passwordMatch.textContent = '';
+                    passwordMatch.className = 'password-match';
+                } else if (password === confirmPassword) {
+                    passwordMatch.innerHTML = '<i class="fas fa-check-circle"></i> Les mots de passe correspondent';
+                    passwordMatch.className = 'password-match valid';
+                } else {
+                    passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle"></i> Les mots de passe ne correspondent pas';
+                    passwordMatch.className = 'password-match invalid';
+                }
+            }
+
+            passwordField.addEventListener('input', validatePasswordMatch);
+            confirmPasswordField.addEventListener('input', validatePasswordMatch);
+
+            // Form submission
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
                 
-                // Re-enable after 3 seconds in case of error
-                setTimeout(() => {
-                    submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Enregistrer';
-                    submitBtn.classList.remove('loading');
-                }, 3000);
-            });
+                const password = passwordField.value;
+                const confirmPassword = confirmPasswordField.value;
 
-            // Avatar preview (if needed)
-            const avatarInput = document.getElementById('avatar');
-            if (avatarInput) {
-                avatarInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (file) {
-                        // You could add image preview functionality here
-                        console.log('Avatar file selected:', file.name);
+                // Validate password if provided
+                if (password || confirmPassword) {
+                    if (password !== confirmPassword) {
+                        alert('Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie.');
+                        confirmPasswordField.focus();
+                        return;
                     }
-                });
-            }
 
-            // Responsive adjustments
-            function handleResize() {
-                const isMobile = window.innerWidth < 768;
-                document.body.classList.toggle('mobile-view', isMobile);
-            }
+                    if (password && password.length < 8) {
+                        alert('Le mot de passe doit contenir au moins 8 caractères.');
+                        passwordField.focus();
+                        return;
+                    }
+                }
 
-            window.addEventListener('resize', handleResize);
-            handleResize(); // Initial check
+                // Show loading state
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Enregistrement...';
+                submitBtn.disabled = true;
 
-            // Add smooth animations for form elements
-            const formElements = document.querySelectorAll('.form-group');
-            formElements.forEach((element, index) => {
-                element.style.animationDelay = `${index * 0.05}s`;
-                element.classList.add('animate-slide-in');
+                try {
+                    // Simulate form submission
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+                    
+                    // Show success notification
+                    successNotification.classList.add('show');
+                    successNotification.classList.remove('hidden');
+                    setTimeout(() => {
+                        successNotification.classList.remove('show');
+                        successNotification.classList.add('hidden');
+                    }, 3000);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Une erreur est survenue lors de l\'enregistrement des modifications.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
             });
-        });
-    </script>
-</body>
-</html>
+
+            // Add focus effects to form controls
+            const formControls = document.querySelectorAll

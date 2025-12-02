@@ -285,7 +285,265 @@
             min-height: 100px;
         }
     }
-    </style>
+
+<style>
+/* Conteneur principal pour les champs avec suffixe */
+.field-with-suffix {
+    position: relative;
+    width: 100%;
+}
+
+/* Style de base pour tous les inputs */
+.form-control {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    color: white;
+    font-size: 1rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+}
+
+/* Pour les champs numériques uniquement - alignement à droite */
+.form-control[type="number"],
+input.form-control.text-right {
+    text-align: right;
+    padding-right: 3rem !important; /* Espace pour le suffixe */
+    direction: ltr; /* Garantir l'ordre gauche-droite des nombres */
+}
+
+/* Effet focus */
+.form-control:focus {
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Placeholder */
+.form-control::placeholder {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Style du suffixe */
+.field-with-suffix .suffix {
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none; /* Ne pas interférer avec les clics */
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 5;
+    background: transparent;
+    padding: 0 0.25rem;
+}
+
+/* Style spécifique pour les inputs number */
+.form-control[type="number"] {
+    -moz-appearance: textfield; /* Firefox */
+}
+
+/* Chrome, Safari, Edge, Opera - masquer les flèches */
+.form-control[type="number"]::-webkit-outer-spin-button,
+.form-control[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Style pour les champs avec erreur */
+.form-control.error {
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+/* Style pour les champs désactivés */
+.form-control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Label stylisé */
+.form-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #38bdf8;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.form-label.required:after {
+    content: " *";
+    color: #f87171;
+}
+
+/* Helper text */
+.helper-text {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+    margin-top: 0.375rem;
+}
+
+/* Messages d'erreur */
+.error-message {
+    color: #f87171;
+    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.error-message:before {
+    content: "⚠";
+    font-size: 0.875rem;
+}
+
+/* Animation subtile au focus */
+@keyframes subtlePulse {
+    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+    70% { box-shadow: 0 0 0 4px rgba(6, 182, 212, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+}
+
+.form-control:focus {
+    animation: subtlePulse 0.6s ease;
+}
+
+/* Style pour le groupe de formulaire */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .form-control {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.9375rem;
+    }
+    
+    .field-with-suffix .suffix {
+        right: 0.875rem;
+        font-size: 0.8125rem;
+    }
+    
+    .form-control[type="number"],
+    input.form-control.text-right {
+        padding-right: 2.5rem !important;
+    }
+}
+
+/* Dark mode optimization */
+@media (prefers-color-scheme: dark) {
+    .form-control[type="date"],
+    .form-control[type="number"] {
+        color-scheme: dark;
+    }
+}
+
+/* Hover effect (optionnel) */
+.form-control:not(:disabled):hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* Style pour les valeurs valides/invalides */
+.form-control:valid:not(:placeholder-shown) {
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.form-control:invalid:not(:placeholder-shown) {
+    border-color: rgba(248, 113, 113, 0.3);
+}
+</style>
+
+<style>
+/* Style spécifique pour les selects */
+select.form-control {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+    
+    /* Texte visible */
+    color: white !important;
+    background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Style pour les options dans le dropdown */
+select.form-control option {
+    color: white !important;
+    background-color: #1e293b !important; /* Couleur sombre pour le dropdown */
+    padding: 0.5rem;
+}
+
+/* Style pour le placeholder/option par défaut */
+select.form-control option[value=""] {
+    color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* Hover sur les options */
+select.form-control option:hover,
+select.form-control option:focus,
+select.form-control option:checked {
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+}
+
+/* Style pour le select au focus */
+select.form-control:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Style pour le select désactivé */
+select.form-control:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Correction pour Firefox */
+@-moz-document url-prefix() {
+    select.form-control {
+        text-indent: 0.01px;
+        text-overflow: '';
+        padding-right: 2rem;
+    }
+    
+    select.form-control option {
+        background-color: #1e293b;
+        color: white;
+    }
+}
+
+/* Correction pour Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+    select.form-control {
+        -webkit-appearance: menulist;
+    }
+}
+
+/* Style pour les selects dans les groupes de formulaire */
+.form-group select.form-control {
+    width: 100%;
+}
+</style>
+
 </head>
 <body class="p-4 sm:p-6">
     <div class="max-w-7xl mx-auto">
@@ -605,181 +863,196 @@
                 <input type="hidden" name="decompte_id" value="{{ decompte_a_modifier.id }}">
                 {% endif %}
                 
+                <!-- Attachement et Numéro de décompte -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label for="{{ form.attachement.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Attachement *
                         </label>
-                        <select id="{{ form.attachement.id_for_label }}" 
-                                name="{{ form.attachement.name }}" 
-                                class="form-control w-full px-3 py-2 rounded-lg" 
-                                required>
-                            <option value="">Sélectionnez un attachement</option>
-                            {% for choice in form.attachement.field.choices %}
-                                <option value="{{ choice.0 }}" 
-                                        {% if form.attachement.value == choice.0 or form.initial.attachement == choice.0 %}selected{% endif %}>
-                                    {{ choice.1 }}
-                                </option>
-                            {% endfor %}
-                        </select>
+                        {{ form.attachement }}
                         {% if form.attachement.errors %}
                         <div class="text-red-400 text-sm mt-1">
-                            {% for error in form.attachement.errors %}
-                                {{ error }}
-                            {% endfor %}
+                            {{ form.attachement.errors }}
                         </div>
                         {% endif %}
                     </div>
+                    
                     <div>
-                        <label for="numero" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.numero.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Numéro de décompte *
                         </label>
-                        <input type="text" id="numero" name="numero" 
-                            class="form-control w-full px-3 py-2 rounded-lg" required
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.numero }}{% elif form.initial.numero %}{{ form.initial.numero }}{% endif %}"
-                            placeholder="Ex: DEC-2024-001">
+                        {{ form.numero }}
+                        {% if form.numero.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.numero.errors }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
+                <!-- Type de décompte et statut -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="type_decompte" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.type_decompte.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Type de décompte *
                         </label>
-                        <select id="type_decompte" name="type_decompte" class="form-control w-full px-3 py-2 rounded-lg" required>
-                            <option value="PROVISOIRE" 
-                                {% if not decompte_a_modifier and not form.initial.type_decompte or decompte_a_modifier.type_decompte == 'PROVISOIRE' or form.initial.type_decompte == 'PROVISOIRE' %}selected{% endif %}>
-                                Décompte provisoire
-                            </option>
-                            <option value="DEFINITIF" 
-                                {% if decompte_a_modifier and decompte_a_modifier.type_decompte == 'DEFINITIF' or form.initial.type_decompte == 'DEFINITIF' %}selected{% endif %}>
-                                Décompte définitif
-                            </option>
-                            <option value="SOLDE" 
-                                {% if decompte_a_modifier and decompte_a_modifier.type_decompte == 'SOLDE' or form.initial.type_decompte == 'SOLDE' %}selected{% endif %}>
-                                Décompte de solde
-                            </option>
-                        </select>
+                        {{ form.type_decompte }}
+                        {% if form.type_decompte.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.type_decompte.errors }}
+                        </div>
+                        {% endif %}
                     </div>
                     
                     <div>
-                        <label for="statut" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.statut.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Statut *
                         </label>
-                        <select id="statut" name="statut" class="form-control w-full px-3 py-2 rounded-lg" required>
-                            <option value="BROUILLON" 
-                                {% if not decompte_a_modifier and not form.initial.statut or decompte_a_modifier.statut == 'BROUILLON' or form.initial.statut == 'BROUILLON' %}selected{% endif %}>
-                                Brouillon
-                            </option>
-                            <option value="VALIDE" 
-                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'VALIDE' or form.initial.statut == 'VALIDE' %}selected{% endif %}>
-                                Validé
-                            </option>
-                            <option value="EMIS" 
-                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'EMIS' or form.initial.statut == 'EMIS' %}selected{% endif %}>
-                                Émis
-                            </option>
-                            <option value="EN_RETARD" 
-                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'EN_RETARD' or form.initial.statut == 'EN_RETARD' %}selected{% endif %}>
-                                En retard de paiement
-                            </option>
-                            <option value="PARTIEL" 
-                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'PARTIEL' or form.initial.statut == 'PARTIEL' %}selected{% endif %}>
-                                Payé partiellement
-                            </option>
-                            <option value="PAYE" 
-                                {% if decompte_a_modifier and decompte_a_modifier.statut == 'PAYE' or form.initial.statut == 'PAYE' %}selected{% endif %}>
-                                Payé
-                            </option>
-                        </select>
+                        {{ form.statut }}
+                        {% if form.statut.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.statut.errors }}
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
+                <!-- Dates -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label for="date_emission" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.date_emission.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Date d'émission *
                         </label>
-                        <input type="date" id="date_emission" name="date_emission" 
-                            class="form-control w-full px-3 py-2 rounded-lg" required
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_emission|date:'Y-m-d' }}{% elif form.initial.date_emission %}{{ form.initial.date_emission|date:'Y-m-d' }}{% endif %}">
+                        {{ form.date_emission }}
+                        {% if form.date_emission.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.date_emission.errors }}
+                        </div>
+                        {% endif %}
                     </div>
+                    
                     <div>
-                        <label for="date_echeance" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.date_echeance.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Date d'échéance
                         </label>
-                        <input type="date" id="date_echeance" name="date_echeance" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_echeance|date:'Y-m-d' }}{% elif form.initial.date_echeance %}{{ form.initial.date_echeance|date:'Y-m-d' }}{% endif %}">
+                        {{ form.date_echeance }}
+                        {% if form.date_echeance.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.date_echeance.errors }}
+                        </div>
+                        {% endif %}
                     </div>
+                    
                     <div>
-                        <label for="date_paiement" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        <label for="{{ form.date_paiement.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Date de paiement
                         </label>
-                        <input type="date" id="date_paiement" name="date_paiement" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.date_paiement|date:'Y-m-d' }}{% elif form.initial.date_paiement %}{{ form.initial.date_paiement|date:'Y-m-d' }}{% endif %}">
+                        {{ form.date_paiement }}
+                        {% if form.date_paiement.errors %}
+                        <div class="text-red-400 text-sm mt-1">
+                            {{ form.date_paiement.errors }}
+                        </div>
+                        {% endif %}
                     </div>
-                </div>
-
-                <!-- Taux et retenues -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                    <div>
-                        <label for="taux_tva" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Taux TVA (%) *
-                        </label>
-                        <input type="number" step="0.01" id="taux_tva" name="taux_tva" 
-                            class="form-control w-full px-3 py-2 rounded-lg" required
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_tva }}{% elif form.initial.taux_tva %}{{ form.initial.taux_tva }}{% else %}20.0{% endif %}">
-                    </div>
-                    <div>
-                        <label for="taux_retenue_garantie" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Taux retenue garantie (%)
-                        </label>
-                        <input type="number" step="0.01" id="taux_retenue_garantie" name="taux_retenue_garantie" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_retenue_garantie }}{% elif form.initial.taux_retenue_garantie %}{{ form.initial.taux_retenue_garantie }}{% else %}10.0{% endif %}">
-                    </div>
-                    <div>
-                        <label for="taux_ras" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Taux RAS (%)
-                        </label>
-                        <input type="number" step="0.01" id="taux_ras" name="taux_ras" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.taux_ras }}{% elif form.initial.taux_ras %}{{ form.initial.taux_ras }}{% else %}0.0{% endif %}">
-                    </div>
-                    <div>
-                        <label for="autres_retenues" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Autres retenues (DH)
-                        </label>
-                        <input type="number" step="0.01" id="autres_retenues" name="autres_retenues" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.autres_retenues }}{% elif form.initial.autres_retenues %}{{ form.initial.autres_retenues }}{% else %}0.0{% endif %}">
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label for="numero_bordereau" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Numéro de bordereau
-                        </label>
-                        <input type="text" id="numero_bordereau" name="numero_bordereau" 
-                            class="form-control w-full px-3 py-2 rounded-lg"
-                            value="{% if decompte_a_modifier %}{{ decompte_a_modifier.numero_bordereau }}{% elif form.initial.numero_bordereau %}{{ form.initial.numero_bordereau }}{% endif %}"
-                            placeholder="Ex: BORD-2024-001">
-                    </div>
-                </div>
-
-                <div>
-                    <label for="observations" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                        Observations
-                    </label>
-                    <textarea id="observations" name="observations" 
-                            class="form-control w-full px-3 py-2 rounded-lg" 
-                            rows="3"
-                            placeholder="Observations supplémentaires...">{% if decompte_a_modifier %}{{ decompte_a_modifier.observations }}{% elif form.initial.observations %}{{ form.initial.observations }}{% endif %}</textarea>
                 </div>
                 
+                <!-- Montants -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+                    <div class="form-group">
+                        <label for="{{ form.taux_tva.id_for_label }}" class="form-label required">
+                            <i class="fas fa-percentage"></i>
+                            Taux TVA
+                        </label>
+                        
+                        <div class="field-with-suffix">
+                            {{ form.taux_tva }}
+                            <span class="suffix">%</span>
+                        </div>
+                        
+                        {% if form.taux_tva.errors %}
+                        <div class="error-message">
+                            {{ form.taux_tva.errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <p class="helper-text">Taux de TVA applicable (0-100%)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.taux_retenue_garantie.id_for_label }}" class="form-label required">
+                            <i class="fas fa-shield-alt"></i>
+                            Retenue garantie
+                        </label>
+                        
+                        <div class="field-with-suffix">
+                            {{ form.taux_retenue_garantie }}
+                            <span class="suffix">%</span>
+                        </div>
+                        
+                        {% if form.taux_retenue_garantie.errors %}
+                        <div class="error-message">
+                            {{ form.taux_retenue_garantie.errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <p class="helper-text">Taux de retenue de garantie (0-100%)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.taux_ras.id_for_label }}" class="form-label required">
+                            <i class="fas fa-file-contract"></i>
+                            Taux RAS
+                        </label>
+                        
+                        <div class="field-with-suffix">
+                            {{ form.taux_ras }}
+                            <span class="suffix">%</span>
+                        </div>
+                        
+                        {% if form.taux_ras.errors %}
+                        <div class="error-message">
+                            {{ form.taux_ras.errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <p class="helper-text">Retenue à la source (0-100%)</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="{{ form.autres_retenues.id_for_label }}" class="form-label">
+                            <i class="fas fa-hand-holding-usd"></i>
+                            Autres retenues
+                        </label>
+                        
+                        <div class="field-with-suffix">
+                            {{ form.autres_retenues }}
+                            <span class="suffix">DH</span>
+                        </div>
+                        
+                        {% if form.autres_retenues.errors %}
+                        <div class="error-message">
+                            {{ form.autres_retenues.errors }}
+                        </div>
+                        {% endif %}
+                        
+                        <p class="helper-text">Montant additionnel en dirhams</p>
+                    </div>
+                </div>
+
+                <!-- Observations -->
+                <div>
+                    <label for="{{ form.observations.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                        Observations
+                    </label>
+                    {{ form.observations }}
+                    {% if form.observations.errors %}
+                    <div class="text-red-400 text-sm mt-1">
+                        {{ form.observations.errors }}
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Boutons -->
                 <div class="flex flex-wrap gap-3 pt-4">
                     <button type="submit" 
                             class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap">
@@ -795,6 +1068,7 @@
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>
+
             </form>
         </div>
         {% else %}

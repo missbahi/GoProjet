@@ -221,6 +221,60 @@
             }
         }
     </style>
+    !-- Style supplémentaire -->
+<style>
+/* Scrollbar personnalisée */
+.modal-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+    background: #2B9C62;
+    border-radius: 4px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb:hover {
+    background: #107C41;
+}
+
+/* Animation d'ouverture */
+#notificationModal {
+    animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles pour les options de sélection */
+select option {
+    background-color: #2E2E2E;
+    color: #AECBD6;
+}
+
+select option:hover {
+    background-color: #2B9C62;
+}
+
+/* Focus styles */
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #4ade80;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.1);
+}
+</style>
 </head>
 <body class="bg-[#2E2E2E] text-[#2B9C62] p-4">
     <!-- Zone de notification -->
@@ -315,82 +369,274 @@
         </div>
     </div>
 
-    <!-- CADRE DU TABLEAU DES PROJETS - CORRIGÉ -->
+    <!-- CADRE DU TABLEAU DES PROJETS -->
     <div class="mb-8">
         <div id="liste_projets" class="responsive-table-container bg-gray-800 rounded-lg shadow-lg">
             {% include 'projets/partials/liste_projets_partial.html' %}
         </div>
     </div>
- 
+    
     <!-- Modal de création de notification -->
     <div id="notificationModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 no-print">
-        <div class="bg-[#525252] text-[#2B9C62] shadow-xl w-full max-w-md rounded-lg p-1" >
-            <form method="post" action="{% url 'projets:creer_notification' %}" class="bg-[#2E2E2E] text-[#2B9C62] shadow-lg rounded p-3">
-                <div class="flex justify-between items-center pb-4">
-                    <h3 class="text-xl font-semibold">
+        <div class="bg-[#525252] text-[#2B9C62] shadow-xl w-full max-w-2xl rounded-lg p-1">
+            <form id="notificationForm" method="post" action="{% url 'projets:creer_notification' %}" 
+                class="bg-[#2E2E2E] text-[#2B9C62] shadow-lg rounded p-3">
+                {% csrf_token %}
+                <input type="hidden" name="projet_id" id="modalProjetId">
+                <input type="hidden" name="emetteur" value="{{ request.user.id }}">
+                
+                <!-- En-tête -->
+                <div class="flex justify-between items-center pb-4 border-b border-[#2B9C62]">
+                    <h3 class="text-xl font-semibold flex items-center">
                         <i class="fas fa-bell mr-2"></i> Créer une notification
                     </h3>
-                    <button onclick="closeModal('notificationModal')" class="hover:text-green-700">
+                    <button type="button" onclick="closeNotificationModal('notificationModal')" 
+                            class="hover:text-green-700 text-lg">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
+                
                 {% csrf_token %}
                 <input type="hidden" name="projet_id" id="modalProjetId">
+                <input type="hidden" name="emetteur" value="{{ request.user.id }}">
                 
-                <div class="space-y-4">
+                <div class="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
+                    <!-- Projet (lecture seule) -->
                     <div>
-                        <label class="block text-[#AECBD6] text-m font-medium mb-1">Projet</label>
-                        <input type="text" id="modalProjetNom" class="w-full bg-black text-[#AECBD6] rounded-md border-green-500 border-1 shadow-sm p-2" readonly>
+                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                            <i class="fas fa-project-diagram mr-1"></i> Projet
+                        </label>
+                        <div class="flex items-center space-x-2">
+                            <div id="modalProjetDisplay" 
+                                class="w-full bg-[#1a1a1a] text-white rounded-md border-2 border-[#2B9C62] p-3 
+                                        font-medium min-h-[44px] flex items-center">
+                                <!-- Le nom s'affichera ici -->
+                                <span id="modalProjetNomText" class="text-[#AECBD6]">-</span>
+                            </div>
+                            <div id="loadingIndicator" class="hidden">
+                                <i class="fas fa-spinner fa-spin text-[#2B9C62]"></i>
+                            </div>
+                            <!-- Champ caché pour le formulaire -->
+                            <input type="hidden" id="modalProjetId" name="projet_id">
+                            <input type="hidden" id="modalProjetNomHidden" name="projet_nom">
+                        </div>
                     </div>
+                    <!-- Statistiques -->
+                    <div id="statisticsContainer" class="hidden"></div>
                     
+                    <!-- Message d'erreur -->
+                    <div id="errorContainer" class="hidden"></div>
+
+                    <!-- Type de notification -->
                     <div>
-                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">Type de notification*</label>
-                        <select name="type_notification" class="w-full bg-black text-[#AECBD6] rounded-md border-green-500 border-1 shadow-sm p-2" required>
+                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                            <i class="fas fa-tag mr-1"></i> Type de notification*
+                        </label>
+                        <select name="type_notification" 
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2 hover:border-green-400 transition-colors"
+                                required
+                                onchange="updateFieldsByType(this.value)">
                             <option value="">Sélectionnez un type</option>
                             {% for type_code, type_label in notification_types %}
-                                <option value="{{ type_code }}">{{ type_label }}</option>
+                                <option value="{{ type_code }}" 
+                                        data-urgence="{% if 'URGENTE' in type_code or 'RETARD' in type_code or 'CRITIQUE' in type_code %}ELEVE{% elif 'ECHEANCE' in type_code %}MOYEN{% else %}INFO{% endif %}"
+                                        data-prioritaire="{% if 'URGENTE' in type_code or 'CRITIQUE' in type_code %}true{% else %}false{% endif %}">
+                                    {{ type_label }}
+                                </option>
                             {% endfor %}
                         </select>
                     </div>
                     
+                    <!-- Titre -->
                     <div>
-                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">Message*</label>
-                        <textarea name="message" rows="3" class="w-full text-[#AECBD6] bg-black rounded-md border-green-500 border-1 shadow-sm p-2" required></textarea>
+                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                            <i class="fas fa-heading mr-1"></i> Titre*
+                        </label>
+                        <input type="text" name="titre" maxlength="100"
+                            class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2"
+                            placeholder="Titre de la notification"
+                            required>
                     </div>
                     
+                    <!-- Message -->
                     <div>
-                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">Date d'échéance</label>
-                        <input type="date" name="date_echeance" class="w-full text-[#AECBD6] bg-black rounded-md border-green-500 border-1 shadow-sm p-2">
+                        <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                            <i class="fas fa-comment-alt mr-1"></i> Message*
+                        </label>
+                        <textarea name="message" rows="3" 
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2"
+                                placeholder="Contenu du message..."
+                                required></textarea>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Niveau d'urgence -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Niveau d'urgence
+                            </label>
+                            <select name="niveau_urgence" 
+                                    class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2">
+                                    <option value="">Sélectionnez le niveau d'urgence</option>
+                                    {% for code, label in notification_urgency_levels %}
+                                    <option value="{{ code }}" 
+                                            {% if code == 'MOYEN' %}selected{% endif %}
+                                            class="{% if code == 'CRITIQUE' %}text-red-500{% elif code == 'ELEVE' %}text-orange-500{% elif code == 'MOYEN' %}text-yellow-500{% elif code == 'FAIBLE' %}text-blue-500{% else %}text-gray-400{% endif %}">
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <!-- Date d'échéance -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-calendar-day mr-1"></i> Date d'échéance
+                            </label>
+                            <input type="date" name="date_echeance" 
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- URL d'action -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-link mr-1"></i> URL d'action (optionnel)
+                            </label>
+                            <input type="url" name="action_url" 
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2"
+                                placeholder="https://..."
+                                maxlength="200">
+                        </div>
+                        
+                        <!-- Date d'expiration -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-clock mr-1"></i> Expire le
+                            </label>
+                            <input type="datetime-local" name="expire_le" 
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2">
+                        </div>
+                    </div>
+                    
+                    <!-- Objet concerné -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Type d'objet -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-cube mr-1"></i> Type d'objet
+                            </label>
+                            <select name="objet_type" 
+                                    class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2">
+                                <option value="">Non spécifié</option>
+                                <option value="tache">Tâche</option>
+                                <option value="document">Document</option>
+                                <option value="projet">Projet</option>
+                                <option value="ordre_service">Ordre de service</option>
+                                <option value="attachement">Attachement</option>
+                                <option value="reunion">Réunion</option>
+                            </select>
+                        </div>
+                        
+                        <!-- ID de l'objet -->
+                        <div>
+                            <label class="block text-[#AECBD6] text-sm font-medium mb-1">
+                                <i class="fas fa-hashtag mr-1"></i> ID de l'objet
+                            </label>
+                            <input type="number" name="objet_id" min="0"
+                                class="w-full bg-[#1a1a1a] text-[#AECBD6] rounded-md border border-[#2B9C62] shadow-sm p-2"
+                                placeholder="ID numérique">
+                        </div>
+                    </div>
+                    
+                    <!-- Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Prioritaire -->
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="prioritaire" id="prioritaire" value="true"
+                                class="w-4 h-4 text-green-600 bg-gray-700 border-[#2B9C62] rounded focus:ring-green-500 focus:ring-2">
+                            <label for="prioritaire" class="text-[#AECBD6] text-sm font-medium">
+                                <i class="fas fa-star mr-1"></i> Notification prioritaire
+                            </label>
+                        </div>
+                        
+                        <!-- Peut être fermée -->
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="can_be_closed" id="can_be_closed" value="true" checked
+                                class="w-4 h-4 text-green-600 bg-gray-700 border-[#2B9C62] rounded focus:ring-green-500 focus:ring-2">
+                            <label for="can_be_closed" class="text-[#AECBD6] text-sm font-medium">
+                                <i class="fas fa-times-circle mr-1"></i> Peut être fermée par l'utilisateur
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Relations optionnelles -->
+                    <div id="relationsContainer" class="border border-[#2B9C62] rounded-md p-4 mt-4 hidden">
+                        <h4 class="text-[#AECBD6] font-medium mb-3 flex items-center">
+                            <i class="fas fa-link mr-2"></i> Relations optionnelles
+                            <span id="relationsCount" class="ml-2 text-xs bg-[#2B9C62] text-white px-2 py-1 rounded"></span>
+                        </h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <!-- Tâche -->
+                            <div>
+                                <label class="block text-[#AECBD6] text-xs font-medium mb-1">Tâche liée</label>
+                                <select name="tache" id="tacheSelect"
+                                        class="w-full bg-[#1a1a1a] text-[#AECBD6] text-sm rounded-md border border-gray-600 shadow-sm p-2">
+                                    <option value="">Chargement...</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Document -->
+                            <div>
+                                <label class="block text-[#AECBD6] text-xs font-medium mb-1">Document lié</label>
+                                <select name="document" 
+                                        class="w-full bg-[#1a1a1a] text-[#AECBD6] text-sm rounded-md border border-gray-600 shadow-sm p-2">
+                                    <option value="">Aucun</option>
+                                    {% for doc in documents_disponibles %}
+                                        <option value="{{ doc.id }}">{{ doc.nom|truncatechars:30 }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Ordre de service -->
+                            <div>
+                                <label class="block text-[#AECBD6] text-xs font-medium mb-1">Ordre de service</label>
+                                <select name="ordre_service" 
+                                        class="w-full bg-[#1a1a1a] text-[#AECBD6] text-sm rounded-md border border-gray-600 shadow-sm p-2">
+                                    <option value="">Aucun</option>
+                                    {% for os in ordres_service_disponibles %}
+                                        <option value="{{ os.id }}">OS {{ os.numero }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="mt-6 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal('notificationModal')" 
-                    class="btn bg-[#2E2E2E] hover:bg-[#525252] text-white border-gray-600">
-                        Annuler
+                
+                <!-- Boutons -->
+                <div class="mt-6 pt-4 border-t border-[#2B9C62] flex justify-end space-x-3">
+                    <button type="button" onclick="closeNotificationModal('notificationModal')" 
+                            class="px-4 py-2 bg-[#3B3B3B] hover:bg-[#525252] text-[#AECBD6] rounded-md border border-gray-600 transition-colors">
+                        <i class="fas fa-times mr-2"></i> Annuler
                     </button>
-
-                    <button type="submit" class="btn bg-[#2E2E2E] hover:bg-[#107C41] text-white border-gray-600">
-                        <i class="fas fa-paper-plane mr-2"></i> Envoyer
+                    <button type="submit" 
+                            class="px-4 py-2 bg-[#2B9C62] hover:bg-[#107C41] text-white rounded-md border border-green-700 transition-colors">
+                        <i class="fas fa-paper-plane mr-2"></i> Créer la notification
                     </button>
                 </div>
             </form>
         </div>
     </div>
-   
+
     <!-- Modal d'ajout de projet -->
     <div id="ajouterProjetModal-container" class="no-print"></div>
 
     <!-- Modal de modification de projet -->
     <div id="modifierProjetModal-container" class="fixed inset-0 hidden no-print"></div>
 
-    <!-- Scripts existants restent inchangés -->
-    <script>
-        function openNotificationModal(projetId, projetNom) {
-            document.getElementById('modalProjetId').value = projetId;
-            document.getElementById('modalProjetNom').value = projetNom;
-            document.getElementById('notificationModal').classList.remove('hidden');
-        }
-        
+    <!-- Scripts pour les modaux  -->
+    <script>        
         function closeModal(modalId, options = {}) {
             const modal = document.getElementById(modalId);
             if (modal) {
@@ -464,7 +710,7 @@
         }
     </script>
 
-    <!-- Scripts de tri et recherche restent inchangés -->
+    <!-- Scripts de tri et recherche -->
     <script>
         let currentSort = { field: null, direction: 'asc' };
 
@@ -641,5 +887,569 @@
     </script>
 
     <script src="{% static 'projets/js/notification-handler.js' %}"></script>
+
+    <script>
+        // Fonction pour ouvrir la modal avec chargement AJAX
+        async function loadNotificationData(projetId) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const relationsContainer = document.getElementById('relationsContainer');
+            const errorContainer = document.getElementById('errorContainer');
+            const statisticsContainer = document.getElementById('statisticsContainer');
+            
+            // Réinitialiser
+            errorContainer.classList.add('hidden');
+            loadingIndicator.classList.remove('hidden');
+            relationsContainer.classList.add('hidden');
+            
+            try {
+                // URL de l'API
+                const url = `/api/projets/${projetId}/notification-data/`;
+                // console.log('Chargement des données depuis:', url);
+                
+                // Appel API avec timeout
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+                
+                const response = await fetch(url, {
+                    signal: controller.signal,
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                
+                clearTimeout(timeoutId);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.detail || data.error);
+                }
+                
+                // console.log('Données reçues:', data);
+                
+                // Mettre à jour les sélecteurs avec les champs adaptés
+                updateSelect('tacheSelect', data.taches, 'titre', 'id', 'Aucune tâche disponible');
+                updateSelect('documentSelect', data.documents, 'nom', 'id', 'Aucun document disponible');
+                updateSelect('ordreServiceSelect', data.ordres_service, 'numero', 'id', 'Aucun OS disponible');
+                
+                // Mettre à jour les statistiques
+                updateStatistics(data.statistiques);
+                
+                // Mettre à jour les suggestions
+                updateSuggestions(data.suggestions);
+                
+                // Mettre à jour le type d'objet
+                updateObjectTypeOptions(data);
+                
+                // Afficher le conteneur
+                relationsContainer.classList.remove('hidden');
+                
+                // Mettre à jour le compteur
+                const totalElements = data.taches.length + data.documents.length + data.ordres_service.length;
+                const relationsCount = document.getElementById('relationsCount');
+                if (relationsCount) {
+                    relationsCount.textContent = `${totalElements} éléments disponibles`;
+                }
+                
+                return data;
+                
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+                
+                // Message d'erreur adapté
+                let errorMessage = error.message;
+                if (error.name === 'AbortError') {
+                    errorMessage = 'Timeout: La requête a pris trop de temps';
+                }
+                
+                // Afficher l'erreur
+                errorContainer.innerHTML = `
+                    <div class="bg-red-900/50 border border-red-700 rounded p-3">
+                        <div class="flex items-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                            <div>
+                                <div class="font-medium text-red-300">Erreur de chargement</div>
+                                <div class="text-sm text-red-400 mt-1">${errorMessage}</div>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex space-x-2">
+                            <button onclick="retryLoadNotificationData(${projetId})" 
+                                    class="text-sm bg-red-800 hover:bg-red-700 text-white px-3 py-1 rounded">
+                                <i class="fas fa-redo mr-1"></i> Réessayer
+                            </button>
+                            <button onclick="continueWithoutData()" 
+                                    class="text-sm bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded">
+                                <i class="fas fa-forward mr-1"></i> Continuer sans données
+                            </button>
+                        </div>
+                    </div>
+                `;
+                errorContainer.classList.remove('hidden');
+                
+                throw error;
+            } finally {
+                loadingIndicator.classList.add('hidden');
+            }
+        }
+
+        // Fonction de réessai
+        function retryLoadNotificationData(projetId) {
+    document.getElementById('errorContainer').classList.add('hidden');
+    loadNotificationData(projetId);
+}
+
+        // Continuer sans données
+        function continueWithoutData() {
+    document.getElementById('errorContainer').classList.add('hidden');
+    document.getElementById('relationsContainer').classList.remove('hidden');
+    
+    // Remplir avec des options vides
+    updateSelect('tacheSelect', [], 'titre', 'id', 'Aucune tâche disponible');
+    updateSelect('documentSelect', [], 'nom', 'id', 'Aucun document disponible');
+    updateSelect('ordreServiceSelect', [], 'numero', 'id', 'Aucun OS disponible');
+}
+        // Fonction pour charger les données du projet
+ // Fonction pour mettre à jour un sélecteur
+        function updateSelect(selectId, items, textField, valueField = 'id', emptyMessage = 'Aucun') {
+            const select = document.getElementById(selectId);
+            if (!select) return;
+            
+            select.innerHTML = `<option value="">${emptyMessage}</option>`;
+            
+            if (items && items.length > 0) {
+                items.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item[valueField];
+                    
+                    // Construction du texte avec informations supplémentaires selon le type
+                    let optionText = item[textField] || `ID: ${item[valueField]}`;
+                    
+                    // Ajouter des informations contextuelles selon le type
+                    if (selectId === 'tacheSelect' && item.date_fin) {
+                        optionText += ` (échéance: ${item.date_fin})`;
+                    }
+                    
+                    if (selectId === 'tacheSelect' && item.responsable) {
+                        optionText += ` - ${item.responsable}`;
+                    }
+                    
+                    if (selectId === 'documentSelect' && item.type_display) {
+                        optionText += ` [${item.type_display}]`;
+                    }
+                    
+                    if (selectId === 'ordreServiceSelect' && item.statut_display) {
+                        optionText += ` - ${item.statut_display}`;
+                    }
+                    
+                    // Tronquer si trop long
+                    if (optionText.length > 60) {
+                        optionText = optionText.substring(0, 57) + '...';
+                    }
+                    
+                    option.textContent = optionText;
+                    option.title = item[textField] || `ID: ${item[valueField]}`;
+                    
+                    // Ajouter des data attributes
+                    option.dataset.objetId = item[valueField];
+                    option.dataset.objetType = selectId.replace('Select', '').toLowerCase();
+                    
+                    select.appendChild(option);
+                });
+            }
+        }
+
+        // Mettre à jour les statistiques
+        function updateStatistics(stats) {
+            const container = document.getElementById('statisticsContainer');
+            if (!container || !stats) return;
+            
+            container.innerHTML = `
+                <div class="bg-gray-800/50 rounded-lg p-4">
+                    <h5 class="text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-chart-bar mr-1"></i> Statistiques du projet
+                    </h5>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-400">${stats.total_taches || 0}</div>
+                            <div class="text-xs text-gray-400">Tâches</div>
+                            ${stats.taches_recentes ? `<div class="text-xs text-green-400 mt-1">+${stats.taches_recentes} récentes</div>` : ''}
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-purple-400">${stats.total_documents || 0}</div>
+                            <div class="text-xs text-gray-400">Documents</div>
+                            ${stats.documents_recents ? `<div class="text-xs text-green-400 mt-1">+${stats.documents_recents} récents</div>` : ''}
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-yellow-400">${stats.total_ordres_service || 0}</div>
+                            <div class="text-xs text-gray-400">Ordres de service</div>
+                            ${stats.os_recents ? `<div class="text-xs text-green-400 mt-1">+${stats.os_recents} récents</div>` : ''}
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-green-400">${stats.total_attachements || 0}</div>
+                            <div class="text-xs text-gray-400">Attachements</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.classList.remove('hidden');
+        }
+
+        // Mettre à jour les suggestions
+        function updateSuggestions(suggestions) {
+            if (!suggestions) return;
+            
+            // Date d'expiration par défaut
+            const expireInput = document.querySelector('input[name="expire_le"]');
+            if (expireInput && !expireInput.value && suggestions.expiration_par_defaut) {
+                expireInput.value = suggestions.expiration_par_defaut;
+            }
+            
+            // Niveau d'urgence par défaut
+            const urgenceSelect = document.querySelector('select[name="niveau_urgence"]');
+            if (urgenceSelect && suggestions.urgence_par_defaut) {
+                urgenceSelect.value = suggestions.urgence_par_defaut;
+            }
+            
+            // Suggestions de types de notification
+            const typeSelect = document.querySelector('select[name="type_notification"]');
+            if (typeSelect && suggestions.types_notification) {
+                // Marquer les options suggérées
+                suggestions.types_notification.forEach(suggestion => {
+                    const option = Array.from(typeSelect.options).find(
+                        opt => opt.value === suggestion.code
+                    );
+                    if (option) {
+                        option.dataset.suggested = 'true';
+                        option.classList.add('text-green-400');
+                    }
+                });
+            }
+        }
+
+        // Mettre à jour les options de type d'objet
+        function updateObjectTypeOptions(data) {
+            const typeSelect = document.querySelector('select[name="objet_type"]');
+            if (!typeSelect) return;
+            
+            // Options de base avec compteurs
+            const options = [
+                { value: '', text: 'Non spécifié' },
+                { 
+                    value: 'tache', 
+                    text: 'Tâche', 
+                    count: data.statistiques?.total_taches || 0 
+                },
+                { 
+                    value: 'document', 
+                    text: 'Document', 
+                    count: data.statistiques?.total_documents || 0 
+                },
+                { 
+                    value: 'ordre_service', 
+                    text: 'Ordre de service', 
+                    count: data.statistiques?.total_ordres_service || 0 
+                },
+                { 
+                    value: 'attachement', 
+                    text: 'Attachement', 
+                    count: data.statistiques?.total_attachements || 0 
+                },
+            ];
+            
+            // Reconstruire le select
+            typeSelect.innerHTML = '';
+            options.forEach(opt => {
+                const option = document.createElement('option');
+                option.value = opt.value;
+                
+                if (opt.count > 0) {
+                    option.textContent = `${opt.text} (${opt.count})`;
+                    option.disabled = false;
+                    option.classList.add('text-white');
+                } else {
+                    option.textContent = `${opt.text} (aucun)`;
+                    option.disabled = true;
+                    option.classList.add('text-gray-500');
+                }
+                
+                typeSelect.appendChild(option);
+            });
+            
+            // Événement pour synchroniser avec l'ID d'objet
+            typeSelect.addEventListener('change', function() {
+                const objetIdInput = document.querySelector('input[name="objet_id"]');
+                const selectedValue = this.value;
+                
+                if (selectedValue) {
+                    objetIdInput.placeholder = `ID ${selectedValue.replace('_', ' ')}`;
+                    objetIdInput.disabled = false;
+                    
+                    // Optionnel: proposer le premier ID disponible
+                    switch(selectedValue) {
+                        case 'tache':
+                            if (data.taches && data.taches.length > 0) {
+                                objetIdInput.value = data.taches[0].id;
+                            }
+                            break;
+                        case 'document':
+                            if (data.documents && data.documents.length > 0) {
+                                objetIdInput.value = data.documents[0].id;
+                            }
+                            break;
+                        case 'ordre_service':
+                            if (data.ordres_service && data.ordres_service.length > 0) {
+                                objetIdInput.value = data.ordres_service[0].id;
+                            }
+                            break;
+                    }
+                } else {
+                    objetIdInput.placeholder = 'ID numérique';
+                    objetIdInput.value = '';
+                    objetIdInput.disabled = false;
+                }
+            });
+        }
+
+        // Fonction pour ouvrir la modal de notification
+        async function openNotificationModal(projetId, projetNom) {
+            // console.log(`Ouverture modal pour projet: ${projetNom} (ID: ${projetId})`);
+            
+            // Récupérer les références
+            const modal = document.getElementById('notificationModal');
+            const projetIdInput = document.getElementById('modalProjetId');
+            // const projetNomInput = document.getElementById('modalProjetNom');
+            const projetNomDisplay = document.getElementById('modalProjetNomText');
+
+            // Vérifier si les éléments DOM sont présents
+            if (!modal || !projetIdInput || !projetNomDisplay) {
+                console.error('Éléments DOM manquants pour la modal');
+                alert('Erreur: Impossible d\'ouvrir la modal de notification');
+                return;
+            }
+            // Mettre à jour les champs de base
+            projetIdInput.value = projetId;
+            projetNomDisplay.textContent = projetNom;
+
+            resetNotificationForm();
+            
+            // Afficher la modal
+            modal.classList.remove('hidden');
+            
+            // Bloquer le scroll du body
+            document.body.style.overflow = 'hidden';
+            
+            try {
+                // Charger les données du projet
+                await loadNotificationData(projetId);
+                
+                // Focus sur le premier champ
+                setTimeout(() => {
+                    const firstInput = modal.querySelector('input, select, textarea');
+                    if (firstInput) firstInput.focus();
+                }, 100);
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'initialisation:', error);
+                // La modal reste ouverte même en cas d'erreur
+            }
+        }
+
+        // Réinitialiser le formulaire
+        function resetNotificationForm() {
+            const form = document.getElementById('notificationForm');
+            if (form) {
+                form.reset();
+                
+                // Réinitialiser les valeurs par défaut
+                const urgenceSelect = form.querySelector('select[name="niveau_urgence"]');
+                if (urgenceSelect) urgenceSelect.value = 'MOYEN';
+                
+                const prioritaireCheck = form.querySelector('input[name="prioritaire"]');
+                if (prioritaireCheck) prioritaireCheck.checked = false;
+                
+                const canBeClosedCheck = form.querySelector('input[name="can_be_closed"]');
+                if (canBeClosedCheck) canBeClosedCheck.checked = true;
+                
+                // Date d'aujourd'hui par défaut pour l'échéance
+                const dateEcheance = form.querySelector('input[name="date_echeance"]');
+                if (dateEcheance && !dateEcheance.value) {
+                    const today = new Date().toISOString().split('T')[0];
+                    dateEcheance.value = today;
+                }
+            }
+        }
+
+        // Initialisation au chargement de la page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestion de la soumission du formulaire
+            const notificationForm = document.getElementById('notificationForm');
+            if (notificationForm) {
+                notificationForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    // Validation
+                    if (!validateNotificationForm()) {
+                        return;
+                    }
+                    
+                    // Désactiver le bouton de soumission
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const originalText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Création...';
+                    submitBtn.disabled = true;
+                    
+                    try {
+                        // Soumission via Fetch API pour meilleur contrôle
+                        const formData = new FormData(this);
+                        
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            // Succès - fermer la modal et recharger si nécessaire
+                            closeNotificationModal();
+                            
+                            // Afficher message de succès (si vous avez un système de messages)
+                            // showSuccessMessage('Notification créée avec succès!');
+                            showNotification('Notification créée avec succès!', 'success');
+                            // Optionnel: recharger les notifications non lues
+                            // loadUnreadNotifications();
+                            
+                        } else {
+                            // Erreur serveur
+                            const errorText = await response.text();
+                            throw new Error(`Erreur serveur: ${response.status}`);
+                        }
+                        
+                    } catch (error) {
+                        console.error('Erreur lors de la soumission:', error);
+                        alert(`Erreur: ${error.message}`);
+                        
+                        // Réactiver le bouton
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.disabled = false;
+                    }
+                });
+            }
+            
+            // Gestion du changement de type de notification
+            const typeSelect = document.querySelector('select[name="type_notification"]');
+            if (typeSelect) {
+                typeSelect.addEventListener('change', function() {
+                    updateFieldsByType(this.value);
+                });
+            }
+        });
+
+        // Validation du formulaire
+        function validateNotificationForm() {
+            const requiredFields = [
+                { selector: 'select[name="type_notification"]', name: 'Type de notification' },
+                { selector: 'input[name="titre"]', name: 'Titre' },
+                { selector: 'textarea[name="message"]', name: 'Message' }
+            ];
+            
+            for (const field of requiredFields) {
+                const element = document.querySelector(field.selector);
+                if (element && !element.value.trim()) {
+                    alert(`Le champ "${field.name}" est obligatoire`);
+                    element.focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Mettre à jour les champs selon le type
+        function updateFieldsByType(type) {
+            const select = document.querySelector('select[name="type_notification"]');
+            const option = select?.options[select.selectedIndex];
+            
+            if (!option) return;
+            
+            // Mettre à jour l'urgence selon le type
+            const urgenceMap = {
+                'TACHE_URGENTE': 'ELEVE',
+                'TACHE_EN_RETARD': 'CRITIQUE',
+                'OS_ANNULE': 'ELEVE',
+                'RETARD': 'MOYEN',
+                'ECHEANCE': 'MOYEN',
+                'DOCUMENT_A_SIGNER': 'MOYEN',
+                'REUNION': 'FAIBLE',
+                'VALIDATION_ATTACHEMENT': 'MOYEN'
+            };
+            
+            const urgenceSelect = document.querySelector('select[name="niveau_urgence"]');
+            if (urgenceSelect && urgenceMap[type]) {
+                urgenceSelect.value = urgenceMap[type];
+            }
+            
+            // Mettre à jour le statut prioritaire
+            const prioritaireCheck = document.getElementById('prioritaire');
+            if (prioritaireCheck) {
+                prioritaireCheck.checked = ['TACHE_URGENTE', 'TACHE_EN_RETARD', 'RETARD', 'CRITIQUE'].includes(type);
+            }
+        }
+
+        // Fermer la modal
+        function closeNotificationModal() {
+            const modal = document.getElementById('notificationModal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+        }
+
+    </script>
+    <style>
+        /* Styles pour l'affichage du projet */
+        #modalProjetDisplay {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        #modalProjetDisplay:hover {
+            border-color: #4ade80;
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+        }
+
+        #modalProjetNomText {
+            word-break: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+
+        /* Animation d'entrée */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        #modalProjetDisplay {
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        /* Style pour les champs cachés (visuellement cachés) */
+        input[type="hidden"] {
+            display: none !important;
+        }
+    </style>
 </body>
 </html>

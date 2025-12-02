@@ -966,7 +966,7 @@ class LigneBordereau(models.Model):
 # ------------------------ Notification ------------------------
 class Notification(models.Model):
     TYPE_NOTIFICATION = [
-        # TÂCHES (Nouveaux types)
+        # TÂCHES (types)
         ('NOUVELLE_TACHE', 'Nouvelle tâche créée'),
         ('TACHE_ASSIGNEE', 'Tâche assignée'),
         ('TACHE_MODIFIEE', 'Tâche modifiée'),
@@ -975,13 +975,30 @@ class Notification(models.Model):
         ('TACHE_ECHEANCE', 'Échéance tâche approchante'),
         ('TACHE_EN_RETARD', 'Tâche en retard'),
         
-        # PROJETS (Types existants améliorés)
+        # PROJETS
         ('RETARD', 'Projet en retard'),
         ('NOUVEAU_AO', "Nouvel appel d'offres"),
         ('RECEPTION', 'Réception validée'),
         ('REUNION', 'Rendez-vous'),
         ('ECHEANCE', 'Échéance approchante'),
+        ('PROJET_TERMINE', 'Projet terminé'),
+        ('PROJET_ANNULE', 'Projet annulé'),
+        ('PROJET_SUSPENDU', 'Projet suspendu'),
+        ('PROJET_REOUVERT', 'Projet reouvert'),
+        ('PROJET_MODIFIE', 'Projet modifié'),
+        ('PROJET_EN_ARRET', 'Projet en arret'),
+        ('NOUVEAU_PROJET', 'Nouveau projet'),
         
+        # ATTACHEMENTS
+        ('ATTACHEMENT_BROUILLON', 'Attachement en cours de travail'),
+        ('ATTACHEMENT_TRANSMIS', 'Attachement transmis'),
+        ('ATTACHEMENT_MODIFIE', 'Attachement modifié'),
+        ('ATTACHEMENT_SUPPRIME', 'Attachement supprimé'),
+        ('ATTACHEMENT_VALIDE', 'Attachement validé'),
+        ('ATTACHEMENT_REFUSE', 'Attachement refusé'),
+        ('NOUVEL_ATTACHEMENT', 'Nouvel attachement créé'),
+        ('ATTACHEMENT_SIGNE', 'Attachement en attente'),
+                
         # ORDRES DE SERVICE
         ('OS_NOTIFIE', 'Ordre de service notifié'),
         ('OS_ANNULE', 'Ordre de service annulé'),
@@ -1176,18 +1193,18 @@ class Notification(models.Model):
         """Retourne l'URL de l'objet concerné"""
         if self.action_url:
             return self.action_url
-        
+        projet_id = self.projet.id
         # URLs par défaut selon le type d'objet
         url_map = {
-            'tache': f'/taches/{self.objet_id}/',
-            'document': f'/documents/{self.objet_id}/',
-            'projet': f'/projets/{self.projet_id}/' if self.projet_id else None,
-            'ordre_service': f'/ordres-service/{self.objet_id}/',
+            'tache': f'/taches/{self.objet_id}', # path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'),
+            'document': f'document/{self.objet_id}/afficher/', #path('document/<int:document_id>/afficher/', views.AfficherDocumentView.as_view(), name='afficher_document'), 
+            'projet': f'/projet/{projet_id}/dashboard', #path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),
+            'ordre_service': f'/projet/{projet_id}/ordres-service/{self.objet_id}/details/', # path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/details/', views.details_ordre_service, name='details_ordre_service'),
         }
         
         return url_map.get(self.objet_type, '#')
 
-    # ==================== MÉTHODES DE CLASSE AMÉLIORÉES ====================
+    # ==================== MÉTHODES DE CLASSE NOTIFICATION ====================
 
     @classmethod
     def creer_notification_tache(cls, tache, type_notif, emetteur=None, utilisateurs_cibles=None):
@@ -1249,10 +1266,7 @@ class Notification(models.Model):
             notifications.append(notification)
         
         cls.objects.bulk_create(notifications)
-        
-        # Log pour le débogage
-        print(f"📢 {len(notifications)} notifications créées pour la tâche {tache.titre}")
-        
+            
         return notifications
 
     @classmethod
@@ -1478,6 +1492,8 @@ class Attachement(models.Model):
         ('SIGNE', 'Signé'),
         ('TRANSMIS', 'Transmis'),
         ('VALIDE', 'Validé'),
+        ('REFUSE', 'Refusé'),
+        ('MODIFIE', 'Modifié'),
     ]
 
     projet = models.ForeignKey('Projet', on_delete=models.CASCADE, related_name='attachements')
@@ -1491,7 +1507,7 @@ class Attachement(models.Model):
     # Champ compatible Cloudinary
     if getattr(settings, 'USE_CLOUDINARY', False):
         from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', folder='attachements', resource_type='raw', default=None)
+        fichier = CloudinaryField('raw', folder='attachements', resource_type='raw', default=None, blank=True, null=True)
     else:
         fichier = models.FileField(upload_to='attachements/%Y/%m/', null=True, blank=True)
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
@@ -1585,7 +1601,7 @@ class Attachement(models.Model):
         
     def __str__(self):
         return f"Attachement {self.numero} - {self.projet.nom}"
-
+    
 # ------------------------ Ligne Attachement ------------------------
 class LigneAttachement(models.Model):
     attachement = models.ForeignKey('Attachement', on_delete=models.CASCADE, related_name='lignes_attachement')
