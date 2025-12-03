@@ -54,8 +54,14 @@ def can_view_projet(view_func):
             from .models import Projet
             try:
                 projet = Projet.objects.get(id=projet_id)
+                user_in_project = projet.users.filter(id=request.user.id).exists()
+                user_can_view = request.user in projet.users.all()
+
                 # Vérifier si l'utilisateur fait partie du projet
-                if not projet.users.filter(id=request.user.id).exists():
+                if not user_in_project:
+                    raise PermissionDenied
+                # Vérifier si l'utilisateur est le chef du projet
+                if not user_can_view:
                     raise PermissionDenied
             except Projet.DoesNotExist:
                 raise PermissionDenied
@@ -126,9 +132,10 @@ def can_edit_projet(view_func):
         # Superusers peuvent tout faire
         if request.user.is_superuser:
             return view_func(request, *args, **kwargs)
-        
+        projet = Projet.objects.get(id=projet_id)
+        user_can_edit = request.user in projet.users.all()
         # Vérifier la permission générique
-        if not request.user.has_perm('projets.change_projet'):
+        if not user_can_edit: #request.user.has_perm('projets.change_projet'):
             messages.error(request, "Vous n'avez pas la permission de modifier les projets")
             raise PermissionDenied
         
@@ -139,8 +146,7 @@ def can_edit_projet(view_func):
             try:
                 projet = Projet.objects.get(id=projet_id)
                 # Vérifier si l'utilisateur est propriétaire ou membre avec droits
-                if not (projet.createur == request.user or 
-                        projet.collaborateurs.filter(id=request.user.id).exists()):
+                if not (projet.users.filter(id=request.user.id).exists()):
                     messages.error(request, "Vous ne pouvez modifier que vos propres projets")
                     raise PermissionDenied
             except Projet.DoesNotExist:

@@ -53,7 +53,7 @@ def check_echeances_taches_quotidien():
     """Vérifie les échéances quotidiennement (à appeler par cron)"""
     aujourdhui = timezone.now().date()
     stats = {
-        'aujourdhui': 0,
+        'aujourdhui': 0, 
         'demain': 0,
         'retard': 0,
         'urgentes': 0

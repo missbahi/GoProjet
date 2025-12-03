@@ -25,7 +25,8 @@
                     Statut
                 </th>
                 <th class="px-6 py-3 sortable" onclick="sortTable('avancement')" data-sort="avancement">
-                    Avancement<br>Workflow(%)
+                    <div>Avancement</div>
+                    <div class="text-xs text-gray-400">(%) Décomptes</div>
                 </th>
                 <th class="px-6 py-3 no-print min-w-[140px]">Actions</th>
             </tr>
@@ -84,7 +85,7 @@
                     <div class="flex justify-center items-center space-x-4">
                         <button class="btn-create-notification"
                                 data-projet-id="{{ projet.id }}"
-                                data-projet-nom="{{ projet.nom|escapejs }}"
+                                data-projet-nom="{{ projet.nom }}"
                                 title="Créer une notification">
                             <i class="fas fa-bell text-lg"></i>
                         </button>

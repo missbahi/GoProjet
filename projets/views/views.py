@@ -13,7 +13,8 @@ from django.urls import  reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django.views import View
 
-from projets.decorators import chef_projet_required, superuser_required
+from projets import models
+from projets.decorators import can_view_projet, chef_projet_required, superuser_required
 
 from projets.forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
 from projets.models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
@@ -30,6 +31,8 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 import logging
+
+from projets.signals.files_handler import delete_cloudinary_file
 logger = logging.getLogger(__name__)
 from django.utils import timezone
 
@@ -81,6 +84,7 @@ def extract_filename_from_url(url):
         filename = filename.split('._')[0] + '.' + filename.split('.')[-1]
     
     return filename
+
 def clean_url(url, replace_https=True):
     """Nettoie l'URL en supprimant les espaces et forçant le https"""
     # Verifie si l'une de ces caracteres se trouvent dans l'url : ' ', '=', '%20' 
@@ -95,6 +99,7 @@ def clean_url(url, replace_https=True):
     return url
 
 @login_required
+@can_view_projet
 def secure_download(request, model_name, object_id):
     """
     Téléchargement sécurisé avec tous les paramètres dans l'URL
@@ -112,9 +117,11 @@ def secure_download(request, model_name, object_id):
     
     # On cherche le projet associé
     projet = get_projet_from_instance(obj)
+    user = request.user
+
     if not projet:
         return HttpResponseForbidden("Projet non trouvé pour cet objet")
-    if not request.user.has_perm('projets.view_projet', projet):
+    if not user in projet.users.all():
         return HttpResponseForbidden("Accès refusé au projet associé")
     
     # On cherche le fichier
@@ -147,14 +154,6 @@ def serve_file_with_original_name(file_field, original_filename):
         import urllib.parse
         
         cloudinary_url = clean_url(file_field.url)
-
-        # if ' =' in cloudinary_url:
-        #     cloudinary_url = cloudinary_url.replace(' =', '')
-        #     print(f"🔧 URL nettoyée: {cloudinary_url}")
-
-        # if '%20=' in cloudinary_url:
-        #     cloudinary_url = cloudinary_url.replace('%20=', '')
-        #     print(f"🔧 URL nettoyée: {cloudinary_url}")
         
         response = requests.get(cloudinary_url, stream=True)
         response.raise_for_status()
@@ -876,6 +875,7 @@ class DetailTacheView(DetailView):
                 return self.render_to_json_response()
             except Exception as e:
                 logger.error(f"Erreur détail tâche {self.object.id}: {str(e)}")
+                print(f"Erreur détail tâche {self.object.id}: {str(e)}")
                 return JsonResponse({
                     'success': False,
                     'message': "Erreur lors du chargement des données"
@@ -2320,7 +2320,8 @@ def ajouter_etape(request, process_id):
                 return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
             
             # Déterminer le prochain ordre
-            dernier_ordre = process_validation.etapes.aggregate(models.Max('ordre'))['ordre__max']
+            from django.db.models import Max
+            dernier_ordre = process_validation.etapes.aggregate(Max('ordre'))['ordre__max']
             nouvel_ordre = (dernier_ordre or 0) + 1
             
             # Créer la nouvelle étape
@@ -3086,13 +3087,14 @@ def modifier_ordre_service(request, projet_id, ordre_id):
             
             # Gestion de la suppression du document
             if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
-                if ordre_modifie.fichier:
-                    # Supprimer le fichier physique
-                    if os.path.isfile(ordre_modifie.fichier.path):
-                        os.remove(ordre_modifie.fichier.path)
-                    ordre_modifie.fichier = None
-            
-            ordre_modifie.save()
+                try:
+                    delete_cloudinary_file(ordre_modifie)
+                    ordre_modifie.save()
+                except Exception as e:
+                    messages.error(request, f"Erreur lors de la suppression du document: {e}")
+                    return redirect('projets:modifier_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
+                ordre.document = None
+                
             messages.success(request, f"L'ordre de service {ordre_modifie.reference} a été modifié avec succès.")
             return redirect('projets:ordres_service', projet_id=projet.id)
     else:
@@ -3122,9 +3124,8 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
     if request.method == 'POST':
         reference = ordre.reference
         # Supprimer le fichier document s'il existe
-        if ordre.fichier:
-            if os.path.isfile(ordre.fichier.path):
-                os.remove(ordre.fichier.path)
+        # if ordre.fichier:
+        #     delete_cloudinary_file(ordre)
         ordre.delete()
         messages.success(request, f"L'ordre de service {reference} a été supprimé avec succès.")
         return redirect('projets:ordres_service', projet_id=projet.id)

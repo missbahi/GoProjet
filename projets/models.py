@@ -602,10 +602,10 @@ class OrdreService(models.Model):
         
         if errors:
             raise ValidationError(errors)
-    def download_url(self):
-        if not self.fichier:
-            return None
-        return self.fichier.build_url(flags='attahement')
+    # def download_url(self):
+    #     if not self.fichier:
+    #         return None
+    #     return self.fichier.build_url(flags='attahement')
     @property
     def influence_delai(self):
         return self.type_os.code in ['OSC', 'OSA', 'OSR']
@@ -627,14 +627,14 @@ class Tache(models.Model):
     titre = models.CharField(max_length=200)
     description = models.TextField()
     date_debut = models.DateField()
-    date_fin = models.DateField()
+    date_fin = models.DateField() 
     priorite = models.CharField(max_length=10, choices=PRIORITE, default='NORMALE')
     responsable = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     terminee = models.BooleanField(default=False)
     avancement = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+ 
     class Meta:
         verbose_name = _("Tâche")
         verbose_name_plural = _("Tâches")
@@ -649,6 +649,12 @@ class Tache(models.Model):
             return (self.date_fin - date.today()).days
         return None
 
+    @property
+    def jours_retard(self):
+        if self.terminee : return 0
+        if self.date_fin:
+            return (date.today() - self.date_fin).days
+        return 0
 # ------------------ Documents administratifs ----------------
 def document_upload_path(instance, filename):
     return f'documents_administratifs/projet_{instance.projet.id}/{filename}'
@@ -1514,7 +1520,7 @@ class Attachement(models.Model):
     
     date_creation = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
+    class Meta: 
         verbose_name = "Attachement"
         verbose_name_plural = "Attachements"
         ordering = ['-date_etablissement', '-numero']

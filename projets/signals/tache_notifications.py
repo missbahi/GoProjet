@@ -75,11 +75,10 @@ def handle_tache_modification(sender, instance, **kwargs):
                     type_notif='TACHE_URGENTE',
                     utilisateurs_cibles=instance.projet.users.all()
                 )
-            
             # Tâche en retard (à vérifier via cron)
-            if instance.jours_retard and instance.jours_retard > 0 and not instance.terminee:
+            if instance.jours_retard > 0:
                 Notification.creer_notification_tache(
-                    tache=instance,
+                    tache=instance, 
                     type_notif='TACHE_EN_RETARD',
                     utilisateurs_cibles=instance.projet.users.all()
                 )

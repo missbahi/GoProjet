@@ -242,9 +242,10 @@ def notification_data_api(request, projet_id):
     """
     try:
         projet = get_object_or_404(Projet, id=projet_id)
-        
-        # Vérifier les permissions (ajustez selon votre système de permissions)
-        if not request.user.has_perm('projets.view_projet', projet):
+        user = request.user
+        user_can_edit = user in projet.users.all() or user.is_superuser
+        # Vérifier les permissions de l'utilisateur
+        if not user_can_edit:
             return JsonResponse({
                 'error': 'Permission refusée',
                 'detail': "Vous n'avez pas la permission d'accéder à ce projet."
@@ -367,7 +368,8 @@ def notification_data_api(request, projet_id):
                 'expiration_par_defaut': (timezone.now() + timedelta(days=3)).strftime('%Y-%m-%dT%H:%M'),
             }
         }
-        
+        # dumped_data = json.dumps(data, ensure_ascii=False)
+        # print(dumped_data)
         return JsonResponse(data, json_dumps_params={'ensure_ascii': False})
         
     except Projet.DoesNotExist:

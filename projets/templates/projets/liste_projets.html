@@ -381,9 +381,6 @@ input:focus, select:focus, textarea:focus {
         <div class="bg-[#525252] text-[#2B9C62] shadow-xl w-full max-w-2xl rounded-lg p-1">
             <form id="notificationForm" method="post" action="{% url 'projets:creer_notification' %}" 
                 class="bg-[#2E2E2E] text-[#2B9C62] shadow-lg rounded p-3">
-                {% csrf_token %}
-                <input type="hidden" name="projet_id" id="modalProjetId">
-                <input type="hidden" name="emetteur" value="{{ request.user.id }}">
                 
                 <!-- En-tête -->
                 <div class="flex justify-between items-center pb-4 border-b border-[#2B9C62]">
@@ -397,9 +394,7 @@ input:focus, select:focus, textarea:focus {
                 </div>
                 
                 {% csrf_token %}
-                <input type="hidden" name="projet_id" id="modalProjetId">
                 <input type="hidden" name="emetteur" value="{{ request.user.id }}">
-                
                 <div class="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
                     <!-- Projet (lecture seule) -->
                     <div>
@@ -904,11 +899,9 @@ input:focus, select:focus, textarea:focus {
             try {
                 // URL de l'API
                 const url = `/api/projets/${projetId}/notification-data/`;
-                // console.log('Chargement des données depuis:', url);
-                
                 // Appel API avec timeout
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+                const timeoutId = setTimeout(() => controller.abort(), 5000); // 10s timeout
                 
                 const response = await fetch(url, {
                     signal: controller.signal,
@@ -919,19 +912,14 @@ input:focus, select:focus, textarea:focus {
                 });
                 
                 clearTimeout(timeoutId);
-                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
                 const data = await response.json();
-                
+
                 if (!data.success) {
                     throw new Error(data.detail || data.error);
                 }
-                
-                // console.log('Données reçues:', data);
-                
                 // Mettre à jour les sélecteurs avec les champs adaptés
                 updateSelect('tacheSelect', data.taches, 'titre', 'id', 'Aucune tâche disponible');
                 updateSelect('documentSelect', data.documents, 'nom', 'id', 'Aucun document disponible');
@@ -959,7 +947,7 @@ input:focus, select:focus, textarea:focus {
                 return data;
                 
             } catch (error) {
-                console.error('Erreur lors du chargement des données:', error);
+                console.error('Erreur lors du chargement des données de notification:', error);
                 
                 // Message d'erreur adapté
                 let errorMessage = error.message;
@@ -999,22 +987,22 @@ input:focus, select:focus, textarea:focus {
 
         // Fonction de réessai
         function retryLoadNotificationData(projetId) {
-    document.getElementById('errorContainer').classList.add('hidden');
-    loadNotificationData(projetId);
+            document.getElementById('errorContainer').classList.add('hidden');
+            loadNotificationData(projetId);
 }
 
         // Continuer sans données
         function continueWithoutData() {
-    document.getElementById('errorContainer').classList.add('hidden');
-    document.getElementById('relationsContainer').classList.remove('hidden');
-    
-    // Remplir avec des options vides
-    updateSelect('tacheSelect', [], 'titre', 'id', 'Aucune tâche disponible');
-    updateSelect('documentSelect', [], 'nom', 'id', 'Aucun document disponible');
-    updateSelect('ordreServiceSelect', [], 'numero', 'id', 'Aucun OS disponible');
-}
-        // Fonction pour charger les données du projet
- // Fonction pour mettre à jour un sélecteur
+            document.getElementById('errorContainer').classList.add('hidden');
+            document.getElementById('relationsContainer').classList.remove('hidden');
+            
+            // Remplir avec des options vides
+            updateSelect('tacheSelect', [], 'titre', 'id', 'Aucune tâche disponible');
+            updateSelect('documentSelect', [], 'nom', 'id', 'Aucun document disponible');
+            updateSelect('ordreServiceSelect', [], 'numero', 'id', 'Aucun OS disponible');
+        }
+
+        // Fonction pour mettre à jour un sélecteur
         function updateSelect(selectId, items, textField, valueField = 'id', emptyMessage = 'Aucun') {
             const select = document.getElementById(selectId);
             if (!select) return;
@@ -1217,12 +1205,9 @@ input:focus, select:focus, textarea:focus {
 
         // Fonction pour ouvrir la modal de notification
         async function openNotificationModal(projetId, projetNom) {
-            // console.log(`Ouverture modal pour projet: ${projetNom} (ID: ${projetId})`);
-            
             // Récupérer les références
             const modal = document.getElementById('notificationModal');
             const projetIdInput = document.getElementById('modalProjetId');
-            // const projetNomInput = document.getElementById('modalProjetNom');
             const projetNomDisplay = document.getElementById('modalProjetNomText');
 
             // Vérifier si les éléments DOM sont présents
@@ -1233,8 +1218,9 @@ input:focus, select:focus, textarea:focus {
             }
             // Mettre à jour les champs de base
             projetIdInput.value = projetId;
+            console.log(projetNom);
             projetNomDisplay.textContent = projetNom;
-
+            console.log(projetNomDisplay.textContent);
             resetNotificationForm();
             
             // Afficher la modal
@@ -1412,6 +1398,7 @@ input:focus, select:focus, textarea:focus {
         }
 
     </script>
+    
     <style>
         /* Styles pour l'affichage du projet */
         #modalProjetDisplay {
@@ -1451,5 +1438,6 @@ input:focus, select:focus, textarea:focus {
             display: none !important;
         }
     </style>
+    
 </body>
 </html>

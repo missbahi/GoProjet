@@ -8,7 +8,9 @@
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <style>
+
         body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
         .ordre-card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; transition: all 0.3s ease; }
         .ordre-card:hover { border-color: #22d3ee; box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); }
@@ -290,6 +292,12 @@
                                class="btn-warning px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center">
                                 <i class="fas fa-edit"></i> <span>Modifier</span>
                             </a>
+                            <a href="{% url 'projets:supprimer_ordre_service' projet.id ordre.id %}" 
+                               class="btn-danger px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center"
+                               onclick="return confirm('Supprimer cet ordre de service ?')">
+                                <i class="fas fa-trash"></i> <span>Supprimer</span>
+                            </a>
+
                             {% if ordre.statut == 'BROUILLON' %}
                             <form method="POST" class="inline w-full sm:w-auto">
                                 {% csrf_token %}
@@ -318,10 +326,11 @@
                             <span>Date effet: {{ ordre.date_effet|date:"d/m/Y"|default:"-" }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-file text-xs"></i>
+                            <i class="fas fa-download text-xs"></i>
                             <span>
                                 {% if ordre.fichier %}
-                                    <a href="{{ ordre.fichier.url }}" class="text-cyan-400 hover:underline break-all">Document</a>
+                                    <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=true" 
+                                    class="text-cyan-400 hover:underline break-all">{{ ordre.get_file_name|truncatechars:25 }}</a>
                                 {% else %}
                                     Aucun document
                                 {% endif %}
@@ -501,20 +510,25 @@
                 </div>
 
                 <div>
-                    <label for="documents" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                        Documents joints
-                    </label>
+                    <label for="documents" class="block text-sm font-medium text-[#AECBD6] mb-2">Documents joints</label>
                     <input type="file" id="documents" name="documents" 
-                           class="form-control w-full px-3 py-2 rounded-lg text-sm sm:text-base">
-                    {% if ordre_a_modifier and ordre_a_modifier.fichier %}
-                        <div class="mt-2 text-xs sm:text-sm text-cyan-400">
-                            <i class="fas fa-file mr-2"></i>
-                            Document actuel: 
-                            <a href="{{ ordre_a_modifier.fichier.url }}" class="underline break-all">{{ ordre_a_modifier.fichier.name }}</a>
-                            <label class="ml-2 sm:ml-4 text-gray-400 block sm:inline-block mt-1 sm:mt-0">
-                                <input type="checkbox" name="supprimer_document" value="1"> Supprimer le document
-                            </label>
-                        </div>
+                           class="form-control w-full px-3 py-2 rounded-lg text-sm sm:text-base"
+                            onchange="updateOriginalFilename(this)">
+                    <input class="form-control hidden" id="original_filename" name="original_filename" 
+                            value="{{ attachement.original_filename|default:'' }}">
+                      
+                        {% if ordre_a_modifier and ordre_a_modifier.fichier %}
+                    <div class="file-current">
+                        <p class="text-green-400 font-medium flex items-center gap-2">
+                            <i class="fas fa-download ml-1"></i>
+                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=true" class="hover:text-blue-400 transition-colors">
+                            <span class="truncate overflow-ellipsis overflow-hidden">{{ ordre_a_modifier.get_file_name }}</span>
+                        </a>
+                        <!-- <a href="{{ ordre_a_modifier.fichier.url }}" class="underline break-all">{{ ordre_a_modifier.fichier.name }}</a> -->
+                        <label class="ml-2 sm:ml-4 text-gray-400 block sm:inline-block mt-1 sm:mt-0">
+                            <input type="checkbox" name="supprimer_document" value="1"> Supprimer le document
+                        </label>
+                    </div>
                     {% endif %}
                 </div>
                 
@@ -540,6 +554,12 @@
     </div>
 
     <script>
+        function updateOriginalFilename(input) {
+        if (input.files && input.files[0]) {
+            const originalFilename = input.files[0].name;
+            document.getElementById('original_filename').value = originalFilename;
+        }
+    }
         // Gestion de l'affichage/masquage du formulaire
         document.addEventListener('DOMContentLoaded', function() {
             const toggleFormBtn = document.getElementById('toggle-form-btn');
