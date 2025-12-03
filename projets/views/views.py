@@ -14,7 +14,6 @@ from django.utils.translation import gettext as _
 from django.views import View
 
 from projets.decorators import chef_projet_required, superuser_required
-# from projets.manager import BordereauTreeManager, LineManager
 
 from projets.forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
 from projets.models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
@@ -27,7 +26,7 @@ from django.db.models import Sum, Avg, Q
 from django.contrib import messages
 
 from django.contrib.auth.models import User 
-from django.contrib.auth.decorators import permission_required, login_required, user_passes_test
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 import logging
@@ -227,6 +226,9 @@ def home(request):
     today = date.today()
     projets_recents = request.user.projets.all().order_by('-date_creation')[:5]  # Derniers 5 projets créés
     
+    # Pour les graphiques - on prend les 10 derniers projets pour plus de données
+    projets_pour_graphiques = request.user.projets.all().order_by('-date_creation')[:10]
+    
     # Projets en retard (utilisant le nouveau champ en_retard)
     projets_en_retard = request.user.projets.all().filter(en_retard=True).order_by('-date_debut')[:5]
     
@@ -239,10 +241,11 @@ def home(request):
     # Statistiques principales
     nb_projets_en_cours = request.user.projets.all().filter(statut='COURS').count()
     nb_projets_en_retard = request.user.projets.all().filter(en_retard=True).count()
-    
+
     # Avancement moyen des projets en cours
     avancement_moyen = request.user.projets.all().filter(statut='COURS').aggregate(moy=Avg('avancement'))['moy'] or 0
-    
+    avancement_moyen = float(avancement_moyen)
+
     # Appels d'offres
     nb_appels_offres = request.user.projets.all().filter(statut='AO').count()
     nb_a_traiter = request.user.projets.all().filter(a_traiter=True).count()
@@ -304,6 +307,78 @@ def home(request):
      # Échéances à venir (7 prochains jours)
     echeances = Tache.objects.filter(date_fin__gte=today).order_by('date_fin')[:3]
 
+    # Préparation des données pour ApexCharts
+    chart_data = {
+        'projets': [],
+        'categories': ['Mensuel', 'Trimestriel', 'Annuel'],  # Pour les filtres
+        'stats': {
+            'avancement_moyen': round(avancement_moyen, 0),
+            'nb_projets': request.user.projets.all().count(),
+            'nb_en_retard': nb_projets_en_retard
+        }
+    }
+
+    for projet in projets_pour_graphiques:
+        # Déterminer la couleur en fonction de l'avancement
+        avancement = float(projet.avancement) or 0
+        if avancement < 20:
+            couleur = '#ef4444'  # red-500
+            statut_color = 'Critique'
+        elif avancement < 40:
+            couleur = '#f97316'  # orange-500
+            statut_color = 'En retard'
+        elif avancement < 60:
+            couleur = '#eab308'  # yellow-500
+            statut_color = 'En cours'
+        elif avancement < 80:
+            couleur = '#22c55e'  # green-500
+            statut_color = 'Bien avancé'
+        else:
+            couleur = '#16a34a'  # green-600
+            statut_color = 'Presque terminé'
+        date_fin_prevue = projet.date_debut + timedelta(days=projet.delai)
+        chart_data['projets'].append({
+            'id': projet.id,
+            'nom': projet.nom,
+            'nom_court': projet.nom[:15] + '...' if len(projet.nom) > 15 else projet.nom,
+            'avancement': round(avancement),
+            'montant': float(projet.montant or 0),
+            'couleur': couleur,
+            'statut_color': statut_color,
+            'statut': projet.statut,
+            'en_retard': projet.en_retard,
+            'date_creation': projet.date_creation.strftime('%Y-%m-%d') if projet.date_creation else None,
+            'date_fin_prevue': date_fin_prevue.strftime('%Y-%m-%d') if date_fin_prevue else None
+        })
+    
+    # Calculer les données mensuelles, trimestrielles, annuelles
+
+    now = datetime.now()
+    
+    # Données mensuelles
+    start_month = now - timedelta(days=30)
+
+    projets_mensuels = request.user.projets.all().filter(date_creation__gte=start_month)
+
+    chart_data['mensuel'] = {
+        'labels': ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
+        'avancements': [65, 72, 68, 75]  # À adapter avec vos vraies données
+    }
+
+    # Données trimestrielles  
+    chart_data['trimestriel'] = {
+        'labels': ['Mois 1', 'Mois 2', 'Mois 3'],
+        'avancements': [60, 68, 72]
+    }
+    
+    # Données annuelles
+    chart_data['annuel'] = {
+        'labels': ['Q1', 'Q2', 'Q3', 'Q4'],
+        'avancements': [55, 65, 70, 68]
+    }
+    from django.core.serializers.json import DjangoJSONEncoder
+    
+    chart_data_json = json.dumps(chart_data, cls=DjangoJSONEncoder)
     context = {
         'projets_recents': projets_recents,
         'projets_en_retard': projets_en_retard,
@@ -313,6 +388,7 @@ def home(request):
         'notifications': notifications,
         'nb_notifications': nb_notifications,
         'echeances': echeances,
+        'chart_data_json': chart_data_json,
         'projets_noms': json.dumps([p.nom for p in request.user.projets.all().all()]),
         'projets_noms_recents': json.dumps([p.nom for p in projets_recents]),
         'projets_avancements': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in request.user.projets.all().all()]),

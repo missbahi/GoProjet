@@ -74,7 +74,7 @@
                                 {% elif projet.avancement_workflow < 60 %}bg-yellow-500
                                 {% elif projet.avancement_workflow < 80 %}bg-green-300
                                 {% else %}bg-green-600{% endif %}" 
-                                style="width: {{ projet.avancement_workflow }}%">
+                                style="width: {{ projet.avancement_workflow }}%"> 
                             </div>
                         </div>
                         <span class="text-sm text-[#AECBD6] font-medium min-w-[40px]">{{ projet.avancement_workflow|floatformat:0 }}%</span>

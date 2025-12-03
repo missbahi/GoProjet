@@ -206,7 +206,7 @@ class Projet(models.Model):
     
     montant = models.DecimalField(_("Montant estimé (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
     montant_soumission = models.DecimalField(_("Montant de la soumission (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
-
+ 
     statut = models.CharField(_("Statut"), max_length=15, choices=Statut.choices, default=Statut.APPEL_OFFRE)
     date_debut = models.DateField(_("Date de début prévue"), null=True, blank=True)
     delai = models.IntegerField(_("Délai (jours)"), null=True, blank=True, default=0)
