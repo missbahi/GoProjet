@@ -62,6 +62,15 @@
       color: white; 
     }
     
+    .btn-desactive { 
+      background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%); 
+      border: none; 
+      color: white; 
+      cursor: not-allowed;
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
     .btn-outline {
       background: transparent;
       border: 1px solid #4B5563;
@@ -346,7 +355,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
 
         <!-- Lot et Bordereaux -->
-       {% if can_handler %}
+        {% if can_handler %}
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-cubes"></i>
@@ -354,10 +363,20 @@
           <h4 class="module-title">Lots et Bordereaux</h4>
           <p class="module-description">Gérez les lots du projet et les bordereaux des prix unitaires</p>
           <div class="module-actions">
-            <a href="{% url 'projets:lots_projet' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+            {% if lots %}
+            <a href="{% url 'projets:lots_projet' projet.id %}" 
+               class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
+            {% else %}
+            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
+            <a href="{% url 'projets:lots_projet' projet.id %}" 
+               class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-plus"></i>
+                <span>Créer un premier lot</span>
+            </a>
+            {% endif %}
           </div>
         </div>
         {% endif %}
@@ -369,12 +388,21 @@
           </div>
           <h4 class="module-title">Documents administratifs</h4>
           <p class="module-description">Consultez et gérez tous les documents liés au projet</p>
+          {% if projet.documents_administratifs %}
           <div class="module-actions">
             <a href="{% url 'projets:documents' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
           </div>
+          {% else %}
+          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de documents administratifs pour ce projet</p>
+          <a href="{% url 'projets:documents' projet.id %}" 
+             class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-plus"></i>
+              <span>Ajouter un premier document</span>
+          </a>
+          {% endif %}
         </div>
 
         <!-- Suivi d'exécution -->
@@ -384,12 +412,21 @@
           </div>
           <h4 class="module-title">Suivi d'exécution</h4>
           <p class="module-description">Suivez l'avancement et les performances du projet</p>
+          {% if projet.suivis_execution %}
           <div class="module-actions">
             <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
           </div>
+          {% else %}
+          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de suivi d'exécution pour ce projet</p>
+          <a href="{% url 'projets:suivi_execution' projet.id %}" 
+             class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-plus"></i>
+              <span>Ajouter un premier suivi</span>
+          </a>
+          {% endif %}
         </div>
 
         <!-- Ordres de services -->
@@ -398,13 +435,22 @@
             <i class="fas fa-file-contract"></i>
           </div>
           <h4 class="module-title">Ordres de services</h4>
-          <p class="module-description">Gérez les ordres de service et les modifications</p>
+          <p class="module-description">Gérez les ordres de service du projet</p>
+          {% if projet.ordres_service %}
           <div class="module-actions">
             <a href="{% url 'projets:ordres_service' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
           </div>
+          {% else %}
+          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas d'ordres de service pour ce projet</p>
+          <a href="{% url 'projets:ordres_service' projet.id %}" 
+             class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-plus"></i>
+              <span>Ajouter un premier ordre de service</span>
+          </a>
+          {% endif %}
         </div>
 
         <!-- Fiche de contrôle -->
@@ -414,12 +460,21 @@
           </div>
           <h4 class="module-title">Fiche de Contrôle</h4>
           <p class="module-description">Consultez et gérez les fiches de contrôle qualité</p>
+          {% if attachements %}
           <div class="module-actions">
             <a href="{% url 'projets:fiche_controle' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
               <span>Accéder</span>
             </a>
           </div>
+          {% else %}
+          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas encore d'attachements pour ce projet</p>
+          <a href="" 
+             class="btn-desactive w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-plus"></i>
+              <span class="text-gray-200">Accéder</span>
+          </a>
+          {% endif %}
         </div>
 
         <!-- Attachements -->
@@ -429,22 +484,25 @@
           </div>
           <h4 class="module-title">Attachements</h4>
           <p class="module-description">
-            {% if attachements %}
-              Gérez les attachements financiers du projet
-            {% else %}
-              Ajoutez le premier attachement financier
-            {% endif %}
+            <!-- {% if attachements %} -->
+              Gérez les attachements du projet
+            <!-- {% else %}
+              Ajoutez le premier attachement
+            {% endif %} -->
           </p>
           <div class="module-actions">
             {% if attachements %}
-            <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-arrow-right"></i>
-              <span>Gérer</span>
+            <a href="{% url 'projets:liste_attachements' projet.id %}" 
+               class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-arrow-right"></i>
+                <span>Gérer</span>
             </a>
             {% else %}
-            <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-plus"></i>
-              <span>Créer</span>
+            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas d'attachements pour ce projet</p>
+            <a href="{% url 'projets:ajouter_attachement' projet.id %}" 
+               class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-plus"></i>
+                <span>Créer</span>
             </a>
             {% endif %}
           </div>

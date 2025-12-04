@@ -12,7 +12,7 @@ def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
         # Notification pour nouveau projet
         from projets.services.notification_service import NotificationService
         NotificationService.creer_notification_personnalisee(
-            utilisateur=instance.chef_projet,
+            utilisateur=instance.users.first(),
             type_notif='PROJET_MODIFIE',
             titre=f"Nouveau projet: {instance.nom}",
             message=f"Le projet {instance.nom} a été créé.",
@@ -73,7 +73,7 @@ def notifier_attachement_modifie(sender, instance: Attachement, created, **kwarg
             
    
 @receiver(pre_save, sender=Projet)
-def mettre_a_jour_indicateurs(sender, instance, **kwargs):
+def mettre_a_jour_indicateurs(sender, instance: Projet, **kwargs):
     if not getattr(instance, '_updating_flags', False):
         instance.update_status_flags(force_save=False)
 

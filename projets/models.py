@@ -613,7 +613,7 @@ class OrdreService(models.Model):
     @property
     def influence_budget(self):
         return self.type_os.code in ['OSC10', 'OSV']
-
+ 
 # ------------------ Tâches ----------------------------------
 class Tache(models.Model):
     PRIORITE = [

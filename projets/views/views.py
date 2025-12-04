@@ -1,4 +1,7 @@
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
+# import timedelta from django modules
+from django.utils import timezone 
+from django.utils.timezone import timedelta
 import json
 import os
 import cloudinary
@@ -34,7 +37,6 @@ import logging
 
 from projets.signals.files_handler import delete_cloudinary_file
 logger = logging.getLogger(__name__)
-from django.utils import timezone
 
 #------------------ POur la Gestion des taches ------------------
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
@@ -335,7 +337,9 @@ def home(request):
         else:
             couleur = '#16a34a'  # green-600
             statut_color = 'Presque terminé'
-        date_fin_prevue = projet.date_debut + timedelta(days=projet.delai)
+        delai = projet.delai or 0
+        date_debut = projet.date_debut or date.today()
+        date_fin_prevue = date_debut + timedelta(days=delai)
         chart_data['projets'].append({
             'id': projet.id,
             'nom': projet.nom,
@@ -353,10 +357,10 @@ def home(request):
     # Calculer les données mensuelles, trimestrielles, annuelles
 
     now = datetime.now()
-    
+    print(now)
     # Données mensuelles
     start_month = now - timedelta(days=30)
-
+    print(start_month)
     projets_mensuels = request.user.projets.all().filter(date_creation__gte=start_month)
 
     chart_data['mensuel'] = {
@@ -3088,7 +3092,7 @@ def modifier_ordre_service(request, projet_id, ordre_id):
             # Gestion de la suppression du document
             if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
                 try:
-                    delete_cloudinary_file(ordre_modifie)
+                    # delete_cloudinary_file(ordre_modifie)
                     ordre_modifie.save()
                 except Exception as e:
                     messages.error(request, f"Erreur lors de la suppression du document: {e}")
