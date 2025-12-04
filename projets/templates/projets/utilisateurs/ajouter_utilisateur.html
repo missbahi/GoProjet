@@ -7,139 +7,59 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        /* Styles CSS (conservez ceux que vous avez) */
         :root {
             --bg-dark: #0f172a;
             --bg-card: #1e293b;
-            --bg-medium: #334155;
             --text-primary: #38bdf8;
             --text-secondary: #cbd5e1;
             --text-muted: #94a3b8;
             --accent-cyan: #06b6d4;
-            --accent-blue: #3b82f6;
-            --accent-purple: #8b5cf6;
             --accent-green: #10b981;
-            --border-radius: 16px;
-            --border-radius-sm: 12px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.4);
-            --gradient-primary: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
+            --accent-red: #ef4444;
+            --border-radius: 12px;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-dark);
             color: var(--text-secondary);
             min-height: 100vh;
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
-        /* Container limité */
         .form-container {
-            max-width: 800px; /* Largeur limitée */
+            max-width: 800px;
             margin: 0 auto;
             padding: 1rem;
-            width: 100%;
         }
 
-        @media (min-width: 768px) {
-            .form-container {
-                padding: 2rem;
-            }
-        }
-
-        @media (min-width: 1024px) {
-            .form-container {
-                padding: 3rem 2rem;
-            }
-        }
-
-        /* Card élégante */
         .card {
-            background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-            backdrop-filter: blur(10px);
+            background: var(--bg-card);
             border-radius: var(--border-radius);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             border: 1px solid rgba(255, 255, 255, 0.05);
             overflow: hidden;
-            position: relative;
-            margin: 0 auto; /* Centrage */
-        }
-
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 4px;
-            background: var(--gradient-primary);
         }
 
         .card-header {
-            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
-            padding: 1.5rem 2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .card-body {
-            padding: 2rem;
+            padding: 1.5rem;
         }
 
-        @media (min-width: 768px) {
-            .card-body {
-                padding: 2.5rem;
-            }
-        }
-
-        /* Typographie améliorée */
-        .page-title {
-            font-size: 1.75rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-align: center;
-            margin-bottom: 0.5rem;
-            letter-spacing: -0.025em;
-        }
-
-        .page-subtitle {
-            color: var(--text-muted);
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 1rem;
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        @media (min-width: 768px) {
-            .page-title {
-                font-size: 2.25rem;
-            }
-        }
-
-        .section-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 1rem;
-            position: relative;
-        }
-
-        /* Form elements élégants */
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
 
         label {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+            display: block;
             color: var(--text-primary);
-            font-weight: 600;
+            font-weight: 500;
             margin-bottom: 0.5rem;
             font-size: 0.875rem;
         }
@@ -147,477 +67,95 @@
         .form-control {
             width: 100%;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--border-radius-sm);
-            padding: 1rem;
+            border-radius: 8px;
+            padding: 0.75rem;
             color: white;
-            font-size: 1rem;
-            transition: var(--transition);
+            font-size: 0.875rem;
         }
 
         .form-control:focus {
             outline: none;
             border-color: var(--accent-cyan);
-            box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
-            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
         }
 
-        .form-control::placeholder {
-            color: var(--text-muted);
-        }
-
-        /* Avatar section élégante */
-        .avatar-section {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding-bottom: 2rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .avatar-preview {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-            overflow: hidden;
-            transition: var(--transition);
-        }
-
-        .avatar-preview:hover {
-            transform: scale(1.05);
-            border-color: var(--accent-cyan);
-        }
-
-        .avatar-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .avatar-preview i {
-            color: white;
-            font-size: 2.5rem;
-        }
-
-        .avatar-upload-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: var(--gradient-primary);
-            color: white;
-            padding: 0.75rem 1.5rem;
-            border-radius: var(--border-radius-sm);
-            font-size: 0.875rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-            border: none;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .avatar-upload-btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s;
-        }
-
-        .avatar-upload-btn:hover::before {
-            left: 100%;
-        }
-
-        .avatar-upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
-        }
-
-        /* Grid layout compact */
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        @media (min-width: 768px) {
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-                gap: 2rem;
-            }
-        }
-
-        /* Permissions section élégante */
-        .permissions-section {
-            background: rgba(255, 255, 255, 0.03);
-            backdrop-filter: blur(10px);
-            border-radius: var(--border-radius-sm);
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .permission-item {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            padding: 1rem;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            transition: var(--transition);
-        }
-
-        .permission-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: var(--border-radius-sm);
-        }
-
-        .permission-item:last-child {
-            border-bottom: none;
-        }
-
-        .permission-checkbox {
-            width: 1.25rem;
-            height: 1.25rem;
-            accent-color: var(--accent-cyan);
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-
-        .permission-label {
-            flex: 1;
-        }
-
-        .permission-title {
-            font-weight: 600;
-            color: white;
-            margin-bottom: 0.25rem;
-        }
-
-        .permission-description {
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            line-height: 1.4;
-        }
-
-        /* Buttons élégants avec largeur contrôlée */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 0.75rem;
-            padding: 1rem 2rem;
-            border-radius: var(--border-radius-sm);
-            font-weight: 600;
-            text-decoration: none;
-            transition: var(--transition);
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
             border: none;
             cursor: pointer;
-            font-size: 1rem;
-            position: relative;
-            overflow: hidden;
-            letter-spacing: 0.025em;
-        }
-
-        .btn::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: left 0.6s;
-        }
-
-        .btn:hover::before {
-            left: 100%;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         .btn-primary {
-            background: var(--gradient-primary);
+            background: linear-gradient(135deg, #06b6d4, #3b82f6);
             color: white;
-            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.3);
         }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.05);
             color: var(--text-secondary);
             border: 1px solid rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
         }
 
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
         }
 
-        /* Form actions avec largeur contrôlée */
-        .form-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            margin-top: 2rem;
-        }
-
-        @media (min-width: 640px) {
-            .form-actions {
-                flex-direction: row;
-                justify-content: center;
-                gap: 1.5rem;
-            }
-            
-            .form-actions .btn {
-                min-width: 200px;
-                flex: 0 1 auto;
-                max-width: 250px;
-            }
-        }
-
-        /* Helper text */
-        .helper-text {
-            color: var(--text-muted);
-            font-size: 0.875rem;
+        .error-message {
+            color: var(--accent-red);
+            font-size: 0.75rem;
             margin-top: 0.25rem;
+            display: none;
         }
 
-        /* Password match indicator */
-        .password-match {
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
+        .error-message.show {
+            display: block;
         }
 
-        .password-match.valid {
-            color: var(--accent-green);
+        .form-control.error {
+            border-color: var(--accent-red);
         }
 
-        .password-match.invalid {
-            color: #ef4444;
-        }
-
-        /* Checkbox styling */
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-top: 0.75rem;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            accent-color: var(--accent-cyan);
-            width: 1.125rem;
-            height: 1.125rem;
-            cursor: pointer;
-        }
-
-        .checkbox-group label {
-            color: var(--text-secondary);
-            font-weight: normal;
-            margin-bottom: 0;
-            cursor: pointer;
-            font-size: 0.875rem;
-        }
-
-        /* Info message */
-        .info-message {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.875rem;
-            margin-top: 2rem;
-            padding: 1rem 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: var(--border-radius-sm);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            max-width: 500px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        /* Animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateX(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes gradientShift {
-            0% {
-                background-position: 0% 50%;
-            }
-            50% {
-                background-position: 100% 50%;
-            }
-            100% {
-                background-position: 0% 50%;
-            }
-        }
-
-        .animate-fade-in {
-            animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) both;
-        }
-
-        .animate-slide-in {
-            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
-        }
-
-        .gradient-animated {
-            background-size: 200% 200%;
-            animation: gradientShift 3s ease infinite;
-        }
-
-        /* Mobile optimizations */
-        @media (max-width: 767px) {
+        @media (min-width: 768px) {
             .form-container {
-                padding: 1rem;
+                padding: 2rem;
             }
             
             .card-body {
-                padding: 1.5rem;
+                padding: 2rem;
             }
-            
-            .card-header {
-                padding: 1.25rem;
-            }
-            
-            .avatar-preview {
-                width: 100px;
-                height: 100px;
-            }
-            
-            .permissions-section {
-                padding: 1.25rem;
-            }
-            
-            .permission-item {
-                padding: 0.875rem;
-            }
-            
-            .btn {
-                padding: 0.875rem 1.5rem;
-                width: 100%;
-            }
-        }
-
-        /* Loading state */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
-        }
-
-        .loading i {
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
-            }
-        }
-
-        /* Focus states for accessibility */
-        .form-control:focus-visible,
-        .btn:focus-visible,
-        .avatar-upload-btn:focus-visible,
-        .permission-checkbox:focus-visible {
-            outline: 2px solid var(--accent-cyan);
-            outline-offset: 2px;
-        }
-
-        /* Success notification */
-        .success-notification {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: var(--border-radius-sm);
-            box-shadow: var(--shadow);
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            transform: translateY(100%);
-            transition: transform 0.3s ease;
-            z-index: 1000;
-            max-width: 400px;
-        }
-
-        .success-notification.show {
-            transform: translateY(0);
-        }
-
-        /* Custom scrollbar */
-        .card-body::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        .card-body::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 4px;
-        }
-
-        .card-body::-webkit-scrollbar-thumb {
-            background: var(--gradient-primary);
-            border-radius: 4px;
         }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <!-- Page Header -->
-        <div class="text-center mb-8 animate-fade-in">
-            <h1 class="page-title flex items-center justify-center gap-3">
-                <i class="fas fa-user-plus"></i>
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                <i class="fas fa-user-plus mr-2"></i>
                 Ajouter un Nouvel Utilisateur
             </h1>
-            <p class="page-subtitle">
+            <p class="text-gray-400 text-sm mt-2">
                 Créez un nouveau compte utilisateur dans le système
             </p>
         </div>
 
-        <!-- Main Form Card -->
-        <div class="card animate-fade-in" style="animation-delay: 0.1s;">
+        <div class="card">
             <div class="card-header">
-                <h2 class="section-title flex items-center gap-3">
-                    <i class="fas fa-user-circle"></i>
+                <h2 class="text-lg font-semibold text-cyan-300">
+                    <i class="fas fa-user-circle mr-2"></i>
                     Informations de l'utilisateur
                 </h2>
             </div>
@@ -625,147 +163,186 @@
             <div class="card-body">
                 <form method="post" enctype="multipart/form-data" id="user-form">
                     {% csrf_token %}
-
-                    <!-- Avatar Section -->
-                    <div class="avatar-section">
-                        <div class="avatar-preview" id="avatar-preview">
-                            <i class="fas fa-user"></i>
-                        </div>
-                        <input type="file" name="avatar" id="avatar" accept="image/*" class="hidden">
-                        <label for="avatar" class="avatar-upload-btn">
-                            <i class="fas fa-camera"></i>
-                            Choisir un avatar
-                        </label>
+                    
+                    {% if form.errors %}
+                    <div class="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                        <p class="text-red-400 text-sm font-medium">
+                            <i class="fas fa-exclamation-circle mr-2"></i>
+                            Veuillez corriger les erreurs ci-dessous.
+                        </p>
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <p class="text-red-400 text-xs mt-1">{{ field.label }}: {{ error }}</p>
+                            {% endfor %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                            <p class="text-red-400 text-xs mt-1">{{ error }}</p>
+                        {% endfor %}
                     </div>
+                    {% endif %}
 
-                    <!-- Form Grid -->
-                    <div class="form-grid">
-                        <!-- Left Column -->
-                        <div class="space-y-4">
-                            <div class="form-group">
-                                <label for="username">
-                                    <i class="fas fa-user"></i>
-                                    Nom d'utilisateur *
-                                </label>
-                                <input type="text" name="username" id="username" 
-                                       class="form-control"
-                                       placeholder="Entrez le nom d'utilisateur" required>
-                                <p class="helper-text">Le nom d'utilisateur doit être unique</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Nom d'utilisateur -->
+                        <div class="form-group">
+                            <label for="id_username" class="flex items-center gap-2">
+                                <i class="fas fa-user text-xs"></i>
+                                Nom d'utilisateur *
+                            </label>
+                            <input type="text" name="username" id="id_username" 
+                                   class="form-control {% if form.username.errors %}error{% endif %}"
+                                   placeholder="Entrez le nom d'utilisateur" required
+                                   value="{{ form.username.value|default:'' }}">
+                            {% if form.username.errors %}
+                            <div class="error-message show">
+                                {{ form.username.errors.0 }}
                             </div>
-
-                            <div class="form-group">
-                                <label for="email">
-                                    <i class="fas fa-envelope"></i>
-                                    Adresse email
-                                </label>
-                                <input type="email" name="email" id="email" 
-                                       class="form-control"
-                                       placeholder="utilisateur@exemple.com">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="first_name">
-                                    <i class="fas fa-signature"></i>
-                                    Prénom
-                                </label>
-                                <input type="text" name="first_name" id="first_name" 
-                                       class="form-control"
-                                       placeholder="Prénom">
-                            </div>
+                            {% endif %}
                         </div>
 
-                        <!-- Right Column -->
-                        <div class="space-y-4">
-                            <div class="form-group">
-                                <label for="last_name">
-                                    <i class="fas fa-signature"></i>
-                                    Nom
-                                </label>
-                                <input type="text" name="last_name" id="last_name" 
-                                       class="form-control"
-                                       placeholder="Nom">
+                        <!-- Email -->
+                        <div class="form-group">
+                            <label for="id_email" class="flex items-center gap-2">
+                                <i class="fas fa-envelope text-xs"></i>
+                                Adresse email *
+                            </label>
+                            <input type="email" name="email" id="id_email" 
+                                   class="form-control {% if form.email.errors %}error{% endif %}"
+                                   placeholder="utilisateur@exemple.com" 
+                                   value="{{ form.email.value|default:'' }}">
+                            {% if form.email.errors %}
+                            <div class="error-message show">
+                                {{ form.email.errors.0 }}
                             </div>
-
-                            <div class="form-group">
-                                <label for="password">
-                                    <i class="fas fa-lock"></i>
-                                    Mot de passe *
-                                </label>
-                                <input type="password" name="password" id="password" 
-                                       class="form-control"
-                                       placeholder="Mot de passe sécurisé" required>
-                                <div class="checkbox-group">
-                                    <input type="checkbox" id="show-password">
-                                    <label for="show-password">Afficher le mot de passe</label>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label for="confirm_password">
-                                    <i class="fas fa-lock"></i>
-                                    Confirmer le mot de passe *
-                                </label>
-                                <input type="password" name="confirm_password" id="confirm_password" 
-                                       class="form-control"
-                                       placeholder="Confirmez le mot de passe" required>
-                                <p id="password-match" class="password-match"></p>
-                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
-                    <!-- Additional Information -->
-                    <div class="form-group">
-                        <label for="phone">
-                            <i class="fas fa-phone"></i>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Prénom -->
+                        <div class="form-group">
+                            <label for="id_first_name" class="flex items-center gap-2">
+                                <i class="fas fa-signature text-xs"></i>
+                                Prénom
+                            </label>
+                            <input type="text" name="first_name" id="id_first_name" 
+                                   class="form-control"
+                                   placeholder="Prénom"
+                                   value="{{ form.first_name.value|default:'' }}">
+                        </div>
+
+                        <!-- Nom -->
+                        <div class="form-group">
+                            <label for="id_last_name" class="flex items-center gap-2">
+                                <i class="fas fa-signature text-xs"></i>
+                                Nom
+                            </label>
+                            <input type="text" name="last_name" id="id_last_name" 
+                                   class="form-control"
+                                   placeholder="Nom"
+                                   value="{{ form.last_name.value|default:'' }}">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <!-- Mot de passe -->
+                        <div class="form-group">
+                            <label for="id_password1" class="flex items-center gap-2">
+                                <i class="fas fa-lock text-xs"></i>
+                                Mot de passe *
+                            </label>
+                            <input type="password" name="password1" id="id_password1" 
+                                   class="form-control {% if form.password1.errors %}error{% endif %}"
+                                   placeholder="Mot de passe sécurisé" required>
+                            {% if form.password1.errors %}
+                            <div class="error-message show">
+                                {{ form.password1.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <div class="mt-2">
+                                <input type="checkbox" id="show-password" class="mr-2">
+                                <label for="show-password" class="text-xs text-gray-400 cursor-pointer">
+                                    Afficher le mot de passe
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Confirmation mot de passe -->
+                        <div class="form-group">
+                            <label for="id_password2" class="flex items-center gap-2">
+                                <i class="fas fa-lock text-xs"></i>
+                                Confirmation mot de passe *
+                            </label>
+                            <input type="password" name="password2" id="id_password2" 
+                                   class="form-control {% if form.password2.errors %}error{% endif %}"
+                                   placeholder="Confirmez le mot de passe" required>
+                            {% if form.password2.errors %}
+                            <div class="error-message show">
+                                {{ form.password2.errors.0 }}
+                            </div>
+                            {% endif %}
+                            <p id="password-match" class="text-xs mt-2"></p>
+                        </div>
+                    </div>
+
+                    <!-- Téléphone -->
+                    <div class="form-group mb-6">
+                        <label for="id_phone" class="flex items-center gap-2">
+                            <i class="fas fa-phone text-xs"></i>
                             Téléphone
                         </label>
-                        <input type="tel" name="phone" id="phone" 
+                        <input type="tel" name="phone" id="id_phone" 
                                class="form-control"
-                               placeholder="+33 1 23 45 67 89">
+                               placeholder="+212 6 23 45 67 89"
+                               value="{{ form.phone.value|default:'' }}">
                     </div>
 
-                    <!-- Permissions Section -->
-                    <div class="permissions-section animate-slide-in">
-                        <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-3">
+                    <!-- Permissions -->
+                    <div class="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                        <h3 class="text-cyan-300 font-medium mb-3 flex items-center gap-2">
                             <i class="fas fa-user-shield"></i>
                             Rôle et Permissions
                         </h3>
                         
-                        <div class="space-y-2">
-                            <div class="permission-item">
-                                <input type="checkbox" name="is_staff" id="is_staff" class="permission-checkbox">
-                                <div class="permission-label">
-                                    <div class="permission-title">Accès staff</div>
-                                    <div class="permission-description">Accès à l'interface d'administration</div>
+                        <div class="space-y-3">
+                            <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
+                                <input type="checkbox" name="is_staff" id="id_is_staff" 
+                                       class="w-4 h-4 accent-cyan-500"
+                                       {% if form.is_staff.value %}checked{% endif %}>
+                                <div>
+                                    <div class="text-white font-medium">Accès staff</div>
+                                    <div class="text-gray-400 text-xs">Accès à l'interface d'administration</div>
                                 </div>
                             </div>
                             
-                            <div class="permission-item">
-                                <input type="checkbox" name="is_superuser" id="is_superuser" class="permission-checkbox">
-                                <div class="permission-label">
-                                    <div class="permission-title">Super administrateur</div>
-                                    <div class="permission-description">Toutes les permissions sans restriction</div>
+                            <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
+                                <input type="checkbox" name="is_superuser" id="id_is_superuser" 
+                                       class="w-4 h-4 accent-cyan-500"
+                                       {% if form.is_superuser.value %}checked{% endif %}>
+                                <div>
+                                    <div class="text-white font-medium">Super administrateur</div>
+                                    <div class="text-gray-400 text-xs">Toutes les permissions sans restriction</div>
                                 </div>
                             </div>
                             
-                            <div class="permission-item">
-                                <input type="checkbox" name="is_active" id="is_active" checked class="permission-checkbox">
-                                <div class="permission-label">
-                                    <div class="permission-title">Compte actif</div>
-                                    <div class="permission-description">L'utilisateur peut se connecter</div>
+                            <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
+                                <input type="checkbox" name="is_active" id="id_is_active" checked 
+                                       class="w-4 h-4 accent-cyan-500">
+                                <div>
+                                    <div class="text-white font-medium">Compte actif</div>
+                                    <div class="text-gray-400 text-xs">L'utilisateur peut se connecter</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Form Actions -->
-                    <div class="form-actions">
-                        <button type="submit" class="btn btn-primary" id="submit-btn">
-                            <i class="fas fa-user-plus mr-2"></i>
+                    <!-- Boutons -->
+                    <div class="flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-800">
+                        <button type="submit" class="btn btn-primary flex-1">
+                            <i class="fas fa-user-plus"></i>
                             Créer l'utilisateur
                         </button>
-                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary">
-                            <i class="fas fa-arrow-left mr-2"></i>
+                        <a href="{% url 'projets:liste_utilisateurs' %}" class="btn btn-secondary flex-1">
+                            <i class="fas fa-arrow-left"></i>
                             Retour à la liste
                         </a>
                     </div>
@@ -773,154 +350,79 @@
             </div>
         </div>
 
-        <!-- Info Message -->
-        <div class="info-message animate-fade-in" style="animation-delay: 0.3s;">
+        <div class="mt-6 text-center text-gray-400 text-sm">
             <i class="fas fa-info-circle mr-2"></i>
             Les champs marqués d'un * sont obligatoires
-        </div>
-    </div>
-
-    <!-- Success Notification -->
-    <div id="success-notification" class="success-notification">
-        <i class="fas fa-check-circle text-xl"></i>
-        <div>
-            <div class="font-semibold">Utilisateur créé avec succès !</div>
-            <div class="text-sm opacity-90 mt-1">Le compte a été ajouté au système.</div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('user-form');
-            const submitBtn = document.getElementById('submit-btn');
-            const avatarInput = document.getElementById('avatar');
-            const avatarPreview = document.getElementById('avatar-preview');
-            const showPasswordCheckbox = document.getElementById('show-password');
-            const passwordField = document.getElementById('password');
-            const confirmPasswordField = document.getElementById('confirm_password');
+            const password1 = document.getElementById('id_password1');
+            const password2 = document.getElementById('id_password2');
             const passwordMatch = document.getElementById('password-match');
-            const successNotification = document.getElementById('success-notification');
-            successNotification.classList.add('hidden');
+            const showPasswordCheckbox = document.getElementById('show-password');
 
-            // Avatar preview
-            avatarInput.addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        avatarPreview.innerHTML = `<img src="${e.target.result}" alt="Avatar preview">`;
-                    };
-                    reader.readAsDataURL(file);
+            // Validation de la correspondance des mots de passe
+            function validatePasswordMatch() {
+                if (password1.value && password2.value) {
+                    if (password1.value === password2.value) {
+                        passwordMatch.innerHTML = '<span class="text-green-400"><i class="fas fa-check-circle mr-1"></i> Les mots de passe correspondent</span>';
+                        password2.classList.remove('error');
+                    } else {
+                        passwordMatch.innerHTML = '<span class="text-red-400"><i class="fas fa-exclamation-circle mr-1"></i> Les mots de passe ne correspondent pas</span>';
+                        password2.classList.add('error');
+                    }
+                } else {
+                    passwordMatch.innerHTML = '';
                 }
-            });
+            }
 
-            // Toggle password visibility
+            password1.addEventListener('input', validatePasswordMatch);
+            password2.addEventListener('input', validatePasswordMatch);
+
+            // Afficher/masquer le mot de passe
             showPasswordCheckbox.addEventListener('change', function() {
                 const type = this.checked ? 'text' : 'password';
-                passwordField.type = type;
-                confirmPasswordField.type = type;
+                password1.type = type;
+                password2.type = type;
             });
 
-            // Password match validation
-            function validatePasswordMatch() {
-                const password = passwordField.value;
-                const confirmPassword = confirmPasswordField.value;
+            // Validation avant soumission
+            form.addEventListener('submit', function(e) {
+                // Réinitialiser les erreurs
+                document.querySelectorAll('.error-message').forEach(el => {
+                    el.classList.remove('show');
+                });
+                document.querySelectorAll('.form-control.error').forEach(el => {
+                    el.classList.remove('error');
+                });
 
-                if (confirmPassword === '') {
-                    passwordMatch.textContent = '';
-                    passwordMatch.className = 'password-match';
-                } else if (password === confirmPassword) {
-                    passwordMatch.innerHTML = '<i class="fas fa-check-circle"></i> Les mots de passe correspondent';
-                    passwordMatch.className = 'password-match valid';
-                } else {
-                    passwordMatch.innerHTML = '<i class="fas fa-exclamation-circle"></i> Les mots de passe ne correspondent pas';
-                    passwordMatch.className = 'password-match invalid';
-                }
-            }
-
-            passwordField.addEventListener('input', validatePasswordMatch);
-            confirmPasswordField.addEventListener('input', validatePasswordMatch);
-
-            // Form submission
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const password = passwordField.value;
-                const confirmPassword = confirmPasswordField.value;
-
-                // Validate password match
-                if (password !== confirmPassword) {
-                    alert('Les mots de passe ne correspondent pas. Veuillez vérifier votre saisie.');
-                    confirmPasswordField.focus();
+                // Valider la correspondance des mots de passe
+                if (password1.value !== password2.value) {
+                    e.preventDefault();
+                    passwordMatch.innerHTML = '<span class="text-red-400"><i class="fas fa-exclamation-circle mr-1"></i> Les mots de passe doivent correspondre</span>';
+                    password2.classList.add('error');
+                    password2.focus();
                     return;
                 }
 
-                // Validate password length
-                if (password.length < 6) {
-                    alert('Le mot de passe doit contenir au moins 6 caractères.');
-                    passwordField.focus();
+                // Valider la longueur du mot de passe
+                if (password1.value.length < 8) {
+                    e.preventDefault();
+                    passwordMatch.innerHTML = '<span class="text-red-400"><i class="fas fa-exclamation-circle mr-1"></i> Le mot de passe doit contenir au moins 8 caractères</span>';
+                    password1.classList.add('error');
+                    password1.focus();
                     return;
                 }
 
-                // Show loading state
-                const originalText = submitBtn.innerHTML;
+                // Montrer l'état de chargement
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const originalHTML = submitBtn.innerHTML;
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Création en cours...';
                 submitBtn.disabled = true;
-
-                try {
-                    // Simulate form submission
-                    await new Promise(resolve => setTimeout(resolve, 1500));
-                    
-                    // Show success notification
-                    successNotification.classList.add('show');
-                    successNotification.classList.remove('hidden');
-                    setTimeout(() => {
-                        successNotification.classList.remove('show');
-                        successNotification.classList.add('hidden');
-                    }, 3000);
-                    
-                    // Reset form after success
-                    setTimeout(() => {
-                        form.reset();
-                        avatarPreview.innerHTML = '<i class="fas fa-user"></i>';
-                        validatePasswordMatch();
-                        submitBtn.innerHTML = originalText;
-                        submitBtn.disabled = false;
-                    }, 1000);
-                    
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert('Une erreur est survenue lors de la création de l\'utilisateur.');
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
             });
-
-            // Add focus effects to form controls
-            const formControls = document.querySelectorAll('.form-control');
-            formControls.forEach(control => {
-                control.addEventListener('focus', function() {
-                    this.style.boxShadow = '0 0 0 3px rgba(6, 182, 212, 0.2)';
-                });
-                
-                control.addEventListener('blur', function() {
-                    this.style.boxShadow = '';
-                });
-            });
-
-            // Responsive adjustments
-            function handleResize() {
-                const isMobile = window.innerWidth < 768;
-                document.body.classList.toggle('mobile-view', isMobile);
-            }
-
-            window.addEventListener('resize', handleResize);
-            handleResize(); // Initial check
-
-            // Auto-hide notification
-            setTimeout(() => {
-                successNotification.classList.remove('show');
-            }, 5000);
         });
     </script>
 </body>

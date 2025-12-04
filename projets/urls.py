@@ -96,7 +96,7 @@ urlpatterns = [
     path('taches/<int:pk>/modifier/', views.ModifierTacheView.as_view(), name='modifier_tache'),
     path('taches/<int:pk>/supprimer/', views.SupprimerTacheView.as_view(), name='supprimer_tache'),
     path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'),
-    
+     
     # Attachements au niveau du PROJET (pas du lot) 
     path('projet/<int:projet_id>/attachements/', views.liste_attachements, name='liste_attachements'),
     path('projet/<int:projet_id>/attachements/ajouter/', views.ajouter_attachement, name='ajouter_attachement'),
@@ -104,6 +104,8 @@ urlpatterns = [
     path('attachements/<int:attachement_id>/', views.detail_attachement, name='detail_attachement'),
     path('attachements/supprimer/<int:attachement_id>/', views.supprimer_attachement, name='supprimer_attachement'),
     path('attachements/<int:attachement_id>/ajouter_decompte/', views.attachements_ajouter_decompte, name='attachements_ajouter_decompte'),
+    
+    # validation processus
     path('attachement/<int:attachement_id>/validation/', views.validation_attachement, name='validation_attachement'),
     path('attachement/<int:attachement_id>/reouvrir/', views.reouvrir_attachement, name='reouvrir_attachement'),
     path('attachement/<int:attachement_id>/transmettre-validation/', views.transmettre_validation_attachement, name='transmettre_validation_attachement'),

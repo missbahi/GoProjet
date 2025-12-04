@@ -4,7 +4,7 @@ import cloudinary
 from django.dispatch import receiver
 from cloudinary import api
 from cloudinary.exceptions import NotFound
-from django.db.models.signals import pre_save
+from django.db.models.signals import pre_save, post_delete
 from django.dispatch import receiver
 import cloudinary.uploader
 from cloudinary.exceptions import Error as CloudinaryError
@@ -65,14 +65,14 @@ def delete_cloudinary_file(instance):
         except Exception as e:
             print(f"❌ Erreur suppression locale (delete): {e}")
 
-# @receiver(post_delete, sender=Attachement)
-# @receiver(post_delete, sender=DocumentAdministratif)
-# @receiver(post_delete, sender=OrdreService)
-# @receiver(post_delete, sender=FichierSuivi)
-# @receiver(post_delete, sender=ProcessValidation)
-# @receiver(post_delete, sender=EtapeValidation)
-# def delete_document(sender, instance, **kwargs):
-#     delete_cloudinary_file(instance)
+@receiver(post_delete, sender=Attachement)
+@receiver(post_delete, sender=DocumentAdministratif)
+@receiver(post_delete, sender=OrdreService)
+@receiver(post_delete, sender=FichierSuivi)
+@receiver(post_delete, sender=ProcessValidation)
+@receiver(post_delete, sender=EtapeValidation)
+def delete_document(sender, instance, **kwargs):
+    delete_cloudinary_file(instance)
   
 # @receiver(pre_save, sender=Attachement)
 # @receiver(pre_save, sender=FichierSuivi)
@@ -200,7 +200,7 @@ def _delete_cloudinary_file(file_field):
             try:
                 cloudinary.uploader.destroy(
                     file_field.public_id,
-                    resource_type='auto',  # auto-détecte le type
+                    resource_type='raw',  # auto-détecte le type
                     type='upload',
                     invalidate=True  # Invalide le cache CDN
                 )
@@ -236,7 +236,7 @@ def _delete_by_url(url):
         if match:
             public_id = match.group(1)
             try:
-                cloudinary.uploader.destroy(public_id, resource_type='auto')
+                cloudinary.uploader.destroy(public_id, resource_type='raw')
                 print(f"✅ Fichier supprimé via URL: {public_id}")
                 break
             except CloudinaryError as e:
@@ -284,7 +284,7 @@ def delete_cloudinary_file(instance, field_name='fichier'):
         except Exception as e:
             print(f"❌ Erreur suppression locale: {e}")
 
-def _delete_cloudinary_by_public_id(public_id, resource_type='auto'):
+def _delete_cloudinary_by_public_id(public_id, resource_type='raw'):
     """Supprime un fichier Cloudinary via son public_id."""
     try:
         result = cloudinary.uploader.destroy(

@@ -1252,7 +1252,6 @@
             persistentState: true,
                 
             afterChange: function(changes, source) {
-                
                 if (changes) {
                     changes.forEach(function(change) {
                         const [row, prop, oldValue, newValue] = change;
@@ -1295,10 +1294,9 @@
             
             beforeChange: function(changes, source) {
                 if (!changes) return true;
-
                 changes.forEach(function(change) {
                     const [row, prop, oldValue, newValue] = change;
-                    console.log(row, prop, oldValue, newValue);
+                    // console.log(row, prop, oldValue, newValue);
                     if (prop === 'quantite' || prop === 'prix_unitaire') {
                         if (newValue !== null && parseFloat(newValue) < 0) {
                             alert("Les valeurs négatives ne sont pas autorisées");
@@ -1316,7 +1314,7 @@
                 });
                 return true;
             },
-            
+            // saisie/:1032  Ligne 5 n'existe pas (total: 2 lignes)
             afterCreateRow: function(index, amount, source) {
                 // Attendre plus longtemps pour les nouvelles créations
                 console.log('afterCreateRow', index, amount, source);

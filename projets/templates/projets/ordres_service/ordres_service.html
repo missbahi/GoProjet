@@ -510,12 +510,13 @@
                 </div>
 
                 <div>
-                    <label for="documents" class="block text-sm font-medium text-[#AECBD6] mb-2">Documents joints</label>
-                    <input type="file" id="documents" name="documents" 
+                    <label for="fichier" class="block text-sm font-medium text-[#AECBD6] mb-2">Document joint</label>
+
+                    <input type="file" id="fichier" name="fichier" 
                            class="form-control w-full px-3 py-2 rounded-lg text-sm sm:text-base"
                             onchange="updateOriginalFilename(this)">
                     <input class="form-control hidden" id="original_filename" name="original_filename" 
-                            value="{{ attachement.original_filename|default:'' }}">
+                            value="{{ ordre_a_modifier.original_filename|default:'' }}">
                       
                         {% if ordre_a_modifier and ordre_a_modifier.fichier %}
                     <div class="file-current">

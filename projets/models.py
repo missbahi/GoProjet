@@ -31,7 +31,12 @@ class Profile(models.Model):
         choices=ROLE_CHOICES, 
         default='UTILISATEUR'
     )
-    
+    tel = models.CharField(
+        max_length=20, 
+        blank=True, 
+        null=True,
+        verbose_name="Téléphone",
+        help_text="Téléphone de contact")
     # Champ compatible Cloudinary
     if getattr(settings, 'USE_CLOUDINARY', False):
         from cloudinary.models import CloudinaryField
@@ -39,15 +44,15 @@ class Profile(models.Model):
             transformation=[
                 {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
             ],
-            default='avatars/defult.png',
+            default='https://res.cloudinary.com/ddfqmth4q/image/upload/v1764860471/default_qu1agn.png',
+            # https://res.cloudinary.com/ddfqmth4q/image/upload/v1/avatars/defult.png
         )
     else:
         avatar = models.ImageField(
             upload_to=avatar_upload_path, 
-            default='avatars/default.png',
+            default='avatars/default.png', 
             blank=True
         )
-    
     def __str__(self):
         return f"{self.user.username} Profile"
     
@@ -58,6 +63,8 @@ class Profile(models.Model):
             url = self.avatar.url
             url = url.replace(' =', '')
             return url
+        elif getattr(settings, 'USE_CLOUDINARY', False):
+            return "https://res.cloudinary.com/ddfqmth4q/image/upload/v1764860471/default_qu1agn.png"
         return '/static/images/default.png'
     
     def save(self, *args, **kwargs):

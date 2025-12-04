@@ -438,13 +438,43 @@ def liste_utilisateurs(request):
     utilisateurs = User.objects.all()
     return render(request, 'projets/utilisateurs/liste_utilisateurs.html', {'utilisateurs': utilisateurs})
 @superuser_required
-def ajouter_utilisateur(request):
+def ajouter_utilisateur1111(request):
     if request.method == 'POST':
         username = request.POST.get('username')
         email = request.POST.get('email')
         password = request.POST.get('password')
         user = User.objects.create_user(username=username, email=email, password=password)
         return redirect('projets:liste_utilisateurs')
+    return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
+# Dans views.py
+
+# from django.contrib.auth.models import User
+@superuser_required
+def ajouter_utilisateur(request):
+    from django.contrib.auth.forms import UserCreationForm
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            try:
+                user = form.save()
+                # Gérer les champs supplémentaires
+                user.email = request.POST.get('email', '')
+                user.first_name = request.POST.get('first_name', '')
+                user.last_name = request.POST.get('last_name', '')
+                user.is_staff = request.POST.get('is_staff') == 'on'
+                user.is_superuser = request.POST.get('is_superuser') == 'on'
+                user.save()
+                return redirect('projets:liste_utilisateurs')
+            except Exception as e:
+                print(f"Erreur lors de la création de l'utilisateur: {e}")
+                form.add_error(None, f"Une erreur est survenue lors de la création de l'utilisateur.")
+        else:
+            # Afficher les erreurs de formulaire
+            print("Erreurs de formulaire:")
+            print(form.errors)
+    else:
+        form = UserCreationForm()
+    
     return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
 @superuser_required
 def supprimer_utilisateur(request, user_id):
@@ -2965,13 +2995,17 @@ def ordres_service(request, projet_id):
         
         else:  # Création/Modification
             form = OrdreServiceForm(request.POST, request.FILES, instance=ordre_a_modifier, projet=projet)
+            print('Nous sommes dans le POST de ordres_service')
             if form.is_valid():
+                print('Form valid')
                 try:
                     ordre = form.save(commit=False)
                     ordre.projet = projet
                     
                     # Gestion des documents avec Cloudinary
-                    fichier_document = request.FILES.get('documents')
+                    fichier_document = request.FILES.get('fichier')
+                    original_filename = request.POST.get('original_filename')
+                    ordre.original_filename = original_filename
                     if fichier_document:
                         if getattr(settings, 'USE_CLOUDINARY', False):
                             upload_result = cloudinary.uploader.upload(
@@ -2982,16 +3016,23 @@ def ordres_service(request, projet_id):
                             ordre.fichier = upload_result['public_id']
                         else:
                             ordre.fichier = fichier_document
-                            
+                            ordre.original_filename = original_filename
                     if not ordre_a_modifier: # Création 
                         ordre.statut = 'BROUILLON'
                         
                     if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
+                        print("Suppression du document")
                         if ordre.fichier:
-                            if os.path.isfile(ordre.fichier.path):
+                            if getattr(settings, 'USE_CLOUDINARY', False):
+                                # delete_cloudinary_file(ordre.fichier)
+                                print("Suppression Cloudinary")
+                                delete_cloudinary_file(ordre.fichier)
+                            elif os.path.isfile(ordre.fichier.path):
                                 os.remove(ordre.fichier.path)
                             ordre.fichier = None
-                    
+                            ordre.original_filename = None
+                            
+                    # validation avant sauvegarde
                     if ordre.statut == 'NOTIFIE':
                         ordre.full_clean()
                                       
@@ -3083,22 +3124,22 @@ def api_jours_decoules(request, projet_id):
 def modifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
-    
+
     if request.method == 'POST':
         form = OrdreServiceForm(request.POST, request.FILES, instance=ordre)
         if form.is_valid():
             ordre_modifie = form.save(commit=False)
-            
+            print('Fichier joint existe:', ordre_modifie.fichier is not None)
+            print('Nom du fichier joint:', ordre_modifie.original_filename)
             # Gestion de la suppression du document
             if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
                 try:
-                    # delete_cloudinary_file(ordre_modifie)
-                    ordre_modifie.save()
+                    ordre_modifie.fichier = None
                 except Exception as e:
                     messages.error(request, f"Erreur lors de la suppression du document: {e}")
                     return redirect('projets:modifier_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
-                ordre.document = None
-                
+                # ordre.document = None
+            ordre_modifie.save()
             messages.success(request, f"L'ordre de service {ordre_modifie.reference} a été modifié avec succès.")
             return redirect('projets:ordres_service', projet_id=projet.id)
     else:
