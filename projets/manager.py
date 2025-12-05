@@ -1,7 +1,7 @@
 # managers.py
+# Class Line, LineManager - version python
 
-
-from projets.models import LigneBordereau, LotProjet
+from projets.models import LigneBordereau
 
 
 def float_or_zero(value):
@@ -420,27 +420,71 @@ class LineManager:
 
 class LigneHierarchique:
     def __init__(self, data):
-        self.id = data['id']
-        self.parent_id = data['parent_id']
-        self.numero = data['numero']
-        self.designation = data['designation']
-        self.unite = data['unite']
-        self.quantite_realisee = data['quantite_realisee']
-        self.prix_unitaire = data['prix_unitaire']
-        self.montant = data['montant']
+        self.id = data.get('id')
+        self.parent_id = data.get('parent_id')
+        self.numero = data.get('numero')
+        self.designation = data.get('designation') 
+        self.unite = data.get('unite')
+        self.quantite_realisee = data.get('quantite_realisee')
+        self.prix_unitaire =data.get('prix_unitaire')
+        self.montant = data.get('montant', 0)
         self.children = []
         self.parent = None
+        self.collapsed = True
+    def __str__(self):
+        return f"(id={self.id}, {self.parent_id}, {self.designation},{self.quantite_realisee}, {self.prix_unitaire}, {self.montant})"
+    def build_tree_from_data(self, data, parent=None):
+        self.children.clear()
+        self.parent = None
         self.collapsed = False
+        self.parent = parent
+        # 1. Créer tous les objets
+        lines = {}
+        for line in data:
+            try:
+                child = LigneHierarchique(line)
+                lines[child.id] = child
+            except KeyError as e:
+                print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
+                continue
+        
+        # 2. Construire la hiérarchie
+        for line in lines.values():
+            # print(line)
+            if line.parent_id:
+                parent = lines.get(line.parent_id)
+                if parent: 
+                    parent.ajouter_enfant(line)
+                else: # ajouter cette ligne à la racine
+                    self.ajouter_enfant(line)
+            else:
+                self.ajouter_enfant(line)
+
+        # # 3. Met à jour les montants
+        # for line in lines.values():
+        #     line.montant = line.amount()
+        
+        # # 4. Collapse les lignes ayant les montants nuls
+        # for line in lines.values():
+        #     if line.montant == 0:
+        #         line.collapse()
+        
+        return lines
     
     def ajouter_enfant(self, enfant):
         """Ajoute un enfant et met à jour son niveau"""
         enfant.parent = self
         self.children.append(enfant)
     
-    def collapser(self):
-        self.collapsed = True
-        for enfant in self.children:
-            enfant.collapser()
+    def collapse(self, all=True):
+        if self.parent: 
+            self.collapsed = True
+        else:
+            self.collapsed = False
+        
+        if all:    
+            for enfant in self.children:
+                enfant.collapse(all)
     @property
     def has_children(self):
         return len(self.children) > 0
@@ -454,6 +498,7 @@ class LigneHierarchique:
             currentNode = currentNode.parent
         
         return level
+    
     def collecter_tous_enfants(self):
         """Collecte tous les enfants et petits-enfants de manière récursive"""
         result = [self]
@@ -493,7 +538,7 @@ class LigneHierarchique:
             'unite': self.unite,
             'quantite_realisee': self.quantite_realisee,
             'prix_unitaire': self.prix_unitaire,
-            'montant': self.montant,
+            'montant': self.amount(),
             'level': self.level,
             'has_children': self.has_children,
             'is_parent': self.est_parent(),
@@ -517,7 +562,7 @@ class LigneHierarchique:
             'unite': self.unite,
             'quantite_realisee': self.quantite_realisee,
             'prix_unitaire': self.prix_unitaire,
-            'montant': self.montant,
+            'montant': self.amount(),
             'level': self.level,
             'has_children': self.has_children,
             'is_parent': self.est_parent(),
@@ -536,65 +581,65 @@ class LigneHierarchique:
         
         return None
     
-    # Fonction utilitaire pour construire la hiérarchie
-def construire_hierarchie(lignes_data):
-    """
-    Convertit une liste plate de lignes en structure hiérarchique
+#     # Fonction utilitaire pour construire la hiérarchie
+# def construire_hierarchie(lignes_data):
+    # """
+    # Convertit une liste plate de lignes en structure hiérarchique
     
-    Args:
-        lignes_data: Liste de dictionnaires avec id et parent_id
+    # Args:
+    #     lignes_data: Liste de dictionnaires avec id et parent_id
     
-    Returns:
-        Tuple: (racines, dict_reference)
-    """
+    # Returns:
+    #     Tuple: (racines, dict_reference)
+    # """
     
-    lignes_objects = {}
-    racines = []
+    # lignes_objects = {}
+    # racines = []
     
-    # Vérifier si la liste est vide
-    if not lignes_data:
-        return racines, lignes_objects
+    # # Vérifier si la liste est vide
+    # if not lignes_data:
+    #     return racines, lignes_objects
     
-    # 1. Créer tous les objets
-    for ligne_data in lignes_data:
-        try:
-            ligne_obj = LigneHierarchique(ligne_data)
-            lignes_objects[ligne_obj.id] = ligne_obj
-        except KeyError as e:
-            print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
-            continue
+    # # 1. Créer tous les objets
+    # for ligne_data in lignes_data:
+    #     try:
+    #         ligne_obj = LigneHierarchique(ligne_data)
+    #         lignes_objects[ligne_obj.id] = ligne_obj
+    #     except KeyError as e:
+    #         print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
+    #         continue
     
-    # 2. Construire la hiérarchie
-    for ligne_obj in list(lignes_objects.values()):
-        if ligne_obj.parent_id:
-            parent = lignes_objects.get(ligne_obj.parent_id)
-            if parent:
-                parent.ajouter_enfant(ligne_obj)
-            else:
-                # Parent non trouvé, traiter comme racine
-                racines.append(ligne_obj)
-        else:
-            racines.append(ligne_obj)
+    # # 2. Construire la hiérarchie
+    # for ligne_obj in list(lignes_objects.values()):
+    #     if ligne_obj.parent_id:
+    #         parent = lignes_objects.get(ligne_obj.parent_id)
+    #         if parent:
+    #             parent.ajouter_enfant(ligne_obj)
+    #         else:
+    #             # Parent non trouvé, traiter comme racine
+    #             racines.append(ligne_obj)
+    #     else:
+    #         racines.append(ligne_obj)
     
-    # 3. Trier les racines par ID
-    racines.sort(key=lambda x: x.id)
+    # # 3. Trier les racines par ID
+    # # racines.sort(key=lambda x: x.id)
     
-    # 4. Trier les enfants récursivement
-    def trier_enfants(noeud):
-        noeud.children.sort(key=lambda x: x.id)
-        for enfant in noeud.children:
-            trier_enfants(enfant)
+    # # 4. Trier les enfants récursivement
+    # # def trier_enfants(noeud):
+    # #     noeud.children.sort(key=lambda x: x.id)
+    # #     for enfant in noeud.children:
+    # #         trier_enfants(enfant)
     
-    for racine in racines:
-        trier_enfants(racine)
+    # # for racine in racines:
+    # #     trier_enfants(racine)
     
-    # 5. Collapser les lignes avec montant zéro
+    # # 5. collapse les lignes avec montant zéro
     # for racine in racines:
     #     if racine.amount() == 0:
-    #         racine.collapser()
-    for ligne in lignes_objects.values():
-        ligne.montant = ligne.amount()
-        if ligne.montant == 0:
-            ligne.collapsed = True
+    #         racine.collapse()
+    # for ligne in lignes_objects.values():
+    #     ligne.montant = ligne.amount()
+    #     # if ligne.montant == 0:
+    #     #     ligne.collapsed = True
 
-    return racines, lignes_objects
+    # return racines, lignes_objects

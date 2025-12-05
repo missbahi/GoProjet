@@ -2149,7 +2149,7 @@ def detail_attachement(request, attachement_id):
     lots_data = []
     montant_total = 0
     total_lignes = 0
-    from projets.manager import construire_hierarchie
+    from projets.manager import LigneHierarchique
     
     for lot in lots:
         
@@ -2160,7 +2160,8 @@ def detail_attachement(request, attachement_id):
             (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0) 
             for ligne in lignes
         )
-        
+        if total_lot == 0:
+            continue
         # Préparer les données des lignes avec le montant calculé
         lignes_data = []
         for ligne in lignes:
@@ -2178,26 +2179,17 @@ def detail_attachement(request, attachement_id):
                 'prix_unitaire': ligne.prix_unitaire if is_detail else None,
                 'montant': montant_ligne
             })
-    
-        # Supprimer les lignes vides à la fin (titres sans détails)
-        while lignes_data and lignes_data[-1]['quantite_realisee'] is None and lignes_data[-1]['prix_unitaire'] is None:
-            lignes_data.pop()
-        
         
         # Construire la hiérarchie
-        racines, references = construire_hierarchie(lignes_data)
-
+        lines_root = LigneHierarchique({'id': 0, lot.nom: 'root'})
+        references = lines_root.build_tree_from_data(lignes_data)
+        racines = lines_root.children
+        
         # Exporter en tableau pour le template
         lignes_table = []
         for racine in racines:
             lignes_table.extend(racine.export_to_table())
-        
-        # Calculer le total du lot (uniquement les lignes de détail)
-        total_lot = sum(
-            ligne['montant'] for ligne in lignes_table 
-            if ligne['quantite_realisee'] is not None
-        )
-        
+
         lots_data.append({
             'lot': lot,
             'lignes_hierarchiques': [racine.export_to_json() for racine in racines],  # Pour navigation hiérarchique

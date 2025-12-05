@@ -274,12 +274,14 @@
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            background: var(--bg-card);
-            min-width: 800px;
+            background: var(--bg-level-0);
+            /* min-width: 800px; */
+            /* table-layout: fixed; */
         }
 
         .data-table th {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            background: #2c3e50; /* Couleur de fond bleu fonce */
+            /* background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); */
             color: white;
             padding: 1rem 0.75rem;
             text-align: left;
@@ -313,46 +315,20 @@
         }
 
         /* Styles hiérarchiques pour les lignes */
-        .niveau-0 {
-            background-color: var(--level-0-bg);
-            border-left: 4px solid var(--parent-border);
-        }
-
-        .niveau-1 {
-            background-color: var(--level-1-bg);
-            border-left: 4px solid #9b59b6;
-        }
-
-        .niveau-2 {
-            background-color: var(--level-2-bg);
-            border-left: 4px solid #e67e22;
-        }
-
-        .niveau-3 {
-            background-color: var(--level-3-bg);
-            border-left: 4px solid #f1c40f;
-        }
-
-        .niveau-4 {
-            background-color: #515151;
-            border-left: 4px solid #1abc9c;
-        }
-
-        /* Indentation logique */
         .level-0 {
-            padding-left: 1rem !important;
+            padding-left: 1.2rem !important;
         }
         .level-1 {
-            padding-left: 2rem !important;
+            padding-left: 2.4rem !important;
         }
         .level-2 {
-            padding-left: 3rem !important;
+            padding-left: 3.6rem !important;
         }
         .level-3 {
-            padding-left: 4rem !important;
+            padding-left: 4.8rem !important;
         }
         .level-4 {
-            padding-left: 5rem !important;
+            padding-left: 6rem !important;
         }
         /* Indentation visuelle */
         .ligne-numero {
@@ -391,15 +367,15 @@
             font-weight: bold;
         }
 
-        .niveau-0 .hierarchy-indicator { background: var(--parent-border); color: white; }
-        .niveau-1 .hierarchy-indicator { background: #9b59b6; color: white; }
-        .niveau-2 .hierarchy-indicator { background: #e67e22; color: white; }
-        .niveau-3 .hierarchy-indicator { background: #f1c40f; color: #333; }
-
         /* Cellules spéciales */
         .amount {
             color: var(--text-success);
             font-weight: 700;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .amount-parent {
+            color: var(--text-accent);
+            font-weight: 800;
             font-family: 'Consolas', 'Monaco', monospace;
         }
 
@@ -416,40 +392,6 @@
             font-style: italic;
             font-size: 0.85rem;
         }
-
-        /* Totaux */
-        .totals-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-            margin-bottom: 2rem;
-        }
-
-        .total-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            padding: 1.25rem 1.5rem;
-            border-radius: 10px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            background: linear-gradient(135deg, #1a2a3a 0%, #0f172a 100%);
-            border: 2px solid transparent;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .total-ht {
-            border-color: var(--border-accent);
-            color: var(--text-accent);
-        }
-
-        .total-ttc {
-            border-color: #2ecc71;
-            color: #2ecc71;
-        }
-
         /* États vides */
         .empty-state {
             text-align: center;
@@ -467,7 +409,7 @@
         .actions-cell {
             display: flex;
             gap: 0.5rem;
-    !important        }
+        }
 
         /* Actions spécifiques */
         .btn-action {
@@ -504,16 +446,6 @@
 
             .stats-grid {
                 grid-template-columns: repeat(3, 1fr);
-            }
-
-            .totals-container {
-                flex-direction: row;
-                justify-content: flex-end;
-            }
-
-            .total-item {
-                flex: 1;
-                max-width: 300px;
             }
         }
 
@@ -559,11 +491,11 @@
                 gap: 1rem;
             }
 
-            .total-item {
+            /* .total-item {
                 flex-direction: column;
                 text-align: center;
                 gap: 0.5rem;
-            }
+            } */
         }
 
         @media (max-width: 480px) {
@@ -619,11 +551,11 @@
                 border: 1px solid #ddd;
             }
 
-            .niveau-0, .niveau-1, .niveau-2, .niveau-3 {
+            /* .niveau-0, .niveau-1, .niveau-2, .niveau-3 {
                 background-color: white !important;
                 color: black !important;
                 border-left: 1px solid #ddd !important;
-            }
+            } */
 
             .ligne-parent .designation {
                 color: black !important;
@@ -831,108 +763,85 @@
             </div>
             <div class="table-container">
                 <table class="data-table">
+                    <colgroup>
+                        <col style="width: 90px;">
+                        <col style="width: auto;">
+                        <col class="text-center" style="width: 80px;"> 
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 140px;">
+                        <col class="no-print text-center hidden" style="width: 5px;">
+                    </colgroup>
                     <thead>
                         <tr>
-                            <th width="80">N°</th>
+                            <th>N°</th>
                             <th>Désignation</th>
-                            <th width="100" class="text-center">Unité</th>
-                            <th width="120" class="text-right">Quantité</th>
-                            <th width="120" class="text-right">PU (DH)</th>
-                            <th width="140" class="text-right">Montant (DH)</th>
-                            <!-- <th width="100" class="no-print text-center">Actions</th> -->
+                            <th>Unité</th>
+                            <th>Quantité</th>
+                            <th>PU (DH)</th>
+                            <th>Montant (DH)</th>
+                            <th></th>
                         </tr>
-                    </thead>
+                    </thead> 
                     <tbody>
                         {% for ligne in lot_data.lignes_table %}
-                        <!-- <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}"
-                            data-ligne-id="{{ ligne.id }}"
-                            data-parent-id="{{ ligne.parent_id|default:'' }}"
-                            data-level="{{ ligne.level }}"
-                            data-has-children="{{ ligne.has_children|yesno:'true,false' }}"> -->
-                        {% if not ligne.collapsed %}
-                        <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
-                            <td class="ligne-numero">
-                                <!-- <span class="hierarchy-indicator">{{ ligne.level|add:1 }}</span> -->
-                                {{ ligne.numero|default:"-" }}
-                            </td>
-                            <td class="designation level-{{ligne.level}}">
-                                {% if ligne.has_children %}
-                                    <strong>{{ ligne.designation }}</strong>
-                                    <!-- {% if ligne.has_children %}
-                                        <span class="text-xs text-gray-400 ml-2">
-                                            ({{ ligne.children_count }} enfant{{ ligne.children_count|pluralize }})
-                                        </span>
-                                    {% endif %} -->
-                                {% else %}
-                                    {{ ligne.designation }}
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                {% if ligne.unite %}
-                                    <span class="bg-gray-700 px-2 py-1 rounded text-xs">{{ ligne.unite }}</span>
-                                {% else %}
-                                    <span class="empty-value"></span>
-                                {% endif %}
-                            </td>
-                            <td class="text-right quantity {% if not ligne.quantite_realisee or ligne.quantite_realisee == 0 %}quantity-zero{% endif %}">
-                                {% if ligne.quantite_realisee and ligne.quantite_realisee != 0 %}
-                                    {{ ligne.quantite_realisee|format_quantity }}
-                                {% else %}
-                                    <span class="empty-value"></span>
-                                {% endif %}
-                            </td>
-                            <td class="text-right">
-                                {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
-                                    {{ ligne.prix_unitaire|format_french_number }}
-                                {% else %}
-                                    <span class="empty-value"></span>
-                                {% endif %}
-                            </td>
-                            <td class="text-right amount">
-                                {% if ligne.montant %}
-                                    <strong>{{ ligne.montant|format_french_number }}</strong>
-                                {% else %}
-                                    <span class="empty-value">-</span>
-                                {% endif %}
-                            </td>
-                            <!-- <td class="no-print actions-cell">
-                                {% if ligne.is_parent %}
-                                    <button class="btn btn-sm btn-collapse toggle-children"
-                                            data-ligne-id="{{ ligne.id }}"
-                                            title="Afficher/Masquer les enfants">
-                                        <i class="fas fa-caret-down"></i>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger delete-parent"
-                                            data-ligne-id="{{ ligne.id }}"
-                                            data-lot-id="{{ lot_data.lot.id }}"
-                                            title="Supprimer avec tous les enfants">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                {% else %}
-                                    <button class="btn btn-sm btn-outline-danger delete-single"
-                                            data-ligne-id="{{ ligne.id }}"
-                                            title="Supprimer cette ligne">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                {% endif %}
-                            </td> -->
-                        </tr>
-                        {% endif %}
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="empty-state">
-                                <i class="fas fa-inbox empty-icon"></i>
-                                Aucune ligne d'attachement pour ce lot
-                            </td>
-                        </tr>
+                            {% if ligne.montant > 0 %}
+                            <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
+                                <td class="ligne-numero">
+                                    {{ ligne.numero|default:"-" }}
+                                </td>
+                                <td class="designation level-{{ligne.level}}">
+                                    {% if ligne.has_children %}
+                                        <strong>{{ ligne.designation }}</strong>
+                                    {% else %}
+                                        {{ ligne.designation }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if ligne.unite %}
+                                        <span class="unit px-2 py-1 rounded text-xs">{{ ligne.unite }}</span>
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right quantity {% if not ligne.quantite_realisee or ligne.quantite_realisee == 0 %}quantity-zero{% endif %}">
+                                    {% if ligne.quantite_realisee and ligne.quantite_realisee != 0 %}
+                                        {{ ligne.quantite_realisee|format_quantity }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right">
+                                    {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
+                                        {{ ligne.prix_unitaire|format_french_number }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right {% if ligne.is_parent %}amount-parent{% else %}amount{% endif %}">
+                                    {% if ligne.montant %}
+                                        <strong>{{ ligne.montant|format_french_number }}</strong>
+                                    {% else %}
+                                        <span class="empty-value">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-inbox empty-icon"></i>
+                                    Aucune ligne d'attachement pour ce lot
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
                     <tfoot class="no-print">
                         <tr class="table-footer" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
-                            <td colspan="5" class="text-right" style="color: white; font-weight: 700;">
+                            <td colspan="4" class="text-right" style="color: white; font-weight: 700;">
                                 Total Lot {{ lot_data.lot.numero }} HT :
                             </td>
-                            <td class="text-right" style="color: var(--text-success); font-weight: 700;">
+                            <td colspan="2" class="text-right" style="color: var(--text-success); font-weight: 700;">
                                 {{ lot_data.total_lot|format_currency }}
                             </td>
                             <td></td>
@@ -948,26 +857,6 @@
             <p>Cet attachement ne contient aucun lot pour le moment.</p>
         </section>
         {% endfor %}
-
-        <!-- Total général -->
-        <!-- {% if lots_data %}
-        <div class="totals-container no-print">
-            <div class="total-item total-ht">
-                <div>
-                    <i class="fas fa-calculator mr-2"></i>
-                    <span>Total Général HT</span>
-                </div>
-                <div>{{ montant_total|format_currency }} MAD</div>
-            </div>
-            <div class="total-item total-ttc">
-                <div>
-                    <i class="fas fa-calculator mr-2"></i>
-                    <span>Total Général TTC</span>
-                </div>
-                <div>{{ montant_total|amount_ttc }} MAD</div>
-            </div>
-        </div>
-        {% endif %} -->
     </div>
 
     <!-- Scripts pour l'export -->
