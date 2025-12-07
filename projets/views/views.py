@@ -1023,6 +1023,7 @@ def saisie_bordereau(request, projet_id, lot_id):
         'root': lot_root,
         'lignes': json_str,
     })
+
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
@@ -1033,8 +1034,9 @@ def sauvegarder_lignes_bordereau(request, lot_id):
             
             # Récupérer les lignes existantes
             lignes_existantes = {ligne.id: ligne for ligne in LigneBordereau.objects.filter(lot=lot)}
+            id_mapping = {}
             lignes_existantes_utilisees = set()
-            
+
             lignes = {}
             for index, row in enumerate(body):
                 ligne_id = row.get('id')
@@ -1054,6 +1056,7 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                     lignes_existantes_utilisees.add(ligne_id)
                     
                     lignes[ligne_id] = ligne
+                    id_mapping[ligne_id] = ligne.id
                 else:
                     # Créer une nouvelle ligne
                     ligne = LigneBordereau(
@@ -1068,26 +1071,38 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                         ordre_affichage=index,
                         montant_calcule=row.get('montant', 0)
                     )
-                    
                     lignes[ligne_id] = ligne
+                    
             try:
                 # Gerer les relations parent-enfant et Enregistrer 
+
                 for index, row in enumerate(body):
                     ligne_id = row.get('id')
                     parent_id = row.get('parent_id')    
                     ligne: LigneBordereau = lignes[ligne_id]
                     # Assigner le parent, None si aucun parent n'est trouvé (niveau 0)
-                    ligne.parent = lignes[parent_id] if parent_id else None
+                    if parent_id and parent_id in lignes:
+                        ligne.parent = lignes[parent_id]
+                    else:
+                        ligne.parent = None
                     # Enregistrer la ligne
                     ligne.save()
+                    id_mapping[ligne_id] = ligne.id
+
                 # Supprimer les lignes non utilisées
                 lignes_a_supprimer = set(lignes_existantes.keys()) - lignes_existantes_utilisees
+                
                 if lignes_a_supprimer:
                     LigneBordereau.objects.filter(id__in=lignes_a_supprimer).delete()
+                    
+
+                # Retourner les nouveaux id et les anciens id
                 
                 return JsonResponse({'success': True, 
                                     'message': 'Lignes sauvegardées avec succès.', 
-                                    'status': 'ok'})
+                                    'status': 'ok',
+                                    'lignes': id_mapping,
+                                    }, status=200)
             except Exception as e:
                 print(e)
                 return JsonResponse({'error': str(e)}, status=400)
@@ -1099,7 +1114,6 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                 'message': f"Erreur lors de la sauvegarde: {str(e)}",
                 'traceback': traceback.format_exc()
             }, status=500)
-
 #------------------ Gestion du profil ------------------
 
 def serve_avatar(request, filename):
