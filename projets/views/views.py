@@ -54,7 +54,56 @@ VIEWABLE_TYPES = {
         '.html': 'text/html',
         '.htm': 'text/html',
     }
+def upload_file_to_cloudinary(instance, file, folder):
+    try: 
+        if getattr(settings, 'USE_CLOUDINARY', False):
+        # Upload vers Cloudinary
+            upload_result = cloudinary.uploader.upload(
+                file,
+                folder=folder,
+                resource_type="raw"
+            )
+            instance.fichier = upload_result['public_id']
+            return True
+    except Exception as e:
+        print(f"Erreur lors de l'upload du fichier vers Cloudinary: {e}")
+        return False
 
+def upload_to_cloudinary(fichier, folder):
+    """Upload un fichier vers Cloudinary avec retry et fallback"""
+    max_retries = 3
+    import time
+    for attempt in range(max_retries):
+        try:
+            # Pour Railway: lire tout le fichier en mémoire
+            fichier.seek(0)  # S'assurer qu'on est au début
+            file_content = fichier.read()
+            
+            upload_result = cloudinary.uploader.upload(
+                file_content,
+                folder=folder,
+                resource_type="raw",
+                timeout=90,
+                chunk_size=1000000,  # 1MB chunks
+                use_filename=True,
+                unique_filename=True,
+                overwrite=False,
+            )
+            
+            logger.info(f"Upload réussi: {upload_result['public_id']}")
+            return upload_result['public_id']
+            
+        except cloudinary.exceptions.Error as e:
+            logger.warning(f"Tentative {attempt + 1} échouée: {e}")
+            if attempt == max_retries - 1:
+                raise
+            time.sleep(2 ** attempt)  # Backoff exponentiel
+            
+        except Exception as e:
+            logger.error(f"Erreur inattendue: {e}")
+            raise
+    
+    return None        
 def get_file_field(instance):
     return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
@@ -352,10 +401,8 @@ def home(request):
     # Calculer les données mensuelles, trimestrielles, annuelles
 
     now = datetime.now()
-    print(now)
     # Données mensuelles
     start_month = now - timedelta(days=30)
-    print(start_month)
     projets_mensuels = request.user.projets.all().filter(date_creation__gte=start_month)
 
     chart_data['mensuel'] = {
@@ -1664,21 +1711,23 @@ def ajouter_document(request, projet_id):
         
         # Créer le document
         try:
-            document = DocumentAdministratif(
-                projet=projet,
-                type_document=type_document,
-                date_remise=date_remise if date_remise else None,
-            )
             
             # Gestion Cloudinary vs local
             if getattr(settings, 'USE_CLOUDINARY', False):
                 # Upload vers Cloudinary
-                upload_result = cloudinary.uploader.upload(
-                    fichier,
-                    folder="documents_administratifs",
-                    resource_type="raw"
+                fichier_url = upload_to_cloudinary(fichier, "documents_administratifs")
+                document = DocumentAdministratif(
+                    projet=projet,
+                    type_document=type_document,
+                    date_remise=date_remise if date_remise else None,
                 )
-                document.fichier = upload_result['public_id']
+                print("upload_result:", fichier_url)
+                # upload_result = cloudinary.uploader.upload(
+                #     fichier,
+                #     folder="documents_administratifs",
+                #     resource_type="raw"
+                # )
+                document.fichier = fichier_url
             else:
                 # Stockage local
                 document.fichier = fichier
@@ -2867,20 +2916,24 @@ def detail_decompte(request, decompte_id):
     projet = decompte.attachement.projet
     
     
-    montant_s_ht = decompte.attachement.total_montant_ht
-    revision_prix = decompte.montant_revision_prix if decompte.montant_revision_prix else 0
+    montant_s_ht = float(decompte.attachement.total_montant_ht) if decompte.attachement.total_montant_ht else 0.0
+    revision_prix = float(decompte.montant_revision_prix) if decompte.montant_revision_prix else 0.0
     montant_s_revise = montant_s_ht + revision_prix
-    montant_ht_precedent = decompte.attachement.montant_ht_attachement_precedent
+    montant_ht_precedent = float(decompte.attachement.montant_ht_attachement_precedent) if decompte.attachement.montant_ht_attachement_precedent else 0.0
     montant_t_ht = montant_s_revise - montant_ht_precedent
-    tva = montant_t_ht * (decompte.taux_tva or 0) / 100
+    tva = montant_t_ht * (float(decompte.taux_tva) or 0) / 100
     montant_t_ttc = montant_t_ht + tva
-    rg = montant_t_ttc * (decompte.taux_retenue_garantie or 0) / 100
-    ras = montant_t_ttc * (decompte.taux_ras or 0) / 100
-    autres = decompte.autres_retenues
+    rg = montant_t_ttc * float(decompte.taux_retenue_garantie or 0) / 100 if decompte.taux_retenue_garantie else 0.0
+    ras = montant_t_ttc * float(decompte.taux_ras or 0) / 100 if decompte.taux_ras else 0.0
+    autres = float(decompte.autres_retenues) if decompte.autres_retenues else 0.0 if decompte.autres_retenues else 0.0
     net_a_payer = montant_t_ttc - rg - ras - autres
     est_revise = revision_prix != 0
     # Calcul des pourcentages pour l'affichage
-    
+    print('TTC', montant_t_ttc)
+    print('RG', rg)
+    print('RAS', ras)
+    print('Autres', autres)
+    print('Net à payer', net_a_payer)
     context = {
         'decompte': decompte,
         'projet': projet,

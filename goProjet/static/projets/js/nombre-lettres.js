@@ -121,47 +121,17 @@ function montantEnLettres(montant) {
     const parties = montant.toFixed(2).split('.');
     const entiere = parseInt(parties[0]);
     const decimale = parseInt(parties[1]);
-    console.log(entiere, decimale);
     let resultat = nombreEnLettres(entiere) + ' dirham';
-    
     // Accord pluriel
     if (entiere > 1) resultat += 's';
-    return resultat.toUpperCase() + (decimale > 0 ? ' et ' + decimale.toString() : '');
     // Ajouter les centimes
     if (decimale > 0) {
         resultat += ' et ' + nombreEnLettres(decimale) + ' centimes';
         if (decimale > 1) resultat += 's';
     }
-    
     return resultat.charAt(0).toUpperCase() + resultat.slice(1);
-}
-
-// Functions utilities for Handsontable 
-function showSumSelectedCells(hot) {
-    const selection = hot.getSelected();
-    if (!selection || selection.length === 1) {
-        return;
-    }
-    
-    const [startRow, startCol, endRow, endCol] = selection[0];
-    let sum = 0;
-    let cellCount = 0;
-    
-    // Retur
-    for (let row = startRow; row <= endRow; row++) {
-        for (let col = startCol; col <= endCol; col++) {
-            const value = hot.getDataAtCell(row, col);
-            const numericValue = parseFloat(value);
-            if (!isNaN(numericValue)) {
-                sum += numericValue;
-                cellCount++;
-            }
-        }
-    }
-    return { sum, cellCount };
 }
 
 // Exporter les fonctions pour une utilisation globale
 window.nombreEnLettres = nombreEnLettres;
 window.montantEnLettres = montantEnLettres;
-window.showSumSelectedCells = showSumSelectedCells;

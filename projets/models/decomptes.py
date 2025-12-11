@@ -467,15 +467,16 @@ class Decompte(models.Model):
     @property
     def montant_situation_ht(self):
         self.m_ht_situation = self.attachement.montant_situation
-        return self.m_ht_situation
+        return float(self.m_ht_situation)
     
     @property
     def montant_situation_retenue_garantie(self):
-        return self.m_ht_situation*float(self.taux_retenue_garantie)/100
+        taux = float(self.taux_retenue_garantie) if self.taux_retenue_garantie else 0.0
+        return float(self.m_ht_situation)*taux/100
     
     @property
     def reste_a_payer_ht(self):
-        return self.m_ht_situation - self.montant_situation_retenue_garantie
+        return float(self.m_ht_situation) - float(self.montant_situation_retenue_garantie)
     
     @property
     def montant_situation_ttc(self):
@@ -487,11 +488,12 @@ class Decompte(models.Model):
     
     @property
     def montant_situation_ras(self):
-        return self.m_ht_situation*(float(self.taux_ras)/100)
+        taux = float(self.taux_ras) if self.taux_ras else 0.0
+        return float(self.m_ht_situation)*(taux/100)
     
     @property
     def montant_situation_autres_retenues(self):
-        return float(self.autres_retenues) if self.autres_retenues else 0
+        return float(self.autres_retenues) if self.autres_retenues else 0.0
     
     @property
     def montant_situation_net_a_payer(self):

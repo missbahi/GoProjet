@@ -663,12 +663,11 @@
                 });
             }, 5000);
         });
-
+        const montantNetAPayerBrut = {% if net_a_payer %}{{ net_a_payer|stringformat:".2f" }} {% else %}0{% endif %};
         // Fonction pour mettre à jour le net à payer en lettres
         function updateNetAPayerLettres() {
             // Récupérer le montant depuis le template Django
-            const montantNetAPayer = parseFloat("{{ net_a_payer|default:0 }}");
-            console.log(montantNetAPayer);
+            const montantNetAPayer = montantNetAPayerBrut;
             // Convertir en lettres
             const montantEnLettres = window.montantEnLettres(montantNetAPayer);
             // Mettre à jour le div
