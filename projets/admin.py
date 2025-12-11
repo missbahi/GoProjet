@@ -1,7 +1,10 @@
+import json
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
-from .models import Attachement, Decompte, DocumentAdministratif, OrdreService, Profile, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
+from .models.profile import Profile
+# from .models.revision import ConfigRevisionProjet, IndiceRevision, RevisionPrix, ValeurIndice
+from .models import Attachement, Decompte, DocumentAdministratif, OrdreService, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
@@ -134,3 +137,4 @@ class SuiviExecutionAdmin(admin.ModelAdmin):
     search_fields = ('titre', 'description', 'projet__nom', 'redacteur')
     date_hierarchy = 'date'
     list_per_page = 20
+    

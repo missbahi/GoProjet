@@ -1,5 +1,5 @@
 from datetime import date, datetime
-# import timedelta from django modules
+
 from django.utils import timezone 
 from django.utils.timezone import timedelta
 import json
@@ -15,14 +15,11 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.urls import  reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django.views import View
-
-from projets import models
 from projets.decorators import can_view_projet, chef_projet_required, superuser_required
+from projets.exporters import ExcelExporter
 
-from projets.forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
-from projets.models import Attachement, Decompte, Entreprise, EtapeValidation, FichierSuivi, Ingenieur, Notification, OrdreService, Profile, Projet, SuiviExecution, TypeOrdreService
-from projets.models import  LotProjet, LigneAttachement, LigneBordereau, Client, DocumentAdministratif, Tache
-from projets.models import Attachement, ProcessValidation
+from ..forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
+from ..models import *
 
 from django.views.generic import ListView
 
@@ -58,8 +55,6 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
-import django
-from django.views.decorators.csrf import csrf_exempt
 def get_file_field(instance):
     return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
@@ -399,7 +394,7 @@ def home(request):
     }
     return render(request, 'projets/home.html', context)
 
-# --------------- Gestion des utilisateurs ---------------
+# --------------- Gestion des utilisateurs 
 @login_required     
 @user_passes_test(lambda u: u.is_superuser)
 def modifier_utilisateur(request, user_id):
@@ -446,9 +441,7 @@ def ajouter_utilisateur1111(request):
         user = User.objects.create_user(username=username, email=email, password=password)
         return redirect('projets:liste_utilisateurs')
     return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
-# Dans views.py
 
-# from django.contrib.auth.models import User
 @superuser_required
 def ajouter_utilisateur(request):
     from django.contrib.auth.forms import UserCreationForm
@@ -1024,6 +1017,12 @@ def saisie_bordereau(request, projet_id, lot_id):
         'lignes': json_str,
     })
 
+def export_excel(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    lots = LotProjet.objects.filter(projet=projet).order_by('id')
+    
+    exporter = ExcelExporter(projet, lots)
+    return exporter.export()
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
@@ -1543,7 +1542,80 @@ def lots_projet(request, projet_id):
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
 
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
+@login_required
+def lots_details(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    can_editer = request.user.is_superuser
+    # Récupérer tous les lots du projet
+    lots = LotProjet.objects.filter(projet=projet).order_by('id')
+    lots_data = []
+    montant_total = 0
+    total_lignes = 0
+    from projets.manager import LigneHierarchique
+    
+    for lot in lots:
+        
+        # Récupérer les lignes du bordereau pour ce lot
+        lignes = LigneBordereau.objects.filter(lot=lot).order_by('id')
+        # Calculer le total du lot
+        total_lot = sum(
+            (ligne.quantite or 0) * (ligne.prix_unitaire or 0) 
+            for ligne in lignes
+        )
+        if total_lot == 0:
+            continue
+        # Préparer les données des lignes avec le montant calculé
+        lignes_data = []
+        for ligne in lignes:
+            # Vérifier si c'est une ligne de détail (a des valeurs de quantité et prix)
+            is_detail = ligne.quantite is not None and ligne.prix_unitaire is not None
+            montant_ligne = (ligne.quantite or 0) * (ligne.prix_unitaire or 0) if is_detail else 0
 
+            lignes_data.append({
+                'id': ligne.id,
+                'parent_id': ligne.parent.id if ligne.parent else None,
+                'numero': ligne.numero,
+                'designation': ligne.designation,
+                'unite': ligne.unite,
+                'quantite': ligne.quantite if is_detail else None,
+                'prix_unitaire': ligne.prix_unitaire if is_detail else None,
+                'montant': montant_ligne
+            })
+        
+        # Construire la hiérarchie
+        lines_root = LigneHierarchique({'id': 0, lot.nom: 'root'})
+        references = lines_root.build_tree_from_data(lignes_data)
+        racines = lines_root.children
+        
+        # Exporter en tableau pour le template
+        lignes_table = []
+        for racine in racines:
+            lignes_table.extend(racine.export_to_table())
+
+        lots_data.append({
+            'lot': lot,
+            'id': lot.id,
+            'nom': lot.nom,
+            'description': lot.description,
+            'lignes_hierarchiques': [racine.export_to_json() for racine in racines],  # Pour navigation hiérarchique
+            'lignes_table': lignes_table,  # Pour affichage en tableau avec niveaux
+            'total_lot': total_lot,
+            'references': references,  # Pour accès rapide aux objets
+        })
+        
+        montant_total += total_lot
+        total_lignes += len(lignes_table)
+    
+    context = {
+        'projet': projet,
+        'can_editer': can_editer,
+        'lots': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot, references
+        'montant_total': montant_total,
+        'total_lots': len(lots_data),
+        'total_lignes': total_lignes,
+    }
+    return render(request, 'projets/lots/lots_details.html', context)
+   
 # ------  Documents et Suivi ------
 @login_required
 def documents_projet(request, projet_id):
@@ -2189,7 +2261,7 @@ def detail_attachement(request, attachement_id):
                 'numero': ligne.numero,
                 'designation': ligne.designation,
                 'unite': ligne.unite,
-                'quantite_realisee': ligne.quantite_realisee if is_detail else None,
+                'quantite': ligne.quantite_realisee if is_detail else None,
                 'prix_unitaire': ligne.prix_unitaire if is_detail else None,
                 'montant': montant_ligne
             })
@@ -2794,17 +2866,36 @@ def detail_decompte(request, decompte_id):
     decompte = get_object_or_404(Decompte, id=decompte_id)
     projet = decompte.attachement.projet
     
+    
+    montant_s_ht = decompte.attachement.total_montant_ht
+    revision_prix = decompte.montant_revision_prix if decompte.montant_revision_prix else 0
+    montant_s_revise = montant_s_ht + revision_prix
+    montant_ht_precedent = decompte.attachement.montant_ht_attachement_precedent
+    montant_t_ht = montant_s_revise - montant_ht_precedent
+    tva = montant_t_ht * (decompte.taux_tva or 0) / 100
+    montant_t_ttc = montant_t_ht + tva
+    rg = montant_t_ttc * (decompte.taux_retenue_garantie or 0) / 100
+    ras = montant_t_ttc * (decompte.taux_ras or 0) / 100
+    autres = decompte.autres_retenues
+    net_a_payer = montant_t_ttc - rg - ras - autres
+    est_revise = revision_prix != 0
     # Calcul des pourcentages pour l'affichage
-    pourcentage_tva = (decompte.montant_tva / decompte.montant_ht * 100) if decompte.montant_ht > 0 else 0
-    pourcentage_retenue_garantie = (decompte.montant_retenue_garantie / decompte.montant_ttc * 100) if decompte.montant_ttc > 0 else 0
-    pourcentage_ras = (decompte.montant_ras / decompte.montant_ttc * 100) if decompte.montant_ttc > 0 else 0
     
     context = {
         'decompte': decompte,
         'projet': projet,
-        'pourcentage_tva': pourcentage_tva,
-        'pourcentage_retenue_garantie': pourcentage_retenue_garantie,
-        'pourcentage_ras': pourcentage_ras,
+        'est_revise': est_revise,
+        'montant_s_ht': montant_s_ht,
+        'revision_prix': revision_prix,
+        'montant_s_revise': montant_s_revise,
+        'montant_ht_precedent': montant_ht_precedent,
+        'montant_t_ht': montant_t_ht,
+        'tva': tva,
+        'montant_t_ttc': montant_t_ttc,
+        'rg': rg,
+        'ras': ras,
+        'autres': autres,
+        'net_a_payer': net_a_payer
     }
     return render(request, 'projets/decomptes/detail_decompte.html', context)
 def calcul_retard_decompte(request, decompte_id):

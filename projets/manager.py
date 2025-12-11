@@ -425,14 +425,14 @@ class LigneHierarchique:
         self.numero = data.get('numero')
         self.designation = data.get('designation') 
         self.unite = data.get('unite')
-        self.quantite_realisee = data.get('quantite_realisee')
+        self.quantite = data.get('quantite')
         self.prix_unitaire =data.get('prix_unitaire')
         self.montant = data.get('montant', 0)
         self.children = []
         self.parent = None
         self.collapsed = True
     def __str__(self):
-        return f"(id={self.id}, {self.parent_id}, {self.designation},{self.quantite_realisee}, {self.prix_unitaire}, {self.montant})"
+        return f"(id={self.id}, {self.parent_id}, {self.designation},{self.quantite}, {self.prix_unitaire}, {self.montant})"
     def build_tree_from_data(self, data, parent=None):
         self.children.clear()
         self.parent = None
@@ -459,15 +459,6 @@ class LigneHierarchique:
                     self.ajouter_enfant(line)
             else:
                 self.ajouter_enfant(line)
-
-        # # 3. Met à jour les montants
-        # for line in lines.values():
-        #     line.montant = line.amount()
-        
-        # # 4. Collapse les lignes ayant les montants nuls
-        # for line in lines.values():
-        #     if line.montant == 0:
-        #         line.collapse()
         
         return lines
     
@@ -536,7 +527,7 @@ class LigneHierarchique:
             'numero': self.numero,
             'designation': self.designation,
             'unite': self.unite,
-            'quantite_realisee': self.quantite_realisee,
+            'quantite': self.quantite,
             'prix_unitaire': self.prix_unitaire,
             'montant': self.amount(),
             'level': self.level,
@@ -560,7 +551,7 @@ class LigneHierarchique:
             'numero': self.numero,
             'designation': self.designation,
             'unite': self.unite,
-            'quantite_realisee': self.quantite_realisee,
+            'quantite': self.quantite,
             'prix_unitaire': self.prix_unitaire,
             'montant': self.amount(),
             'level': self.level,

@@ -1,0 +1,136 @@
+<!-- templates/projets/ajuster_revision.html -->
+{% extends 'base.html' %}
+{% load formatters %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Ajustement de la révision de prix</h1>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Calcul automatique -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4 text-cyan-400">Calcul automatique</h2>
+            <div class="space-y-4">
+                <div>
+                    <p class="text-gray-400">Montant HT révisable:</p>
+                    <p class="text-2xl font-bold">{{ revision.montant_HT_revisable|format_french_number }} MAD</p>
+                </div>
+                <div>
+                    <p class="text-gray-400">Taux calculé:</p>
+                    <p class="text-2xl font-bold {% if taux_calcule > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                        {{ taux_calcule|floatformat:2 }}%
+                    </p>
+                </div>
+                <div>
+                    <p class="text-gray-400">Montant calculé:</p>
+                    <p class="text-2xl font-bold {% if montant_calcule > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                        {{ montant_calcule|format_french_number }} MAD
+                    </p>
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                <button onclick="appliquerCalcul()" class="btn btn-info w-full">
+                    Appliquer le calcul automatique
+                </button>
+            </div>
+        </div>
+        
+        <!-- Ajustement manuel -->
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4 text-amber-400">Ajustement manuel</h2>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <div>
+                        {{ form.taux_revision_valide.label_tag }}
+                        {{ form.taux_revision_valide }}
+                        {% if form.taux_revision_valide.errors %}
+                            <p class="text-red-500 text-sm">{{ form.taux_revision_valide.errors }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        {{ form.montant_revision_valide.label_tag }}
+                        {{ form.montant_revision_valide }}
+                        {% if form.montant_revision_valide.errors %}
+                            <p class="text-red-500 text-sm">{{ form.montant_revision_valide.errors }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div>
+                        {{ form.motif_ajustement.label_tag }}
+                        {{ form.motif_ajustement }}
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex gap-4">
+                    <button type="submit" class="btn btn-primary flex-1">Enregistrer l'ajustement</button>
+                    <a href="{% url 'detail_decompte' revision.decompte.id %}" class="btn btn-warning flex-1">Annuler</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Détails des indices -->
+    {% if revision.detail_calcul %}
+    <div class="bg-gray-800 p-6 rounded-lg">
+        <h2 class="text-xl font-semibold mb-4">Détails du calcul</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-700">
+                        <th class="px-4 py-2">Indice</th>
+                        <th class="px-4 py-2">Valeur base</th>
+                        <th class="px-4 py-2">Valeur courante</th>
+                        <th class="px-4 py-2">Variation</th>
+                        <th class="px-4 py-2">Coefficient</th>
+                        <th class="px-4 py-2">Contribution</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for code, details in revision.detail_calcul.variations_indices.items %}
+                    <tr class="border-b border-gray-700">
+                        <td class="px-4 py-2">{{ code }}</td>
+                        <td class="px-4 py-2">{{ details.indice_base|floatformat:2 }}</td>
+                        <td class="px-4 py-2">{{ details.indice_courant|floatformat:2 }}</td>
+                        <td class="px-4 py-2 {% if details.variation > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {{ details.variation|floatformat:4 }}
+                        </td>
+                        <td class="px-4 py-2">{{ details.coefficient|floatformat:3 }}</td>
+                        <td class="px-4 py-2">{{ details.contribution|floatformat:4 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-gray-700 font-bold">
+                    <tr>
+                        <td colspan="5" class="px-4 py-2 text-right">Variation totale:</td>
+                        <td class="px-4 py-2">{{ revision.detail_calcul.total_variation|floatformat:4 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="px-4 py-2 text-right">Coefficient K:</td>
+                        <td class="px-4 py-2">{{ revision.detail_calcul.coefficient_K|floatformat:3 }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="5" class="px-4 py-2 text-right">Variation finale:</td>
+                        <td class="px-4 py-2 {% if revision.detail_calcul.variation_finale > 0 %}text-green-500{% else %}text-red-500{% endif %}">
+                            {{ revision.detail_calcul.variation_finale|floatformat:4 }}
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function appliquerCalcul() {
+    document.getElementById('id_taux_revision_valide').value = '{{ revision.taux_revision_calcule }}';
+    document.getElementById('id_montant_revision_valide').value = '{{ revision.montant_revision_calcule }}';
+    document.getElementById('id_motif_ajustement').value = 'Application du calcul automatique';
+}
+</script>
+{% endblock %}

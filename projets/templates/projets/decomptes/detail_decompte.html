@@ -480,67 +480,104 @@
                 <!-- Montant HT -->
                 <div class="facture-ligne">
                     <span class="facture-libelle text-gray-400">Montant situation HT</span>
-                    <span class="facture-montant text-gray-400">{{ decompte.attachement.total_montant_ht|format_quantity }} DH</span>
+                    <span class="facture-montant text-gray-400">{{ montant_s_ht|format_quantity }} DH</span>
                 </div>
-
+                {% if est_revise %}
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-gray-400">Revision prix</span>
+                    {% if revision_prix < 0 %}
+                    <span class="facture-libelle text-red-400">Revision prix</span>
+                    <span class="facture-montant text-red-400">{{revision_prix|format_quantity }} DH</span>
+                    {% else %}
+                    <span class="facture-libelle text-green-400">Revision prix</span>
+                    <span class="facture-montant text-green-400">{{revision_prix|format_quantity }} DH</span>
+                    {% endif %}
+                </div>
+                <div class="ligne-separation"></div>
+                <div class="facture-ligne">
+                    <span class="facture-libelle">Montant Total HT</span>
+                    <span class="facture-montant text-white">{{ montant_s_revise|format_quantity }} DH</span>
+                </div>
+                {% endif %}
                 <!-- Deduire Montant HT Precedent -->
                 <div class="facture-ligne">
                     <span class="facture-libelle text-gray-500">Déduire situation précedente HT</span>
-                    <span class="facture-montant text-gray-500">- {{ decompte.attachement.montant_ht_attachement_precedent|format_quantity }} DH</span>
+                    <span class="facture-montant text-gray-500">- {{ montant_ht_precedent|format_quantity }} DH</span>
                 </div>
                 <!-- Ligne de séparation -->
                 <div class="ligne-separation"></div>
                 <div class="facture-ligne">
                     <span class="facture-libelle">Total situation HT</span>
-                    <span class="facture-montant text-white">{{ decompte.montant_situation_ht|format_quantity }} DH</span>
-                </div>
-                <!-- Deduire retenues de garantie -->
-                <div class="facture-ligne">
-                    <span class="facture-libelle text-red-400">Déduire retenue de garantie HT ({{ decompte.taux_retenue_garantie }}%)</span>
-                    <span class="facture-montant text-red-400">- {{ decompte.montant_situation_retenue_garantie|format_quantity }} DH</span>
-                </div>
-                <!-- Ligne de séparation -->
-                <div class="ligne-separation"></div>
-                <div class="facture-ligne">
-                    <span class="facture-libelle">Reste à payer HT</span>
-                    <span class="facture-montant text-white">{{ decompte.reste_a_payer_ht|format_quantity }} DH</span>
+                    <span class="facture-montant text-white">{{ montant_t_ht|format_quantity }} DH</span>
                 </div>
                 <!-- TVA -->
                 <div class="facture-ligne">
                     <span class="facture-libelle  text-amber-400">TVA ({{ decompte.taux_tva }}%)</span>
-                    <span class="facture-montant text-amber-400">{{ decompte.montant_situation_tva|format_quantity }} DH</span>
+                    <span class="facture-montant text-amber-400">- {{ tva|format_quantity }} DH</span>
                 </div>
-
                 <!-- Ligne de séparation -->
                 <div class="ligne-separation"></div>
+                <div class="facture-ligne">
+                    <span class="facture-libelle">Total situation TTC</span>
+                    <span class="facture-montant text-white">{{ montant_t_ttc|format_quantity }} DH</span>
+                </div>
+                <!-- Deduire retenues de garantie -->
+                {% if rg != 0 %}
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-red-400">Déduire retenue de garantie TTC ({{ decompte.taux_retenue_garantie }}%)</span>
+                    <span class="facture-montant text-red-400">- {{ rg|format_quantity }} DH</span>
+                </div>
+                {% endif %}
+                {% if ras != 0 %}
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-red-400">Déduire retenue à la source TTC ({{ decompte.taux_ras }}%)</span>
+                    <span class="facture-montant text-red-400">- {{ ras|format_quantity }} DH</span>
+                </div>
+                {% endif %}
+                {% if autres_retenues != 0 %}
+                <div class="facture-ligne">
+                    <span class="facture-libelle text-red-400">Autres déductions TTC</span>
+                    <span class="facture-montant text-red-400">- {{ autres_retenues|format_quantity }} DH</span>
+                </div>
+                {% endif %}
+                <!-- Ligne de séparation -->
+                <!-- <div class="ligne-separation"></div>
+                <div class="facture-ligne">
+                    <span class="facture-libelle">Net à payer HT</span>
+                    <span class="facture-montant text-white">{{ decompte.reste_a_payer_ht|format_quantity }} DH</span>
+                </div> -->
+                
+
+                <!-- Ligne de séparation -->
+                <!-- <div class="ligne-separation"></div> -->
 
                 <!-- Montant TTC -->
-                <div class="facture-ligne">
+                <!-- <div class="facture-ligne">
                     <span class="facture-libelle text-cyan-400 font-semibold">Montant TTC</span>
-                    <span class="facture-montant text-cyan-400 font-semibold">{{ decompte.montant_situation_ttc|format_quantity }} DH</span>
-                </div>
+                    <span class="facture-montant text-cyan-400 font-semibold">{{ net_a_payer|format_quantity }} DH</span>
+                </div> -->
 
                 <!-- DÉDUCTIONS -->
                 <div class="mt-4 sm:mt-6">
                     <!-- RAS -->
-                    {% if decompte.montant_ras %}
+                    <!-- {% if decompte.montant_ras %}
                     <div class="ligne-deduction">
                         <div class="facture-ligne">
                             <span class="facture-libelle text-orange-400">RAS ({{ decompte.taux_ras }}%)</span>
                             <span class="facture-montant text-orange-400">- {{ decompte.montant_situation_ras|format_quantity }} DH</span>
                         </div>
                     </div>
-                    {% endif %}
+                    {% endif %} -->
 
                     <!-- Autres retenues -->
-                    {% if decompte.autres_retenues %}
+                    <!-- {% if decompte.autres_retenues %}
                     <div class="ligne-deduction">
                         <div class="facture-ligne">
                             <span class="facture-libelle text-yellow-400">Autres retenues</span>
                             <span class="facture-montant text-yellow-400">- {{ decompte.montant_situation_autres_retenues|format_quantity }} DH</span>
                         </div>
                     </div>
-                    {% endif %}
+                    {% endif %} -->
                 </div>
 
                 <!-- Ligne de séparation totale -->
@@ -549,7 +586,7 @@
                 <!-- NET À PAYER -->
                 <div class="facture-ligne">
                     <span class="facture-libelle text-[#2B9C62] text-lg sm:text-xl font-bold">NET À PAYER</span>
-                    <span class="facture-montant text-[#2B9C62] text-lg sm:text-xl font-bold">{{ decompte.montant_situation_net_a_payer|format_quantity }} DH</span>
+                    <span class="facture-montant text-[#2B9C62] text-lg sm:text-xl font-bold">{{ net_a_payer|format_quantity }} DH</span>
                 </div>
                 <!-- Afficher le montant en lettre -->
                 <div class="ligne-separation"></div>
@@ -630,7 +667,8 @@
         // Fonction pour mettre à jour le net à payer en lettres
         function updateNetAPayerLettres() {
             // Récupérer le montant depuis le template Django
-            const montantNetAPayer = parseFloat("{{ decompte.montant_situation_net_a_payer|default:0 }}");
+            const montantNetAPayer = parseFloat("{{ net_a_payer|default:0 }}");
+            console.log(montantNetAPayer);
             // Convertir en lettres
             const montantEnLettres = window.montantEnLettres(montantNetAPayer);
             // Mettre à jour le div

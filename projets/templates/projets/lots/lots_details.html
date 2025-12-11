@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bordereau de prix - {{ projet.nom }}</title>
+    {% load formatters %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Variables CSS */
+        :root {
+            --bg-dark: #1a1a1a;
+            --bg-card: #2d2d2d;
+            --bg-header: #1a1a1a;
+            --text-primary: #e0e0e0;
+            --text-accent: #4ecdc4;
+            --text-success: #2ecc71;
+            --border-light: #444;
+            --border-accent: #4ecdc4;
+        }
+
+        /* Reset et base */
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* En-tête principal */
+        .main-header {
+            background: linear-gradient(135deg, var(--bg-header) 0%, #222 100%);
+            border: 2px solid var(--border-accent);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .main-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--text-accent);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .project-name {
+            font-size: 1.1rem;
+            color: #95a5a6;
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+
+        /* Navigation principale */
+        .nav-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .nav-container {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* Boutons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn-success { 
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%); 
+            color: white; 
+        }
+        
+        .btn-info { 
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%); 
+            color: white; 
+        }
+        
+        .btn-warning { 
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); 
+            color: white; 
+        }
+        
+        .btn-primary { 
+            background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%); 
+            color: white; 
+        }
+
+        /* Cartes d'information */
+        .info-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .info-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        /* Résumé financier */
+        .summary-card {
+            background: linear-gradient(135deg, var(--bg-card) 0%, #333 100%);
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.0rem;
+        }
+
+        .summary-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-accent);
+            margin-bottom: 1.0rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--text-accent);
+        }
+
+        .stat-value {
+            color: var(--text-accent);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        /* Sections de lots */
+        .lot-section {
+            margin-bottom: 2.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .lot-header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 2px solid var(--border-accent);
+        }
+
+        /* Tableaux */
+        .table-container {
+            background: var(--bg-card);
+            overflow-x: auto;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+
+        .data-table th {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .data-table td {
+            padding: 0.875rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Styles hiérarchiques */
+        .level-0 { padding-left: 1.2rem !important; }
+        .level-1 { padding-left: 2.4rem !important; }
+        .level-2 { padding-left: 3.6rem !important; }
+        .level-3 { padding-left: 4.8rem !important; }
+
+        /* Style pour les lignes parents */
+        .ligne-parent {
+            font-weight: 700;
+        }
+
+        .ligne-parent .designation {
+            color: var(--text-accent);
+        }
+
+        /* Style pour les lignes détails */
+        .ligne-detail {
+            font-weight: 600;
+        }
+
+        /* Cellules spéciales */
+        .amount {
+            color: var(--text-success);
+            font-weight: 700;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        
+        .amount-parent {
+            color: var(--text-accent);
+            font-weight: 800;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .empty-value {
+            color: #95a5a6;
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+
+        /* États vides */
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: #95a5a6;
+        }
+
+        .empty-icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* Responsive */
+        @media (max-width: 767px) {
+            .container {
+                padding: 0.75rem;
+            }
+
+            .main-header {
+                padding: 1.25rem;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-buttons,
+            .action-buttons {
+                width: 100%;
+            }
+        }
+
+        /* Impression */
+        @media print {
+            body {
+                background-color: white !important;
+                color: black !important;
+                font-size: 10pt;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .btn {
+                display: none !important;
+            }
+
+            .nav-container {
+                display: none !important;
+            }
+/* 
+            .summary-card {
+                display: none !important;
+            } */
+
+            .ligne-parent .designation {
+                color: black !important;
+                font-weight: bold;
+            }
+        }
+
+        /* Scrollbar personnalisée */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-accent);
+            border-radius: 4px;
+        }
+        /* Styles pour la grille en deux colonnes */
+        .stats-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        /* Pour les éléments de montant alignés à droite */
+        .amount-item {
+            text-align: right;
+            border-left: 4px solid var(--text-accent);
+            padding-left: 1rem;
+        }
+
+        .amount-value {
+            display: block;
+            /* margin-top: 0.25rem; */
+            font-size: 1.3rem;
+            color: var(--text-success);
+        }
+
+        /* Style de base des stat-items */
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            /* padding: 1rem; */
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--text-accent);
+            justify-content: center;
+        }
+
+        .stat-item span:first-child {
+            color: #95a5a6;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            color: var(--text-accent);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+            }
+            
+            .amount-item {
+                text-align: left;
+                border-left: none;
+                border-top: 4px solid var(--text-accent);
+                /* padding-left: 1rem;
+                padding-top: 1rem;
+                margin-top: 0.5rem; */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- En-tête principal -->
+        <header class="main-header">
+            <h1 class="main-title">
+                <i class="fas fa-file-contract"></i>
+                Détail du Bordereau
+            </h1>
+            <div class="project-name">
+                Projet : {{ projet.nom }}
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-container no-print">
+            <div class="nav-buttons">
+                <a href="{% url 'projets:dashboard' projet.id %}" class="btn btn-info mb-2">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    Retour au projet
+                </a>
+                <a href="{% url 'home' %}" class="btn btn-warning mb-2">
+                    <i class="fa-solid fa-house"></i>
+                    Accueil
+                </a>
+            </div>
+            
+            <div class="action-buttons">
+                {% if can_editer %}
+                <a href="{% url 'projets:lots_projet' projet.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    Modifier
+                </a>
+                {% endif %}
+                <!-- <button id="exportPdfBtn" class="btn btn-success">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF
+                </button>-->
+                <a href="{% url 'projets:export_excel' projet.id %}" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+                </a>
+                <!-- <button id="exportExcelBtn" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+                </button>  -->
+            </div>
+        </nav>
+
+        <!-- Informations du projet -->
+        <!-- <section class="info-card">
+            <div class="info-grid">
+                <div class="info-item">
+                    <i class="fas fa-hashtag info-icon text-cyan-400"></i>
+                    <div class="info-content">
+                        <div class="info-label">Nom du projet</div>
+                        <div class="info-value">{{ projet.nom }}</div>
+                    </div>
+                </div>
+            </div>
+        </section> -->
+
+        <!-- Résumé financier -->
+        <section class="summary-card">
+            <h2 class="summary-title">
+                <i class="fas fa-chart-bar"></i>
+                Résumé du Bordereau
+            </h2>
+            <div class="stats-grid">
+                <!-- Première ligne -->
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span>Total lots :</span>
+                        <span class="stat-value">{{ total_lots }}</span>
+                    </div>
+                    <div class="stat-item amount-item">
+                        <span>Montant total HT :</span>
+                        <span class="stat-value amount-value">{{ montant_total|format_french_number }} MAD</span>
+                    </div>
+                </div>
+                
+                <!-- Deuxième ligne -->
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span>Total lignes :</span>
+                        <span class="stat-value">{{ total_lignes }}</span>
+                    </div>
+                    <div class="stat-item amount-item">
+                        <span>Montant total TTC :</span>
+                        <span class="stat-value amount-value">{{ montant_total|amount_ttc }} MAD</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Détail par lot -->
+        {% for lot in lots %}
+        <section class="lot-section">
+            <div class="lot-header">
+                <i class="fas fa-cube"></i>
+                <span>Lot : {{ lot.nom }}{% if lot.description %} - {{ lot.description }}{% endif %}</span>
+                <span style="margin-left: auto; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px;">
+                    {{ lot.lignes_table|length }} ligne{{ lot.lignes_table|length|pluralize }}
+                </span>
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <colgroup>
+                        <col style="width: 90px;">
+                        <col style="width: auto;">
+                        <col class="text-center" style="width: 80px;"> 
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 140px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Désignation</th>
+                            <th>Unité</th>
+                            <th>Quantité</th>
+                            <th>PU (DH)</th>
+                            <th>Montant (DH)</th>
+                        </tr>
+                    </thead> 
+                    <tbody>
+                        {% for ligne in lot.lignes_table %}
+                            {% if ligne.montant > 0 %}
+                            <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
+                                <td>
+                                    {% if ligne.has_children %}
+                                        <strong class="designation level-{{ligne.level}}">{{ ligne.numero|default:"" }}</strong>
+                                    {% else %}
+                                        {{ ligne.numero|default:"" }}
+                                    {% endif %}
+                                </td>
+                                <td class="designation level-{{ligne.level}}">
+                                    {% if ligne.has_children %}
+                                        <strong>{{ ligne.designation }}</strong>
+                                    {% else %}
+                                        {{ ligne.designation }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center unit">
+                                    {% if ligne.unite %}
+                                        {{ ligne.unite }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-right quantity">
+                                    {% if ligne.quantite and ligne.quantite != 0 %}
+                                        {{ ligne.quantite|format_quantity }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right price">
+                                    {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
+                                        {{ ligne.prix_unitaire|format_french_number }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right {% if ligne.is_parent %}amount-parent{% else %}amount{% endif %}">
+                                    {% if ligne.montant %}
+                                        <strong>{{ ligne.montant|format_french_number }}</strong>
+                                    {% else %}
+                                        <span class="empty-value">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-inbox empty-icon"></i>
+                                    Aucune ligne du bordereau pour ce lot
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-footer" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+                            <td colspan="4" class="text-right" style="color: white; font-weight: 700;">
+                                Total du {{ lot.lot.nom }} HT :
+                            </td>
+                            <td colspan="2" class="text-right" style="color: var(--text-success); font-weight: 700;">
+                                {{ lot.total_lot|format_currency }}
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+        {% empty %}
+        <section class="empty-state">
+            <i class="fas fa-file-contract empty-icon"></i>
+            <h3>Aucun lot trouvé</h3>
+            <p>Ce projet ne contient aucun lot pour le moment.</p>
+        </section>
+        {% endfor %}
+    </div>
+
+    <!-- Scripts pour l'export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Attendre que le DOM soit chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            // Gestionnaire pour le bouton PDF
+            const pdfBtn = document.getElementById('exportPdfBtn');
+            if (pdfBtn) {
+                pdfBtn.addEventListener('click', exportPDF);
+            }
+            
+            // Gestionnaire pour le bouton Excel
+            // const excelBtn = document.getElementById('exportExcelBtn');
+            // if (excelBtn) {
+            //     excelBtn.addEventListener('click', exportExcel);
+            // }
+        });
+
+        // Fonction pour exporter en Excel (version améliorée)
+        // function exportExcel() {
+        //     try {
+        //         const wb = XLSX.utils.book_new();
+        //         const now = new Date();
+        //         const dateStr = now.toISOString().split('T')[0];
+                
+        //         // Feuille de résumé
+        //         const summaryData = [
+        //             ["BORDEREAU DE PRIX - RAPPORT DÉTAILLÉ"],
+        //             [`Projet: ${document.querySelector('.project-name').textContent.replace('Projet : ', '')}`],
+        //             [`Généré le: ${now.toLocaleDateString('fr-FR')}`],
+        //             [""],
+        //             ["RÉSUMÉ DU PROJET"],
+        //             ["Total lots", {{ total_lots }}],
+        //             ["Total lignes", {{ total_lignes }}],
+        //             ["Montant total HT (MAD)", {{ montant_total }}],
+        //             ["Montant total TTC (MAD)", {{ montant_total|amount_ttc }}],
+        //             [""],
+        //             ["DÉTAIL PAR LOTS"]
+        //         ];
+                
+        //         const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+        //         XLSX.utils.book_append_sheet(wb, wsSummary, "Résumé");
+                
+        //         {% for lot in lots %}
+        //         // Données pour chaque lot
+        //         const lotData = [
+        //             [`LOT: {{ lot.nom|upper }}{% if lot.description %} - {{ lot.description }}{% endif %}`],
+        //             ["N°", "Désignation", "Unité", "Quantité", "PU (MAD)", "Montant (MAD)"],
+        //             {% for ligne in lot.lignes_table %}
+        //             [
+        //                 '{{ ligne.numero|default:"" }}',
+        //                 '{{ "    "|slice:":forloop.parentloop.counter0" }}{{ ligne.designation }}',
+        //                 '{{ ligne.unite|default:"" }}',
+        //                 {{ ligne.quantite|default:0 }},
+        //                 {{ ligne.prix_unitaire|default:0 }},
+        //                 {{ ligne.montant|default:0 }}
+        //             ],
+        //             {% endfor %}
+        //             ["", "", "", "", "Total HT:", {{ lot.total_lot }}],
+        //             ["", "", "", "", "Total TTC:", {{ lot.total_lot|amount_ttc }}]
+        //         ];
+                
+        //         const ws = XLSX.utils.aoa_to_sheet(lotData);
+                
+        //         // Définir les largeurs de colonnes
+        //         const colWidths = [
+        //             {wch: 10},  // N°
+        //             {wch: 60},  // Désignation
+        //             {wch: 8},   // Unité
+        //             {wch: 12},  // Quantité
+        //             {wch: 15},  // PU
+        //             {wch: 15}   // Montant
+        //         ];
+        //         ws['!cols'] = colWidths;
+                
+        //         // Nom de la feuille (tronqué si trop long)
+        //         const sheetName = "Lot {{ lot.nom|slice:":25" }}";
+        //         XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        //         {% endfor %}
+                
+        //         // Nom du fichier
+        //         const fileName = `Bordereau_{{ projet.numero|slugify }}_${dateStr}.xlsx`;
+        //         XLSX.writeFile(wb, fileName);
+                
+        //     } catch (error) {
+        //         console.error("Erreur lors de l'export Excel:", error);
+        //         alert("Une erreur est survenue lors de l'export Excel. Vérifiez la console pour plus de détails.");
+        //     }
+        // }
+
+        // Fonction pour exporter en PDF (version améliorée)
+        function exportPDF() {
+            try {
+                if (typeof window.jspdf === 'undefined') {
+                    throw new Error("La bibliothèque jsPDF n'est pas chargée");
+                }
+                
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const now = new Date();
+                const pageWidth = doc.internal.pageSize.width;
+                
+                // En-tête
+                doc.setFontSize(20);
+                doc.setTextColor(78, 205, 196); // Couleur accent
+                doc.text("BORDEREAU DE PRIX DÉTAILLÉ", pageWidth / 2, 20, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Projet: ${document.querySelector('.project-name').textContent}`, 20, 35);
+                doc.text(`Généré le: ${now.toLocaleDateString('fr-FR')}`, pageWidth - 20, 35, { align: 'right' });
+                
+                // Ligne de séparation
+                doc.setDrawColor(78, 205, 196);
+                doc.setLineWidth(0.5);
+                doc.line(20, 40, pageWidth - 20, 40);
+                
+                let startY = 50;
+                
+                {% for lot in lots %}
+                // Vérifier l'espace sur la page
+                if (startY > 240) {
+                    doc.addPage();
+                    startY = 20;
+                    
+                    // En-tête sur les pages suivantes
+                    doc.setFontSize(12);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Bordereau - Page ${doc.internal.getNumberOfPages()}`, pageWidth / 2, 15, { align: 'center' });
+                }
+                
+                // Titre du lot avec fond coloré
+                doc.setFillColor(44, 62, 80); // Bleu foncé
+                doc.rect(15, startY - 5, pageWidth - 30, 8, 'F');
+                
+                doc.setFontSize(14);
+                doc.setTextColor(255, 255, 255);
+                doc.text(`LOT: {{ lot.nom }}{% if lot.description %} - {{ lot.description }}{% endif %}`, 20, startY);
+                
+                startY += 15;
+                
+                // Préparer les données du tableau
+                const headers = [['N°', 'Désignation', 'Unité', 'Quantité', 'PU (MAD)', 'Montant (MAD)']];
+                const body = [];
+                
+                {% for ligne in lot.lignes_table %}
+                {% if ligne.montant > 0 %}
+                // Ajouter l'indentation pour la hiérarchie
+                let indentation = '';
+                for (let i = 0; i < {{ ligne.level }}; i++) {
+                    indentation += '    ';
+                }
+                
+                body.push([
+                    '{{ ligne.numero|default:"-" }}',
+                    indentation + '{{ ligne.designation }}',
+                    '{{ ligne.unite|default:"-" }}',
+                    '{{ ligne.quantite|default:0|floatformat:3 }}',
+                    '{{ ligne.prix_unitaire|default:0|floatformat:2 }}',
+                    '{{ ligne.montant|default:0|floatformat:2 }}'
+                ]);
+                {% endif %}
+                {% endfor %}
+                
+                // Ajouter le total du lot
+                body.push(['', '', '', '', 'Total HT:', '{{ lot.total_lot|floatformat:2 }}']);
+                body.push(['', '', '', '', 'Total TTC:', '{{ lot.total_lot|amount_ttc }}']);
+                
+                // Générer le tableau
+                doc.autoTable({
+                    head: headers,
+                    body: body,
+                    startY: startY,
+                    margin: { left: 15, right: 15 },
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [44, 62, 80],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold',
+                        fontSize: 10
+                    },
+                    bodyStyles: {
+                        fontSize: 9,
+                        textColor: [50, 50, 50]
+                    },
+                    alternateRowStyles: {
+                        fillColor: [245, 245, 245]
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 15, fontStyle: 'bold' },
+                        1: { cellWidth: 'auto' },
+                        2: { cellWidth: 20 },
+                        3: { cellWidth: 25, halign: 'right' },
+                        4: { cellWidth: 30, halign: 'right' },
+                        5: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+                    },
+                    styles: {
+                        overflow: 'linebreak',
+                        cellPadding: 3,
+                        lineWidth: 0.1,
+                        lineColor: [200, 200, 200]
+                    },
+                    didDrawPage: function(data) {
+                        // Style des lignes parent
+                        if (data.cursor && data.cursor.y) {
+                            startY = data.cursor.y + 10;
+                        }
+                    }
+                });
+                
+                startY = doc.lastAutoTable.finalY + 10;
+                {% endfor %}
+                
+                // Page de résumé final
+                doc.addPage();
+                doc.setFontSize(18);
+                doc.setTextColor(78, 205, 196);
+                doc.text("RÉSUMÉ FINANCIER", pageWidth / 2, 30, { align: 'center' });
+                
+                doc.setFontSize(12);
+                doc.setTextColor(50, 50, 50);
+                let summaryY = 50;
+                
+                const summaryItems = [
+                    ["Total des lots", "{{ total_lots }}"],
+                    ["Total des lignes", "{{ total_lignes }}"],
+                    ["Montant total HT", "{{ montant_total|floatformat:2 }} MAD"],
+                    ["Montant total TTC", "{{ montant_total|amount_ttc }} MAD"]
+                ];
+                
+                summaryItems.forEach((item, index) => {
+                    doc.text(item[0], 40, summaryY + (index * 15));
+                    doc.setTextColor(46, 204, 113); // Vert
+                    doc.text(item[1], pageWidth - 40, summaryY + (index * 15), { align: 'right' });
+                    doc.setTextColor(50, 50, 50);
+                });
+                
+                // Pied de page sur toutes les pages
+                const totalPages = doc.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    doc.setPage(i);
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(
+                        `Page ${i} sur ${totalPages} - Bordereau Projet {{ projet.numero }} - Généré le ${now.toLocaleDateString('fr-FR')}`,
+                        pageWidth / 2,
+                        doc.internal.pageSize.height - 10,
+                        { align: 'center' }
+                    );
+                }
+                
+                // Sauvegarder le PDF
+                const fileName = `Bordereau_{{ projet.numero|slugify }}_${now.toISOString().split('T')[0]}.pdf`;
+                doc.save(fileName);
+                
+            } catch (error) {
+                console.error("Erreur lors de l'export PDF:", error);
+                alert("Une erreur est survenue lors de l'export PDF. Vérifiez la console pour plus de détails.");
+            }
+        }
+    </script>
+</body>
+</html>

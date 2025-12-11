@@ -383,9 +383,9 @@
             font-weight: 600;
         }
 
-        .quantity-zero {
+        /* .quantity-zero {
             color: #e74c3c;
-        }
+        } */
 
         .empty-value {
             color: #95a5a6;
@@ -750,13 +750,13 @@
                 </div>
             </div>
         </section>
-
+ 
         <!-- Détail par lot -->
         {% for lot_data in lots_data %}
         <section class="lot-section">
             <div class="lot-header">
                 <i class="fas fa-cube"></i>
-                <span>Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}</span>
+                <span>Lot : {{ lot_data.lot.nom }}</span>
                 <span style="margin-left: auto; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px;">
                     {{ lot_data.lignes_table|length }} ligne{{ lot_data.lignes_table|length|pluralize }}
                 </span>
@@ -788,7 +788,7 @@
                             {% if ligne.montant > 0 %}
                             <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
                                 <td class="ligne-numero">
-                                    {{ ligne.numero|default:"-" }}
+                                    {{ ligne.numero|default:"" }}
                                 </td>
                                 <td class="designation level-{{ligne.level}}">
                                     {% if ligne.has_children %}
@@ -804,9 +804,9 @@
                                         <span class="empty-value"></span>
                                     {% endif %}
                                 </td>
-                                <td class="text-right quantity {% if not ligne.quantite_realisee or ligne.quantite_realisee == 0 %}quantity-zero{% endif %}">
-                                    {% if ligne.quantite_realisee and ligne.quantite_realisee != 0 %}
-                                        {{ ligne.quantite_realisee|format_quantity }}
+                                <td class="text-right quantity ">
+                                    {% if ligne.quantite and ligne.quantite != 0 %}
+                                        {{ ligne.quantite|format_quantity }}
                                     {% else %}
                                         <span class="empty-value"></span>
                                     {% endif %}
@@ -839,7 +839,7 @@
                     <tfoot class="no-print">
                         <tr class="table-footer" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
                             <td colspan="4" class="text-right" style="color: white; font-weight: 700;">
-                                Total Lot {{ lot_data.lot.numero }} HT :
+                                Total du {{ lot_data.lot.nom }} HT :
                             </td>
                             <td colspan="2" class="text-right" style="color: var(--text-success); font-weight: 700;">
                                 {{ lot_data.total_lot|format_currency }}
@@ -930,7 +930,7 @@
             
             {% for lot_data in lots_data %}
             const data{{ lot_data.lot.id }} = [
-                [`Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}`],
+                [`Lot : {{ lot_data.lot.nom }}`],
                 ['Niveau', 'N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'],
                 {% for ligne in lot_data.lignes_table %}
                 [
@@ -938,7 +938,7 @@
                     '{{ ligne.numero|default:"" }}',
                     '{{ ligne.designation }}',
                     '{{ ligne.unite|default:"" }}',
-                    {{ ligne.quantite_realisee|default:0 }},
+                    {{ ligne.quantite|default:0 }},
                     {{ ligne.prix_unitaire|default:0 }},
                     {{ ligne.montant|default:0 }}
                 ],
@@ -947,7 +947,7 @@
             ];
             
             const ws{{ lot_data.lot.id }} = XLSX.utils.aoa_to_sheet(data{{ lot_data.lot.id }});
-            XLSX.utils.book_append_sheet(wb, ws{{ lot_data.lot.id }}, "Lot {{ lot_data.lot.numero }}");
+            XLSX.utils.book_append_sheet(wb, ws{{ lot_data.lot.id }}, "Lot {{ lot_data.lot.nom }}");
             {% endfor %}
             
             // Feuille de résumé
@@ -998,7 +998,7 @@
             // Titre du lot
             doc.setFontSize(14);
             doc.setTextColor(44, 62, 80);
-            doc.text(`Lot {{ lot_data.lot.numero }} - {{ lot_data.lot.nom }}`, 14, startY);
+            doc.text(`Lot : {{ lot_data.lot.nom }}`, 14, startY);
             
             // Préparer les données
             const body{{ lot_data.lot.id }} = [];
@@ -1013,7 +1013,7 @@
                 '{{ ligne.numero|default:"-" }}',
                 designation,
                 '{{ ligne.unite|default:"-" }}',
-                '{{ ligne.quantite_realisee|default:0|floatformat:3 }}',
+                '{{ ligne.quantite|default:0|floatformat:3 }}',
                 '{{ ligne.prix_unitaire|default:0|floatformat:2 }}',
                 '{{ ligne.montant|default:0|floatformat:2 }}'
             ]);
@@ -1053,7 +1053,7 @@
             // Total du lot
             doc.setFontSize(10);
             doc.setTextColor(44, 62, 80);
-            doc.text(`Total Lot {{ lot_data.lot.numero }}: {{ lot_data.total_lot|floatformat:2 }} MAD`, 14, startY);
+            doc.text(`Total Lot {{ lot_data.lot.nom }}: {{ lot_data.total_lot|floatformat:2 }} MAD`, 14, startY);
             startY += 7;
             {% endfor %}
             

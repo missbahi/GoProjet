@@ -1,10 +1,14 @@
+from decimal import Decimal
 import os
 from django import forms
-from .models import Client, Decompte, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService, TypeOrdreService
+
+# from projets.models.revision import RevisionPrix
+from .models import Client, Decompte, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService
+
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
-from django.db.models import  Q
 from django.utils import timezone
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
@@ -44,33 +48,34 @@ class ProjetForm(forms.ModelForm):
         fields = [
             'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
             'delai', 'avancement', 'statut', 'montant', 'montant_soumission',
-            'localisation', 'entreprise'
-            # 'client' retiré car absent du modèle / sinon l'ajouter explicitement dans fields
+            'localisation', 'entreprise', 'revisable'
         ]
-        COMMON_CSS_CLASSES = 'w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500'
-
         widgets = {
-            'type_projet': forms.Select(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Type de projet'}),
-            'nom': forms.TextInput(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Nom du projet *'}),
-            'maitre_ouvrage': forms.TextInput(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Maître d\'ouvrage'}),
-            'numero': forms.TextInput(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'N° marché *'}),
-            'objet': forms.Textarea(attrs={'class': COMMON_CSS_CLASSES, 'rows': 3, 'placeholder': 'Objet du projet *', 'style': 'min-height: auto;'}),
-            'date_debut': forms.DateInput(attrs={'class': COMMON_CSS_CLASSES, 'type': 'date', 'placeholder': 'Date de début *'}),
-            'delai': forms.NumberInput(attrs={'class': COMMON_CSS_CLASSES + ' text-right', 'step': '1', 'min': '1', 'max': '3650', 'placeholder': 'Délai en jours'}),
-            'avancement': forms.NumberInput(attrs={'class': COMMON_CSS_CLASSES + ' text-right', 'step': '1', 'min': '0', 'max': '100', 'placeholder': 'Avancement en %'}),
-            'statut': forms.Select(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Statut du projet'}),
-            'montant': forms.NumberInput(attrs={'class': COMMON_CSS_CLASSES + ' text-right', 'placeholder': 'Montant estimé (DH)'}),
-            'montant_soumission': forms.NumberInput(attrs={'class': COMMON_CSS_CLASSES + ' text-right', 'placeholder': 'Montant soumission (DH)'}),
-            'localisation': forms.TextInput(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Localisation du projet'}),
-            'entreprise': forms.Select(attrs={'class': COMMON_CSS_CLASSES, 'placeholder': 'Nom de l\'entreprise'}),
+            'type_projet': forms.Select(attrs={'placeholder': 'Type de projet'}),
+            'nom': forms.TextInput(attrs={'placeholder': 'Nom du projet *'}),
+            'maitre_ouvrage': forms.TextInput(attrs={'placeholder': 'Maître d\'ouvrage'}),
+            'numero': forms.TextInput(attrs={'placeholder': 'N° marché *'}),
+            'objet': forms.Textarea(attrs={ 'rows': 3, 'placeholder': 'Objet du projet *', 'style': 'min-height: auto;'}),
+            'date_debut': forms.DateInput(attrs={ 'type': 'date', 'placeholder': 'Date de début *', }),
+            'delai': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Délai en jours'}),
+            'avancement': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Avancement en %'}),
+            'statut': forms.Select(attrs={'placeholder': 'Statut du projet'}),
+            'montant': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Montant estimé (DH)'}),
+            'montant_soumission': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Montant soumission (DH)'}),
+            'localisation': forms.TextInput(attrs={'placeholder': 'Localisation du projet'}),
+            'entreprise': forms.Select(attrs={'placeholder': 'Nom de l\'entreprise'}),
+            'revisable': forms.CheckboxInput(attrs={'class': 'hidden peer', 'id': 'revisable-toggle'
+            }),
+            
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for field_name, field in self.fields.items():
-            field.label_attrs = {'class': 'block text-sm font-medium text-gray-700 mb-1'}
-            if field.required:
-                field.label = (field.label or '') + ' *'
+        self.fields['revisable'].label = "Projet révisable"
+        self.fields['revisable'].help_text = "Les prix seront ajustés selon les indices officiels"
+        if self.instance and self.instance.date_debut:
+            self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
+                
 
     def clean_montant(self):
         montant_val = self.cleaned_data.get('montant')
@@ -169,12 +174,25 @@ class AttachementForm(forms.ModelForm):
         self.fields['fichier'].required = False
 
 class DecompteForm(forms.ModelForm):
+    montant_revision_prix = forms.DecimalField(
+        required=False,
+        max_digits=15,
+        decimal_places=2,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control text-right',
+            'placeholder': '0.00',
+            'step': '0.01',
+        }),
+        label="Révision des prix (DH)",
+        help_text="Montant de la révision de prix calculée"
+    )
+    
     class Meta:
         model = Decompte
         fields = [
             'attachement', 'type_decompte', 'numero', 'date_emission', 
             'date_echeance', 'statut', 'taux_tva', 'taux_retenue_garantie', 
-            'taux_ras', 'autres_retenues', 'numero_bordereau', 'date_paiement', 
+            'taux_ras', 'autres_retenues', 'montant_revision_prix', 'numero_bordereau', 'date_paiement', 
             'observations'
         ]
         widgets = {
@@ -191,6 +209,9 @@ class DecompteForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        # Récupérer le paramètre avant d'appeler le parent
+        attachements_disponibles_count = kwargs.pop('attachements_disponibles_count', None)
+        
         super().__init__(*args, **kwargs)
         
         # Ajouter des classes CSS à tous les champs
@@ -200,40 +221,62 @@ class DecompteForm(forms.ModelForm):
             else:
                 field.widget.attrs.update({'class': 'form-control'})
         
+        # Configuration spécifique pour certains champs
+        self.fields['attachement'].empty_label = None
+        from collections import OrderedDict
+        # Positionner le champ montant_revision_prix après autres_retenues
+        # Réorganiser l'ordre des champs si nécessaire
+        self.fields = OrderedDict([
+            ('attachement', self.fields['attachement']),
+            ('type_decompte', self.fields['type_decompte']),
+            ('numero', self.fields['numero']),
+            ('date_emission', self.fields['date_emission']),
+            ('date_echeance', self.fields['date_echeance']),
+            ('statut', self.fields['statut']),
+            ('taux_tva', self.fields['taux_tva']),
+            ('taux_retenue_garantie', self.fields['taux_retenue_garantie']),
+            ('taux_ras', self.fields['taux_ras']),
+            ('autres_retenues', self.fields['autres_retenues']),
+            ('montant_revision_prix', self.fields['montant_revision_prix']),  # Nouvelle position
+            ('numero_bordereau', self.fields['numero_bordereau']),
+            ('date_paiement', self.fields['date_paiement']),
+            ('observations', self.fields['observations']),
+        ])
+        
         # Valeurs par défaut pour la création uniquement
         if not self.instance.pk:  # Nouveau décompte
             self.fields['taux_tva'].initial = 20.0
             self.fields['taux_retenue_garantie'].initial = 10.0
             self.fields['taux_ras'].initial = 0.0
             self.fields['autres_retenues'].initial = 0.0
+            self.fields['montant_revision_prix'].initial = 0.0  # Initialisation
             self.fields['type_decompte'].initial = 'PROVISOIRE'
             self.fields['statut'].initial = 'BROUILLON'
             
             # Date d'émission par défaut = aujourd'hui
             self.fields['date_emission'].initial = timezone.now().date()
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.attachements_disponibles_count = kwargs.pop('attachements_disponibles_count', None)
         
-        # Ajouter les classes CSS pour le style
-        for field_name, field in self.fields.items():
-            if hasattr(field, 'widget') and hasattr(field.widget, 'attrs'):
-                field.widget.attrs.update({'class': 'form-control'})
-                
-        self.fields['attachement'].empty_label = None
-        
-        print('attachements_disponibles_count :', self.attachements_disponibles_count)
-        if (self.attachements_disponibles_count == 1 and 
-            'attachement' in self.fields):  
-            # Si il n'y a qu'un seul attachement disponible, le mettre en readonly
+        # Gestion de l'attachement unique
+        if attachements_disponibles_count == 1 and 'attachement' in self.fields:  
+            # Si il n'y a qu'un seul attachement disponible
             self.fields['attachement'].widget.attrs.update({
                 'readonly': 'readonly',
                 'class': 'form-control bg-gray-700 cursor-not-allowed'
             })
+            
             # Stocker la valeur pour qu'elle soit sauvegardée malgré le disabled
             if self.fields['attachement'].queryset.count() == 1:
                 seul_attachement = self.fields['attachement'].queryset.first()
                 self.fields['attachement'].initial = seul_attachement
+        # Ajuster la forme des dates en français
+        for field_name in ['date_emission', 'date_echeance', 'date_paiement']:
+            if self.instance:
+                # Récupérer la valeur du champ
+                field_value = getattr(self.instance, field_name, None)
+                
+                if field_value:  # Vérifier si la valeur existe
+                    # Convertir au format HTML5 (yyyy-mm-dd)
+                    self.initial[field_name] = field_value.strftime('%Y-%m-%d')
     
     def clean_attachement(self):
         attachement = self.cleaned_data.get('attachement')
@@ -268,6 +311,14 @@ class DecompteForm(forms.ModelForm):
         
         return date_paiement
     
+    # def clean_montant_revision_prix(self):
+    #     """Validation pour le champ montant_revision_prix"""
+    #     montant = self.cleaned_data.get('montant_revision_prix')
+    #     montant_ht = self.cleaned_data.get('attachement').total_montant_ht
+    #     if montant and abs(montant) > montant_ht * 0.1:
+    #         raise forms.ValidationError("Le montant de révision est supérieur au 10% du montant HT.")
+        
+    #     return montant 
 class OrdreServiceForm(forms.ModelForm):
     class Meta:
         model = OrdreService
@@ -291,3 +342,4 @@ class OrdreServiceForm(forms.ModelForm):
         # Valeur par défaut pour statut
         if not self.instance.pk:
             self.fields['statut'].initial = 'BROUILLON'
+

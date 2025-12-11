@@ -121,15 +121,15 @@ function montantEnLettres(montant) {
     const parties = montant.toFixed(2).split('.');
     const entiere = parseInt(parties[0]);
     const decimale = parseInt(parties[1]);
-    
+    console.log(entiere, decimale);
     let resultat = nombreEnLettres(entiere) + ' dirham';
     
     // Accord pluriel
     if (entiere > 1) resultat += 's';
-    
+    return resultat.toUpperCase() + (decimale > 0 ? ' et ' + decimale.toString() : '');
     // Ajouter les centimes
     if (decimale > 0) {
-        resultat += ' et ' + nombreEnLettres(decimale) + ' centime';
+        resultat += ' et ' + nombreEnLettres(decimale) + ' centimes';
         if (decimale > 1) resultat += 's';
     }
     

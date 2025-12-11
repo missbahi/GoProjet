@@ -172,16 +172,26 @@
         </div>
 
         <!-- Boutons de navigation -->
-        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6 header-buttons">
-            <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-                <i class="fas fa-house"></i> Accueil
-            </a>
-            <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-                <i class="fas fa-arrow-left"></i> Retour aux projets
-            </a>
-            <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
-                <i class="fas fa-diagram-project"></i> Tableau de bord
-            </a>
+         <div class="mb-6 flex justify-between items-center">
+            <!-- Groupe à gauche -->
+            <div class="flex flex-wrap gap-2 sm:gap-3">
+                <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                    <i class="fas fa-house"></i> Accueil
+                </a>
+                <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                    <i class="fas fa-arrow-left"></i> Retour aux projets
+                </a>
+                <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 md:px-6 md:py-2 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                    <i class="fas fa-diagram-project"></i> Tableau de bord
+                </a>
+            </div>
+            
+            <!-- Groupe à droite -->
+            <div class="flex gap-2 sm:gap-3">
+                <a href="{% url 'projets:lots_details' projet.id %}" class="btn-primary px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-info"></i> Détails lots
+                </a>
+            </div>
         </div>
 
         <!-- Messages -->

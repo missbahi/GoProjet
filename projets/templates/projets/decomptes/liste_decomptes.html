@@ -846,7 +846,7 @@ select.form-control:disabled {
         <!-- Formulaire de décompte -->
          {% if decompte_a_modifier or attachements_disponibles_count > 0 %}
         <div id="formulaire-decompte" 
-             class="formulaire-decompte {% if not decomptes %}expanded{% else %}collapsed{% endif %}">
+            class="formulaire-decompte {% if not decomptes %}expanded{% else %}collapsed{% endif %}">
             <h3 class="text-lg sm:text-xl font-semibold text-cyan-300 mb-4 flex items-center gap-2">
                 <i class="fas fa-plus-circle"></i> 
                 {% if decompte_a_modifier %}
@@ -917,127 +917,255 @@ select.form-control:disabled {
                     </div>
                 </div>
 
-                <!-- Dates -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label for="{{ form.date_emission.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Date d'émission *
-                        </label>
-                        {{ form.date_emission }}
-                        {% if form.date_emission.errors %}
-                        <div class="text-red-400 text-sm mt-1">
-                            {{ form.date_emission.errors }}
+                <!-- SECTION EN DEUX COLONNES POUR LES DATES ET MONTANTS -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+                    
+                    <!-- COLONNE DE GAUCHE - DATES -->
+                    <div class="space-y-6">
+                        <!-- Date d'émission -->
+                        <div>
+                            <label for="{{ form.date_emission.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Date d'émission *
+                            </label>
+                            {{ form.date_emission }}
+                            {% if form.date_emission.errors %}
+                            <div class="text-red-400 text-sm mt-1">
+                                {{ form.date_emission.errors }}
+                            </div>
+                            {% endif %}
                         </div>
-                        {% endif %}
+
+                        <!-- Date d'échéance -->
+                        <div>
+                            <label for="{{ form.date_echeance.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Date d'échéance
+                            </label>
+                            {{ form.date_echeance }}
+                            {% if form.date_echeance.errors %}
+                            <div class="text-red-400 text-sm mt-1">
+                                {{ form.date_echeance.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Date de paiement -->
+                        <div>
+                            <label for="{{ form.date_paiement.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Date de paiement
+                            </label>
+                            {{ form.date_paiement }}
+                            {% if form.date_paiement.errors %}
+                            <div class="text-red-400 text-sm mt-1">
+                                {{ form.date_paiement.errors }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Autres retenues -->
+                        <div>
+                            <label for="{{ form.autres_retenues.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Autres retenues
+                            </label>
+                            <div class="field-with-suffix">
+                                {{ form.autres_retenues }}
+                                <span class="suffix">DH</span>
+                            </div>
+                            {% if form.autres_retenues.errors %}
+                            <div class="text-red-400 text-sm mt-1">
+                                {{ form.autres_retenues.errors }}
+                            </div>
+                            {% endif %}
+                            <p class="helper-text mt-1">Montant additionnel en dirhams</p>
+                        </div>
                     </div>
                     
-                    <div>
-                        <label for="{{ form.date_echeance.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Date d'échéance
-                        </label>
-                        {{ form.date_echeance }}
-                        {% if form.date_echeance.errors %}
-                        <div class="text-red-400 text-sm mt-1">
-                            {{ form.date_echeance.errors }}
+                    <!-- COLONNE DE DROITE - MONTANTS ET RÉVISION -->
+                    <div class="space-y-6">
+                        <!-- Taux TVA -->
+                        <div>
+                            <label for="{{ form.taux_tva.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Taux TVA *
+                            </label>
+                            <div class="field-with-suffix">
+                                {{ form.taux_tva }}
+                                <span class="suffix">%</span>
+                            </div>
+                            {% if form.taux_tva.errors %}
+                            <div class="error-message mt-1">
+                                {{ form.taux_tva.errors }}
+                            </div>
+                            {% endif %}
+                            <p class="helper-text mt-1">Taux de TVA applicable (0-100%)</p>
                         </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div>
-                        <label for="{{ form.date_paiement.id_for_label }}" class="block text-sm font-medium text-[#AECBD6] mb-2">
-                            Date de paiement
-                        </label>
-                        {{ form.date_paiement }}
-                        {% if form.date_paiement.errors %}
-                        <div class="text-red-400 text-sm mt-1">
-                            {{ form.date_paiement.errors }}
+
+                        <!-- Retenue garantie -->
+                        <div>
+                            <label for="{{ form.taux_retenue_garantie.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Retenue garantie *
+                            </label>
+                            <div class="field-with-suffix">
+                                {{ form.taux_retenue_garantie }}
+                                <span class="suffix">%</span>
+                            </div>
+                            {% if form.taux_retenue_garantie.errors %}
+                            <div class="error-message mt-1">
+                                {{ form.taux_retenue_garantie.errors }}
+                            </div>
+                            {% endif %}
+                            <p class="helper-text mt-1">Taux de retenue de garantie (0-100%)</p>
                         </div>
-                        {% endif %}
+
+                        <!-- Taux RAS -->
+                        <div>
+                            <label for="{{ form.taux_ras.id_for_label }}" class="block text-lg font-semibold text-cyan-300 mb-2">
+                                Taux RAS *
+                            </label>
+                            <div class="field-with-suffix">
+                                {{ form.taux_ras }}
+                                <span class="suffix">%</span>
+                            </div>
+                            {% if form.taux_ras.errors %}
+                            <div class="error-message mt-1">
+                                {{ form.taux_ras.errors }}
+                            </div>
+                            {% endif %}
+                            <p class="helper-text mt-1">Retenue à la source (0-100%)</p>
+                        </div>
+
+                        <!-- RÉVISION DES PRIX - DANS LA MÊME COLONNE QUE LES TAUX -->
+                        <div>
+                            <h4 class="text-lg font-semibold text-cyan-300 mb-4">Révision des prix</h4>
+                            
+                            <!-- Montant de révision -->
+                            <div class="mb-4">
+                                <label for="{{ form.montant_revision_prix.id_for_label }}" class="form-label">
+                                    Montant de révision
+                                </label>
+                                
+                                <div class="field-with-suffix">
+                                    {{ form.montant_revision_prix }}
+                                    <span class="suffix">DH</span>
+                                </div>
+                                
+                                {% if form.montant_revision_prix.errors %}
+                                <div class="error-message">
+                                    {{ form.montant_revision_prix.errors }}
+                                </div>
+                                {% endif %}
+                                
+                                <p class="helper-text">Montant HT de la révision calculée</p>
+                            </div>
+                            
+                            <!-- Boutons d'action -->
+                            <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <button type="button" 
+                                            id="calculer-revision-btn"
+                                            class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                            {% if not decompte_a_modifier %}disabled{% endif %}
+                                            title="{% if not decompte_a_modifier %}Veuillez d'abord sauvegarder le décompte{% else %}Calculer la révision des prix{% endif %}">
+                                        <i class="fas fa-calculator"></i>
+                                        <span class="truncate">Calculer automatiquement</span>
+                                    </button>
+                                    <p class="helper-text mt-2 text-xs">
+                                        Calcule la révision selon les indices officiels
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <button type="button" 
+                                            id="editer-revision-btn"
+                                            class="w-full bg-amber-600 hover:bg-amber-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                            {% if not decompte_a_modifier %}disabled{% endif %}
+                                            title="{% if not decompte_a_modifier %}Veuillez d'abord sauvegarder le décompte{% else %}Éditer la révision de prix{% endif %}">
+                                        <i class="fas fa-edit"></i>
+                                        <span class="truncate">Éditer manuellement</span>
+                                    </button>
+                                    <p class="helper-text mt-2 text-xs">
+                                        Ajuster manuellement la révision calculée
+                                    </p>
+                                </div>
+                            </div> -->
+                            
+                            <!-- Message d'information si décompte non sauvegardé -->
+                            <!-- {% if not decompte_a_modifier %}
+                            <div class="mt-4 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
+                                <div class="flex items-center gap-2 text-yellow-300 text-sm">
+                                    <i class="fas fa-info-circle"></i>
+                                    <span>Veuillez d'abord sauvegarder le décompte pour calculer la révision.</span>
+                                </div>
+                            </div>
+                            {% endif %} -->
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Montants -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-                    <div class="form-group">
-                        <label for="{{ form.taux_tva.id_for_label }}" class="form-label required">
-                            <i class="fas fa-percentage"></i>
-                            Taux TVA
-                        </label>
-                        
-                        <div class="field-with-suffix">
-                            {{ form.taux_tva }}
-                            <span class="suffix">%</span>
+                <!-- Informations sur la révision calculée (affiché conditionnellement) -->
+                <!-- {% if decompte_a_modifier and decompte_a_modifier.revision_prix %} -->
+                <!-- <div id="info-revision" class="mt-6 p-4 bg-blue-900/30 border border-blue-500 rounded-lg"> -->
+                    <!-- <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chart-line text-blue-400 text-xl"></i>
+                            <h4 class="text-lg font-semibold text-blue-300">Révision de prix calculée</h4>
                         </div>
-                        
-                        {% if form.taux_tva.errors %}
-                        <div class="error-message">
-                            {{ form.taux_tva.errors }}
-                        </div>
-                        {% endif %}
-                        
-                        <p class="helper-text">Taux de TVA applicable (0-100%)</p>
+                        <span class="statut-badge 
+                            {% if decompte_a_modifier.revision_prix.statut == 'VALIDE' %}bg-green-900 text-green-300
+                            {% elif decompte_a_modifier.revision_prix.statut == 'CALCULE' %}bg-blue-900 text-blue-300
+                            {% elif decompte_a_modifier.revision_prix.statut == 'MODIFIE' %}bg-amber-900 text-amber-300
+                            {% else %}bg-gray-700 text-gray-300{% endif %}">
+                            {{ decompte_a_modifier.revision_prix.get_statut_display }}
+                        </span>
                     </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.taux_retenue_garantie.id_for_label }}" class="form-label required">
-                            <i class="fas fa-shield-alt"></i>
-                            Retenue garantie
-                        </label>
-                        
-                        <div class="field-with-suffix">
-                            {{ form.taux_retenue_garantie }}
-                            <span class="suffix">%</span>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-percentage text-blue-400"></i>
+                            <span class="text-gray-300">Taux calculé:</span>
+                            <span class="font-bold text-white ml-2">
+                                {{ decompte_a_modifier.revision_prix.taux_revision_calcule|floatformat:2 }}%
+                            </span>
                         </div>
                         
-                        {% if form.taux_retenue_garantie.errors %}
-                        <div class="error-message">
-                            {{ form.taux_retenue_garantie.errors }}
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-calculator text-green-400"></i>
+                            <span class="text-gray-300">Montant calculé:</span>
+                            <span class="font-bold text-white ml-2">
+                                {{ decompte_a_modifier.revision_prix.montant_revision_calcule|format_french_number }} DH
+                            </span>
                         </div>
-                        {% endif %}
                         
-                        <p class="helper-text">Taux de retenue de garantie (0-100%)</p>
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-check-circle text-amber-400"></i>
+                            <span class="text-gray-300">Montant validé:</span>
+                            <span class="font-bold text-white ml-2">
+                                {% if decompte_a_modifier.revision_prix.montant_revision_valide %}
+                                    {{ decompte_a_modifier.revision_prix.montant_revision_valide|format_french_number }} DH
+                                {% else %}
+                                    Non validé
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div> -->
+                    
+                    <!-- {% if decompte_a_modifier.revision_prix.motif_ajustement %}
+                    <div class="mt-3 pt-3 border-t border-blue-400/30">
+                        <div class="text-xs text-blue-300 font-semibold mb-1">Motif d'ajustement:</div>
+                        <div class="text-sm text-gray-300 bg-blue-900/20 p-3 rounded">
+                            {{ decompte_a_modifier.revision_prix.motif_ajustement }}
+                        </div>
                     </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.taux_ras.id_for_label }}" class="form-label required">
-                            <i class="fas fa-file-contract"></i>
-                            Taux RAS
-                        </label>
-                        
-                        <div class="field-with-suffix">
-                            {{ form.taux_ras }}
-                            <span class="suffix">%</span>
-                        </div>
-                        
-                        {% if form.taux_ras.errors %}
-                        <div class="error-message">
-                            {{ form.taux_ras.errors }}
-                        </div>
-                        {% endif %}
-                        
-                        <p class="helper-text">Retenue à la source (0-100%)</p>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="{{ form.autres_retenues.id_for_label }}" class="form-label">
-                            <i class="fas fa-hand-holding-usd"></i>
-                            Autres retenues
-                        </label>
-                        
-                        <div class="field-with-suffix">
-                            {{ form.autres_retenues }}
-                            <span class="suffix">DH</span>
-                        </div>
-                        
-                        {% if form.autres_retenues.errors %}
-                        <div class="error-message">
-                            {{ form.autres_retenues.errors }}
-                        </div>
-                        {% endif %}
-                        
-                        <p class="helper-text">Montant additionnel en dirhams</p>
-                    </div>
-                </div>
+                    {% endif %} -->
+                    
+                    <!-- <div class="mt-4 flex justify-end">
+                        <button type="button" 
+                                onclick="ouvrirModalRevision()"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                            <i class="fas fa-chart-bar"></i>
+                            Voir les détails du calcul
+                        </button>
+                    </div> -->
+                <!-- </div> -->
+                <!-- {% endif %} -->
 
                 <!-- Observations -->
                 <div>
@@ -1068,9 +1196,9 @@ select.form-control:disabled {
                         <i class="fas fa-times"></i> Annuler
                     </a>
                 </div>
-
             </form>
         </div>
+
         {% else %}
         <div class="bg-amber-900/30 border border-amber-500 rounded-lg p-4 sm:p-6 text-center">
             <i class="fas fa-exclamation-triangle text-amber-400 text-xl sm:text-2xl mb-3"></i>
@@ -1083,160 +1211,763 @@ select.form-control:disabled {
             </p>
         </div>
         {% endif %}
+        
+        <!-- Modal d'édition de la révision des prix -->
+        <div id="modal-revision" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 overflow-y-auto flex items-center justify-center p-4">
+            <div class="min-h-screen flex items-center justify-center p-4">
+                <div class="bg-[#2E2E2E] border border-[#4B5563] rounded-lg shadow-xl w-full max-w-4xl">
+                    <!-- En-tête du modal -->
+                    <div class="flex justify-between items-center p-6 border-b border-[#4B5563]">
+                        <div class="flex items-center gap-3">
+                            <i class="fas fa-chart-line text-purple-400 text-xl"></i>
+                            <h3 class="text-xl font-semibold text-white">Édition de la révision de prix</h3>
+                        </div>
+                        <button type="button" 
+                                onclick="fermerModalRevision()"
+                                class="text-gray-400 hover:text-white text-2xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Contenu du modal -->
+                    <div class="p-6">
+                        <!-- Indicateur de chargement -->
+                        <div id="loading-revision" class="hidden text-center py-8">
+                            <i class="fas fa-spinner fa-spin text-cyan-400 text-3xl mb-4"></i>
+                            <p class="text-gray-300">Calcul de la révision en cours...</p>
+                        </div>
+                        
+                        <!-- Formulaire d'édition -->
+                        <div id="form-revision-content" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Calcul automatique -->
+                                <div class="space-y-4">
+                                    <h4 class="text-lg font-semibold text-cyan-300 mb-4">
+                                        <i class="fas fa-robot"></i> Calcul automatique
+                                    </h4>
+                                    
+                                    <div class="bg-[#3B3B3B] p-4 rounded-lg">
+                                        <div class="mb-3">
+                                            <label class="text-sm text-gray-400">Montant HT révisable</label>
+                                            <div class="text-xl font-bold text-white" id="montant-revisable">
+                                                0.00 DH
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-3">
+                                            <label class="text-sm text-gray-400">Taux calculé</label>
+                                            <div class="text-xl font-bold text-cyan-400" id="taux-calcule">
+                                                0.00%
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="text-sm text-gray-400">Montant calculé</label>
+                                            <div class="text-xl font-bold text-green-400" id="montant-calcule">
+                                                0.00 DH
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <button type="button" 
+                                            onclick="calculerRevision()"
+                                            class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors">
+                                        <i class="fas fa-calculator"></i>
+                                        Recalculer automatiquement
+                                    </button>
+                                </div>
+                                
+                                <!-- Ajustement manuel -->
+                                <div class="space-y-4">
+                                    <h4 class="text-lg font-semibold text-amber-300 mb-4">
+                                        <i class="fas fa-edit"></i> Ajustement manuel
+                                    </h4>
+                                    
+                                    <form id="form-ajustement-revision">
+                                        <div class="space-y-4">
+                                            <div>
+                                                <label for="taux-manuel" class="form-label">
+                                                    <i class="fas fa-percentage"></i>
+                                                    Taux de révision
+                                                </label>
+                                                <div class="field-with-suffix">
+                                                    <input type="number" 
+                                                        id="taux-manuel" 
+                                                        name="taux_manuel"
+                                                        step="0.01"
+                                                        min="-100"
+                                                        max="100"
+                                                        class="form-control text-right"
+                                                        placeholder="0.00">
+                                                    <span class="suffix">%</span>
+                                                </div>
+                                                <p class="helper-text">Taux ajusté manuellement</p>
+                                            </div>
+                                            
+                                            <div>
+                                                <label for="montant-manuel" class="form-label">
+                                                    <i class="fas fa-money-bill"></i>
+                                                    Montant de révision
+                                                </label>
+                                                <div class="field-with-suffix">
+                                                    <input type="number" 
+                                                        id="montant-manuel" 
+                                                        name="montant_manuel"
+                                                        step="0.01"
+                                                        class="form-control text-right"
+                                                        placeholder="0.00">
+                                                    <span class="suffix">DH</span>
+                                                </div>
+                                                <p class="helper-text">Montant ajusté manuellement</p>
+                                            </div>
+                                            
+                                            <div>
+                                                <label for="motif-ajustement" class="form-label">
+                                                    <i class="fas fa-comment"></i>
+                                                    Motif d'ajustement
+                                                </label>
+                                                <textarea id="motif-ajustement" 
+                                                        name="motif_ajustement"
+                                                        class="form-control"
+                                                        rows="3"
+                                                        placeholder="Expliquez les raisons de l'ajustement..."></textarea>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                            
+                            <!-- Détails du calcul -->
+                            <div id="details-calcul" class="mt-6 hidden">
+                                <h4 class="text-lg font-semibold text-white mb-4">
+                                    <i class="fas fa-list-alt"></i> Détails du calcul
+                                </h4>
+                                <div class="bg-[#3B3B3B] rounded-lg overflow-hidden">
+                                    <table class="w-full">
+                                        <thead class="bg-[#2C3E50]">
+                                            <tr>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Indice</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Valeur base</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Valeur courante</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Variation</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Coefficient</th>
+                                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-300 uppercase">Contribution</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tableau-indices" class="divide-y divide-[#4B5563]">
+                                            <!-- Les données seront injectées ici par JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Pied du modal -->
+                    <div class="flex justify-between items-center p-6 border-t border-[#4B5563]">
+                        
+                        <div class="flex gap-3 mr-2">
+                            <button type="button" 
+                                    onclick="fermerModalRevision()"
+                                    class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium">
+                                Annuler
+                            </button>
+                            <button type="button" 
+                                    onclick="appliquerRevision()"
+                                    id="appliquer-revision-btn"
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                                <i class="fas fa-check"></i>
+                                Appliquer au décompte
+                            </button>
+                        </div>
+                        <div class="text-sm text-gray-400">
+                            <i class="fas fa-info-circle"></i>
+                            La révision est calculée selon la formule officielle marocaine
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
     </div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // =========================================================================
-    // 1. INITIALISATION ET VÉRIFICATIONS
-    // =========================================================================
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // =========================================================================
+        // 1. INITIALISATION ET VÉRIFICATIONS
+        // =========================================================================
 
-    // Éléments principaux
-    const toggleFormBtn = document.getElementById('toggle-form-btn');
-    const toggleFormText = document.getElementById('toggle-form-text');
-    const toggleFormIcon = document.getElementById('toggle-form-icon');
-    const formulaireDecompte = document.getElementById('formulaire-decompte');
-    
-    // Variables de contexte
-    const attachementsDisponibles = {{ attachements_disponibles_count }};
-    const isModificationMode = {{ decompte_a_modifier|yesno:"true,false" }};
-    const fromAttachementList = {{ from_attachement_list|yesno:"true,false" }};
-    const actionType = "{{ action_type|default:'' }}";
-    const hasDecomptes = {{ decomptes|yesno:"true,false" }};
-    
-
-    // CORRECTION : Ne bloquer que si on veut AJOUTER mais aucun attachement disponible
-    if (attachementsDisponibles === 0 && !isModificationMode) {
-        return;
-    }
-    
-
-    // Vérifier que les éléments essentiels existent
-    if (!toggleFormBtn || !formulaireDecompte) {
-        console.error('❌ Éléments manquants pour la gestion du formulaire:', {
-            toggleFormBtn: !!toggleFormBtn,
-            formulaireDecompte: !!formulaireDecompte
-        });
-        return;
-    }
-
-    // =========================================================================
-    // 2. GESTION PRINCIPALE DU FORMULAIRE
-    // =========================================================================
-    
-    let isExpanded = formulaireDecompte.classList.contains('expanded');
-
-    function updateFormState() {
-        if (isExpanded) {
-            // État EXPANDÉ
-            formulaireDecompte.classList.remove('collapsed');
-            formulaireDecompte.classList.add('expanded');
-            
-            if (toggleFormIcon) {
-                toggleFormIcon.classList.remove('fa-chevron-down');
-                toggleFormIcon.classList.add('fa-chevron-up');
-            }
-            if (toggleFormText) {
-                toggleFormText.textContent = hasDecomptes ? 'Masquer le formulaire' : 'Ajouter le premier décompte';
-            }
-        } else {
-            // État COLLAPSÉ
-            formulaireDecompte.classList.remove('expanded');
-            formulaireDecompte.classList.add('collapsed');
-            
-            if (toggleFormIcon) {
-                toggleFormIcon.classList.remove('fa-chevron-up');
-                toggleFormIcon.classList.add('fa-chevron-down');
-            }
-            if (toggleFormText) {
-                toggleFormText.textContent = hasDecomptes ? 'Ajouter un décompte' : 'Ajouter le premier décompte';
-            }
-        }
-    }
-
-    // Gestion du clic sur le bouton toggle
-    toggleFormBtn.addEventListener('click', function() {
-        isExpanded = !isExpanded;
-        updateFormState();
-    });
-
-    // =========================================================================
-    // 3. OUVERTURE AUTOMATIQUE DANS LES CAS SPÉCIFIQUES
-    // =========================================================================
-    
-    function ouvrirFormulaireAutomatiquement() {
-        const doitOuvrir = isModificationMode || 
-                          (fromAttachementList && (actionType === 'ajouter' || actionType === 'modifier'));
+        // Éléments principaux
+        const toggleFormBtn = document.getElementById('toggle-form-btn');
+        const toggleFormText = document.getElementById('toggle-form-text');
+        const toggleFormIcon = document.getElementById('toggle-form-icon');
+        const formulaireDecompte = document.getElementById('formulaire-decompte');
         
-        if (doitOuvrir && !isExpanded) {
-            // Forcer l'ouverture
-            isExpanded = true;
-            updateFormState();
-            
-            // Marquer visuellement le contexte
-            if (isModificationMode) {
-                formulaireDecompte.classList.add('formulaire-modification');
-            } else if (fromAttachementList) {
-                formulaireDecompte.classList.add('auto-expand-form');
-            }
-            
-            // Configuration spécifique pour l'ajout depuis attachements
-            if (fromAttachementList && actionType === 'ajouter') {
-                configurerAjoutDepuisAttachements();
-            }
-        }
-    }
-
-    // =========================================================================
-    // 4. CONFIGURATION SPÉCIFIQUE POUR AJOUT DEPUIS ATTACHEMENTS
-    // =========================================================================
-    
-    function configurerAjoutDepuisAttachements() {
-        const attachementSelect = document.getElementById('{{ form.attachement.id_for_label }}');
+        // Variables de contexte
+        const attachementsDisponibles = {{ attachements_disponibles_count }};
+        const isModificationMode = {{ decompte_a_modifier|yesno:"true,false" }};
+        const fromAttachementList = {{ from_attachement_list|yesno:"true,false" }};
+        const actionType = "{{ action_type|default:'' }}";
+        const hasDecomptes = {{ decomptes|yesno:"true,false" }};
         
-        if (attachementSelect && !attachementSelect.disabled) {
-            const validOptions = Array.from(attachementSelect.options).filter(opt => opt.value !== '');
-            
-            // Verrouiller la sélection si un seul choix valide
-            if (validOptions.length === 1) {
-                // attachementSelect.disabled = true;
-                attachementSelect.classList.add('bg-gray-700', 'cursor-not-allowed', 'opacity-80');
+
+        // CORRECTION : Ne bloquer que si on veut AJOUTER mais aucun attachement disponible
+        if (attachementsDisponibles === 0 && !isModificationMode) {
+            return;
+        }
+        
+
+        // Vérifier que les éléments essentiels existent
+        if (!toggleFormBtn || !formulaireDecompte) {
+            console.error('❌ Éléments manquants pour la gestion du formulaire:', {
+                toggleFormBtn: !!toggleFormBtn,
+                formulaireDecompte: !!formulaireDecompte
+            });
+            return;
+        }
+
+        // =========================================================================
+        // 2. GESTION PRINCIPALE DU FORMULAIRE
+        // =========================================================================
+        
+        let isExpanded = formulaireDecompte.classList.contains('expanded');
+
+        function updateFormState() {
+            if (isExpanded) {
+                // État EXPANDÉ
+                formulaireDecompte.classList.remove('collapsed');
+                formulaireDecompte.classList.add('expanded');
                 
-                const container = attachementSelect.parentElement;
-                container.classList.add('relative');
+                if (toggleFormIcon) {
+                    toggleFormIcon.classList.remove('fa-chevron-down');
+                    toggleFormIcon.classList.add('fa-chevron-up');
+                }
+                if (toggleFormText) {
+                    toggleFormText.textContent = hasDecomptes ? 'Masquer le formulaire' : 'Ajouter le premier décompte';
+                }
+            } else {
+                // État COLLAPSÉ
+                formulaireDecompte.classList.remove('expanded');
+                formulaireDecompte.classList.add('collapsed');
                 
-                // Ajouter icône de verrouillage
-                if (!container.querySelector('.fa-lock')) {
-                    const lockIcon = document.createElement('span');
-                    lockIcon.className = 'absolute right-10 top-1/2 transform -translate-y-1/2 text-amber-400';
-                    lockIcon.innerHTML = '<i class="fas fa-lock" title="Attachement présélectionné"></i>';
-                    container.appendChild(lockIcon);
+                if (toggleFormIcon) {
+                    toggleFormIcon.classList.remove('fa-chevron-up');
+                    toggleFormIcon.classList.add('fa-chevron-down');
+                }
+                if (toggleFormText) {
+                    toggleFormText.textContent = hasDecomptes ? 'Ajouter un décompte' : 'Ajouter le premier décompte';
                 }
             }
         }
+
+        // Gestion du clic sur le bouton toggle
+        toggleFormBtn.addEventListener('click', function() {
+            isExpanded = !isExpanded;
+            updateFormState();
+        });
+
+        // =========================================================================
+        // 3. OUVERTURE AUTOMATIQUE DANS LES CAS SPÉCIFIQUES
+        // =========================================================================
         
-        // Focus sur le premier champ éditable
-        setTimeout(() => {
-            const premierChamp = document.querySelector('#formulaire-decompte input:not([disabled])');
-            if (premierChamp) {
-                premierChamp.focus();
-                premierChamp.classList.add('auto-focused');
-                setTimeout(() => premierChamp.classList.remove('auto-focused'), 2000);
+        function ouvrirFormulaireAutomatiquement() {
+            const doitOuvrir = isModificationMode || 
+                            (fromAttachementList && (actionType === 'ajouter' || actionType === 'modifier'));
+            
+            if (doitOuvrir && !isExpanded) {
+                // Forcer l'ouverture
+                isExpanded = true;
+                updateFormState();
+                
+                // Marquer visuellement le contexte
+                if (isModificationMode) {
+                    formulaireDecompte.classList.add('formulaire-modification');
+                } else if (fromAttachementList) {
+                    formulaireDecompte.classList.add('auto-expand-form');
+                }
+                
+                // Configuration spécifique pour l'ajout depuis attachements
+                if (fromAttachementList && actionType === 'ajouter') {
+                    configurerAjoutDepuisAttachements();
+                }
             }
-        }, 800);
-    }
+        }
 
-    // =========================================================================
-    // 5. INITIALISATION FINALE
-    // =========================================================================
-    
-    // État initial
-    updateFormState();
-    
-    // Ouvrir automatiquement si nécessaire
-    ouvrirFormulaireAutomatiquement();
+        // =========================================================================
+        // 4. CONFIGURATION SPÉCIFIQUE POUR AJOUT DEPUIS ATTACHEMENTS
+        // =========================================================================
+        
+        function configurerAjoutDepuisAttachements() {
+            const attachementSelect = document.getElementById('{{ form.attachement.id_for_label }}');
+            
+            if (attachementSelect && !attachementSelect.disabled) {
+                const validOptions = Array.from(attachementSelect.options).filter(opt => opt.value !== '');
+                
+                // Verrouiller la sélection si un seul choix valide
+                if (validOptions.length === 1) {
+                    // attachementSelect.disabled = true;
+                    attachementSelect.classList.add('bg-gray-700', 'cursor-not-allowed', 'opacity-80');
+                    
+                    const container = attachementSelect.parentElement;
+                    container.classList.add('relative');
+                    
+                    // Ajouter icône de verrouillage
+                    if (!container.querySelector('.fa-lock')) {
+                        const lockIcon = document.createElement('span');
+                        lockIcon.className = 'absolute right-10 top-1/2 transform -translate-y-1/2 text-amber-400';
+                        lockIcon.innerHTML = '<i class="fas fa-lock" title="Attachement présélectionné"></i>';
+                        container.appendChild(lockIcon);
+                    }
+                }
+            }
+            
+            // Focus sur le premier champ éditable
+            setTimeout(() => {
+                const premierChamp = document.querySelector('#formulaire-decompte input:not([disabled])');
+                if (premierChamp) {
+                    premierChamp.focus();
+                    premierChamp.classList.add('auto-focused');
+                    setTimeout(() => premierChamp.classList.remove('auto-focused'), 2000);
+                }
+            }, 800);
+        }
 
-});
-</script>
+        // =========================================================================
+        // 5. INITIALISATION FINALE
+        // =========================================================================
+        
+        // État initial
+        updateFormState();
+        
+        // Ouvrir automatiquement si nécessaire
+        ouvrirFormulaireAutomatiquement();
+
+    });
+    </script>
+
+    <script>
+        // =========================================================================
+        // FONCTIONS POUR LA GESTION DE LA RÉVISION DES PRIX
+        // =========================================================================
+
+        // Variables globales
+        let revisionEnCours = null;
+        let decompteId = null;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Récupérer l'ID du décompte s'il existe
+            const decompteIdInput = document.querySelector('input[name="decompte_id"]');
+            if (decompteIdInput) {
+                decompteId = decompteIdInput.value;
+            }
+            
+            // Configuration des boutons
+            const calculerBtn = document.getElementById('calculer-revision-btn');
+            const editerBtn = document.getElementById('editer-revision-btn');
+            
+            if (calculerBtn) {
+                calculerBtn.addEventListener('click', function() {
+                    if (decompteId) {
+                        calculerRevisionApi();
+                    }
+                });
+            }
+            
+            if (editerBtn) {
+                editerBtn.addEventListener('click', function() {
+                    if (decompteId) {
+                        ouvrirModalRevision();
+                    } else {
+                        alert('Veuillez d\'abord sauvegarder le décompte avant de calculer la révision.');
+                    }
+                });
+            }
+            
+            // Synchronisation des champs taux/montant
+            const tauxInput = document.getElementById('taux-manuel');
+            const montantInput = document.getElementById('montant-manuel');
+            
+            if (tauxInput && montantInput) {
+                tauxInput.addEventListener('input', function() {
+                    synchroniserChampsRevision();
+                });
+                
+                montantInput.addEventListener('input', function() {
+                    synchroniserChampsRevision();
+                });
+            }
+        });
+
+        // Fonction pour ouvrir le modal
+        function ouvrirModalRevision() {
+            if (!decompteId) {
+                alert('Veuillez d\'abord sauvegarder le décompte avant de calculer la révision.');
+                return;
+            }
+            
+            const modal = document.getElementById('modal-revision');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Initialiser le modal avec les données existantes
+            initialiserModalRevision();
+        }
+
+        // Fonction pour fermer le modal
+        function fermerModalRevision() {
+            const modal = document.getElementById('modal-revision');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            
+            // Réinitialiser le formulaire
+            reinitialiserFormulaireRevision();
+        }
+
+        // Initialiser le modal avec les données existantes
+        function initialiserModalRevision() {
+            const loadingDiv = document.getElementById('loading-revision');
+            const formContent = document.getElementById('form-revision-content');
+            
+            // Afficher le chargement
+            loadingDiv.classList.remove('hidden');
+            formContent.classList.add('hidden');
+            
+            // Récupérer les données de révision existantes
+            fetch(`/api/decomptes/${decompteId}/revision/`)
+                .then(response => response.json())
+                .then(data => {
+                    loadingDiv.classList.add('hidden');
+                    formContent.classList.remove('hidden');
+                    
+                    revisionEnCours = data;
+                    
+                    // Mettre à jour l'interface
+                    mettreAJourInterfaceRevision(data);
+                    
+                    // Si des détails existent, afficher le tableau
+                    if (data.detail_calcul && data.detail_calcul.variations_indices) {
+                        afficherDetailsCalcul(data.detail_calcul);
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    loadingDiv.classList.add('hidden');
+                    formContent.classList.remove('hidden');
+                    
+                    // Afficher un message d'erreur
+                    const detailsDiv = document.getElementById('details-calcul');
+                    detailsDiv.classList.remove('hidden');
+                    detailsDiv.innerHTML = `
+                        <div class="bg-red-900/30 border border-red-500 rounded-lg p-4">
+                            <i class="fas fa-exclamation-triangle text-red-400 mr-2"></i>
+                            <span class="text-red-300">Erreur lors du chargement des données de révision.</span>
+                        </div>
+                    `;
+                });
+        }
+
+        // Calculer la révision via l'API
+        function calculerRevisionApi() {
+            const loadingDiv = document.getElementById('loading-revision');
+            const formContent = document.getElementById('form-revision-content');
+            
+            // Afficher le chargement
+            loadingDiv.classList.remove('hidden');
+            formContent.classList.add('hidden');
+            
+            fetch(`/api/decomptes/${decompteId}/revision/calculer/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                loadingDiv.classList.add('hidden');
+                formContent.classList.remove('hidden');
+                
+                if (data.success) {
+                    revisionEnCours = data.revision;
+                    mettreAJourInterfaceRevision(data.revision);
+                    
+                    // Afficher les détails du calcul
+                    if (data.revision.detail_calcul) {
+                        afficherDetailsCalcul(data.revision.detail_calcul);
+                    }
+                    
+                    // Mettre à jour le champ de formulaire principal
+                    const champRevision = document.getElementById('{{ form.montant_revision_prix.id_for_label }}');
+                    if (champRevision) {
+                        const montant = data.revision.montant_revision_valide || data.revision.montant_revision_calcule;
+                        champRevision.value = montant;
+                    }
+                    
+                    // Afficher un message de succès
+                    afficherMessage('Révision calculée avec succès !', 'success');
+                } else {
+                    throw new Error(data.message || 'Erreur inconnue');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                loadingDiv.classList.add('hidden');
+                formContent.classList.remove('hidden');
+                afficherMessage('Erreur lors du calcul de la révision: ' + error.message, 'error');
+            });
+        }
+
+        // Mettre à jour l'interface avec les données de révision
+        function mettreAJourInterfaceRevision(revision) {
+            // Mettre à jour les valeurs calculées
+            document.getElementById('montant-revisable').textContent = 
+                formatMontant(revision.montant_HT_revisable) + ' DH';
+            document.getElementById('taux-calcule').textContent = 
+                formatTaux(revision.taux_revision_calcule) + '%';
+            document.getElementById('montant-calcule').textContent = 
+                formatMontant(revision.montant_revision_calcule) + ' DH';
+            
+            // Mettre à jour les champs d'ajustement
+            const tauxValide = revision.taux_revision_valide || revision.taux_revision_calcule;
+            const montantValide = revision.montant_revision_valide || revision.montant_revision_calcule;
+            
+            document.getElementById('taux-manuel').value = formatTauxInput(tauxValide);
+            document.getElementById('montant-manuel').value = formatMontantInput(montantValide);
+            document.getElementById('motif-ajustement').value = revision.motif_ajustement || '';
+            
+            // Afficher les détails si disponibles
+            const detailsDiv = document.getElementById('details-calcul');
+            if (revision.detail_calcul && revision.detail_calcul.variations_indices) {
+                detailsDiv.classList.remove('hidden');
+            }
+        }
+
+        // Afficher les détails du calcul
+        function afficherDetailsCalcul(detailCalcul) {
+            const tableau = document.getElementById('tableau-indices');
+            tableau.innerHTML = '';
+            
+            const variations = detailCalcul.variations_indices;
+            
+            for (const [code, details] of Object.entries(variations)) {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-[#4B5563]';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3 text-sm text-gray-300">${code}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-right">${details.indice_base.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-right">${details.indice_courant.toFixed(2)}</td>
+                    <td class="px-4 py-3 text-sm text-right ${details.variation >= 0 ? 'text-green-400' : 'text-red-400'}">
+                        ${(details.variation * 100).toFixed(2)}%
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-300 text-right">${(details.coefficient * 100).toFixed(1)}%</td>
+                    <td class="px-4 py-3 text-sm text-right ${details.contribution >= 0 ? 'text-green-400' : 'text-red-400'}">
+                        ${(details.contribution * 100).toFixed(3)}%
+                    </td>
+                `;
+                
+                tableau.appendChild(row);
+            }
+            
+            // Ajouter une ligne de total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'bg-[#2C3E50] font-bold';
+            
+            totalRow.innerHTML = `
+                <td colspan="4" class="px-4 py-3 text-sm text-gray-300 text-right">Total variation:</td>
+                <td colspan="2" class="px-4 py-3 text-sm text-cyan-400 text-right">
+                    ${(detailCalcul.total_variation * 100).toFixed(3)}%
+                </td>
+            `;
+            tableau.appendChild(totalRow);
+            
+            // Ajouter la ligne du coefficient K
+            const kRow = document.createElement('tr');
+            kRow.className = 'bg-[#2C3E50] font-bold';
+            
+            kRow.innerHTML = `
+                <td colspan="4" class="px-4 py-3 text-sm text-gray-300 text-right">Coefficient K:</td>
+                <td colspan="2" class="px-4 py-3 text-sm text-cyan-400 text-right">
+                    ${(detailCalcul.coefficient_K * 100).toFixed(1)}%
+                </td>
+            `;
+            tableau.appendChild(kRow);
+            
+            // Ajouter la ligne de variation finale
+            const finalRow = document.createElement('tr');
+            finalRow.className = 'bg-[#2C3E50] font-bold border-t border-[#4B5563]';
+            
+            finalRow.innerHTML = `
+                <td colspan="4" class="px-4 py-3 text-sm text-gray-300 text-right">Variation finale:</td>
+                <td colspan="2" class="px-4 py-3 text-sm ${detailCalcul.variation_finale >= 0 ? 'text-green-400' : 'text-red-400'} font-bold text-right">
+                    ${(detailCalcul.variation_finale * 100).toFixed(3)}%
+                </td>
+            `;
+            tableau.appendChild(finalRow);
+        }
+
+        // Synchroniser les champs taux et montant
+        function synchroniserChampsRevision() {
+            const tauxInput = document.getElementById('taux-manuel');
+            const montantInput = document.getElementById('montant-manuel');
+            const montantRevisable = revisionEnCours?.montant_HT_revisable || 0;
+            
+            if (!tauxInput || !montantInput) return;
+            
+            const taux = parseFloat(tauxInput.value) || 0;
+            const montant = parseFloat(montantInput.value) || 0;
+            
+            // Si le taux change, mettre à jour le montant
+            if (document.activeElement === tauxInput && montantRevisable > 0) {
+                const nouveauMontant = montantRevisable * (taux / 100);
+                montantInput.value = formatMontantInput(nouveauMontant);
+            }
+            // Si le montant change, mettre à jour le taux
+            else if (document.activeElement === montantInput && montantRevisable > 0) {
+                const nouveauTaux = (montant / montantRevisable) * 100;
+                tauxInput.value = formatTauxInput(nouveauTaux);
+            }
+        }
+
+        // Appliquer la révision au décompte
+        function appliquerRevision() {
+            const tauxInput = document.getElementById('taux-manuel');
+            const montantInput = document.getElementById('montant-manuel');
+            const motifInput = document.getElementById('motif-ajustement');
+            
+            const taux = parseFloat(tauxInput.value) || 0;
+            const montant = parseFloat(montantInput.value) || 0;
+            const motif = motifInput.value;
+            
+            // Validation
+            if (montant === 0 && taux === 0) {
+                afficherMessage('Veuillez saisir un taux ou un montant de révision.', 'warning');
+                return;
+            }
+            
+            // Désactiver le bouton pour éviter les doubles clics
+            const btnAppliquer = document.getElementById('appliquer-revision-btn');
+            btnAppliquer.disabled = true;
+            btnAppliquer.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Application...';
+            
+            // Envoyer les données au serveur
+            fetch(`/api/decomptes/${decompteId}/revision/valider/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    taux_revision_valide: taux,
+                    montant_revision_valide: montant,
+                    motif_ajustement: motif
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    afficherMessage('Révision appliquée avec succès !', 'success');
+                    
+                    // Mettre à jour le champ de formulaire principal
+                    const champRevision = document.getElementById('{{ form.montant_revision_prix.id_for_label }}');
+                    if (champRevision) {
+                        champRevision.value = montant;
+                    }
+                    
+                    // Fermer le modal après un délai
+                    setTimeout(() => {
+                        fermerModalRevision();
+                        // Rafraîchir la page pour voir les changements
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    throw new Error(data.message || 'Erreur inconnue');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                afficherMessage('Erreur lors de l\'application de la révision: ' + error.message, 'error');
+            })
+            .finally(() => {
+                // Réactiver le bouton
+                btnAppliquer.disabled = false;
+                btnAppliquer.innerHTML = '<i class="fas fa-check"></i> Appliquer au décompte';
+            });
+        }
+
+        // Réinitialiser le formulaire de révision
+        function reinitialiserFormulaireRevision() {
+            const tauxInput = document.getElementById('taux-manuel');
+            const montantInput = document.getElementById('montant-manuel');
+            const motifInput = document.getElementById('motif-ajustement');
+            
+            if (tauxInput) tauxInput.value = '';
+            if (montantInput) montantInput.value = '';
+            if (motifInput) motifInput.value = '';
+            
+            revisionEnCours = null;
+        }
+
+        // Fonctions utilitaires
+        function formatMontant(montant) {
+            return parseFloat(montant).toLocaleString('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatTaux(taux) {
+            return parseFloat(taux).toLocaleString('fr-FR', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+
+        function formatMontantInput(montant) {
+            return parseFloat(montant).toFixed(2);
+        }
+
+        function formatTauxInput(taux) {
+            return parseFloat(taux).toFixed(2);
+        }
+
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        }
+
+        function afficherMessage(message, type) {
+            // Créer un élément de message
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-600 text-white' :
+                type === 'error' ? 'bg-red-600 text-white' :
+                type === 'warning' ? 'bg-amber-600 text-white' :
+                'bg-blue-600 text-white'
+            }`;
+            
+            messageDiv.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(messageDiv);
+            
+            // Supprimer automatiquement après 5 secondes
+            setTimeout(() => {
+                if (messageDiv.parentElement) {
+                    messageDiv.remove();
+                }
+            }, 5000);
+        }
+    </script>
+    
+    
 </body>
 </html>

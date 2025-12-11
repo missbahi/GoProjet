@@ -2,72 +2,21 @@
 
 from django.urls import path
 from .views import views
-from .views import notifications
+from .views import notifications, revision
 
 app_name = "projets"
 
-urlpatterns = [
+commun_urlpatterns = [
     # Home
     path('', views.home, name='home'),
-
-    # Gestion des projets
-    path('projets/', views.liste_projets, name='liste_projets'),
-    path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
-    
-    path('projet/<int:projet_id>/supprimer/', views.supprimer_projet, name='supprimer_projet'),
-    
-    path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),
-    
-    path('projets/ajouter_projet_modal/', views.ajouter_projet_modal, name='ajouter_projet_modal'),
-    path('modifier_projet_modal/<int:projet_id>/', views.modifier_projet_modal, name='modifier_projet_modal'),
-    
-    # Gestion des lots et du bordereau des prix
-    path('projet/<int:projet_id>/lots/', views.lots_projet, name='lots_projet'),
-    path('projet/<int:projet_id>/lot/<int:lot_id>/modifier/', views.modifier_lot, name='modifier_lot'),
-    path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', views.supprimer_lot, name='supprimer_lot'),
-    path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', views.saisie_bordereau, name='saisie_bordereau'),
-    path('api/lot/<int:lot_id>/save/', views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
-        
     # Apropos et base de données
     path('apropos/', views.apropos, name='apropos'),
-    path('base-donnees/', views.base_donnees, name='base_donnees'),
-    
-    # Gestion des utilisateurs
-    path('utilisateurs/', views.liste_utilisateurs, name='liste_utilisateurs'),
-    path('utilisateurs/ajouter/', views.ajouter_utilisateur, name='ajouter_utilisateur'),
-    path('utilisateurs/modifier/<int:user_id>/', views.modifier_utilisateur, name='modifier_utilisateur'),
-    path('utilisateurs/supprimer/<int:user_id>/', views.supprimer_utilisateur, name='supprimer_utilisateur'),
-    path('utilisateurs/<int:user_id>/gerer-projets/', views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
-    
-    # Gestion du profil utilisateur
-    path('modal/profile/', views.profile_modal, name='profile_modal'),
-    path('modal/password/', views.password_modal, name='password_modal'),
-    path('profile/update/', views.profile_update, name='profile_update'),
-    path('profile/change-password/', views.password_change, name='password_change'),
-    path('media/avatars/<str:filename>', views.serve_avatar, name='serve_avatar'),
-    path('modal/avatar-upload/', views.avatar_upload_modal, name='avatar_upload_modal'),
-    path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
-    
+    # Secure download
     path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),    
-        
-    # Gestion des ingénieurs
-    path('ingenieurs/ajouter/', views.ajouter_ingenieur, name='ajouter_ingenieur'),
-    path('ingenieurs/modifier/<int:ingenieur_id>/', views.modifier_ingenieur, name='modifier_ingenieur'),
-    path('ingenieurs/supprimer/<int:ingenieur_id>/', views.supprimer_ingenieur, name='supprimer_ingenieur'),
-    path('base_donnees/ingenieurs/', views.partial_ingenieurs, name='partial_ingenieurs'),
-    
-    # Gestion des entreprises
-    path('entreprises/ajouter/', views.ajouter_entreprise, name='ajouter_entreprise'),
-    path('entreprises/modifier/<int:entreprise_id>/', views.modifier_entreprise, name='modifier_entreprise'),
-    path('entreprises/supprimer/<int:entreprise_id>/', views.supprimer_entreprise, name='supprimer_entreprise'),
-    path('base_donnees/entreprises/', views.partial_entreprises, name='partial_entreprises'),
-    
-    # Gestion des clients
-    path('clients/ajouter/', views.ajouter_client, name='ajouter_client'),
-    path('clients/modifier/<int:client_id>/', views.modifier_client, name='modifier_client'),
-    path('clients/supprimer/<int:client_id>/', views.supprimer_client, name='supprimer_client'),
-    path('base_donnees/clients/', views.partial_clients, name='partial_clients'),
-    
+    # API pour lister les taches 
+    path('api/get-form-data/', views.get_form_data, name='get_form_data'),
+]
+suivi_urlpatterns = [
     # Gestion des documents
     path('projet/<int:projet_id>/documents/', views.documents_projet, name='documents'), 
     path('projet/<int:projet_id>/documents/supprimer/<int:document_id>/', views.supprimer_document, name='supprimer_document'),
@@ -86,25 +35,60 @@ urlpatterns = [
     path('fichier_suivi/<int:fichier_id>/telecharger/', views.telecharger_fichier_suivi, name='telecharger_fichier_suivi'),
     path('fichier_suivi/<int:fichier_id>/supprimer/', views.supprimer_fichier_suivi, name='supprimer_fichier_suivi'),
     path('projet/<int:projet_id>/suivi/<int:suivi_id>/fichiers/ajouter/', views.ajouter_fichier_suivi, name='ajouter_fichier_suivi'),
+]
+projets_urlpatterns = [
+     # Gestion des projets
+    path('projets/', views.liste_projets, name='liste_projets'),
+    path('projets/liste_projets/', views.liste_projets, name='liste_projets'),
+    path('projet/<int:projet_id>/supprimer/', views.supprimer_projet, name='supprimer_projet'),
+    path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),
+    path('projets/ajouter_projet_modal/', views.ajouter_projet_modal, name='ajouter_projet_modal'),
+    path('modifier_projet_modal/<int:projet_id>/', views.modifier_projet_modal, name='modifier_projet_modal'),
+    # Gestion des lots et du bordereau des prix
+    path('projet/<int:projet_id>/lots/', views.lots_projet, name='lots_projet'),
+    path('projet/<int:projet_id>/lots/details/', views.lots_details, name='lots_details'),
+    path('projet/<int:projet_id>/lot/<int:lot_id>/modifier/', views.modifier_lot, name='modifier_lot'),
+    path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', views.supprimer_lot, name='supprimer_lot'),
+    path('api/projet/lots/<int:projet_id>/export-excel/', views.export_excel, name='export_excel'),
+    path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', views.saisie_bordereau, name='saisie_bordereau'),
+    path('api/lot/<int:lot_id>/save/', views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
+]
+base_donnees_urlpatterns = [
+     path('base-donnees/', views.base_donnees, name='base_donnees'),
+    # Gestion des ingénieurs
+    path('ingenieurs/ajouter/', views.ajouter_ingenieur, name='ajouter_ingenieur'),
+    path('ingenieurs/modifier/<int:ingenieur_id>/', views.modifier_ingenieur, name='modifier_ingenieur'),
+    path('ingenieurs/supprimer/<int:ingenieur_id>/', views.supprimer_ingenieur, name='supprimer_ingenieur'),
+    path('base_donnees/ingenieurs/', views.partial_ingenieurs, name='partial_ingenieurs'),
     
-    # API pour lister les taches 
-    path('api/get-form-data/', views.get_form_data, name='get_form_data'),
+    # Gestion des entreprises
+    path('entreprises/ajouter/', views.ajouter_entreprise, name='ajouter_entreprise'),
+    path('entreprises/modifier/<int:entreprise_id>/', views.modifier_entreprise, name='modifier_entreprise'),
+    path('entreprises/supprimer/<int:entreprise_id>/', views.supprimer_entreprise, name='supprimer_entreprise'),
+    path('base_donnees/entreprises/', views.partial_entreprises, name='partial_entreprises'),
     
-    # Gestion des taches
+    # Gestion des clients
+    path('clients/ajouter/', views.ajouter_client, name='ajouter_client'),
+    path('clients/modifier/<int:client_id>/', views.modifier_client, name='modifier_client'),
+    path('clients/supprimer/<int:client_id>/', views.supprimer_client, name='supprimer_client'),
+    path('base_donnees/clients/', views.partial_clients, name='partial_clients'),
+]
+tache_urlpatterns = [
+     # Gestion des taches
     path('taches/', views.ListeTachesView.as_view(), name='liste_taches'),
     path('taches/nouvelle/', views.CreerTacheView.as_view(), name='creer_tache'),
     path('taches/<int:pk>/modifier/', views.ModifierTacheView.as_view(), name='modifier_tache'),
     path('taches/<int:pk>/supprimer/', views.SupprimerTacheView.as_view(), name='supprimer_tache'),
-    path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'),
-     
-    # Attachements au niveau du PROJET (pas du lot) 
+    path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'), 
+]
+attachement_urlpatterns = [
+      # Attachements au niveau du PROJET (pas du lot) 
     path('projet/<int:projet_id>/attachements/', views.liste_attachements, name='liste_attachements'),
     path('projet/<int:projet_id>/attachements/ajouter/', views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', views.modifier_attachement, name='modifier_attachement'),
     path('attachements/<int:attachement_id>/', views.detail_attachement, name='detail_attachement'),
     path('attachements/supprimer/<int:attachement_id>/', views.supprimer_attachement, name='supprimer_attachement'),
     path('attachements/<int:attachement_id>/ajouter_decompte/', views.attachements_ajouter_decompte, name='attachements_ajouter_decompte'),
-    
     # validation processus
     path('attachement/<int:attachement_id>/validation/', views.validation_attachement, name='validation_attachement'),
     path('attachement/<int:attachement_id>/reouvrir/', views.reouvrir_attachement, name='reouvrir_attachement'),
@@ -116,7 +100,6 @@ urlpatterns = [
     path('etape/<int:etape_id>/reinitialiser/', views.reinitialiser_etape,  name='reinitialiser_etape'),
     path('etape/<int:etape_id>/supprimer/', views.supprimer_etape, name='supprimer_etape'),
     path('processus/<int:process_id>/ajouter_etape/', views.ajouter_etape, name='ajouter_etape'),
-    
     # Décomptes
     path('projet/<int:projet_id>/decomptes/', views.liste_decomptes, name='liste_decomptes'),
     path('projet/<int:projet_id>/decomptes/ajouter/', views.projet_ajouter_decompte, name='projet_ajouter_decompte'),
@@ -124,11 +107,43 @@ urlpatterns = [
     path('decompte/<int:decompte_id>/modifier/', views.modifier_decompte, name='modifier_decompte'),
     path('decompte/<int:decompte_id>/supprimer/', views.supprimer_decompte, name='supprimer_decompte'),
     path('decompte/<int:decompte_id>/calcul-retard/', views.calcul_retard_decompte, name='calcul_retard_decompte'),
-    
     # Fiche de contrôle
     path('projet/<int:projet_id>/fiche-contrle/', views.fiche_controle, name='fiche_controle'),
-    
-    # Ordres de service
+]
+utilisateur_urlpatterns = [
+     # Gestion du profil utilisateur
+    path('modal/profile/', views.profile_modal, name='profile_modal'),
+    path('modal/password/', views.password_modal, name='password_modal'),
+    path('profile/update/', views.profile_update, name='profile_update'),
+    path('profile/change-password/', views.password_change, name='password_change'),
+    path('media/avatars/<str:filename>', views.serve_avatar, name='serve_avatar'),
+    path('modal/avatar-upload/', views.avatar_upload_modal, name='avatar_upload_modal'),
+    path('upload-avatar/', views.upload_avatar, name='upload_avatar'),
+    # Gestion des utilisateurs
+    path('utilisateurs/', views.liste_utilisateurs, name='liste_utilisateurs'),
+    path('utilisateurs/ajouter/', views.ajouter_utilisateur, name='ajouter_utilisateur'),
+    path('utilisateurs/modifier/<int:user_id>/', views.modifier_utilisateur, name='modifier_utilisateur'),
+    path('utilisateurs/supprimer/<int:user_id>/', views.supprimer_utilisateur, name='supprimer_utilisateur'),
+    path('utilisateurs/<int:user_id>/gerer-projets/', views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
+]
+# revision_urlpatterns = [
+#     # API de révision des prix
+#     path('api/decomptes/<int:decompte_id>/revision/', revision.revision_detail, name='api_revision_detail'),
+#     path('api/decomptes/<int:decompte_id>/revision/calculer/', revision.calculer_revision, name='api_calculer_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/valider/',  revision.valider_revision, name='api_valider_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/rejeter/', revision.rejeter_revision, name='api_rejeter_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/historique/', revision.historique_revision, name='api_historique_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/simuler/', revision.simuler_revision, name='api_simuler_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/rapport/', revision.rapport_revision, name='api_rapport_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/export/csv/', revision.exporter_revision_csv, name='api_export_revision_csv'),
+#     # API des indices
+#     path('api/indices/disponibles/', revision.indices_disponibles,  name='api_indices_disponibles'),
+#     path('api/decomptes/<int:decompte_id>/indices/disponibles/', revision.indices_disponibles, name='api_indices_disponibles_decompte'),
+#     # Santé des API
+#     path('api/health/', revision.api_health_check, name='api_health_check'),
+# ]
+os_urlpatterns = [
+     
     path('projet/<int:projet_id>/ordres-service/', views.ordres_service , name='ordres_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/modifier/', views.modifier_ordre_service, name='modifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/supprimer/', views.supprimer_ordre_service, name='supprimer_ordre_service'),
@@ -136,8 +151,9 @@ urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/notifier/', views.notifier_ordre_service, name='notifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', views.annuler_ordre_service, name='annuler_ordre_service'),
     path('api/projets/<int:projet_id>/jours-decoules/', views.api_jours_decoules, name='api_jours_decoules'),
-    
-    # Gestion des notifications
+]
+notifications_urlpatterns = [
+     # Gestion des notifications
     path('notifications/', notifications.liste_notifications, name='liste_notifications'),
     path('notifications/marquer-lue/<int:notification_id>/', 
          notifications.mark_notification_as_read, name='mark_notification_as_read'),
@@ -145,12 +161,10 @@ urlpatterns = [
          notifications.mark_notification_as_unread, name='mark_notification_as_unread'),
     path('notifications/supprimer/<int:notification_id>/', 
          notifications.delete_notification, name='delete_notification'),
-    
-    # Actions groupées
+    # Actions sur plusieurs notifications
     path('notifications/marquer-selection-lues/', notifications.mark_selected_as_read, name='mark_selected_as_read'),
     path('notifications/supprimer-selection/', notifications.delete_selected_notifications, name='delete_selected_notifications'),
     path('notifications/supprimer-toutes-lues/', notifications.delete_all_read_notifications, name='delete_all_read_notifications'),
-    path ('nitifications/creer-notification/', notifications.creer_notification, name='creer_notification'),
     # Actions globales
     path('notifications/marquer-toutes-lues/', notifications.mark_all_notifications_as_read, name='mark_all_notifications_as_read'),
     path('notifications/supprimer-toutes/', notifications.delete_all_notifications, name='delete_all_notifications'),
@@ -158,10 +172,22 @@ urlpatterns = [
     path('api/projets/<int:projet_id>/notification-data/', notifications.notification_data_api, name='notification_data_api' ),
     path('api/notifications/non-lues/', notifications.notifications_non_lues_api, name='notifications_non_lues_api'),
     path('api/notifications/<int:notification_id>/marquer-lue/',notifications.marquer_notification_lue, name='marquer_notification_lue'),
-    
     # Vue de création
-    path('notifications/creer/', notifications.creer_notification, name='creer_notification'),
- ] 
+    path('notifications/creer/', notifications.creer_notification, name='creer_notification'), 
+]
 
+
+# urlpatterns
+
+urlpatterns = commun_urlpatterns 
+urlpatterns += suivi_urlpatterns
+urlpatterns += projets_urlpatterns
+urlpatterns += base_donnees_urlpatterns
+urlpatterns += tache_urlpatterns
+urlpatterns += attachement_urlpatterns
+urlpatterns += utilisateur_urlpatterns
+# urlpatterns += revision_urlpatterns
+urlpatterns += os_urlpatterns
+urlpatterns += notifications_urlpatterns
 
 

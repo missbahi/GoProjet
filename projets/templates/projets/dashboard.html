@@ -355,7 +355,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
 
         <!-- Lot et Bordereaux -->
-        {% if can_handler %}
+        
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-cubes"></i>
@@ -363,23 +363,40 @@
           <h4 class="module-title">Lots et Bordereaux</h4>
           <p class="module-description">Gérez les lots du projet et les bordereaux des prix unitaires</p>
           <div class="module-actions">
-            {% if lots %}
-            <a href="{% url 'projets:lots_projet' projet.id %}" 
-               class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-arrow-right"></i>
-              <span>Accéder</span>
-            </a>
+            {% if can_handler %}
+              {% if lots %}
+              <a href="{% url 'projets:lots_projet' projet.id %}" 
+                class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-arrow-right"></i>
+                <span>Accéder</span>
+              </a>
+              {% else %}
+              <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
+              <a href="{% url 'projets:lots_projet' projet.id %}" 
+                class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                  <i class="fas fa-plus"></i>
+                  <span>Créer un premier lot</span>
+              </a>
+              {% endif %}
             {% else %}
-            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
-            <a href="{% url 'projets:lots_projet' projet.id %}" 
-               class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-                <i class="fas fa-plus"></i>
-                <span>Créer un premier lot</span>
-            </a>
+              {% if lots %}
+                <a href="{% url 'projets:lots_details' projet.id %}" 
+                  class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                  <i class="fas fa-arrow-right"></i>
+                  <span>Accéder</span>
+                </a>
+              {% else %}
+                <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
+                <a href="" 
+                  class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                    <i class="fas fa-plus"></i>
+                    <span>Créer un premier lot</span>
+                </a>
+              {% endif %}
             {% endif %}
           </div>
         </div>
-        {% endif %}
+        
 
         <!-- Documents -->
         <div class="module-card group">
@@ -397,10 +414,10 @@
           </div>
           {% else %}
           <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de documents administratifs pour ce projet</p>
-          <a href="{% url 'projets:documents' projet.id %}" 
-             class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+          <a href="" 
+             class="btn-desactive w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-plus"></i>
-              <span>Ajouter un premier document</span>
+              <span class="text-gray-200">Accéder</span>
           </a>
           {% endif %}
         </div>
