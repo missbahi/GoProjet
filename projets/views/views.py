@@ -68,15 +68,17 @@ def upload_to_cloudinary(fichier, folder):
             print(f"DEBUG - Cloudinary config:")
             print(f"  cloud_name: '{settings.CLOUDINARY_CLOUD_NAME}'")
             print(f"  api_key: '{settings.CLOUDINARY_API_KEY[:8]}...'")
-            print(f"  api_secret: {'*' * len(settings.CLOUDINARY_API_SECRET)}")
+            print(f"  api_secret: {settings.CLOUDINARY_API_SECRET[:2]}...'" )
             cloud_name = settings.CLOUDINARY_CLOUD_NAME
-            if cloud_name.startswith('='):
-                print(f"⚠️  ATTENTION: cloud_name commence par '=': '{cloud_name}'")
+            cleaned_cloud_name = clean_cloudinary_value(cloud_name)
+            if clean_cloudinary_value and cloud_name != cleaned_cloud_name:
+                print(f"⚠️  ATTENTION: cloud_name contient des caracteres additionnels: '{cloud_name}'")
                 # Corriger immédiatement
-                cloud_name = cloud_name[1:].strip()
+                cloud_name = cleaned_cloud_name
                 print(f"✅ Corrigé en: '{cloud_name}'")
                 settings.CLOUDINARY_CLOUD_NAME = cloud_name
                 settings.save()
+
             # Faire l'upload
             upload_result = cloudinary.uploader.upload(
                 file_content,
@@ -103,6 +105,26 @@ def upload_to_cloudinary(fichier, folder):
             raise
     
     return None        
+def clean_cloudinary_value(value):
+    """Nettoie la valeur Cloudinary des caractères indésirables"""
+    if not value:
+        return ""
+    
+    # 1. Supprimer tous les espaces
+    value = value.strip()
+    
+    # 2. Supprimer le signe = et les espaces avant/après
+    # Gère: "=ddfqmth4q", " =ddfqmth4q", "= ddfqmth4q", etc.
+    if value.startswith('='):
+        value = value[1:].strip()
+    
+    # 3. Supprimer les guillemets
+    value = value.strip('"\'')
+    
+    # 4. DEBUG
+    print(f"🔧 Nettoyage: '{value}' (original: '{os.environ.get('CLOUDINARY_CLOUD_NAME', '')}')")
+    
+    return value
 def get_file_field(instance):
     return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
