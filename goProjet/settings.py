@@ -4,6 +4,7 @@ Django settings for goProjet project.
 
 import os
 from pathlib import Path
+import re
 from dotenv import load_dotenv  # Nouveau
 
 # --- 1. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ---
@@ -143,14 +144,33 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- 12. CONFIGURATION CLOUDINARY POUR LE LOCAL ---
+# --- 12. CONFIGURATION CLOUDINARY ---
 
+def sanitize_cloudinary_credential(value):
+    """
+    Nettoie une credential Cloudinary.
+    Supprime les espaces, signes =, guillemets au début.
+    """
+    if value is None:
+        return ""
+    
+    value = str(value)
+    
+    # Étape 1: Supprimer les espaces
+    value = value.strip()
+    
+    # Étape 2: Supprimer les guillemets
+    value = value.strip('"\'')
+    
+    # Étape 3: Supprimer tout caractère non alphanumérique au début
+    # Cela supprime =, espaces, etc.
+    value = re.sub(r'^[^a-zA-Z0-9]+', '', value)
+    
+    return value
 # Récupération des credentials Cloudinary
-CLOUDINARY_CLOUD_NAME = os.environ.get('CLOUDINARY_CLOUD_NAME')
-CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
-CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
-
-
+CLOUDINARY_CLOUD_NAME = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_CLOUD_NAME'))
+CLOUDINARY_API_KEY = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_API_KEY'))
+CLOUDINARY_API_SECRET = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_API_SECRET'))
 # Vérification si Cloudinary est configuré
 USE_CLOUDINARY = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
 
@@ -166,7 +186,7 @@ if USE_CLOUDINARY:
         'STATIC_IMAGES': False,  # Important pour les fichiers non-images
         'STATIC_FILE_SUPPORT': True,  # Important pour les documents
     }
-    
+    print('cloudinary name :', CLOUDINARY_STORAGE['CLOUD_NAME'])
     # Stockage par défaut Cloudinary
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     

@@ -67,18 +67,7 @@ def upload_to_cloudinary(fichier, folder):
             from django.conf import settings
             print(f"DEBUG - Cloudinary config:")
             print(f"  cloud_name: '{settings.CLOUDINARY_CLOUD_NAME}'")
-            print(f"  api_key: '{settings.CLOUDINARY_API_KEY[:8]}...'")
-            print(f"  api_secret: {settings.CLOUDINARY_API_SECRET[:2]}...'" )
-            cloud_name = settings.CLOUDINARY_CLOUD_NAME
-            cleaned_cloud_name = clean_cloudinary_value(cloud_name)
-            if clean_cloudinary_value and cloud_name != cleaned_cloud_name:
-                print(f"⚠️  ATTENTION: cloud_name contient des caracteres additionnels: '{cloud_name}'")
-                # Corriger immédiatement
-                cloud_name = cleaned_cloud_name
-                print(f"✅ Corrigé en: '{cloud_name}'")
-                settings.CLOUDINARY_CLOUD_NAME = cloud_name
-                settings.save()
-
+    
             # Faire l'upload
             upload_result = cloudinary.uploader.upload(
                 file_content,
