@@ -54,20 +54,6 @@ VIEWABLE_TYPES = {
         '.html': 'text/html',
         '.htm': 'text/html',
     }
-def upload_file_to_cloudinary(instance, file, folder):
-    try: 
-        if getattr(settings, 'USE_CLOUDINARY', False):
-        # Upload vers Cloudinary
-            upload_result = cloudinary.uploader.upload(
-                file,
-                folder=folder,
-                resource_type="raw"
-            )
-            instance.fichier = upload_result['public_id']
-            return True
-    except Exception as e:
-        print(f"Erreur lors de l'upload du fichier vers Cloudinary: {e}")
-        return False
 
 def upload_to_cloudinary(fichier, folder):
     """Upload un fichier vers Cloudinary avec retry et fallback"""
@@ -78,7 +64,20 @@ def upload_to_cloudinary(fichier, folder):
             # Pour Railway: lire tout le fichier en mémoire
             fichier.seek(0)  # S'assurer qu'on est au début
             file_content = fichier.read()
-            
+            from django.conf import settings
+            print(f"DEBUG - Cloudinary config:")
+            print(f"  cloud_name: '{settings.CLOUDINARY_CLOUD_NAME}'")
+            print(f"  api_key: '{settings.CLOUDINARY_API_KEY[:8]}...'")
+            print(f"  api_secret: {'*' * len(settings.CLOUDINARY_API_SECRET)}")
+            cloud_name = settings.CLOUDINARY_CLOUD_NAME
+            if cloud_name.startswith('='):
+                print(f"⚠️  ATTENTION: cloud_name commence par '=': '{cloud_name}'")
+                # Corriger immédiatement
+                cloud_name = cloud_name[1:].strip()
+                print(f"✅ Corrigé en: '{cloud_name}'")
+                settings.CLOUDINARY_CLOUD_NAME = cloud_name
+                settings.save()
+            # Faire l'upload
             upload_result = cloudinary.uploader.upload(
                 file_content,
                 folder=folder,
