@@ -55,45 +55,74 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
-def upload_to_cloudinary(fichier, folder):
+def upload_to_cloudinary(file, folder):
     """Upload un fichier vers Cloudinary avec retry et fallback"""
-    max_retries = 3
-    import time
-    for attempt in range(max_retries):
-        try:
-            # Pour Railway: lire tout le fichier en mémoire
-            fichier.seek(0)  # S'assurer qu'on est au début
-            file_content = fichier.read()
-            from django.conf import settings
-            print(f"DEBUG - Cloudinary config:")
-            print(f"  cloud_name: '{settings.CLOUDINARY_CLOUD_NAME}'")
+    # max_retries = 3
+    # import time
+    # for attempt in range(max_retries):
+    #     try:
+    #         # Pour Railway: lire tout le fichier en mémoire
+    #         fichier.seek(0)  # S'assurer qu'on est au début
+    #         from django.conf import settings
+    import cloudinary
+    # import cloudinary.uploader
     
-            # Faire l'upload
-            upload_result = cloudinary.uploader.upload(
-                file_content,
-                folder=folder,
-                resource_type="raw",
-                timeout=90,
-                chunk_size=1000000,  # 1MB chunks
-                use_filename=True,
-                unique_filename=True,
-                overwrite=False,
-            )
-            
-            logger.info(f"Upload réussi: {upload_result['public_id']}")
-            return upload_result['public_id']
-            
-        except cloudinary.exceptions.Error as e:
-            logger.warning(f"Tentative {attempt + 1} échouée: {e}")
-            if attempt == max_retries - 1:
-                raise
-            time.sleep(2 ** attempt)  # Backoff exponentiel
-            
-        except Exception as e:
-            logger.error(f"Erreur inattendue: {e}")
-            raise
+    # Récupérer et FORCER le nettoyage
+    cloud_name = settings.CLOUDINARY_CLOUD_NAME
     
-    return None        
+    # Nettoyage agressif
+    def force_clean(value):
+        import re
+        value = str(value).strip()
+        
+        # Supprimer tout sauf lettres et chiffres
+        cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value))
+        return cleaned
+    
+    cloud_name_clean = force_clean(cloud_name)
+    
+    print(f"DEBUG: cloud_name original: '{cloud_name}'")
+    print(f"DEBUG: cloud_name nettoyé: '{cloud_name_clean}'")
+    try:
+        # Méthode 1: Configurer AVANT d'importer uploader
+        cloudinary.config(
+            cloud_name=cloud_name_clean,
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET,
+            secure=True
+        )
+        upload_result = cloudinary.uploader.upload(
+            file.read(),
+            **{
+                'cloud_name': cloud_name_clean,
+                'api_key': settings.CLOUDINARY_API_KEY,
+                'api_secret': settings.CLOUDINARY_API_SECRET,
+                'folder': folder,
+                'resource_type': 'raw',
+                'use_filename': True,
+                'unique_filename': True,
+            }
+        )
+        
+        return upload_result['public_id']
+    except cloudinary.exceptions.Error as e:
+        print(f"Erreur Cloudinary: {e}")
+        logger.warning(f"Erreur Cloudinary: {e}")
+        
+        #     logger.info(f"Upload réussi: {upload_result['public_id']}")
+        #     return upload_result['public_id']
+            
+        # except cloudinary.exceptions.Error as e:
+        #     logger.warning(f"Tentative {attempt + 1} échouée: {e}")
+        #     if attempt == max_retries - 1:
+        #         raise
+        #     time.sleep(2 ** attempt)  # Backoff exponentiel
+            
+        # except Exception as e:
+        #     logger.error(f"Erreur inattendue: {e}")
+        #     raise
+    
+    # return None        
 def clean_cloudinary_value(value):
     """Nettoie la valeur Cloudinary des caractères indésirables"""
     if not value:
