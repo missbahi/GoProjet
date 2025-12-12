@@ -500,20 +500,23 @@
                 </div>
                 {% endif %}
                 <!-- Deduire Montant HT Precedent -->
+                 {% if montant_ht_precedent > 0 %}
                 <div class="facture-ligne">
                     <span class="facture-libelle text-gray-500">Déduire situation précedente HT</span>
                     <span class="facture-montant text-gray-500">- {{ montant_ht_precedent|format_quantity }} DH</span>
                 </div>
                 <!-- Ligne de séparation -->
                 <div class="ligne-separation"></div>
+                
                 <div class="facture-ligne">
                     <span class="facture-libelle">Total situation HT</span>
                     <span class="facture-montant text-white">{{ montant_t_ht|format_quantity }} DH</span>
                 </div>
+                {% endif %}
                 <!-- TVA -->
                 <div class="facture-ligne">
                     <span class="facture-libelle  text-amber-400">TVA ({{ decompte.taux_tva }}%)</span>
-                    <span class="facture-montant text-amber-400">- {{ tva|format_quantity }} DH</span>
+                    <span class="facture-montant text-amber-400">{{ tva|format_quantity }} DH</span>
                 </div>
                 <!-- Ligne de séparation -->
                 <div class="ligne-separation"></div>
@@ -534,7 +537,7 @@
                     <span class="facture-montant text-red-400">- {{ ras|format_quantity }} DH</span>
                 </div>
                 {% endif %}
-                {% if autres_retenues != 0 %}
+                {% if autres_retenues > 0 %}
                 <div class="facture-ligne">
                     <span class="facture-libelle text-red-400">Autres déductions TTC</span>
                     <span class="facture-montant text-red-400">- {{ autres_retenues|format_quantity }} DH</span>

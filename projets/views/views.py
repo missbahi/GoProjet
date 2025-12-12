@@ -55,22 +55,10 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
-def upload_to_cloudinary(file, folder):
+def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
     """Upload un fichier vers Cloudinary avec retry et fallback"""
-    # max_retries = 3
-    # import time
-    # for attempt in range(max_retries):
-    #     try:
-    #         # Pour Railway: lire tout le fichier en mémoire
-    #         fichier.seek(0)  # S'assurer qu'on est au début
-    #         from django.conf import settings
-    import cloudinary
-    # import cloudinary.uploader
-    
-    # Récupérer et FORCER le nettoyage
+
     cloud_name = settings.CLOUDINARY_CLOUD_NAME
-    
-    # Nettoyage agressif
     def force_clean(value):
         import re
         value = str(value).strip()
@@ -80,9 +68,6 @@ def upload_to_cloudinary(file, folder):
         return cleaned
     
     cloud_name_clean = force_clean(cloud_name)
-    
-    print(f"DEBUG: cloud_name original: '{cloud_name}'")
-    print(f"DEBUG: cloud_name nettoyé: '{cloud_name_clean}'")
     try:
         # Méthode 1: Configurer AVANT d'importer uploader
         cloudinary.config(
@@ -91,6 +76,8 @@ def upload_to_cloudinary(file, folder):
             api_secret=settings.CLOUDINARY_API_SECRET,
             secure=True
         )
+        if public_id is None:
+            public_id = file.name
         upload_result = cloudinary.uploader.upload(
             file.read(),
             **{
@@ -98,51 +85,19 @@ def upload_to_cloudinary(file, folder):
                 'api_key': settings.CLOUDINARY_API_KEY,
                 'api_secret': settings.CLOUDINARY_API_SECRET,
                 'folder': folder,
-                'resource_type': 'raw',
+                'public_id': public_id,
+                'resource_type': ressource_type,
                 'use_filename': True,
                 'unique_filename': True,
             }
         )
-        
         return upload_result['public_id']
+    
     except cloudinary.exceptions.Error as e:
         print(f"Erreur Cloudinary: {e}")
         logger.warning(f"Erreur Cloudinary: {e}")
+        return None
         
-        #     logger.info(f"Upload réussi: {upload_result['public_id']}")
-        #     return upload_result['public_id']
-            
-        # except cloudinary.exceptions.Error as e:
-        #     logger.warning(f"Tentative {attempt + 1} échouée: {e}")
-        #     if attempt == max_retries - 1:
-        #         raise
-        #     time.sleep(2 ** attempt)  # Backoff exponentiel
-            
-        # except Exception as e:
-        #     logger.error(f"Erreur inattendue: {e}")
-        #     raise
-    
-    # return None        
-def clean_cloudinary_value(value):
-    """Nettoie la valeur Cloudinary des caractères indésirables"""
-    if not value:
-        return ""
-    
-    # 1. Supprimer tous les espaces
-    value = value.strip()
-    
-    # 2. Supprimer le signe = et les espaces avant/après
-    # Gère: "=ddfqmth4q", " =ddfqmth4q", "= ddfqmth4q", etc.
-    if value.startswith('='):
-        value = value[1:].strip()
-    
-    # 3. Supprimer les guillemets
-    value = value.strip('"\'')
-    
-    # 4. DEBUG
-    print(f"🔧 Nettoyage: '{value}' (original: '{os.environ.get('CLOUDINARY_CLOUD_NAME', '')}')")
-    
-    return value
 def get_file_field(instance):
     return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
@@ -1247,16 +1202,18 @@ def upload_avatar(request):
             profile = request.user.profile
             
             # Gestion Cloudinary vs stockage local
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                # Upload vers Cloudinary
-                upload_result = cloudinary.uploader.upload(
-                    avatar_file,
-                    folder="avatars",
-                    transformation=[
-                        {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
-                    ]
-                )
-                profile.avatar = upload_result['public_id']
+            if avatar_file and getattr(settings, 'USE_CLOUDINARY', False):
+                # # Upload vers Cloudinary
+                # upload_result = cloudinary.uploader.upload(
+                #     avatar_file,
+                #     folder="avatars",
+                #     transformation=[
+                #         {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
+                #     ]
+                # )
+                public_id = request.user.username + '-' + 'avatar'
+                file_url = upload_to_cloudinary(avatar_file, 'avatars', public_id, 'image')
+                profile.avatar = file_url if file_url else None
             else:
                 # Stockage local classique
                 profile.avatar = avatar_file
@@ -1750,23 +1707,16 @@ def ajouter_document(request, projet_id):
         
         # Créer le document
         try:
-            
-            # Gestion Cloudinary vs local
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                # Upload vers Cloudinary
-                fichier_url = upload_to_cloudinary(fichier, "documents_administratifs")
+            if fichier and getattr(settings, 'USE_CLOUDINARY', False):
+                
                 document = DocumentAdministratif(
                     projet=projet,
                     type_document=type_document,
                     date_remise=date_remise if date_remise else None,
                 )
-                print("upload_result:", fichier_url)
-                # upload_result = cloudinary.uploader.upload(
-                #     fichier,
-                #     folder="documents_administratifs",
-                #     resource_type="raw"
-                # )
-                document.fichier = fichier_url
+                public_id = projet.nom + "_" + type_document + "_" + str(document.id)
+                file_url = upload_to_cloudinary(fichier, "documents_administratifs", public_id)
+                document.fichier = file_url if file_url else None
             else:
                 # Stockage local
                 document.fichier = fichier
@@ -1973,13 +1923,10 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
                 )
                 
                 # Gestion Cloudinary vs local
-                if getattr(settings, 'USE_CLOUDINARY', False):
-                    upload_result = cloudinary.uploader.upload(
-                        fichier,
-                        folder="suivis_execution",
-                        resource_type="raw"
-                    )
-                    fichier_suivi.fichier = upload_result['public_id']
+                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
+                    public_id = projet.nom + f"_{fichier.name}"
+                    file_url = upload_to_cloudinary(fichier, "suivis_execution", public_id)
+                    fichier_suivi.fichier = file_url if file_url else None
                 else:
                     fichier_suivi.fichier = fichier
                     
@@ -2027,7 +1974,6 @@ def liste_attachements(request, projet_id):
     context = {
         'projet': projet,
         'attachements': attachements,
-        # 'USE_CLOUDINARY': getattr(settings, 'USE_CLOUDINARY', False),
     }
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 @login_required
@@ -2048,12 +1994,11 @@ def ajouter_attachement(request, projet_id):
                 # Gestion du fichier avec Cloudinary
                 fichier = request.FILES.get('fichier')
                 if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                    upload_result = cloudinary.uploader.upload(
-                        fichier,
-                        folder="attachements",
-                        resource_type="raw"
-                    )
-                    attachement.fichier = upload_result['public_id']
+                    public_id = projet.nom + f"_{fichier.name}"
+                    file_url = upload_to_cloudinary(fichier, "attachements", public_id)
+                    attachement.fichier = file_url if file_url else None
+                else:
+                    attachement.fichier = fichier
                 attachement.modifie_par = request.user
                 attachement.save()
                 
@@ -2968,11 +2913,6 @@ def detail_decompte(request, decompte_id):
     net_a_payer = montant_t_ttc - rg - ras - autres
     est_revise = revision_prix != 0
     # Calcul des pourcentages pour l'affichage
-    print('TTC', montant_t_ttc)
-    print('RG', rg)
-    print('RAS', ras)
-    print('Autres', autres)
-    print('Net à payer', net_a_payer)
     context = {
         'decompte': decompte,
         'projet': projet,
@@ -3184,37 +3124,31 @@ def ordres_service(request, projet_id):
         
         else:  # Création/Modification
             form = OrdreServiceForm(request.POST, request.FILES, instance=ordre_a_modifier, projet=projet)
-            print('Nous sommes dans le POST de ordres_service')
+
             if form.is_valid():
-                print('Form valid')
+
                 try:
                     ordre = form.save(commit=False)
                     ordre.projet = projet
                     
                     # Gestion des documents avec Cloudinary
-                    fichier_document = request.FILES.get('fichier')
+                    fichier = request.FILES.get('fichier')
                     original_filename = request.POST.get('original_filename')
                     ordre.original_filename = original_filename
-                    if fichier_document:
+                    if fichier:
                         if getattr(settings, 'USE_CLOUDINARY', False):
-                            upload_result = cloudinary.uploader.upload(
-                                fichier_document,
-                                folder="ordres_services",
-                                resource_type="raw"
-                            )
-                            ordre.fichier = upload_result['public_id']
+                            public_id = f"{projet.nom}_{ordre.reference}"
+                            file_url = upload_to_cloudinary(fichier, 'ordres_services', public_id)
+                            ordre.fichier = file_url if file_url else None
                         else:
-                            ordre.fichier = fichier_document
+                            ordre.fichier = fichier
                             ordre.original_filename = original_filename
                     if not ordre_a_modifier: # Création 
                         ordre.statut = 'BROUILLON'
                         
                     if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
-                        print("Suppression du document")
                         if ordre.fichier:
                             if getattr(settings, 'USE_CLOUDINARY', False):
-                                # delete_cloudinary_file(ordre.fichier)
-                                print("Suppression Cloudinary")
                                 delete_cloudinary_file(ordre.fichier)
                             elif os.path.isfile(ordre.fichier.path):
                                 os.remove(ordre.fichier.path)

@@ -5,6 +5,7 @@ Django settings for goProjet project.
 import os
 from pathlib import Path
 import re
+import dj_database_url
 from dotenv import load_dotenv  # Nouveau
 
 # --- 1. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ---
@@ -109,12 +110,32 @@ TEMPLATES = [
 WSGI_APPLICATION = 'goProjet.wsgi.application'
 
 # --- 7. DATABASE ---
+# PostgreSQL pour Railway
 DATABASES = {
-    'default': {
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL'),
+        conn_max_age=600,
+        conn_health_checks=True,
+        ssl_require=True
+    )
+}
+
+# Option: Pour garder SQLite en développement local
+if 'DATABASE_URL' not in os.environ:
+    DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
+    print("⚠️  Mode développement: SQLite utilisé")
+else:
+    print("✅ Mode production: PostgreSQL utilisé")
+    
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 # --- 8. VALIDATION DES MOTS DE PASSE ---
 AUTH_PASSWORD_VALIDATORS = [
