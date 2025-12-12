@@ -29,7 +29,7 @@ if DEBUG:
         'localhost:8000',
         '127.0.0.1:8000',
     ]
-    print("🚀 Mode DEBUG activé - Développement local")
+    print("Mode DEBUG activé - Développement local")
 else:
     # Hosts pour la production
     ALLOWED_HOSTS = [
@@ -39,7 +39,7 @@ else:
         '127.0.0.1',
         'localhost'
     ]
-    print("🌐 Mode PRODUCTION - Hosts configurés pour Railway")
+    print("Mode PRODUCTION - Hosts configurés pour Railway")
 
 # --- 4. APPLICATIONS ---
 INSTALLED_APPS = [
@@ -126,9 +126,9 @@ if 'DATABASE_URL' not in os.environ:
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-    print("⚠️  Mode développement: SQLite utilisé")
+    print("Mode développement: SQLite utilisé")
 else:
-    print("✅ Mode production: PostgreSQL utilisé")
+    print("Mode production: PostgreSQL utilisé")
     
 # DATABASES = {
 #     'default': {
@@ -196,7 +196,7 @@ CLOUDINARY_API_SECRET = sanitize_cloudinary_credential(os.environ.get('CLOUDINAR
 USE_CLOUDINARY = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
 
 if USE_CLOUDINARY:
-    print("☁️  Mode Cloudinary activé pour le stockage des fichiers")
+    print("Mode Cloudinary activé pour le stockage des fichiers")
     
     # Configuration Cloudinary
     CLOUDINARY_STORAGE = {
