@@ -8,18 +8,31 @@ import re
 import dj_database_url
 from dotenv import load_dotenv  # Nouveau
 
-# --- 1. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ---
-load_dotenv()  # Charge les variables depuis .env
 
-# --- 2. CHEMINS DE BASE ---
+# --- 1. CHEMINS DE BASE ---
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# --- 2. CHARGEMENT DES VARIABLES D'ENVIRONNEMENT ---
+
+# 2.1. D'ABORD .env.local (développement local) - PRIORITAIRE
+env_local = BASE_DIR / '.env.local'
+
+if env_local.exists():
+    load_dotenv(env_local, override=True)  # override=True pour écraser
+    print(f"✅ .env.local chargé: {env_local}")
+
+# 2.2. ENSUITE .env (si existe, pour compatibilité)
+env_file = BASE_DIR / '.env'
+if env_file.exists():
+    load_dotenv(env_file, override=False)  # override=False: .env.local reste prioritaire
+    print(f"📄 .env chargé: {env_file}")
+
 
 # --- 3. SÉCURITÉ ET ENVIRONNEMENT ---
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-dev-key-local-only')
 
 DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 
-# 🔧 CORRECTION : Configuration ALLOWED_HOSTS améliorée
 if DEBUG:
     # Hosts pour le développement
     ALLOWED_HOSTS = [
@@ -110,32 +123,29 @@ TEMPLATES = [
 WSGI_APPLICATION = 'goProjet.wsgi.application'
 
 # --- 7. DATABASE ---
-# PostgreSQL pour Railway
-DATABASES = {
-    'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
-        conn_max_age=600,
-        conn_health_checks=True,
-        ssl_require=True
-    )
-}
 
-# Option: Pour garder SQLite en développement local
-if 'DATABASE_URL' not in os.environ:
-    DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.environ.get('DATABASE_URL') and not DEBUG:
+    # PRODUCTION : PostgreSQL Railway
+    import dj_database_url
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=True
+        )
     }
-    print("Mode développement: SQLite utilisé")
+    print("⚡ Mode production: PostgreSQL Railway")
 else:
-    print("Mode production: PostgreSQL utilisé")
+    # DÉVELOPPEMENT LOCAL : SQLite
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    print("💻 Mode développement: SQLite local")
     
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 # --- 8. VALIDATION DES MOTS DE PASSE ---
 AUTH_PASSWORD_VALIDATORS = [

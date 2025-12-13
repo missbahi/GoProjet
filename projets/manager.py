@@ -419,54 +419,130 @@ class LineManager:
         return False
 
 class LigneHierarchique:
+    """
+    Classe générique pour créer des structures hiérarchiques
+    Fonctionne avec des dicts ET des instances Django
+    """
+    
     def __init__(self, data):
+        """
+        Accepte:
+        - Un dict: {'id': 1, 'parent_id': None, 'designation': '...'}
+        - Un objet Django: instance avec .id, .parent_id, etc.
+        - Un objet avec attributs: data.id, data.parent_id, etc.
+        """
+        self._extract_data(data)
+        self.children = []
+        self.parent = None
+        self.collapsed = True
+    
+    def _extract_data(self, data):
+        """Extrait les données de manière générique"""
+        # Méthode 1: Si c'est un dict
+        if isinstance(data, dict):
+            self._extract_from_dict(data)
+        # Méthode 2: Si c'est un objet Django ou autre
+        elif hasattr(data, '__dict__'):
+            self._extract_from_object(data)
+        # Méthode 3: Si c'est un objet avec attributs
+        else:
+            self._extract_from_attributes(data)
+    
+    def _extract_from_dict(self, data):
+        """Extrait depuis un dictionnaire avec .get()"""
         self.id = data.get('id')
         self.parent_id = data.get('parent_id')
         self.numero = data.get('numero')
         self.designation = data.get('designation') 
         self.unite = data.get('unite')
         self.quantite = data.get('quantite')
-        self.prix_unitaire =data.get('prix_unitaire')
+        self.prix_unitaire = data.get('prix_unitaire')
         self.montant = data.get('montant', 0)
-        self.children = []
-        self.parent = None
-        self.collapsed = True
+    
+    def _extract_from_object(self, obj):
+        """Extrait depuis un objet Django ou autre"""
+        # Pour Django models
+        if hasattr(obj, '_meta'):  # C'est un modèle Django
+            self.id = getattr(obj, 'id', None)
+            self.parent_id = getattr(obj, 'parent_id', None)
+            self.numero = getattr(obj, 'numero', '')
+            self.designation = getattr(obj, 'designation', '')
+            self.unite = getattr(obj, 'unite', '')
+            self.quantite = getattr(obj, 'quantite', 0)
+            self.prix_unitaire = getattr(obj, 'prix_unitaire', 0)
+            self.montant = getattr(obj, 'montant', 0)
+        else:
+            # Objet normal avec attributs
+            self.id = getattr(obj, 'id', None)
+            self.parent_id = getattr(obj, 'parent_id', None)
+            self.numero = getattr(obj, 'numero', '')
+            self.designation = getattr(obj, 'designation', '')
+            self.unite = getattr(obj, 'unite', '')
+            self.quantite = getattr(obj, 'quantite', 0)
+            self.prix_unitaire = getattr(obj, 'prix_unitaire', 0)
+            self.montant = getattr(obj, 'montant', 0)
+    
+    def _extract_from_attributes(self, data):
+        """Extrait depuis un objet avec seulement __slots__ ou NamedTuple"""
+        try:
+            self.id = data.id if hasattr(data, 'id') else None
+            self.parent_id = data.parent_id if hasattr(data, 'parent_id') else None
+            self.numero = data.numero if hasattr(data, 'numero') else ''
+            self.designation = data.designation if hasattr(data, 'designation') else ''
+            self.unite = data.unite if hasattr(data, 'unite') else ''
+            self.quantite = data.quantite if hasattr(data, 'quantite') else 0
+            self.prix_unitaire = data.prix_unitaire if hasattr(data, 'prix_unitaire') else 0
+            self.montant = data.montant if hasattr(data, 'montant') else 0
+        except AttributeError:
+            raise ValueError(f"Format de données non supporté: {type(data)}")
+    
     def __str__(self):
-        return f"(id={self.id}, {self.parent_id}, {self.designation},{self.quantite}, {self.prix_unitaire}, {self.montant})"
-    def build_tree_from_data(self, data, parent=None):
-        self.children.clear()
-        self.parent = None
-        self.collapsed = False
-        self.parent = parent
+        return f"(id={self.id}, parent={self.parent_id}, {self.designation}, montant={self.montant})"
+    
+    @classmethod
+    def build_tree(cls, data_list, parent=None):
+        """
+        Construit un arbre hiérarchique à partir d'une liste de données
+        
+        Args:
+            data_list: Liste de dicts ou d'objets
+            parent: Parent racine (optionnel)
+        
+        Returns:
+            dict: {id: LigneHierarchique} et racine
+        """
+        if parent is None:
+            parent = cls({'id': None, 'parent_id': None, 'designation': 'RACINE'})
+        
         # 1. Créer tous les objets
         lines = {}
-        for line in data:
+        for data in data_list:
             try:
-                child = LigneHierarchique(line)
+                child = cls(data)
                 lines[child.id] = child
-            except KeyError as e:
-                print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
+            except (KeyError, ValueError) as e:
+                print(f"Erreur avec {data}: {e}")
                 continue
         
         # 2. Construire la hiérarchie
         for line in lines.values():
-            # print(line)
             if line.parent_id:
-                parent = lines.get(line.parent_id)
-                if parent: 
+                parent_line = lines.get(line.parent_id)
+                if parent_line: 
+                    parent_line.ajouter_enfant(line)
+                else:
+                    # Parent non trouvé → ajouter à la racine
                     parent.ajouter_enfant(line)
-                else: # ajouter cette ligne à la racine
-                    self.ajouter_enfant(line)
             else:
-                self.ajouter_enfant(line)
-        
-        return lines
+                parent.ajouter_enfant(line)
+
+        return lines, parent
     
     def ajouter_enfant(self, enfant):
-        """Ajoute un enfant et met à jour son niveau"""
+        """Ajoute un enfant et met à jour son parent"""
         enfant.parent = self
         self.children.append(enfant)
-    
+        return enfant
     def collapse(self, all=True):
         if self.parent: 
             self.collapsed = True

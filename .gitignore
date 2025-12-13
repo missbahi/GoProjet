@@ -41,3 +41,7 @@ Desktop.ini
 # PyInstaller
 *.manifest
 *.spec
+
+# Railway et PostgreSQL -> plus de changement de settings et db
+db.sqlite3
+.env.local

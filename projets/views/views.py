@@ -1607,43 +1607,21 @@ def lots_details(request, projet_id):
         )
         if total_lot == 0:
             continue
-        # Préparer les données des lignes avec le montant calculé
-        lignes_data = []
-        for ligne in lignes:
-            # Vérifier si c'est une ligne de détail (a des valeurs de quantité et prix)
-            is_detail = ligne.quantite is not None and ligne.prix_unitaire is not None
-            montant_ligne = (ligne.quantite or 0) * (ligne.prix_unitaire or 0) if is_detail else 0
-
-            lignes_data.append({
-                'id': ligne.id,
-                'parent_id': ligne.parent.id if ligne.parent else None,
-                'numero': ligne.numero,
-                'designation': ligne.designation,
-                'unite': ligne.unite,
-                'quantite': ligne.quantite if is_detail else None,
-                'prix_unitaire': ligne.prix_unitaire if is_detail else None,
-                'montant': montant_ligne
-            })
         
         # Construire la hiérarchie
         lines_root = LigneHierarchique({'id': 0, lot.nom: 'root'})
-        references = lines_root.build_tree_from_data(lignes_data)
-        racines = lines_root.children
+        lines_root.build_tree(lignes, lines_root)
         
         # Exporter en tableau pour le template
-        lignes_table = []
-        for racine in racines:
-            lignes_table.extend(racine.export_to_table())
+        lignes_table = lines_root.export_to_table()
 
         lots_data.append({
             'lot': lot,
             'id': lot.id,
             'nom': lot.nom,
             'description': lot.description,
-            'lignes_hierarchiques': [racine.export_to_json() for racine in racines],  # Pour navigation hiérarchique
             'lignes_table': lignes_table,  # Pour affichage en tableau avec niveaux
             'total_lot': total_lot,
-            'references': references,  # Pour accès rapide aux objets
         })
         
         montant_total += total_lot
@@ -1652,7 +1630,7 @@ def lots_details(request, projet_id):
     context = {
         'projet': projet,
         'can_editer': can_editer,
-        'lots': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot, references
+        'lots': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
@@ -2301,28 +2279,21 @@ def detail_attachement(request, attachement_id):
         
         # Construire la hiérarchie
         lines_root = LigneHierarchique({'id': 0, lot.nom: 'root'})
-        references = lines_root.build_tree_from_data(lignes_data)
-        racines = lines_root.children
-        
-        # Exporter en tableau pour le template
-        lignes_table = []
-        for racine in racines:
-            lignes_table.extend(racine.export_to_table())
+        lines_root.build_tree(lignes_data, lines_root)
+        lines = lines_root.export_to_table()
 
         lots_data.append({
             'lot': lot,
-            'lignes_hierarchiques': [racine.export_to_json() for racine in racines],  # Pour navigation hiérarchique
-            'lignes_table': lignes_table,  # Pour affichage en tableau avec niveaux
+            'lignes_table': lines,  # Pour affichage en tableau avec niveaux
             'total_lot': total_lot,
-            'references': references,  # Pour accès rapide aux objets
         })
         
         montant_total += total_lot
-        total_lignes += len(lignes_table)
+        total_lignes += len(lines)
     
     context = {
         'attachement': attachement,
-        'lots_data': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot, references
+        'lots_data': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
@@ -2953,7 +2924,7 @@ def calcul_retard_decompte(request, decompte_id):
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('-date_etablissement')
-    
+    from projets.manager import LigneHierarchique
     attachement_courant = None
     donnees_controle = []
     total_general = {
@@ -2975,7 +2946,7 @@ def fiche_controle(request, projet_id):
         for lot in lots:
             lignes_bordereau = LigneBordereau.objects.filter(lot=lot).order_by('id')
             lignes_controle = []
-            
+
             total_lot = {
                 'montant_marche': 0,
                 'montant_partiel': 0,
@@ -2984,6 +2955,8 @@ def fiche_controle(request, projet_id):
             }
             
             for ligne_bordereau in lignes_bordereau:
+                if ligne_bordereau.montant_realise == 0:
+                    continue
                 if ligne_bordereau.is_title:
                     ligne_controle = {
                     'numero': ligne_bordereau.numero or '',
@@ -3054,6 +3027,9 @@ def fiche_controle(request, projet_id):
                 for key in total_general:
                     if key in total_lot:
                         total_general[key] += total_lot[key]
+                
+                # Construire la hiérarchie                
+                
         total_general['pourcentage_realise'] = (total_general['montant_s'] / total_general['montant_marche'] * 100) if total_general['montant_marche'] > 0 else Decimal('0')
     
     context = {

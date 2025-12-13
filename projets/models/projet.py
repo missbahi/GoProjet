@@ -792,6 +792,10 @@ class LotProjet(models.Model):
         mnt_ht = self.montant_total_ht * Decimal('1.20')
         mnt_txt = "{:,.2f}".format(mnt_ht).replace(",", " ") if mnt_ht else "0.00"
         return mnt_txt
+    @property
+    def montant_realise(self):
+        total = self.lignes.aggregate(total_ht=Sum('montant_realise'))['total_ht']
+        return total if total is not None else Decimal('0.00')
     
     def to_line_tree(self):
         lignes_dict = {}
@@ -884,7 +888,12 @@ class LigneBordereau(models.Model):
         if dernier_att_cette_ligne:
             return dernier_att_cette_ligne.quantite_realisee
         return Decimal('0')
-    
+    @property
+    def montant_realise(self):
+        if self.est_titre:
+            total = sum(child.montant_realise for child in self.enfants.all())
+            return total
+        return self.get_quantite_deja_realisee * self.prix_unitaire
     @property
     def quantite_restante(self):
         return self.quantite - self.get_quantite_deja_realisee
@@ -897,8 +906,6 @@ class LigneBordereau(models.Model):
             
         if not self.est_titre:
             self.montant_calcule = self.quantite * self.prix_unitaire
-        else:
-            self.montant_calcule = Decimal('0.00')
         super().save(*args, **kwargs)
         
     def __str__(self):
