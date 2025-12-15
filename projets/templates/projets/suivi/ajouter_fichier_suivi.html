@@ -128,7 +128,9 @@
             <input type="file" class="form-control d-none" id="fichiers" name="fichiers" multiple onchange="updateFileList(this)">
           </div>
 
-          <div id="file-list" class="mb-3 mb-md-4"></div>
+          <div id="file-list" class="mb-3 mb-md-4">
+            <!-- Le contenu sera généré dynamiquement par JavaScript -->
+          </div>
 
           <div class="d-flex flex-column flex-sm-row gap-2">
             <button type="submit" class="btn btn-success btn-responsive px-3 px-md-4 order-2 order-sm-1">
@@ -157,7 +159,7 @@
   </div>
 
   <script>
-    function updateFileList(input) {
+    function updateFileList1(input) {
       const fileList = document.getElementById('file-list');
       fileList.innerHTML = '';
       
@@ -212,6 +214,85 @@
         }
         
         fileList.appendChild(list);
+
+        // Afficher le total des fichiers
+        const totalSize = Array.from(input.files).reduce((total, file) => total + file.size, 0);
+        const totalInfo = document.createElement('div');
+        totalInfo.className = 'mt-2 text-end text-muted text-responsive';
+        totalInfo.textContent = `Total: ${formatFileSize(totalSize)}`;
+        fileList.appendChild(totalInfo);
+      }
+    }
+    function updateFileList(input) {
+      const fileList = document.getElementById('file-list');
+      fileList.innerHTML = '';
+      
+      if (input.files.length > 0) {
+        const heading = document.createElement('h6');
+        heading.className = 'text-info mb-2 text-responsive';
+        heading.textContent = `Fichiers sélectionnés (${input.files.length}):`;
+        fileList.appendChild(heading);
+        
+        // Créer un conteneur pour le formulaire
+        const formContainer = document.createElement('div');
+        
+        for (let i = 0; i < input.files.length; i++) {
+          const fileItem = document.createElement('div');
+          fileItem.className = 'mb-3 p-3 border border-secondary rounded';
+          
+          // Nom du fichier
+          const fileNameDiv = document.createElement('div');
+          fileNameDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+          
+          const fileInfo = document.createElement('div');
+          fileInfo.className = 'd-flex align-items-center min-w-0 flex-grow-1';
+          
+          // Icône du type de fichier
+          const icon = document.createElement('i');
+          const fileName = input.files[i].name.toLowerCase();
+          // ... (code des icônes existant) ...
+          
+          const fileNameSpan = document.createElement('span');
+          fileNameSpan.className = 'text-truncate fw-bold';
+          fileNameSpan.textContent = input.files[i].name;
+          fileNameSpan.title = input.files[i].name;
+          
+          const fileSize = document.createElement('small');
+          fileSize.className = 'text-muted text-nowrap ms-2 flex-shrink-0';
+          fileSize.textContent = formatFileSize(input.files[i].size);
+          
+          fileInfo.appendChild(icon);
+          fileInfo.appendChild(fileNameSpan);
+          fileNameDiv.appendChild(fileInfo);
+          fileNameDiv.appendChild(fileSize);
+          
+          // Champ de description
+          const descriptionDiv = document.createElement('div');
+          descriptionDiv.className = 'mb-2';
+          
+          const descriptionLabel = document.createElement('label');
+          descriptionLabel.className = 'form-label text-responsive small';
+          descriptionLabel.textContent = 'Description (optionnelle)';
+          descriptionLabel.htmlFor = `description-${i}`;
+          
+          const descriptionInput = document.createElement('input');
+          descriptionInput.type = 'text';
+          descriptionInput.className = 'form-control form-control-sm bg-dark text-light border-secondary';
+          descriptionInput.id = `description-${i}`;
+          descriptionInput.name = 'descriptions[]';
+          descriptionInput.placeholder = 'Description du fichier';
+          descriptionInput.maxLength = '255';
+          
+          descriptionDiv.appendChild(descriptionLabel);
+          descriptionDiv.appendChild(descriptionInput);
+          
+          // Assembler l'élément
+          fileItem.appendChild(fileNameDiv);
+          fileItem.appendChild(descriptionDiv);
+          formContainer.appendChild(fileItem);
+        }
+        
+        fileList.appendChild(formContainer);
 
         // Afficher le total des fichiers
         const totalSize = Array.from(input.files).reduce((total, file) => total + file.size, 0);

@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import re
 
 from django.utils import timezone 
 from django.utils.timezone import timedelta
@@ -55,11 +56,7 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
-def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
-    """Upload un fichier vers Cloudinary avec retry et fallback"""
-
-    cloud_name = settings.CLOUDINARY_CLOUD_NAME
-    def force_clean(value):
+def force_clean(value):
         import re
         value = str(value).strip()
         
@@ -67,15 +64,19 @@ def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
         cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value))
         return cleaned
     
-    cloud_name_clean = force_clean(cloud_name)
+def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
+    """Upload un fichier vers Cloudinary avec retry et fallback"""
+
+    cloud_name = settings.CLOUDINARY_CLOUD_NAME
+    cloud_name_clean = force_clean(cloud_name)    
     try:
         # Méthode 1: Configurer AVANT d'importer uploader
-        cloudinary.config(
-            cloud_name=cloud_name_clean,
-            api_key=settings.CLOUDINARY_API_KEY,
-            api_secret=settings.CLOUDINARY_API_SECRET,
-            secure=True
-        )
+        # cloudinary.config(
+        #     cloud_name=cloud_name_clean,
+        #     api_key=settings.CLOUDINARY_API_KEY,
+        #     api_secret=settings.CLOUDINARY_API_SECRET,
+        #     secure=True
+        # )
         if public_id is None:
             public_id = file.name
         upload_result = cloudinary.uploader.upload(
@@ -96,8 +97,62 @@ def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
     except cloudinary.exceptions.Error as e:
         print(f"Erreur Cloudinary: {e}")
         logger.warning(f"Erreur Cloudinary: {e}")
+        #Erreur lors de l'ajout du fichier PV 15-12-2025 11.43.pdf: 'str' object has no attribute 'name'
         return None
+
+def delete_from_cloudinary(public_id, resource_type='raw'):
+    """
+    Supprime un fichier de Cloudinary de manière sécurisée
+    
+    Args:
+        public_id (str): L'identifiant public du fichier sur Cloudinary
+        resource_type (str): Type de ressource ('image', 'video', 'raw', 'auto')
+    
+    Returns:
+        bool: True si suppression réussie, False sinon
+    """
+    try:
+        cloud_name = settings.CLOUDINARY_CLOUD_NAME
+        cloud_name_clean = force_clean(cloud_name)   
+        # 1. Validation des paramètres
+        if not public_id or not isinstance(public_id, str):
+            logger.error(f"Public_id invalide: {public_id}")
+            return False
         
+        # 2. Configuration Cloudinary (si pas déjà fait)
+        if not cloudinary.config().cloud_name:
+            cloudinary.config(
+                cloud_name=cloud_name_clean,
+                api_key=settings.CLOUDINARY_API_KEY,
+                api_secret=settings.CLOUDINARY_API_SECRET,
+                secure=True
+            )
+        
+        # 3. Suppression avec gestion d'erreur détaillée
+        result = cloudinary.uploader.destroy(
+            public_id,
+            resource_type=resource_type,
+            invalidate=True  # Invalide le cache CDN
+        )
+        
+        # 4. Analyse de la réponse
+        if result.get('result') == 'ok':
+            logger.info(f"Fichier Cloudinary supprimé: {public_id}")
+            return True
+        elif result.get('result') == 'not found':
+            logger.warning(f"Fichier non trouvé sur Cloudinary: {public_id}")
+            return True  # Considéré comme "déjà supprimé"
+        else:
+            logger.error(f"Erreur Cloudinary pour {public_id}: {result}")
+            return False
+            
+    except cloudinary.exceptions.Error as e:
+        logger.error(f"Erreur Cloudinary API pour {public_id}: {str(e)}")
+        return False
+    except Exception as e:
+        logger.error(f"Erreur inattendue suppression Cloudinary {public_id}: {str(e)}")
+        return False
+
 def get_file_field(instance):
     return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
 
@@ -111,7 +166,36 @@ def get_projet_from_instance(instance):
     elif hasattr(instance,'processValidation'):
         return instance.processValidation.attachement.projet
     return None
-
+def extract_public_id_from_url(url):
+    """
+    Extrait le public_id d'une URL Cloudinary
+    
+    Exemples d'URL Cloudinary:
+    - http://res.cloudinary.com/cloud_name/raw/upload/v1234567/folder/filename.ext
+    - https://res.cloudinary.com/cloud_name/raw/upload/v1234567/folder/filename.ext
+    - http://res.cloudinary.com/cloud_name/raw/upload/folder/filename.ext (sans version)
+    
+    Retourne: folder/filename (sans extension)
+    """
+    if not url or 'cloudinary.com' not in url:
+        return None
+    
+    # Pattern pour extraire le public_id
+    patterns = [
+        r'res\.cloudinary\.com/[^/]+/(?:image|video|raw)/upload/(?:v\d+/)?(.+?)(?:\.[a-zA-Z0-9]+)?$',
+        r'res\.cloudinary\.com/[^/]+/(?:image|video|raw)/upload/(.+)$',
+    ]
+    
+    for pattern in patterns:
+        match = re.search(pattern, url)
+        if match:
+            public_id = match.group(1)
+            # Retirer l'extension si présente
+            if '.' in public_id:
+                public_id = public_id.rsplit('.', 1)[0]
+            return public_id
+    
+    return None
 def extract_filename_from_url(url):
     """Extrait un nom de fichier depuis une URL Cloudinary"""
     if not url:
@@ -171,7 +255,7 @@ def secure_download(request, model_name, object_id):
     
     # On force le download si demandé
     force_download = request.GET.get('download', 'false').lower() == 'true'
-    
+
     if force_download:
         # Récupérer le nom original pour le header
         if hasattr(obj, 'original_filename') and obj.original_filename:
@@ -183,7 +267,6 @@ def secure_download(request, model_name, object_id):
     else:        
         # On récupère l'URL du fichier
         url = clean_url(file_field.url)
-
         # Redirection vers Cloudinary
         return HttpResponseRedirect(url)
 
@@ -1678,9 +1761,9 @@ def ajouter_document(request, projet_id):
             messages.error(request, "Le type de document et le fichier sont obligatoires.")
             return redirect('projets:documents', projet_id=projet_id)
         
-        # Vérifier la taille du fichier (max 20MB)
-        if fichier.size > 20 * 1024 * 1024:
-            messages.error(request, "Le fichier ne doit pas dépasser 20MB.")
+        # Vérifier la taille du fichier (max 10MB)
+        if fichier.size > 10 * 1024 * 1024:
+            messages.error(request, "Le fichier ne doit pas dépasser 10MB.")
             return redirect('projets:documents', projet_id=projet_id)
         
         # Créer le document
@@ -1709,14 +1792,12 @@ def ajouter_document(request, projet_id):
     
     return redirect('projets:documents', projet_id=projet_id)
 
-import requests
-
 class AfficherDocumentView(View):
     """Vue avec téléchargement direct depuis Cloudinary"""
     def get(self, request, document_id):
         try:
-            res = secure_download(request, 'DocumentAdministratif', document_id)
-            return res
+            response = secure_download(request, 'DocumentAdministratif', document_id)
+            return response
             
         except Exception as e:
             messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
@@ -1726,10 +1807,12 @@ class AfficherDocumentView(View):
 def suivi_execution(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     suivis = projet.suivis_execution.all()
-
+    choices = SuiviExecution.TYPE_SUIVI_CHOICES
     return render(request, 'projets/suivi/suivi_execution.html', {
         'projet': projet,
-        'suivis': suivis
+        'suivis': suivis,
+        'choices': choices
+        
     })
 def ajouter_suivi(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1746,21 +1829,15 @@ def ajouter_suivi(request, projet_id):
             importance=request.POST.get('importance', 'moyenne')
         )
         suivi.save()
+        action = request.POST.get('action')
         
-        # Gérer les fichiers joints
-        if request.FILES.getlist('fichiers'):
-            for i, fichier in enumerate(request.FILES.getlist('fichiers')):
-                description = request.POST.get(f'description_{i}', '')
-                fichier_suivi = FichierSuivi(
-                    suivi=suivi,
-                    fichier=fichier,
-                    description=description
-                )
-                fichier_suivi.save()
+        if action == 'save_and_open_files':
+            # Rediriger vers le template d'ajout de fichiers
+            return redirect('projets:ajouter_fichier_suivi', projet_id=projet_id, suivi_id=suivi.id)
+        elif action == 'save_and_close':
+            # Rediriger vers la page dashboard du projet
+            return redirect('projets:dashboard', projet_id=projet_id)
         
-        messages.success(request, "Le suivi a été ajouté avec succès.")
-        return redirect('projets:suivi_execution', projet_id=projet_id)
-    
     return redirect('projets:suivi_execution', projet_id=projet_id)
 def supprimer_suivi(request, projet_id, suivi_id):
     if request.method == 'POST':
@@ -1802,57 +1879,70 @@ def modifier_suivi(request, projet_id, suivi_id):
 def afficher_fichier_suivi(request, fichier_id):
     """
     Vue pour afficher/télécharger un fichier de suivi
-    NOTE: Nous avons retiré projet_id car il n'est pas nécessaire pour récupérer le fichier
     """
-    fichier_suivi = get_object_or_404(FichierSuivi, id=fichier_id)
-        
-    # Vérifier que le fichier existe physiquement
-    if not fichier_suivi.fichier or not os.path.exists(fichier_suivi.fichier.path):
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'error': 'Fichier introuvable'})
-        messages.error(request, "Le fichier demandé est introuvable.")
-        return redirect('projets:suivi_execution', projet_id=fichier_suivi.suivi.projet.id)
-    
-    # Déterminer si on doit afficher dans le navigateur ou forcer le téléchargement
-    extension = os.path.splitext(fichier_suivi.fichier.name)[1].lower()
-    viewable_types = {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv', '.html', '.htm'}
-    
     try:
-        file_data = open(fichier_suivi.fichier.path, 'rb').read()
+        fichier_suivi = get_object_or_404(FichierSuivi, id=fichier_id)
+        # Vérifier que le fichier existe physiquement
+        if not fichier_suivi.fichier or not fichier_suivi.fichier.url:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, 'error': 'Fichier introuvable'})
+            
+            messages.error(request, "Le fichier demandé est introuvable.")
+            return redirect('projets:suivi_execution', projet_id=fichier_suivi.suivi.projet.id)    
+    
+        # Déterminer si on doit afficher dans le navigateur ou forcer le téléchargement
+        extension = os.path.splitext(fichier_suivi.fichier.url)[1].lower()
+        viewable_types = {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv', '.html', '.htm'}
+        
+        # Télécharger le fichier
+        response = secure_download(request, "FichierSuivi", fichier_id)
     except IOError:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({'success': False, "error": "Impossible d'ouvrir le fichier."})
         messages.error(request, "Impossible d'ouvrir le fichier.")
         return redirect('projets:suivi_execution', projet_id=fichier_suivi.suivi.projet.id)
     
     if extension in viewable_types:
         # Afficher dans le navigateur
         if extension == '.pdf':
-            response = HttpResponse(file_data, content_type='application/pdf')
+            response = HttpResponse(response.content, content_type='application/pdf')
         elif extension in {'.jpg', '.jpeg'}:
-            response = HttpResponse(file_data, content_type='image/jpeg')
+            response = HttpResponse(response.content, content_type='image/jpeg')
         elif extension == '.png':
-            response = HttpResponse(file_data, content_type='image/png')
+            response = HttpResponse(response.content, content_type='image/png')
         elif extension == '.gif':
-            response = HttpResponse(file_data, content_type='image/gif')
+            response = HttpResponse(response.content, content_type='image/gif')
         elif extension in {'.txt', '.csv'}:
-            response = HttpResponse(file_data, content_type='text/plain; charset=utf-8')
+            response = HttpResponse(response.content, content_type='text/plain; charset=utf-8')
         elif extension in {'.html', '.htm'}:
-            response = HttpResponse(file_data, content_type='text/html; charset=utf-8')
+            response = HttpResponse(response.content, content_type='text/html; charset=utf-8')
         else:
-            response = HttpResponse(file_data, content_type='application/octet-stream')
+            response = HttpResponse(response.content, content_type='application/octet-stream')
         
-        response['Content-Disposition'] = f'inline; filename="{os.path.basename(fichier_suivi.fichier.name)}"'
+        response['Content-Disposition'] = f'inline; filename="{os.path.basename(fichier_suivi.fichier.url)}"'
     else:
         # Forcer le téléchargement
-        response = HttpResponse(file_data, content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(fichier_suivi.fichier.name)}"'
+        response = HttpResponse(response.content, content_type='application/octet-stream')
+        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(fichier_suivi.fichier.url)}"'
     
     return response
-def supprimer_fichier_suivi(request, projet_id, fichier_id):
+def supprimer_fichier_suivi(request, fichier_id):
     if request.method == 'POST':
-        fichier = get_object_or_404(FichierSuivi, id=fichier_id)
-        fichier.delete()
-        messages.success(request, "Le fichier a été supprimé avec succès.")
-    
+        try: 
+            fichier_suivi = get_object_or_404(FichierSuivi, id=fichier_id)
+            suivi_id = fichier_suivi.suivi.id
+            projet_id = fichier_suivi.suivi.projet.id  
+
+            if fichier_suivi.fichier:
+                public_id = fichier_suivi.get_public_id
+                print("Public ID:", public_id)
+                delete_from_cloudinary(public_id=public_id)
+                # fichier_suivi.delete()
+            messages.success(request, "Le fichier a été supprimé avec succès.")
+            return redirect('projets:modifier_suivi', projet_id, suivi_id)
+        except Exception as e:
+            messages.error(request, f"Erreur lors de la suppression du fichier: {str(e)}")
+        
     return redirect('projets:suivi_execution', projet_id=projet_id)
 def telecharger_fichier_suivi(request, fichier_id):
     try:
@@ -1882,13 +1972,13 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
         
         for i, fichier in enumerate(fichiers):
             # Vérifier la taille du fichier (max 20MB)
-            if fichier.size > 20 * 1024 * 1024:
+            if fichier.size > 10 * 1024 * 1024:
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({
                         'success': False, 
-                        'error': f"Le fichier {fichier.name} dépasse la taille maximale de 20MB"
+                        'error': f"Le fichier {fichier.name} dépasse la taille maximale de 10MB"
                     })
-                messages.error(request, f"Le fichier {fichier.name} dépasse la taille maximale de 20MB.")
+                messages.error(request, f"Le fichier {fichier.name} dépasse la taille maximale de 10MB.")
                 continue
             
             # Utiliser la description correspondante si disponible
@@ -1902,15 +1992,13 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
                 
                 # Gestion Cloudinary vs local
                 if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                    public_id = projet.nom + f"_{fichier.name}"
+                    public_id = projet.nom + f"/{suivi_id}/{fichier.name}"
                     file_url = upload_to_cloudinary(fichier, "suivis_execution", public_id)
                     fichier_suivi.fichier = file_url if file_url else None
                 else:
                     fichier_suivi.fichier = fichier
-                    
                 fichier_suivi.save()
-                fichiers_ajoutes.append(fichier_suivi.fichier.name)
-                
+                fichiers_ajoutes.append(fichier_suivi.fichier)
             except Exception as e:
                 error_msg = f"Erreur lors de l'ajout du fichier {fichier.name}: {str(e)}"
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':

@@ -74,6 +74,7 @@ def delete_cloudinary_file(instance):
 def delete_document(sender, instance, **kwargs):
     delete_cloudinary_file(instance)
   
+
 @receiver(pre_save, sender=Attachement)
 @receiver(pre_save, sender=FichierSuivi)
 @receiver(pre_save, sender=DocumentAdministratif)
@@ -203,7 +204,8 @@ def delete_cloudinary_file(instance, field_name='fichier'):
     
     # 2. Supprimer via Cloudinary API (public_id)
     if hasattr(file_field, 'public_id') and file_field.public_id:
-        _delete_cloudinary_by_public_id(file_field.public_id)
+        public_id = file_field.public_id + '.' + file_field.format
+        _delete_cloudinary_by_public_id(public_id)
         return
     
     # 3. Supprimer via Cloudinary API (URL)

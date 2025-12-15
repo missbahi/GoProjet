@@ -1,5 +1,6 @@
 from decimal import Decimal
 import os
+import cloudinary
 from django.db import models
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
@@ -1374,6 +1375,7 @@ class SuiviExecution(models.Model):
         ('planning', _('Mise à jour planning')),
         ('livraison', _('Livraison')),
         ('validation', _('Validation d\'étape')),
+        ('courrier', _('Courrier')),
         ('autre', _('Autre')),
     ]
     
@@ -1400,7 +1402,18 @@ class SuiviExecution(models.Model):
 
     def __str__(self):
         return f"{self.date} - {self.titre} ({self.projet.nom})"
-
+    def delete(self, *args, **kwargs):
+        """
+        Supprime le suivi et TOUS ses fichiers associés
+        (Cloudinary ou local)
+        """
+        
+        for fichier_suivi in self.fichiers.all(): 
+            fichier_suivi.delete()  # Utilise la méthode delete de FichierSuivi
+        
+        # 2. Puis supprimer le suivi lui-même
+        super().delete(*args, **kwargs)
+        
 class FichierSuivi(models.Model):
     def upload_path(instance, filename):
         return f'suivis_execution/projet_{instance.suivi.projet.id}/{instance.suivi.id}/{filename}'
@@ -1416,7 +1429,10 @@ class FichierSuivi(models.Model):
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     description = models.CharField(_("Description"), max_length=255, blank=True)
     date_ajout = models.DateTimeField(_("Date d'ajout"), default=timezone.now)
-
+    @property
+    def get_public_id(self):
+        if getattr(settings, 'USE_CLOUDINARY', False):
+            return self.fichier.public_id + '.' + self.fichier.format
     class Meta:
         verbose_name = _("Fichier joint au suivi")
         verbose_name_plural = _("Fichiers joints au suivi")

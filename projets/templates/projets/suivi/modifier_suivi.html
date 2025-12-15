@@ -288,12 +288,8 @@
                   </div>
                   
                   <div class="d-flex gap-1 gap-md-2 flex-shrink-0">
-                    <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}" 
-                       target="_blank" class="btn btn-sm btn-info" title="Voir le fichier">
-                      <i class="fa-solid fa-eye"></i>
-                      <span class="d-none d-md-inline ms-1">Voir</span>
-                    </a>
-                    <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}?download=true" 
+                    <a href="{% url 'projets:download_document' 'FichierSuivi' fichier.id %}?download=true" 
+                       target="_blank"
                        class="btn btn-sm btn-success" title="Télécharger">
                       <i class="fa-solid fa-download"></i>
                       <span class="d-none d-md-inline ms-1">Téléch.</span>
@@ -301,7 +297,7 @@
                     <form method="post" action="{% url 'projets:supprimer_fichier_suivi' fichier.id %}" class="d-inline">
                       {% csrf_token %}
                       <button type="submit" class="btn btn-sm btn-danger" 
-                              onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce fichier?')" title="Supprimer">
+                              onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')" title="Supprimer">
                         <i class="fa-solid fa-trash"></i>
                         <span class="d-none d-md-inline ms-1">Suppr.</span>
                       </button>

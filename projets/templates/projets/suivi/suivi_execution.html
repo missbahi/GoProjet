@@ -300,12 +300,9 @@
                         <label for="type_suivi" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Type de suivi *</label>
                         <select class="form-control text-sm sm:text-base" id="type_suivi" name="type_suivi" required>
                             <option value="">Sélectionner un type...</option>
-                            <option value="reunion">Réunion de chantier</option>
-                            <option value="incident">Incident</option>
-                            <option value="planning">Mise à jour planning</option>
-                            <option value="livraison">Livraison</option>
-                            <option value="validation">Validation d'étape</option>
-                            <option value="autre">Autre</option>
+                           {% for value, label in choices %}
+                            <option value="{{ value }}">{{ label }}</option>
+                           {% endfor %}
                         </select>
                     </div>
                     
@@ -334,27 +331,29 @@
                     <input type="text" class="form-control text-sm sm:text-base" id="redacteur" name="redacteur" placeholder="Votre nom">
                 </div>
                 
-                <div>
-                    <label class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-2">Fichiers joints (optionnel)</label>
-                    <div class="upload-area" onclick="document.getElementById('fichiers').click()">
-                        <i class="fas fa-cloud-upload-alt file-icon text-cyan-400"></i>
-                        <p class="mb-2 text-gray-400 text-sm">Cliquez pour sélectionner des fichiers ou glissez-déposez les ici</p>
-                        <p class="text-xs text-gray-500">Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)</p>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0">
+                    <!-- Bloc de gauche avec deux boutons submit -->
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 order-2 sm:order-1 w-full sm:w-auto">
+                        <!-- Premier bouton: Soumet et ferme le template -->
+                        <button type="submit" name="action" value="save_and_close" class="btn-success px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive w-full sm:w-auto">
+                            <i class="fas fa-plus"></i> Enregistrer et fermer le formulaire
+                        </button>
+                        
+                        <!-- Deuxième bouton: Soumet et ouvre le template d'ajout de fichiers -->
+                        <button type="submit" name="action" value="save_and_open_files" class="btn-info px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive w-full sm:w-auto">
+                            <i class="fas fa-file-excel"></i> Enregistrer et Ouvrir le formulaire d'ajout de fichiers
+                        </button>
                     </div>
-                    <input type="file" class="hidden" id="fichiers" name="fichiers" multiple onchange="updateFileNames(this)">
-                    <div id="file-names" class="mt-2 text-cyan-400 text-xs sm:text-sm"></div>
                     
-                    <div id="file-descriptions" class="mt-3 space-y-2"></div>
+                    <!-- Bloc de droite avec le bouton Annuler -->
+                    <div class="order-1 sm:order-2 w-full sm:w-auto">
+                        <button type="button" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium text-sm sm:text-base btn-responsive w-full sm:w-auto" id="cancelSuiviForm">
+                            Annuler
+                        </button>
+                    </div>
                 </div>
+
                 
-                <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
-                    <button type="submit" class="btn-success px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive order-2 sm:order-1">
-                        <i class="fas fa-plus"></i> Ajouter le suivi
-                    </button>
-                    <button type="button" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium text-sm sm:text-base btn-responsive order-1 sm:order-2" id="cancelSuiviForm">
-                        Annuler
-                    </button>
-                </div>
             </form>
         </div>
 
@@ -430,15 +429,13 @@
                                                     {% endif %}
                                                 </div>
                                                 <div class="flex gap-2">
-                                                    <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}" 
+                                                    <a href="{% url 'projets:download_document' 'FichierSuivi' fichier.id %}?download=true"  
                                                        target="_blank" class="btn-info px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center gap-1">
                                                         <i class="fas fa-eye"></i>
-                                                        <span class="hidden sm:inline">Voir</span>
                                                     </a>
-                                                    <a href="{{ fichier.fichier.url }}" download class="btn-success px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center gap-1">
+                                                    <!-- <a href="{{ fichier.fichier.url }}" download class="btn-success px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center gap-1">
                                                         <i class="fas fa-download"></i>
-                                                        <span class="hidden sm:inline">Téléch.</span>
-                                                    </a>
+                                                    </a> -->
                                                 </div>
                                             </div>
                                             {% if fichier.description %}
@@ -459,7 +456,7 @@
                                 <form method="post" action="{% url 'projets:supprimer_suivi' projet.id suivi.id %}" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn-danger px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium flex items-center justify-center gap-1 w-full sm:w-auto"
-                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce suivi et tous ses fichiers?')">
+                                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce suivi et tous ses fichiers ?')">
                                         <i class="fas fa-trash"></i> <span>Supprimer</span>
                                     </button>
                                 </form>
@@ -474,117 +471,93 @@
                 </div>
             {% endif %}
         </div>
+
     </div>
 
-    <script>
-        // Gestion de l'affichage des noms de fichiers
-        function updateFileNames(input) {
-            const fileNamesElement = document.getElementById('file-names');
-            const fileDescriptionsElement = document.getElementById('file-descriptions');
-            
-            if (input.files.length > 0) {
-                fileNamesElement.innerHTML = `<strong class="text-cyan-400">Fichiers sélectionnés (${input.files.length}):</strong>`;
-                fileDescriptionsElement.innerHTML = '';
+<script>       
+    // Gestion de l'affichage/masquage du formulaire
+    const toggleButton = document.getElementById('toggleSuiviForm');
+    const formContainer = document.getElementById('suiviFormContainer');
+    const closeButton = document.getElementById('closeSuiviForm');
+    const cancelButton = document.getElementById('cancelSuiviForm');
+    const suiviForm = document.getElementById('suiviForm');
+
+    toggleButton.addEventListener('click', function() {
+        formContainer.classList.remove('hidden');
+        formContainer.classList.add('fade-in');
+        toggleButton.classList.add('hidden');
+        
+        // Scroll vers le formulaire sur mobile
+        if (window.innerWidth < 768) {
+            setTimeout(() => {
+                formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+        } 
+    });
+
+    function hideForm() {
+        formContainer.classList.add('hidden');
+        toggleButton.classList.remove('hidden');
+    }
+
+    closeButton.addEventListener('click', hideForm);
+    cancelButton.addEventListener('click', hideForm);
+
+    // Gestion spécifique pour le bouton "Enregistrer et ouvrir les fichiers"
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ajouter un champ caché pour stocker l'action choisie
+        const actionInput = document.createElement('input');
+        actionInput.type = 'hidden';
+        actionInput.name = 'form_action';
+        actionInput.id = 'formAction';
+        suiviForm.appendChild(actionInput);
+        
+        // Gérer le clic sur le bouton "Enregistrer et ouvrir les fichiers"
+        const saveAndOpenButton = document.querySelector('button[name="action"][value="save_and_open_files"]');
+        if (saveAndOpenButton) {
+            saveAndOpenButton.addEventListener('click', function(e) {
+                // Définir l'action comme "save_and_open_files"
+                document.getElementById('formAction').value = 'save_and_open_files';
                 
-                for (let i = 0; i < input.files.length; i++) {
-                    fileNamesElement.innerHTML += `<div class="ml-2 text-xs sm:text-sm truncate">${input.files[i].name}</div>`;
-                    
-                    // Ajouter un champ de description pour chaque fichier
-                    fileDescriptionsElement.innerHTML += `
-                        <div>
-                            <label for="description_${i}" class="block text-xs sm:text-sm font-medium text-[#AECBD6] mb-1">Description pour ${input.files[i].name}</label>
-                            <input type="text" class="form-control text-xs sm:text-sm" 
-                                   id="description_${i}" name="description_${i}" 
-                                   placeholder="Description optionnelle">
-                        </div>
-                    `;
-                }
-            } else {
-                fileNamesElement.innerHTML = '';
-                fileDescriptionsElement.innerHTML = '';
-            }
+                // Soumettre le formulaire
+                suiviForm.submit();
+                
+                // Ne pas masquer le formulaire immédiatement
+                // Attendre la réponse du serveur pour redirection
+            });
         }
         
-        // Gestion du drag and drop
-        const uploadArea = document.querySelector('.upload-area');
-        const fileInput = document.getElementById('fichiers');
-        
-        if (uploadArea && fileInput) {
-            uploadArea.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#22d3ee';
-                uploadArea.style.backgroundColor = 'rgba(34, 211, 238, 0.1)';
-            });
-            
-            uploadArea.addEventListener('dragleave', () => {
-                uploadArea.style.borderColor = '#4B5563';
-                uploadArea.style.backgroundColor = '#2E2E2E';
-            });
-            
-            uploadArea.addEventListener('drop', (e) => {
-                e.preventDefault();
-                uploadArea.style.borderColor = '#4B5563';
-                uploadArea.style.backgroundColor = '#2E2E2E';
+        // Gérer le clic sur le bouton "Enregistrer et fermer"
+        const saveAndCloseButton = document.querySelector('button[name="action"][value="save_and_close"]');
+        if (saveAndCloseButton) {
+            saveAndCloseButton.addEventListener('click', function(e) {
+                // Définir l'action comme "save_and_close"
+                document.getElementById('formAction').value = 'save_and_close';
                 
-                if (e.dataTransfer.files.length) {
-                    fileInput.files = e.dataTransfer.files;
-                    updateFileNames(fileInput);
-                }
+                // Masquer le formulaire après soumission (comportement original)
+                setTimeout(function() {
+                    hideForm();
+                    suiviForm.reset();
+                }, 1000);
             });
         }
+    });
 
-        // Gestion de l'affichage/masquage du formulaire
-        const toggleButton = document.getElementById('toggleSuiviForm');
-        const formContainer = document.getElementById('suiviFormContainer');
-        const closeButton = document.getElementById('closeSuiviForm');
-        const cancelButton = document.getElementById('cancelSuiviForm');
-
-        toggleButton.addEventListener('click', function() {
-            formContainer.classList.remove('hidden');
-            formContainer.classList.add('fade-in');
-            toggleButton.classList.add('hidden');
-            
-            // Scroll vers le formulaire sur mobile
-            if (window.innerWidth < 768) {
-                setTimeout(() => {
-                    formContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                }, 100);
-            }
+    // Masquer automatiquement les messages après 5 secondes
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert-auto-dismiss');
+        alerts.forEach(alert => {
+            alert.style.display = 'none';
         });
+    }, 5000);
 
-        function hideForm() {
-            formContainer.classList.add('hidden');
+    // Réinitialiser l'état du formulaire lors du redimensionnement
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 768 && formContainer.classList.contains('hidden')) {
             toggleButton.classList.remove('hidden');
         }
+    });
+</script>
 
-        closeButton.addEventListener('click', hideForm);
-        cancelButton.addEventListener('click', hideForm);
-
-        // Masquer le formulaire après soumission réussie
-        document.getElementById('suiviForm').addEventListener('submit', function() {
-            setTimeout(function() {
-                hideForm();
-                // Réinitialiser le formulaire
-                document.getElementById('suiviForm').reset();
-                document.getElementById('file-names').innerHTML = '';
-                document.getElementById('file-descriptions').innerHTML = '';
-            }, 1000);
-        });
-
-        // Masquer automatiquement les messages après 5 secondes
-        setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert-auto-dismiss');
-            alerts.forEach(alert => {
-                alert.style.display = 'none';
-            });
-        }, 5000);
-
-        // Réinitialiser l'état du formulaire lors du redimensionnement
-        window.addEventListener('resize', function() {
-            if (window.innerWidth >= 768 && formContainer.classList.contains('hidden')) {
-                toggleButton.classList.remove('hidden');
-            }
-        });
-    </script>
 </body>
 </html>
