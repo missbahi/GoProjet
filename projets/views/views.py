@@ -71,20 +71,20 @@ def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
     cloud_name_clean = force_clean(cloud_name)    
     try:
         # Méthode 1: Configurer AVANT d'importer uploader
-        # cloudinary.config(
-        #     cloud_name=cloud_name_clean,
-        #     api_key=settings.CLOUDINARY_API_KEY,
-        #     api_secret=settings.CLOUDINARY_API_SECRET,
-        #     secure=True
-        # )
+        cloudinary.config(
+            cloud_name=cloud_name_clean,
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET,
+            secure=True
+        )
         if public_id is None:
             public_id = file.name
         upload_result = cloudinary.uploader.upload(
             file.read(),
             **{
-                'cloud_name': cloud_name_clean,
-                'api_key': settings.CLOUDINARY_API_KEY,
-                'api_secret': settings.CLOUDINARY_API_SECRET,
+                # 'cloud_name': cloud_name_clean,
+                # 'api_key': settings.CLOUDINARY_API_KEY,
+                # 'api_secret': settings.CLOUDINARY_API_SECRET,
                 'folder': folder,
                 'public_id': public_id,
                 'resource_type': ressource_type,
@@ -296,6 +296,13 @@ def download_document(request, model_name, object_id):
      # On récupère l'URL du fichier
     file_name = extract_filename_from_url(file_field.url)
     try:
+        cloud_name = settings.CLOUDINARY_CLOUD_NAME
+        cloud_name_clean = force_clean(cloud_name)  
+        cloudinary.config(
+            cloud_name=cloud_name_clean,
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET
+        )
         result = cloudinary.Search().expression(file_name).execute()
         if not result:
             return HttpResponseNotFound("Fichier non trouvé")
