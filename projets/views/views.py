@@ -215,11 +215,9 @@ def clean_url(url, replace_https=True):
     check_chars:bool = any(char in url for char in [' ', '=', '%20'])
     if check_chars:
         url = url.replace(' ', '').replace('=', '').replace('%20', '')
-        print(f"🔧 URL nettoyée: {url}")
     if replace_https:
         if url.startswith('http://'):
             url = url.replace('http://', 'https://')
-            print(f"🔧 URL modifiée: {url}")
     return url
 
 @login_required
@@ -288,7 +286,9 @@ def serve_file_with_original_name(file_field, original_filename):
         
         encoded_filename = urllib.parse.quote(original_filename)
         django_response['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8\'\'{encoded_filename}'
-        
+        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765824296/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
+        #https://res.cloudinary.com/%20=ddfqmth4q/raw/upload/v1/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
+        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765824296/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
         return django_response
         
     except Exception as e:
@@ -1934,6 +1934,7 @@ def supprimer_fichier_suivi(request, fichier_id):
             projet_id = fichier_suivi.suivi.projet.id  
 
             if fichier_suivi.fichier:
+                
                 public_id = fichier_suivi.get_public_id
                 print("Public ID:", public_id)
                 delete_from_cloudinary(public_id=public_id)

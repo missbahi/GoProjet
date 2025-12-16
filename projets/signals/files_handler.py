@@ -35,7 +35,7 @@ def check_file_exists(public_id):
 #     exit_code = Path(url).suffix
 #     return public_id + exit_code
     
-def delete_cloudinary_file(instance):
+def delete_cloudinary_file1(instance):
             
     field_name = 'fichier'
     
@@ -179,7 +179,6 @@ def _delete_by_url(url):
                 if "not found" not in str(e).lower():
                     print(f"⚠️  Erreur suppression via URL: {e}")
 
-
 def delete_cloudinary_file(instance, field_name='fichier'):
     """
     Supprime un fichier Cloudinary ou local de manière sécurisée.
@@ -205,6 +204,9 @@ def delete_cloudinary_file(instance, field_name='fichier'):
     # 2. Supprimer via Cloudinary API (public_id)
     if hasattr(file_field, 'public_id') and file_field.public_id:
         public_id = file_field.public_id + '.' + file_field.format
+        print(f"✅ Fichier Cloudinary supprimé: {public_id}")
+        resource = api.resource(public_id, resource_type='raw')
+        print(f"   Type: {resource['resource_type']} - Format: {resource['format']} - Taille: {resource['bytes']} bytes")
         _delete_cloudinary_by_public_id(public_id)
         return
     

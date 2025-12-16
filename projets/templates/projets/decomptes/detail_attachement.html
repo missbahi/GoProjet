@@ -715,7 +715,7 @@
                         <i class="fas fa-file-pdf info-icon text-red-400"></i>
                         <div class="info-content">
                             <div class="info-label">Fichier joint</div>
-                            <a href="{{ attachement.fichier.url }}" target="_blank" class="info-value underline hover:text-cyan-300 transition-colors">
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true"  target="_blank" class="info-value underline hover:text-cyan-300 transition-colors">
                                 Voir le fichier <i class="fas fa-external-link-alt ml-1"></i>
                             </a>
                         </div>
