@@ -118,7 +118,8 @@ def delete_from_cloudinary(public_id, resource_type='raw'):
         if not public_id or not isinstance(public_id, str):
             logger.error(f"Public_id invalide: {public_id}")
             return False
-        
+        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765882987/suivis_execution/OUED%20IFRANE/9/3CF3D753-13D5-4C03-B914-8C2F2204A5DE.jpeg
+        #https://res.cloudinary.com/%20=ddfqmth4q/raw/upload/v1/suivis_execution/OUED%20IFRANE/9/3CF3D753-13D5-4C03-B914-8C2F2204A5DE.jpeg
         # 2. Configuration Cloudinary (si pas déjà fait)
         if not cloudinary.config().cloud_name:
             cloudinary.config(
@@ -268,6 +269,81 @@ def secure_download(request, model_name, object_id):
         # Redirection vers Cloudinary
         return HttpResponseRedirect(url)
 
+def download_document(request, model_name, object_id):
+    model = apps.get_model('projets', model_name)
+    if not model:
+        return HttpResponseForbidden("Modèle non reconnu")
+    
+    # On cherche l'objet
+    obj = get_object_or_404(model, id=object_id)
+    if not obj:
+        return HttpResponseNotFound("Objet non trouvé")
+    
+    # On cherche le projet associé
+    projet = get_projet_from_instance(obj)
+    user = request.user
+
+    if not projet:
+        return HttpResponseForbidden("Projet non trouvé pour cet objet")
+    if not user in projet.users.all():
+        return HttpResponseForbidden("Accès refusé au projet associé")
+    
+    # On cherche le fichier
+    file_field = get_file_field(obj)
+    if not file_field:
+        return HttpResponseForbidden("Aucun fichier lié à cet objet")
+    
+     # On récupère l'URL du fichier
+    file_name = extract_filename_from_url(file_field.url)
+    try:
+        result = cloudinary.Search().expression(file_name).execute()
+        if not result:
+            return HttpResponseNotFound("Fichier non trouvé")
+    except Exception as e:
+        print(f"❌ Erreur Cloudinary: {e}")
+        return HttpResponseNotFound("Fichier non rencontré")
+    
+    resource = result.get('resources')[0]
+    if not resource:
+        return HttpResponseNotFound("Fichier non rencontré")
+    secure_url = resource.get('secure_url')
+    return HttpResponseRedirect(secure_url)
+
+def delete_document(request, model_name, object_id):
+    model = apps.get_model('projets', model_name)
+    if not model:
+        False, "Modèle non reconnu"
+    
+    # On cherche l'objet
+    obj = get_object_or_404(model, id=object_id)
+    if not obj: 
+        return False, "Objet non rencontré"
+    
+    # On cherche le projet associé
+    projet = get_projet_from_instance(obj)
+    user = request.user
+
+    if not projet:
+        return False, "Projet non rencontré pour cet objet"
+    if not user in projet.users.all():
+        return False, "Accès refusé au projet associé"
+    
+    # On cherche le fichier
+    file_field = get_file_field(obj)
+    if not file_field:
+        return False, "Aucun fichier lié à cet objet"
+    
+    # On supprime le fichier
+    try:
+        if hasattr(obj, 'public_id') and file_field.public_id:
+            public_id = file_field.public_id + '.' + file_field.format
+            cloudinary.uploader.destroy(public_id, resource_type='raw')
+            return True, f"Fichier supprimé: {public_id}"
+        else:
+            return False, "Fichier non rencontré"
+    except Exception as e:
+        return False, f"Erreur Cloudinary: {e}"
+    
 def serve_file_with_original_name(file_field, original_filename):
     """Télécharge le fichier avec le nom original"""
     try:
@@ -286,9 +362,6 @@ def serve_file_with_original_name(file_field, original_filename):
         
         encoded_filename = urllib.parse.quote(original_filename)
         django_response['Content-Disposition'] = f'attachment; filename="{encoded_filename}"; filename*=UTF-8\'\'{encoded_filename}'
-        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765824296/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
-        #https://res.cloudinary.com/%20=ddfqmth4q/raw/upload/v1/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
-        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765824296/suivis_execution/OUED%20IFRANE/8/PV15122025.pdf
         return django_response
         
     except Exception as e:
@@ -1743,7 +1816,7 @@ def supprimer_document(request, projet_id, document_id):
     return redirect('projets:documents', projet_id=projet_id)
 def telecharger_document(request, document_id):
     try:
-        return secure_download(request, 'DocumentAdministratif', document_id)
+        return download_document(request, 'DocumentAdministratif', document_id)
     except Exception as e:
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         raise Http404("Erreur lors du téléchargement du document")
@@ -1796,7 +1869,7 @@ class AfficherDocumentView(View):
     """Vue avec téléchargement direct depuis Cloudinary"""
     def get(self, request, document_id):
         try:
-            response = secure_download(request, 'DocumentAdministratif', document_id)
+            response = download_document(request, 'DocumentAdministratif', document_id)
             return response
             
         except Exception as e:
@@ -1895,7 +1968,9 @@ def afficher_fichier_suivi(request, fichier_id):
         viewable_types = {'.pdf', '.jpg', '.jpeg', '.png', '.gif', '.txt', '.csv', '.html', '.htm'}
         
         # Télécharger le fichier
-        response = secure_download(request, "FichierSuivi", fichier_id)
+        #response = secure_download(request, "FichierSuivi", fichier_id)
+        secure_url = download_document(request, "FichierSuivi", fichier_id)
+        return secure_url
     except IOError:
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({'success': False, "error": "Impossible d'ouvrir le fichier."})
@@ -1934,13 +2009,18 @@ def supprimer_fichier_suivi(request, fichier_id):
             projet_id = fichier_suivi.suivi.projet.id  
 
             if fichier_suivi.fichier:
-                
-                public_id = fichier_suivi.get_public_id
-                print("Public ID:", public_id)
-                delete_from_cloudinary(public_id=public_id)
-                # fichier_suivi.delete()
-            messages.success(request, "Le fichier a été supprimé avec succès.")
-            return redirect('projets:modifier_suivi', projet_id, suivi_id)
+                # public_id = fichier_suivi.get_public_id
+                # print("Public ID:", public_id)
+                result = delete_document(request, 'FichierSuivi', fichier_id)
+
+                if result[0]:
+                    fichier_suivi.delete()
+                    messages.success(request, "Le fichier a été supprimé avec succès.")
+                    return redirect('projets:suivi_execution', projet_id=projet_id)
+                else:
+                    messages.error(request, "Une erreur s'est produite lors de la suppression du fichier.")
+                    return redirect('projets:modifier_suivi', projet_id, suivi_id)
+
         except Exception as e:
             messages.error(request, f"Erreur lors de la suppression du fichier: {str(e)}")
         
@@ -1948,7 +2028,7 @@ def supprimer_fichier_suivi(request, fichier_id):
 def telecharger_fichier_suivi(request, fichier_id):
     try:
         fichier = get_object_or_404(FichierSuivi, id=fichier_id)
-        return secure_download(request, 'FichierSuivi', fichier_id)
+        return download_document(request, 'FichierSuivi', fichier_id)
     except Exception as e:
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         return redirect('projets:suivi_execution', projet_id=fichier.suivi.projet.id)
@@ -2740,7 +2820,7 @@ def telecharger_document_validation(request, etape_id):
         return redirect_to_attachement(etape)
     
     try:
-        return secure_download(request, 'EtapeValidation', etape_id)
+        return download_document(request, 'EtapeValidation', etape_id)
     except Exception as e:
         messages.error(request, f"Erreur lors du téléchargement : {str(e)}")
         return redirect_to_attachement(etape)
@@ -3467,7 +3547,7 @@ def annuler_ordre_service(request, projet_id, ordre_id):
 def telecharger_document_os(request, ordre_id):
     ordre = get_object_or_404(OrdreService, id=ordre_id)
     try:
-        return secure_download(request, 'OrdreService', ordre_id)
+        return download_document(request, 'OrdreService', ordre_id)
     except Exception as e:
         messages.error(request, f"❌ Erreur lors du telechargement: {e}")
         return redirect('projets:details_ordre_service', projet_id=ordre.projet.id, ordre_id=ordre.id)
