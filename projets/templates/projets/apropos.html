@@ -160,12 +160,38 @@
         </section>
     </main>
 
-    <!-- FOOTER -->
+    <!-- FOOTER
     <footer class="bg-gray-800 text-center py-4 text-sm text-gray-400 border-t border-gray-700">
         &copy; {{ now|date:"Y" }} Bureau d'études techniques MEGAPERFORMANCE - Tous droits réservés.
-    </footer>
-
+    </footer> -->
+    <footer class="bg-gray-800 text-center py-4 text-sm text-gray-400">
+    <div class="container mx-auto px-4">
+        <!-- Ligne principale -->
+        <!-- <p class="mb-2">
+            &copy; {{ now|date:"Y" }} Bureau d'études techniques MEGAPERFORMANCE - Tous droits réservés.
+        </p> -->
+        
+        <!-- Ligne développeur -->
+        <div class="flex flex-col md:flex-row items-center justify-center gap-2">
+            <div class="flex items-center space-x-2">
+                <span>Solution développée par</span>
+                <div class="flex items-center space-x-1">
+                    <img src="{% static 'images/logo-goprojet-small.png' %}" 
+                         alt="GoProjet" 
+                         class="h-4 w-auto"
+                         onerror="handleDevLogoError(this)">
+                    <span class="font-semibold text-white">- Tous droits réservés.</span>
+                </div>
+            </div>
+            <span class="hidden md:inline">•</span>
+            <a href="mailto:missbahi@gmail.com" class="text-purple-400 hover:underline">
+                missbahi@gmail.com
+            </a>
+        </div>
+    </div>
+</footer>
 </body>
+
 </html>
 <script>
     function handleNavbarAvatarError(img) {
@@ -185,4 +211,15 @@
     document.getElementById('userMenuBtn').addEventListener('click', function() {
         document.getElementById('userMenuDropdown').classList.toggle('hidden');
     });
+    function handleDevLogoError(img) {
+        img.onerror = null;
+        
+        // Créer un logo de fallback avec le texte
+        const parent = img.parentNode;
+        const fallbackDiv = document.createElement('div');
+        fallbackDiv.className = 'bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-lg px-3 py-2 flex items-center justify-center';
+        fallbackDiv.innerHTML = '<span>GoProjet</span>';
+        
+        parent.replaceChild(fallbackDiv, img);
+    }
 </script>
