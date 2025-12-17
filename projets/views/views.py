@@ -117,8 +117,6 @@ def delete_from_cloudinary(public_id, resource_type='raw'):
         if not public_id or not isinstance(public_id, str):
             logger.error(f"Public_id invalide: {public_id}")
             return False
-        #https://res.cloudinary.com/ddfqmth4q/raw/upload/v1765882987/suivis_execution/OUED%20IFRANE/9/3CF3D753-13D5-4C03-B914-8C2F2204A5DE.jpeg
-        #https://res.cloudinary.com/%20=ddfqmth4q/raw/upload/v1/suivis_execution/OUED%20IFRANE/9/3CF3D753-13D5-4C03-B914-8C2F2204A5DE.jpeg
         # 2. Configuration Cloudinary (si pas déjà fait)
         if not cloudinary.config().cloud_name:
             cloudinary.config(

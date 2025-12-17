@@ -1,6 +1,7 @@
 import os
 import re
 import cloudinary
+from django.conf import settings
 from django.dispatch import receiver
 from cloudinary import api
 from cloudinary.exceptions import NotFound
@@ -204,10 +205,16 @@ def delete_cloudinary_file(instance, field_name='fichier'):
     # 2. Supprimer via Cloudinary API (public_id)
     if hasattr(file_field, 'public_id') and file_field.public_id:
         public_id = file_field.public_id + '.' + file_field.format
-        print(f"✅ Fichier Cloudinary supprimé: {public_id}")
+        print(f"✅ Fichier Cloudinary trouvé: {public_id}")
+        force_config_cloudinary()
         resource = api.resource(public_id, resource_type='raw')
+        if not resource:
+            print(f"❌ Fichier Cloudinary non trouvé")
+            return
+        print('resource trouvé avec les données suivantes:', resource)
         print(f"   Type: {resource['resource_type']} - Format: {resource['format']} - Taille: {resource['bytes']} bytes")
         _delete_cloudinary_by_public_id(public_id)
+        
         return
     
     # 3. Supprimer via Cloudinary API (URL)
@@ -222,7 +229,20 @@ def delete_cloudinary_file(instance, field_name='fichier'):
             print(f"✅ Fichier local supprimé: {file_field.path}")
         except Exception as e:
             print(f"❌ Erreur suppression locale: {e}")
-
+def force_clean(value):
+        import re
+        value = str(value).strip()
+        
+        # Supprimer tout sauf lettres et chiffres
+        cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value))
+        return cleaned
+def force_config_cloudinary():
+    cleaned_name = force_clean(settings.CLOUDINARY_CLOUD_NAME)
+    cloudinary.config(
+        cloud_name=cleaned_name,
+        api_key=settings.CLOUDINARY_API_KEY,
+        api_secret=settings.CLOUDINARY_API_SECRET
+    ) 
 def _delete_cloudinary_by_public_id(public_id, resource_type='raw'):
     """Supprime un fichier Cloudinary via son public_id."""
     try:
