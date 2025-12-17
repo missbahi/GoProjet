@@ -19,7 +19,7 @@ from django.views import View
 from projets.decorators import can_view_projet, chef_projet_required, superuser_required
 from projets.exporters import ExcelExporter
 
-from ..forms import ClientForm, DecompteForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
+from ..forms import ClientForm, DecompteForm, DocumentAdministratifForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
 from ..models import *
 
 from django.views.generic import ListView
@@ -42,7 +42,6 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from decimal import Decimal
 from django.contrib.auth import views as auth_views
-
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 VIEWABLE_TYPES = {
         '.pdf': 'application/pdf',
@@ -167,6 +166,7 @@ def get_projet_from_instance(instance):
     elif hasattr(instance,'processValidation'):
         return instance.processValidation.attachement.projet
     return None
+
 def extract_public_id_from_url(url):
     """
     Extrait le public_id d'une URL Cloudinary
@@ -197,6 +197,7 @@ def extract_public_id_from_url(url):
             return public_id
     
     return None
+
 def extract_filename_from_url(url):
     """Extrait un nom de fichier depuis une URL Cloudinary"""
     if not url:
@@ -421,7 +422,17 @@ class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
 def access_denied(request):
     return render(request, 'authentification/access_denied.html', status=403)
 
-#------------------ Page d'accueil ------------------
+#------------------ Landing view - Page d'accueil ------------------
+def landing(request):
+    """Vue pour la page d'accueil"""
+    if request.user.is_authenticated:
+        # Si l'utilisateur est déjà connecté, rediriger vers la page d'accueil
+        # ou la page de connexion sinon
+        if request.user.last_login:
+            return redirect('projets:liste_projets')
+        return redirect('projets:home')
+    
+    return redirect('projets:apropos')
 @login_required
 def home(request):
     # Nombre de projets
@@ -1174,6 +1185,9 @@ def dashboard_projet(request, projet_id):
     decomptes_retard = decomptes.filter(statut='EN_RETARD').count()
     decomptes_recents = decomptes.order_by('-date_emission')[:5]  # 5 plus récents
     attachements = Attachement.objects.filter(projet=projet)
+    documents_administratifs = DocumentAdministratif.objects.filter(projet=projet)
+    ordre_services = OrdreService.objects.filter(projet=projet)
+    suivis_execution = SuiviExecution.objects.filter(projet=projet)
     can_handler = request.user.is_superuser
     context = {
         'can_handler': can_handler,
@@ -1185,7 +1199,10 @@ def dashboard_projet(request, projet_id):
         'decomptes_emis': decomptes_emis,
         'decomptes_retard': decomptes_retard,
         'decomptes_recents': decomptes_recents,
-        'attachements': attachements
+        'attachements': attachements,
+        'documents_administratifs': documents_administratifs,
+        'ordre_services': ordre_services,
+        'suivis_execution': suivis_execution
     }
     
     return render(request, 'projets/dashboard.html', context)
@@ -1832,44 +1849,48 @@ def ajouter_document(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
     if request.method == 'POST':
-        type_document = request.POST.get('type_document')
-        date_remise = request.POST.get('date_remise')
-        fichier = request.FILES.get('fichier')
-        
-        # Validation basique
-        if not type_document or not fichier:
-            messages.error(request, "Le type de document et le fichier sont obligatoires.")
-            return redirect('projets:documents', projet_id=projet_id)
-        
-        # Vérifier la taille du fichier (max 10MB)
-        if fichier.size > 10 * 1024 * 1024:
-            messages.error(request, "Le fichier ne doit pas dépasser 10MB.")
-            return redirect('projets:documents', projet_id=projet_id)
-        
-        # Créer le document
-        try:
-            if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                
-                document = DocumentAdministratif(
-                    projet=projet,
-                    type_document=type_document,
-                    date_remise=date_remise if date_remise else None,
-                )
-                public_id = projet.nom + "_" + type_document + "_" + str(document.id)
-                file_url = upload_to_cloudinary(fichier, "documents_administratifs", public_id)
-                document.fichier = file_url if file_url else None
-            else:
-                # Stockage local
-                document.fichier = fichier
-                
-            document.save()
+        form = DocumentAdministratifForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+
+            type_document = request.POST.get('type_document')
+            date_remise = request.POST.get('date_remise')
+            fichier = request.FILES.get('fichier')
             
-            messages.success(request, f"Le document '{type_document}' a été ajouté avec succès.")
-        except Exception as e:
-            messages.error(request, f"Une erreur s'est produite lors de l'ajout du document: {str(e)}")
+            # Validation basique
+            if not type_document or not fichier:
+                messages.error(request, "Le type de document et le fichier sont obligatoires.")
+                return redirect('projets:documents', projet_id=projet_id)
+            
+            # Vérifier la taille du fichier (max 10MB)
+            if fichier.size > 10 * 1024 * 1024:
+                messages.error(request, "Le fichier ne doit pas dépasser 10MB.")
+                return redirect('projets:documents', projet_id=projet_id)
+            
+            # Créer le document
+            try:
+                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
+                    
+                    document = DocumentAdministratif(
+                        projet=projet,
+                        type_document=type_document,
+                        date_remise=date_remise if date_remise else None,
+                    )
+                    public_id = projet.nom + "_" + type_document + "_" + str(document.id)
+                    file_url = upload_to_cloudinary(fichier, "documents_administratifs", public_id)
+                    document.fichier = file_url if file_url else None
+                else:
+                    # Stockage local
+                    document.fichier = fichier
+                     
+                document.save()
+            except Exception as e:
+                messages.error(request, f"Une erreur s'est produite lors de l'ajout du document: {str(e)}")
+                return redirect('projets:documents', projet_id=projet_id)
+            
+            messages.success(request, "Le document a été ajouté avec succès.")
         
-        return redirect('projets:documents', projet_id=projet_id)
-    
+            return redirect('projets:documents', projet_id=projet_id)
+    form = DocumentAdministratifForm()
     return redirect('projets:documents', projet_id=projet_id)
 
 class AfficherDocumentView(View):

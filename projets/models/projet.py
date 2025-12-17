@@ -588,6 +588,33 @@ def document_upload_path(instance, filename):
 
 class DocumentAdministratif(models.Model):
     """Modèle pour les documents administratifs"""
+    TYPE_CHOICES = [
+        ('', 'Sélectionner un type...'),
+        ('Attestation', 'Attestation'),
+        ('Attestation d\'enregistrement', 'Attestation d\'enregistrement'),
+        ('Attestation de conformité', 'Attestation de conformité'),
+        ('Attestation d\'assurance', 'Attestation d\'assurance'),
+        ('Assurance', 'Assurance'),
+        ('Caution provisoire', 'Caution provisoire'),
+        ('Caution définitive', 'Caution définitive'),
+        ('Bon de commande', 'Bon de commande'),
+        ('CPS', 'Cahier des prescriptions spéciales (CPS)'),
+        ('CPS avenant', 'CPS d\'avenant'),
+        ('Cahier des charges', 'Cahier des charges (CDC)'),
+        ('Contrat', 'Contrat'),
+        ('Contrat de sous-traitance', 'Contrat de sous-traitance'),
+        ('Cahier des clauses techniques', 'Cahier des clauses techniques (CCT)'),
+        ('CCTP', 'Cahier des clauses techniques particulières (CCTP)'),
+        ('CCAP', 'Cahier des clauses administratives particulières (CCAP)'),
+        ('Cahier des clauses administratives', 'Cahier des clauses administratives (CCA)'),
+        ('BDP', 'Bordereau des prix (BDP)'),
+        ('Contrat de garantie', 'Contrat de garantie'),
+        ('Convention', 'Convention'),
+        ('Autorisation', 'Autorisation'),
+        ('Rapport', 'Rapport'),
+        ('Procès-verbal', 'Procès-verbal (PV)'),
+        ('Autre', 'Autre'),
+    ]
     projet = models.ForeignKey('Projet', on_delete=models.CASCADE, related_name='documents_administratifs', verbose_name=_("Projet"))
     
     # Champ compatible Cloudinary
@@ -598,7 +625,7 @@ class DocumentAdministratif(models.Model):
         fichier = models.FileField(_("Fichier"), upload_to=document_upload_path)
         
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
-    type_document = models.CharField(_("Type de document"), max_length=100)
+    type_document = models.CharField(_("Type de document"), max_length=100, choices=TYPE_CHOICES, default='', blank=True)
     date_remise = models.DateField(_("Date de remise"), null=True, blank=True)
     description = models.TextField(_("Description"), blank=True)
 

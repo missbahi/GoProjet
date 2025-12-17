@@ -86,7 +86,7 @@ MIDDLEWARE = [
 
 # Configuration d'authentification
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'
+LOGIN_REDIRECT_URL = 'projets:landing'
 LOGOUT_REDIRECT_URL = 'projets:apropos'
 
 # URLs publiques

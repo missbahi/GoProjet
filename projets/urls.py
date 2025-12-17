@@ -8,7 +8,8 @@ app_name = "projets"
 
 commun_urlpatterns = [
     # Home
-    path('', views.home, name='home'),
+    path('home/', views.home, name='home'),
+    path('', views.landing, name='landing'),
     # Apropos et base de données
     path('apropos/', views.apropos, name='apropos'),
     # Secure download

@@ -469,5 +469,61 @@
         // Adaptation au redimensionnement
         window.addEventListener('resize', adaptForMobile);
     </script>
+
+    <script>
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // 1. Agrandir les éléments tactiles pour mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            const touchElements = document.querySelectorAll(
+                'input, select, textarea, button, label'
+            );
+            
+            touchElements.forEach(el => {
+                el.style.minHeight = '44px'; // Taille minimale iOS
+                el.style.fontSize = '16px'; // Empêche le zoom
+            });
+            
+            // 2. Optimiser l'input fichier pour mobile
+            const fileInput = document.querySelector('input[type="file"]');
+            if (fileInput) {
+                // Déjà configuré via 'accept' et 'capture'
+                console.log('Input fichier optimisé pour mobile');
+            }
+            
+            // 3. Message d'aide pour mobile
+            const fileLabel = document.querySelector('label[for*="fichier"]');
+            if (fileLabel) {
+                const helpText = document.createElement('small');
+                helpText.className = 'form-text text-muted d-block mt-1';
+                helpText.innerHTML = '📱 Sur mobile : utilisez la caméra ou la galerie';
+                fileLabel.parentNode.insertBefore(helpText, fileLabel.nextSibling);
+            }
+        });
+    
+        document.addEventListener('change', function(e) {
+            if (e.target.type === 'file' && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const fileName = file.name;
+                const fileSize = (file.size / (1024 * 1024)).toFixed(2);
+                
+                // Afficher un aperçu simple
+                let preview = document.getElementById('mobileFilePreview');
+                if (!preview) {
+                    preview = document.createElement('div');
+                    preview.id = 'mobileFilePreview';
+                    preview.className = 'alert alert-info mt-2';
+                    e.target.parentNode.appendChild(preview);
+                }
+                
+                preview.innerHTML = `
+                    <strong>✅ Fichier sélectionné :</strong> ${fileName}
+                    <br><small>Taille : ${fileSize} MB</small>
+                    ${file.type.startsWith('image/') ? '<br><small>📷 Photo</small>' : ''}
+                    ${file.type.startsWith('video/') ? '<br><small>🎥 Vidéo</small>' : ''}
+                `;
+            }
+        });
+    }
+</script>
 </body>
 </html>

@@ -2,6 +2,8 @@ from decimal import Decimal
 import os
 from django import forms
 
+from projets.models.projet import DocumentAdministratif
+
 # from projets.models.revision import RevisionPrix
 from .models import Client, Decompte, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService
 
@@ -343,3 +345,30 @@ class OrdreServiceForm(forms.ModelForm):
         if not self.instance.pk:
             self.fields['statut'].initial = 'BROUILLON'
 
+class DocumentAdministratifForm(forms.ModelForm):
+    class Meta:
+        model = DocumentAdministratif
+        fields = ['projet', 'type_document', 'fichier', 'date_remise', 'description', 'original_filename']
+        widgets = {
+            'fichier': forms.FileInput(attrs={
+            'accept': 'image/*,video/*,.pdf,.doc,.docx',
+            'capture': 'environment',  # 'environment' pour caméra arrière, 'user' pour frontale
+            'multiple': False,
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choices = DocumentAdministratif.TYPE_CHOICES
+        self.fields['type_document'].widget = forms.Select(choices=choices)
+        # Adapté pour mobile
+        self.fields['fichier'].widget.attrs.update({
+            'accept': 'image/*,video/*,.pdf,.doc,.docx',
+            'capture': 'environment',  # 'environment' pour caméra arrière, 'user' pour frontale
+            'multiple': False,  # Pour iOS/Android, évitez multiple sur mobile
+        })
+        
+        self.fields['type_document'].widget.attrs.update({
+            'class': 'form-select',
+            'required': 'required',
+        })

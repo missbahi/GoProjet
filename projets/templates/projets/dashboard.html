@@ -405,7 +405,7 @@
           </div>
           <h4 class="module-title">Documents administratifs</h4>
           <p class="module-description">Consultez et gérez tous les documents liés au projet</p>
-          {% if projet.documents_administratifs %}
+          {% if documents_administratifs %}
           <div class="module-actions">
             <a href="{% url 'projets:documents' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
@@ -414,36 +414,36 @@
           </div>
           {% else %}
           <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de documents administratifs pour ce projet</p>
-          <a href="" 
-             class="btn-desactive w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-plus"></i>
-              <span class="text-gray-200">Accéder</span>
-          </a>
+          <a href="{% url 'projets:documents' projet.id %}" 
+              class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-plus"></i>
+                <span>Ajouter un premier document</span>
+            </a>
           {% endif %}
         </div>
 
         <!-- Suivi d'exécution -->
         <div class="module-card group">
-          <div class="module-icon">
-            <i class="fas fa-chart-line"></i>
-          </div>
-          <h4 class="module-title">Suivi d'exécution</h4>
-          <p class="module-description">Suivez l'avancement et les performances du projet</p>
-          {% if projet.suivis_execution %}
-          <div class="module-actions">
-            <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-arrow-right"></i>
-              <span>Accéder</span>
+            <div class="module-icon">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h4 class="module-title">Suivi d'exécution</h4>
+            <p class="module-description">Suivez les evenements et les avancements du projet</p>
+            {% if suivis_execution %}
+            <div class="module-actions">
+              <a href="{% url 'projets:suivi_execution' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-arrow-right"></i>
+                <span>Accéder</span>
+              </a>
+            </div>
+            {% else %}
+            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de suivi enregistré pour ce projet</p>
+            <a href="{% url 'projets:suivi_execution' projet.id %}" 
+              class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+                <i class="fas fa-plus"></i>
+                <span>Ajouter un premier suivi</span>
             </a>
-          </div>
-          {% else %}
-          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de suivi d'exécution pour ce projet</p>
-          <a href="{% url 'projets:suivi_execution' projet.id %}" 
-             class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
-              <i class="fas fa-plus"></i>
-              <span>Ajouter un premier suivi</span>
-          </a>
-          {% endif %}
+            {% endif %}
         </div>
 
         <!-- Ordres de services -->
@@ -453,7 +453,7 @@
           </div>
           <h4 class="module-title">Ordres de services</h4>
           <p class="module-description">Gérez les ordres de service du projet</p>
-          {% if projet.ordres_service %}
+          {% if ordre_services %}
           <div class="module-actions">
             <a href="{% url 'projets:ordres_service' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-arrow-right"></i>
@@ -470,13 +470,13 @@
           {% endif %}
         </div>
 
-        <!-- Fiche de contrôle -->
+        <!-- Fiche avancement -->
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-clipboard-check"></i>
           </div>
-          <h4 class="module-title">Fiche de Contrôle</h4>
-          <p class="module-description">Consultez et gérez les fiches de contrôle qualité</p>
+          <h4 class="module-title">Fiche de Contrôle d'attachements</h4>
+          <p class="module-description">Consultez et Contrôlez l'avancement du projet</p>
           {% if attachements %}
           <div class="module-actions">
             <a href="{% url 'projets:fiche_controle' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
@@ -500,13 +500,7 @@
             <i class="fas fa-file-invoice-dollar"></i>
           </div>
           <h4 class="module-title">Attachements</h4>
-          <p class="module-description">
-            <!-- {% if attachements %} -->
-              Gérez les attachements du projet
-            <!-- {% else %}
-              Ajoutez le premier attachement
-            {% endif %} -->
-          </p>
+          <p class="module-description">Consultez et gérez les attachements</p>
           <div class="module-actions">
             {% if attachements %}
             <a href="{% url 'projets:liste_attachements' projet.id %}" 
@@ -519,7 +513,7 @@
             <a href="{% url 'projets:ajouter_attachement' projet.id %}" 
                class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                 <i class="fas fa-plus"></i>
-                <span>Créer</span>
+                <span>Créer le premier attachement</span>
             </a>
             {% endif %}
           </div>
