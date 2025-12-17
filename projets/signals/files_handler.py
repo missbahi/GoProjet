@@ -37,20 +37,14 @@ def check_file_exists(public_id):
 #     return public_id + exit_code
     
 def delete_cloudinary_file1(instance):
-            
     field_name = 'fichier'
-    
     file_field = getattr(instance, field_name, None)
-     # Cloudinary
+
     if hasattr(file_field, 'public_id') and file_field.public_id:
         try:
-            result = cloudinary.uploader.destroy(
-                file_field.public_id,
-                resource_type='raw',
-                invalidate=True
-            )
+            result = cloudinary.uploader.destroy(file_field.public_id, resource_type='raw')
             if result.get('result') == 'ok':
-                print(f"✅ Fichier Cloudinary supprimé (delete): {file_field.public_id}")
+                print(f"✅ Fichier Cloudinary supprimé via Cloudinary (delete): {file_field.public_id}")
             else:
                 print(f"⚠️ {result.get('result')} (delete): {file_field.public_id}")
         except Exception as e:
@@ -135,13 +129,9 @@ def _delete_cloudinary_file(file_field):
         # Méthode 2: Supprimer via public_id
         if hasattr(file_field, 'public_id') and file_field.public_id:
             try:
-                cloudinary.uploader.destroy(
-                    file_field.public_id,
-                    resource_type='raw',  # auto-détecte le type
-                    type='upload',
-                    invalidate=True  # Invalide le cache CDN
-                )
-                print(f"✅ Fichier Cloudinary supprimé: {file_field.public_id}")
+                result = cloudinary.uploader.destroy(file_field.public_id, resource_type='raw', type='upload')
+                if result.get('result') == 'ok': 
+                    print(f"✅ Fichier Cloudinary supprimé: {file_field.public_id}")
             except CloudinaryError as e:
                 if "not found" not in str(e).lower():
                     print(f"⚠️  Erreur suppression Cloudinary: {e}")
@@ -211,8 +201,7 @@ def delete_cloudinary_file(instance, field_name='fichier'):
         if not resource:
             print(f"❌ Fichier Cloudinary non trouvé")
             return
-        print('resource trouvé avec les données suivantes:', resource)
-        print(f"   Type: {resource['resource_type']} - Format: {resource['format']} - Taille: {resource['bytes']} bytes")
+        print('resource trouvé avec les données suivantes:')
         _delete_cloudinary_by_public_id(public_id)
         
         return
@@ -229,6 +218,7 @@ def delete_cloudinary_file(instance, field_name='fichier'):
             print(f"✅ Fichier local supprimé: {file_field.path}")
         except Exception as e:
             print(f"❌ Erreur suppression locale: {e}")
+            
 def force_clean(value):
         import re
         value = str(value).strip()
@@ -236,6 +226,7 @@ def force_clean(value):
         # Supprimer tout sauf lettres et chiffres
         cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value))
         return cleaned
+
 def force_config_cloudinary():
     cleaned_name = force_clean(settings.CLOUDINARY_CLOUD_NAME)
     cloudinary.config(
@@ -243,15 +234,11 @@ def force_config_cloudinary():
         api_key=settings.CLOUDINARY_API_KEY,
         api_secret=settings.CLOUDINARY_API_SECRET
     ) 
+
 def _delete_cloudinary_by_public_id(public_id, resource_type='raw'):
     """Supprime un fichier Cloudinary via son public_id."""
     try:
-        result = cloudinary.uploader.destroy(
-            public_id,
-            resource_type=resource_type,
-            type='upload',
-            invalidate=True
-        )
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type, type='upload')
         
         if result.get('result') == 'ok':
             print(f"✅ Fichier Cloudinary supprimé: {public_id}")
