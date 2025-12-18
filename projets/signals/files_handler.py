@@ -12,11 +12,15 @@ from cloudinary.exceptions import Error as CloudinaryError
 from projets.models import Attachement, EtapeValidation, FichierSuivi, DocumentAdministratif, OrdreService, ProcessValidation
 def check_file_exists(public_id):
     try:
+        # Configuration Cloudinary
+        cloudinary.config(
+            cloud_name=force_clean(settings.CLOUDINARY_CLOUD_NAME),
+            api_key=settings.CLOUDINARY_API_KEY,
+            api_secret=settings.CLOUDINARY_API_SECRET,
+            secure=True
+        )
+        # Essayer de trouver le fichier sur Cloudinary
         resource = api.resource(public_id, resource_type='raw')
-        print(f"✅ Fichier trouvé: {resource['public_id']}")
-        print(f"   Type: {resource['resource_type']}")
-        print(f"   Format: {resource['format']}")
-        print(f"   Taille: {resource['bytes']} bytes")
         return True
     except NotFound:
         print(f"❌ Fichier non trouvé: {public_id}")
@@ -24,42 +28,7 @@ def check_file_exists(public_id):
     except Exception as e:
         print(f"❌ Erreur: {e}")
         return False
-
-# def file_name_from_url(file):
-#     """
-#     Retourne le public_id complet avec extension
-#     en combinant public_id (sans extension) et extension de l'URL
-#     """
-#     from pathlib import Path
-#     url = file.url.replace(' ', '')
-#     public_id = file.public_id
-#     exit_code = Path(url).suffix
-#     return public_id + exit_code
     
-def delete_cloudinary_file1(instance):
-    field_name = 'fichier'
-    file_field = getattr(instance, field_name, None)
-
-    if hasattr(file_field, 'public_id') and file_field.public_id:
-        try:
-            result = cloudinary.uploader.destroy(file_field.public_id, resource_type='raw')
-            if result.get('result') == 'ok':
-                print(f"✅ Fichier Cloudinary supprimé via Cloudinary (delete): {file_field.public_id}")
-            else:
-                print(f"⚠️ {result.get('result')} (delete): {file_field.public_id}")
-        except Exception as e:
-            print(f"❌ Erreur suppression Cloudinary (delete): {e}")
-    
-    # Fichier local (au cas où)
-    elif hasattr(file_field, 'path') and file_field.path:
-        try:
-            import os
-            if os.path.exists(file_field.path):
-                os.remove(file_field.path)
-                print(f"✅ Fichier local supprimé (delete): {file_field.path}")
-        except Exception as e:
-            print(f"❌ Erreur suppression locale (delete): {e}")
-
 @receiver(post_delete, sender=Attachement)
 @receiver(post_delete, sender=DocumentAdministratif)
 @receiver(post_delete, sender=OrdreService)
@@ -83,12 +52,12 @@ def handle_file_update(sender, instance, **kwargs):
     """
     # Nouvelle instance, rien à supprimer
     if not instance.pk:
-        return
+        return False
     
     try:
         old_instance = sender.objects.get(pk=instance.pk)
     except sender.DoesNotExist:
-        return
+        return False
     
     # Récupérer les fichiers
     old_file = getattr(old_instance, 'fichier', None)
@@ -96,19 +65,16 @@ def handle_file_update(sender, instance, **kwargs):
     
     # Cas 1: Pas de changement de fichier → sortir
     if old_file == new_file:
-        return
+        return False
     
     # Cas 2: Fichier supprimé (nouveau fichier est None)
     if old_file and new_file is None:
-        _delete_cloudinary_file(old_file)
-        print(f"🗑️  Fichier supprimé pour {sender.__name__} ID {instance.pk}")
-        return
+        return _delete_cloudinary_file(old_file)
     
     # Cas 3: Fichier modifié (ancien et nouveau existent mais sont différents)
     if old_file and new_file and old_file != new_file:
-        _delete_cloudinary_file(old_file)
         print(f"🔄 Fichier modifié pour {sender.__name__} ID {instance.pk}, ancien fichier supprimé")
-        return
+        return _delete_cloudinary_file(old_file)
 
 def _delete_cloudinary_file(file_field):
     """
@@ -118,37 +84,42 @@ def _delete_cloudinary_file(file_field):
         file_field: Le champ CloudinaryField
     """
     if not file_field:
-        return
+        return False
     
     try:
         # Méthode 1: Utiliser delete() si disponible (CloudinaryField)
         if hasattr(file_field, 'delete'):
             file_field.delete()
-            return
+            return True
         
         # Méthode 2: Supprimer via public_id
         if hasattr(file_field, 'public_id') and file_field.public_id:
             try:
                 result = cloudinary.uploader.destroy(file_field.public_id, resource_type='raw', type='upload')
                 if result.get('result') == 'ok': 
-                    print(f"✅ Fichier Cloudinary supprimé: {file_field.public_id}")
+                    return True
+                else:
+                    print(f"⚠️ {result.get('result')} (delete): {file_field.public_id}")
+                    return False
             except CloudinaryError as e:
                 if "not found" not in str(e).lower():
                     print(f"⚠️  Erreur suppression Cloudinary: {e}")
+                return False
         
         # Méthode 3: Supprimer via l'URL
         elif hasattr(file_field, 'url'):
-            _delete_by_url(file_field.url)
+            return _delete_by_url(file_field.url)
             
     except Exception as e:
         print(f"❌ Erreur lors de la suppression du fichier: {e}")
+        return False
 
 def _delete_by_url(url):
     """Supprime un fichier Cloudinary à partir de son URL."""
     import re
     
     if not url or 'cloudinary.com' not in url:
-        return
+        return False
     
     # Extraire le public_id de l'URL
     patterns = [
@@ -164,11 +135,12 @@ def _delete_by_url(url):
             public_id = match.group(1)
             try:
                 cloudinary.uploader.destroy(public_id, resource_type='raw')
-                print(f"✅ Fichier supprimé via URL: {public_id}")
-                break
+                return True
             except CloudinaryError as e:
                 if "not found" not in str(e).lower():
                     print(f"⚠️  Erreur suppression via URL: {e}")
+                return False
+    return False
 
 def delete_cloudinary_file(instance, field_name='fichier'):
     """
@@ -181,35 +153,33 @@ def delete_cloudinary_file(instance, field_name='fichier'):
     file_field = getattr(instance, field_name, None)
     
     if not file_field:
-        return
+        return False
     
     # 1. Essayer la méthode CloudinaryField.delete() si disponible
     if hasattr(file_field, 'delete'):
         try:
             file_field.delete()
-            print(f"✅ Fichier supprimé via .delete(): {file_field}")
-            return
+            return True
         except Exception as e:
             print(f"⚠️ Échec .delete(), tentative autre méthode: {e}")
-    
+            return False
     # 2. Supprimer via Cloudinary API (public_id)
-    if hasattr(file_field, 'public_id') and file_field.public_id:
+    if hasattr(file_field, 'public_id'):
         public_id = file_field.public_id + '.' + file_field.format
-        print(f"✅ Fichier Cloudinary trouvé: {public_id}")
+
         force_config_cloudinary()
-        resource = api.resource(public_id, resource_type='raw')
-        if not resource:
+        try:
+            resource = api.resource(public_id, resource_type='raw')
+        except NotFound:
             print(f"❌ Fichier Cloudinary non trouvé")
-            return
-        print('resource trouvé avec les données suivantes:')
-        _delete_cloudinary_by_public_id(public_id)
-        
-        return
-    
+            return False
+
+        return _delete_cloudinary_by_public_id(public_id)
+            
     # 3. Supprimer via Cloudinary API (URL)
     if hasattr(file_field, 'url') and file_field.url:
-        _delete_cloudinary_by_url(file_field.url)
-        return
+        force_config_cloudinary()
+        return _delete_cloudinary_by_url(file_field.url)
     
     # 4. Fallback: Fichier local
     if hasattr(file_field, 'path') and file_field.path and os.path.exists(file_field.path):
@@ -241,25 +211,28 @@ def _delete_cloudinary_by_public_id(public_id, resource_type='raw'):
         result = cloudinary.uploader.destroy(public_id, resource_type=resource_type, type='upload')
         
         if result.get('result') == 'ok':
-            print(f"✅ Fichier Cloudinary supprimé: {public_id}")
+            return True
         else:
             print(f"⚠️ Résultat inattendu: {result.get('result')} pour {public_id}")
+            return False
             
     except CloudinaryError as e:
         if "not found" not in str(e).lower():
             print(f"⚠️ Erreur suppression Cloudinary: {e}")
+        return False
     except Exception as e:
         print(f"❌ Erreur inattendue: {e}")
-
+        return False
+    
 def _delete_cloudinary_by_url(url):
     """Supprime un fichier Cloudinary à partir de son URL."""
     if not url or 'cloudinary.com' not in url:
-        return
+        return False
     
     # Extraire public_id de l'URL
     public_id = extract_public_id_from_url(url)
     if public_id:
-        _delete_cloudinary_by_public_id(public_id)
+       return _delete_cloudinary_by_public_id(public_id)
 
 def extract_public_id_from_url(url):
     """Extrait le public_id d'une URL Cloudinary."""

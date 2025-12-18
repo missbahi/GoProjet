@@ -15,6 +15,12 @@ class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ['first_name', 'last_name', 'email']
+        widgets = {
+            'avatar': forms.FileInput(attrs={
+                'accept': 'image/*',
+                'capture': 'environment',  # 
+                'multiple': False,
+            })}
         labels = {
             'first_name': 'Prénom',
             'last_name': 'Nom',
@@ -153,8 +159,12 @@ class AttachementForm(forms.ModelForm):
             'statut': forms.Select(attrs={
                 'class': 'form-input form-select'
             }),
+
             'fichier': forms.FileInput(attrs={
-                'class': 'form-input file-upload'
+                'class': 'form-input file-upload',
+                'accept': 'image/*,video/*,.pdf,.doc,.docx',
+                'capture': 'environment',  # 
+                'multiple': False,
             }),
             'original_filename': forms.TextInput(attrs={
                 'class': 'form-input',
@@ -321,11 +331,19 @@ class DecompteForm(forms.ModelForm):
     #         raise forms.ValidationError("Le montant de révision est supérieur au 10% du montant HT.")
         
     #     return montant 
+
 class OrdreServiceForm(forms.ModelForm):
     class Meta:
         model = OrdreService
         fields = '__all__'
         exclude = ['projet', 'ordre_sequence']  # Ces champs sont gérés automatiquement
+        widgets = {
+            'fichier': forms.FileInput(attrs={
+            'accept': 'image/*,.pdf,.doc,.docx',
+            'capture': 'environment',  # 'environment' pour caméra arrière, 'user' pour frontale
+            'multiple': False,
+            }),
+        }
     
     def __init__(self, *args, **kwargs):
         self.projet = kwargs.pop('projet', None)
