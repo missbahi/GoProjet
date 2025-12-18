@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="fr">
+{% load static %}
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,7 @@
       background-color: #2E2E2E; 
       color: #AECBD6; 
     }
-    .upload-area {
+    /* .upload-area {
       border: 2px dashed #6c757d;
       border-radius: 12px;
       padding: 20px;
@@ -23,7 +24,7 @@
     .upload-area:hover {
       border-color: #0dcaf0;
       background-color: rgba(13, 202, 240, 0.05);
-    }
+    } */
     
     /* Optimisations responsive */
     @media (max-width: 768px) {
@@ -125,7 +126,7 @@
                 Formats acceptés: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP (max. 10MB par fichier)
               </p>
             </div>
-            <input type="file" class="form-control d-none" id="fichiers" name="fichiers" multiple onchange="updateFileList(this)">
+            <input type="file" id="fichiers" name="fichiers" multiple onchange="updateFileList(this)">
           </div>
 
           <div id="file-list" class="mb-3 mb-md-4">
@@ -159,70 +160,7 @@
   </div>
 
   <script>
-    function updateFileList1(input) {
-      const fileList = document.getElementById('file-list');
-      fileList.innerHTML = '';
-      
-      if (input.files.length > 0) {
-        const heading = document.createElement('h6');
-        heading.className = 'text-info mb-2 text-responsive';
-        heading.textContent = `Fichiers sélectionnés (${input.files.length}):`;
-        fileList.appendChild(heading);
-        
-        const list = document.createElement('div');
-        list.className = 'list-group';
-        
-        for (let i = 0; i < input.files.length; i++) {
-          const listItem = document.createElement('div');
-          listItem.className = 'list-group-item list-group-item-custom d-flex justify-content-between align-items-center text-responsive';
-          
-          const fileInfo = document.createElement('div');
-          fileInfo.className = 'd-flex align-items-center min-w-0 flex-grow-1';
-          
-          // Icône du type de fichier
-          const icon = document.createElement('i');
-          const fileName = input.files[i].name.toLowerCase();
-          if (fileName.endsWith('.pdf')) {
-            icon.className = 'fa-solid fa-file-pdf text-danger me-2 flex-shrink-0';
-          } else if (fileName.endsWith('.doc') || fileName.endsWith('.docx')) {
-            icon.className = 'fa-solid fa-file-word text-primary me-2 flex-shrink-0';
-          } else if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
-            icon.className = 'fa-solid fa-file-excel text-success me-2 flex-shrink-0';
-          } else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg') || fileName.endsWith('.png') || fileName.endsWith('.gif')) {
-            icon.className = 'fa-solid fa-file-image text-warning me-2 flex-shrink-0';
-          } else if (fileName.endsWith('.zip')) {
-            icon.className = 'fa-solid fa-file-archive text-secondary me-2 flex-shrink-0';
-          } else {
-            icon.className = 'fa-solid fa-file text-info me-2 flex-shrink-0';
-          }
-          
-          const fileNameSpan = document.createElement('span');
-          fileNameSpan.className = 'text-truncate';
-          fileNameSpan.textContent = input.files[i].name;
-          fileNameSpan.title = input.files[i].name;
-          
-          fileInfo.appendChild(icon);
-          fileInfo.appendChild(fileNameSpan);
-          
-          const fileSize = document.createElement('small');
-          fileSize.className = 'text-muted text-nowrap ms-2 flex-shrink-0';
-          fileSize.textContent = formatFileSize(input.files[i].size);
-          
-          listItem.appendChild(fileInfo);
-          listItem.appendChild(fileSize);
-          list.appendChild(listItem);
-        }
-        
-        fileList.appendChild(list);
-
-        // Afficher le total des fichiers
-        const totalSize = Array.from(input.files).reduce((total, file) => total + file.size, 0);
-        const totalInfo = document.createElement('div');
-        totalInfo.className = 'mt-2 text-end text-muted text-responsive';
-        totalInfo.textContent = `Total: ${formatFileSize(totalSize)}`;
-        fileList.appendChild(totalInfo);
-      }
-    }
+    // Fonction pour mettre à jour la liste des fichiers selectionnés
     function updateFileList(input) {
       const fileList = document.getElementById('file-list');
       fileList.innerHTML = '';
@@ -371,5 +309,6 @@
     // Re-adapt on resize
     window.addEventListener('resize', adaptFileNames);
   </script>
+  <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
 </body>
 </html>

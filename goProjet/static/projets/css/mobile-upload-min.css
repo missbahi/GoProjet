@@ -1,0 +1,235 @@
+/* static/projets/css/mobile-upload-min.css */
+/* OPTIMISATION MOBILE STRICTEMENT NÉCESSAIRE */
+
+/* 1. TAILLE TACTILE MINIMALE (Apple/Android guidelines) */
+input[type="file"] {
+    min-height: 44px !important;    /* Taille minimale pour les doigts */
+    min-width: 44px !important;     /* Largeur minimale */
+    font-size: 14px !important;     /* Empêche le zoom iOS */
+    touch-action: manipulation;      /* Meilleure réponse tactile */
+}
+
+/* 2. STYLE DE BASE - THÈME SOMBRE */
+input[type="file"] {
+    padding: 12px !important;
+    border: 1px solid #4B5563 !important;
+    border-radius: 0.5rem !important;
+    background: #2E2E2E !important;
+    color: #AECBD6 !important;
+    display: block !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    transition: all 0.3s ease !important;
+}
+
+/* 3. ÉTATS INTERACTIFS - THÈME SOMBRE */
+input[type="file"]:focus {
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2) !important;
+    outline: none !important;
+}
+
+input[type="file"]:hover {
+    border-color: #22d3ee !important;
+    background: rgba(34, 211, 238, 0.05) !important;
+}
+
+/* 4. POUR LES MOBILES UNIQUEMENT - THÈME SOMBRE */
+@media (hover: none) and (pointer: coarse), (max-width: 768px) {
+    input[type="file"] {
+        border-style: dashed !important;
+        border-color: #0ea5e9 !important;
+        background: rgba(14, 165, 233, 0.05) !important;
+    }
+    
+    /* Indicateur visuel mobile - thème sombre */
+    input[type="file"]::before {
+        content: "📱 ";
+        color: #22d3ee;
+    }
+}
+
+/* 5. CORRECTIONS iOS SPÉCIFIQUES */
+@supports (-webkit-touch-callout: none) {
+    input[type="file"] {
+        -webkit-appearance: none;
+        appearance: none;
+    }
+}
+
+/* 6. CORRECTIONS Android Chrome */
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+    input[type="file"] {
+        line-height: 1.5 !important;
+    }
+}
+
+/* 7. MASQUER LES ÉLÉMENTS AJOUTÉS PAR LE JS SI PRÉSENTS */
+.mobile-upload-hint {
+    display: none !important;
+}
+
+.mobile-action-buttons {
+    display: none !important;
+}
+
+/* 8. STYLES RESPONSIVE POUR MOBILE - THÈME SOMBRE */
+@media (max-width: 640px) {
+    input[type="file"] {
+        padding: 0.75rem !important;
+        font-size: 0.750rem !important;
+    }
+}
+
+@media (max-width: 480px) {
+    input[type="file"] {
+        padding: 0.5rem !important;
+        min-height: 40px !important;
+    }
+}
+
+/* 9. PLACEHOLDER ET TEXTE INTERNE - THÈME SOMBRE */
+input[type="file"]::-webkit-file-upload-button {
+    background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
+    border: none !important;
+    border-radius: 0.375rem !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    margin-right: 1rem !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+input[type="file"]::-webkit-file-upload-button:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* Pour Firefox - thème sombre */
+input[type="file"]::file-selector-button {
+    background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%) !important;
+    border: none !important;
+    border-radius: 0.375rem !important;
+    color: white !important;
+    padding: 0.5rem 1rem !important;
+    margin-right: 1rem !important;
+    cursor: pointer !important;
+    font-weight: 500 !important;
+    transition: all 0.2s ease !important;
+}
+
+input[type="file"]::file-selector-button:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-1px) !important;
+}
+
+/* 10. UPLOAD AREA STYLE - THÈME SOMBRE */
+.upload-area {
+    border: 2px dashed #4B5563 !important;
+    border-radius: 8px !important;
+    padding: 1.5rem !important;
+    text-align: center !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    background: #2E2E2E !important;
+}
+
+.upload-area:hover {
+    border-color: #22d3ee !important;
+    background: rgba(34, 211, 238, 0.05) !important;
+}
+
+/* 11. BADGES DE TYPE DE FICHIER - THÈME SOMBRE */
+.badge-pdf { background-color: #dc2626 !important; color: white !important; }
+.badge-word { background-color: #2563eb !important; color: white !important; }
+.badge-excel { background-color: #059669 !important; color: white !important; }
+.badge-image { background-color: #d97706 !important; color: white !important; }
+.badge-other { background-color: #6b7280 !important; color: white !important; }
+
+/* 12. ANIMATIONS POUR MOBILE UPLOAD */
+@keyframes pulse-upload {
+    0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+
+input[type="file"]:active {
+    animation: pulse-upload 0.5s ease;
+}
+
+/* 13. MESSAGES D'ÉTAT POUR MOBILE */
+.mobile-upload-status {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    background: #3B3B3B;
+    border: 1px solid #4B5563;
+    color: #AECBD6;
+}
+
+.mobile-upload-status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-color: #10b981;
+    color: #10b981;
+}
+
+.mobile-upload-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+/* 14. DARK MODE SUPPORT POUR PREFERS-COLOR-SCHEME */
+@media (prefers-color-scheme: dark) {
+    input[type="file"] {
+        background: #2E2E2E  !important;
+        border-color: #374151 !important;
+        color: #d1d5db !important;
+    }
+    
+    input[type="file"]:focus {
+        border-color: #22d3ee !important;
+    }
+}
+
+/* 15. UTILITAIRES POUR LES PETITS ÉCRANS */
+@media (max-width: 480px) {
+    .mobile-stack-file {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .mobile-stack-file > * {
+        margin-bottom: 0.5rem !important;
+    }
+    
+    .mobile-stack-file > *:last-child {
+        margin-bottom: 0 !important;
+    }
+}
+
+/* 16. SUPPORT POUR LES MODÈLES AVEC MULTIPLE UPLOAD */
+input[type="file"][multiple] {
+    border-color: #f59e0b !important;
+}
+
+input[type="file"][multiple]::before {
+    content: "📁 " !important;
+}
+
+/* 17. ICÔNES POUR LES DIFFÉRENTS TYPES DE FICHIERS */
+.file-icon-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #3B3B3B;
+    border-radius: 8px;
+    margin-right: 0.75rem;
+    color: #22d3ee;
+    font-size: 1.25rem;
+}

@@ -470,7 +470,7 @@
         window.addEventListener('resize', adaptForMobile);
     </script>
 
-    <script>
+    <!-- <script>
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
         // 1. Agrandir les éléments tactiles pour mobile
         document.addEventListener('DOMContentLoaded', function() {
@@ -524,6 +524,7 @@
             }
         });
     }
-</script>
+</script> -->
+<script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
 </body>
 </html>
