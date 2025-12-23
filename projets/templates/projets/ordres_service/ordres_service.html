@@ -10,7 +10,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     
     <style>
-
         body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
         .ordre-card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; transition: all 0.3s ease; }
         .ordre-card:hover { border-color: #22d3ee; box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); }
@@ -326,13 +325,19 @@
                             <span>Date effet: {{ ordre.date_effet|date:"d/m/Y"|default:"-" }}</span>
                         </div>
                         <div class="flex items-center gap-2">
-                            <i class="fas fa-download text-xs"></i>
-                            <span>
+                            <span class="flex flex-row sm:items-center gap-3 p-3">
                                 {% if ordre.fichier %}
+                                    <i class="fa-solid fa-file text-green-400 text-lg sm:text-xl btn-responsive rounded-lg mt-2 sm:mt-0"></i>
                                     <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=true" 
-                                    class="text-cyan-400 hover:underline break-all">{{ ordre.get_file_name|truncatechars:25 }}</a>
+                                       target="_blank" title="Télécharger"
+                                       class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 sm:px-4 py-2 flex items-center justify-center btn-responsive rounded-lg mt-2 sm:mt-0">
+                                       <i class="fa-solid fa-download"></i> Télécharger
+                                    </a>
                                     <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=false" 
-                                    class="text-cyan-400 hover:underline break-all" target="_blank"><i class="fa-solid fa-eye"></i></a>
+                                       target="_blank" title="Voir"
+                                       class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive mt-2 sm:mt-0">
+                                       <i class="fa-solid fa-eye"></i> Voir
+                                    </a>
                                 {% else %}
                                     Aucun document
                                 {% endif %}
@@ -524,11 +529,13 @@
                     <div class="file-current">
                         <p class="text-green-400 font-medium flex items-center gap-2">
                             <i class="fas fa-download ml-1"></i>
-                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=true" class="hover:text-blue-400 transition-colors">
-                            <span class="truncate overflow-ellipsis overflow-hidden">{{ ordre_a_modifier.get_file_name }}</span>
+                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=true" 
+                           target="_blank" class="hover:text-blue-400 transition-colors">
+                            <span class="truncate overflow-ellipsis overflow-hidden">Télécharger</span>
                         </a>
-                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=false" class="hover:text-blue-400 transition-colors">
-                            <i class="fa-solid fa-eye"></i>
+                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=false" 
+                           target="_blank" class="hover:text-blue-400 transition-colors">
+                            <i class="fa-solid fa-eye">Voir</i>
                         </a>
                         <!-- <a href="{{ ordre_a_modifier.fichier.url }}" class="underline break-all">{{ ordre_a_modifier.fichier.name }}</a> -->
                         <label class="ml-2 sm:ml-4 text-gray-400 block sm:inline-block mt-1 sm:mt-0">

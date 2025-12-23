@@ -712,14 +712,18 @@
                     </div>
                     {% if attachement.fichier %}
                     <div class="info-item">
-                        <i class="fas fa-file-pdf info-icon text-red-400"></i>
+                        <i class="fa-solid fa-file text-green-400 text-lg sm:text-xl rounded-lg mt-2 sm:mt-0"></i>
                         <div class="info-content">
                             <div class="info-label">Fichier joint</div>
-                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true"  target="_blank" class="info-value underline hover:text-cyan-300 transition-colors">
-                                Télécharger <i class="fas fa-download ml-1"></i>
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true"  
+                               target="_blank" 
+                               class="info-value hover:text-cyan-300 transition-colors">
+                               <i class="fas fa-download text-cyan-400 ml-1"></i> Télécharger
                             </a>
-                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false"  target="_blank" class="info-value underline hover:text-cyan-300 transition-colors">
-                                Voir <i class="fas fa-eye ml-1"></i>
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false"  
+                               target="_blank" 
+                               class="info-value hover:text-cyan-300 transition-colors">
+                               <i class="fas fa-eye text-cyan-400 ml-1"></i> Voir
                             </a>
                         </div>
                     </div>
@@ -788,7 +792,7 @@
                     </thead> 
                     <tbody>
                         {% for ligne in lot_data.lignes_table %}
-                            {% if ligne.montant > 0 %}
+                            {% if ligne.designation and ligne.montant > 0 %}
                             <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
                                 <td class="ligne-numero">
                                     {{ ligne.numero|default:"" }}

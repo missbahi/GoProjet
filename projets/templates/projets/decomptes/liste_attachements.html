@@ -142,6 +142,39 @@
         .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
         .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
         .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+
+        /* Styles responsive pour les tables */
+        @media (max-width: 900px) {
+            .table-container {
+                margin-left: -0.5rem;
+                margin-right: -0.5rem;
+                border-radius: 0;
+                border-left: none;
+                border-right: none;
+            }
+            
+            .table-container table {
+                min-width: 900px; /* Force la largeur minimale */
+            }
+            
+            /* Améliorer la lisibilité sur petits écrans */
+            .table-row td,
+            .table-header th {
+                padding: 0.75rem 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            .statut-badge {
+                font-size: 0.7rem;
+                padding: 0.25rem 0.5rem;
+            }
+            
+            /* Espacement réduit pour les boutons d'action */
+            .table-row td:last-child {
+                min-width: 160px;
+                white-space: nowrap;
+            }
+        }
     </style>
 </head>
 <body class="p-6">
@@ -300,13 +333,14 @@
                             <td class="px-2 py-4"> 
                                 {% if attachement.fichier %}
                                 <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" 
-                                    class="text-cyan-400 hover:text-cyan-300 transition inline-flex items-center"
-                                    target="_blank"><i class="fa-solid fa-download mr-2"></i> 
-                                    <span class="truncate overflow-ellipsis overflow-hidden">{{ attachement.get_file_name }}</span>
+                                    class="hover:bg-cyan-600 hover:text-white transition inline-flex items-center rounded-lg border-2 border-cyan-600 px-2 py-1"
+                                    title="Télécharger"
+                                    target="_blank"><i class="fa-solid fa-download mr-2"></i> Télécharger 
                                 </a>
                                 <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false" 
-                                    class="text-cyan-400 hover:text-cyan-300 transition inline-flex items-center"
-                                    target="_blank"><i class="fa-solid fa-eye mr-2"></i> 
+                                    class="hover:bg-cyan-600 hover:text-white transition inline-flex items-center rounded-lg border-2 border-cyan-600 px-2 py-1"
+                                    title="Voir"
+                                    target="_blank"><i class="fa-solid fa-eye mr-2 ml-2"></i> Voir
                                 </a> 
                                 {% else %}
                                     <span class="text-gray-400 italic">Aucun fichier</span>
@@ -338,7 +372,7 @@
                                 <a href="{% url 'projets:liste_decomptes' projet.id %}?from_attachements=true&attachement_id={{ attachement.id }}&action=modifier&modifier={{ attachement.decompte.id }}" 
                                     class="mr-1 text-yellow-400 hover:text-yellow-300 transition inline-flex items-center"
                                     title="Modifier le décompte">
-                                    <i class="fa-solid fa-edit"></i> 
+                                    <i class="fa-solid fa-calculator"></i> 
                                 </a>
                                 {% else %}
                                 <!-- Ajouter un décompte -->
