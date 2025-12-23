@@ -723,10 +723,14 @@
                                 <i class="fas fa-download ml-1"></i>
                                 <span>Fichier actuel :</span>
                             </p> 
-                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" class="hover:text-blue-400 transition-colors">
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true" 
+                               target="_blank" class="hover:text-blue-400 transition-colors">
                                 <span class="truncate overflow-ellipsis overflow-hidden">{{ attachement.get_file_name }}</span>
                             </a>
-                             
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false" 
+                               target="_blank" class="hover:text-blue-400 transition-colors">
+                                <i class="fas fa-eye ml-1"></i>
+                            </a> 
                         </div>
                         {% endif %}
                     </div>

@@ -163,6 +163,11 @@
                            class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive mt-2 sm:mt-0">
                             <i class="fas fa-download"></i> Télécharger
                         </a>
+                        <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=false" 
+                           target="_blank"
+                           class="bg-cyan-600 hover:bg-cyan-700 text-white px-3 sm:px-4 py-2 rounded-lg flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive mt-2 sm:mt-0">
+                            <i class="fas fa-link"></i> Voir
+                        </a>
                     </div>
                 {% else %}
                     <p class="text-gray-400 italic text-sm sm:text-base">Aucun document joint</p>

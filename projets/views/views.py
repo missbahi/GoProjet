@@ -308,10 +308,10 @@ def download_document(request, model_name, object_id):
     except Exception as e:
         print(f"❌ Erreur Cloudinary: {e}")
         return HttpResponseNotFound("Fichier non rencontré")
-    
-    resource = result.get('resources')[0]
-    if not resource:
+    resources = result.get('resources')
+    if not resources or len(resources) == 0:
         return HttpResponseNotFound("Fichier non rencontré")
+    resource = resources[0]
     secure_url = resource.get('secure_url')
     return HttpResponseRedirect(secure_url)
 
@@ -2488,7 +2488,7 @@ def detail_attachement(request, attachement_id):
     
     context = {
         'attachement': attachement,
-        'lots_data': lots_data,  # Contient déjà lot, lignes_hierarchiques, lignes_table, total_lot
+        'lots_data': lots_data,  # Contient déjà lot, lignes_table, total_lot
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,

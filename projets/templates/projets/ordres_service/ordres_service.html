@@ -331,6 +331,8 @@
                                 {% if ordre.fichier %}
                                     <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=true" 
                                     class="text-cyan-400 hover:underline break-all">{{ ordre.get_file_name|truncatechars:25 }}</a>
+                                    <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=false" 
+                                    class="text-cyan-400 hover:underline break-all" target="_blank"><i class="fa-solid fa-eye"></i></a>
                                 {% else %}
                                     Aucun document
                                 {% endif %}
@@ -524,6 +526,9 @@
                             <i class="fas fa-download ml-1"></i>
                         <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=true" class="hover:text-blue-400 transition-colors">
                             <span class="truncate overflow-ellipsis overflow-hidden">{{ ordre_a_modifier.get_file_name }}</span>
+                        </a>
+                        <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=false" class="hover:text-blue-400 transition-colors">
+                            <i class="fa-solid fa-eye"></i>
                         </a>
                         <!-- <a href="{{ ordre_a_modifier.fichier.url }}" class="underline break-all">{{ ordre_a_modifier.fichier.name }}</a> -->
                         <label class="ml-2 sm:ml-4 text-gray-400 block sm:inline-block mt-1 sm:mt-0">

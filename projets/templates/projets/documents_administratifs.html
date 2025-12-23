@@ -383,6 +383,10 @@
                                     class="btn-success px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs">
                                     <i class="fas fa-download"></i> <span class="hidden xs:inline">Téléch.</span>
                                 </a>
+                                <a href="{% url 'projets:download_document' 'DocumentAdministratif' document.id %}?download=false" 
+                                    class="btn-warning px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs">
+                                    <i class="fas fa-eye"></i> <span class="hidden xs:inline">Voir</span>
+                                </a>
                                 <form method="post" action="{% url 'projets:supprimer_document' projet.id document.id %}" class="inline">
                                     {% csrf_token %}
                                     <button type="submit" class="btn-danger px-2 py-1 md:px-3 md:py-1 rounded text-xs md:text-sm font-medium flex items-center gap-1 mobile-text-xs"
