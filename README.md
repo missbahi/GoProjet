@@ -5,11 +5,11 @@
 
 GoProjet
 
-Application Django de gestion de projets avec bordereaux de prix interactifs.
+Application Django pour bureaux d'études marocains de gestion complète de projets de BTP.
 
 ## 🚀 Fonctionnalités
 
-- Gestion hiérarchique des projets et lots
+- Gestion des projets avec documents administratifs
 - Bordereaux de prix avec Handsontable (tableaux interactifs)
 - Interface moderne avec design glassmorphism
 - Export Excel et PDF
@@ -17,7 +17,7 @@ Application Django de gestion de projets avec bordereaux de prix interactifs.
 - Gestion des décomptes et attachements
 - Workflow de validation multi-étapes
 - Suivi d'exécution des projets
-- Gestion des ordres de service
+- Gestion des ordres de service avec la logique de succession 
 - Système de notifications
 
 ## 🛠️ Technologies
@@ -25,7 +25,7 @@ Application Django de gestion de projets avec bordereaux de prix interactifs.
 - **Backend** : Django 5.2.5
 - **Frontend** : HTML, CSS, JavaScript, Handsontable
 - **Styling** : Tailwind CSS, Glassmorphism design
-- **Base de données** : SQLite (développement)
+- **Base de données** : SQLite (développement) PostegreSQL (production)
 - **Export** : Excel (xlsx), PDF (jsPDF)
 
 ## 📦 Installation
