@@ -67,6 +67,9 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'cloudinary',
     
+    # PWA
+    'pwa',
+    
     # Vos applications
     'projets.apps.ProjetsConfig',
 ]
@@ -82,6 +85,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'projets.middleware.admin_redirect.AdminRedirectMiddleware',
+    # Optionnel: middleware pour détecter les visites PWA
+    'projets.middleware.pwa_injector.PWAInjectorMiddleware',
 ]
 
 # Configuration d'authentification
@@ -175,7 +180,110 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# --- 12. CONFIGURATION CLOUDINARY ---
+# --- 12. CONFIGURATION PWA ---
+PWA_CONFIG = {
+    'ENABLED': os.environ.get('PWA_ENABLED', 'True').lower() == 'true',
+    'DEBUG': DEBUG,  # Suit le mode DEBUG de Django
+}
+
+if PWA_CONFIG['ENABLED']:
+    print("✅ PWA activée")
+    
+    # Configuration PWA
+    PWA_APP_NAME = 'goProjet'
+    PWA_APP_DESCRIPTION = 'Gestion de projets collaboratifs'
+    PWA_APP_THEME_COLOR = '#0A0302'
+    PWA_APP_BACKGROUND_COLOR = '#ffffff'
+    PWA_APP_DISPLAY = 'standalone'
+    PWA_APP_SCOPE = '/'
+    PWA_APP_ORIENTATION = 'any'
+    PWA_APP_START_URL = '/'
+    PWA_APP_STATUS_BAR_COLOR = 'default'
+    PWA_APP_DEBUG_MODE = DEBUG  # Debug en fonction du mode Django
+    
+    # Icons - Vous devez créer ces fichiers dans static/icons/
+    PWA_APP_ICONS = [
+        {
+            'src': '/static/icons/icon-192x192.png',
+            'sizes': '192x192',
+            'type': 'image/png',
+            'purpose': 'any maskable'  # Important pour PWA
+        },
+        {
+            'src': '/static/icons/icon-512x512.png', 
+            'sizes': '512x512',
+            'type': 'image/png',
+            'purpose': 'any maskable'
+        }
+    ]
+    # PWA_APP_ICONS_APPLE = [
+    #     {
+    #         'src': '/static/icons/icon-72x72.png',
+    #         'sizes': '72x72',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-96x96.png',
+    #         'sizes': '96x96', 
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-128x128.png',
+    #         'sizes': '128x128',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-144x144.png',
+    #         'sizes': '144x144',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-152x152.png',
+    #         'sizes': '152x152',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-192x192.png',
+    #         'sizes': '192x192',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-384x384.png',
+    #         'sizes': '384x384',
+    #         'type': 'image/png'
+    #     },
+    #     {
+    #         'src': '/static/icons/icon-512x512.png',
+    #         'sizes': '512x512',
+    #         'type': 'image/png'
+    #     }
+    # ]
+    
+    # Splash screens optionnels
+    PWA_APP_SPLASH_SCREEN = [
+        {
+            'src': '/static/icons/splash-640x1136.png',
+            'media': '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)'
+        }
+    ]
+    
+    # Fichiers à mettre en cache hors ligne
+    PWA_APP_FILES_OFFLINE = [
+        '/static/projets/css/style.css',
+        '/static/projets/js/main.js',
+        '/static/icons/icon-192x192.png',
+    ]
+    
+    # Service Worker personnalisé
+    PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'goProjet', 'static', 'projets', 'js', 'serviceworker.js')
+    
+    # URLs supplémentaires pour PWA
+    PWA_APP_OFFLINE_URL = '/offline/'
+    
+else:
+    print("ℹ️ PWA désactivée")
+    
+# --- 13. CONFIGURATION CLOUDINARY ---
 
 def sanitize_cloudinary_credential(value):
     """
@@ -235,6 +343,7 @@ else:
     
     # Créer le dossier media s'il n'existe pas
     MEDIA_ROOT.mkdir(exist_ok=True)
+    
 SECURE_SSL_REDIRECT = False
 
 # IMPORTANT: Railway fournit SSL, donc nous devons dire à Django qu'il est derrière un proxy
@@ -253,6 +362,9 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://0.0.0.0:8000',
+    # Pour PWA en HTTPS
+    'https://localhost:8000',
+    'https://127.0.0.1:8000',
 ]
 
 # Autres paramètres CSRF

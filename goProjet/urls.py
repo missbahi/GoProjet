@@ -24,7 +24,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('projets.urls')),
     path('home/', projets_views.home, name='home'),
-    
+        # URLs PWA 
+    path('', include('pwa.urls')),
         # URLs d'authentification personnalisées
     path('accounts/login/', projets_views.CustomLoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),

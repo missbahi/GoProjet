@@ -1,6 +1,6 @@
 # projets/urls.py
 
-from django.urls import path
+from django.urls import path, include
 from .views import views
 from .views import notifications, revision
 
@@ -10,7 +10,7 @@ commun_urlpatterns = [
     # Home
     path('home/', views.home, name='home'),
     path('', views.landing, name='landing'),
-    # Apropos et base de données
+    # Apropos
     path('apropos/', views.apropos, name='apropos'),
     # Secure download
     path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),    
@@ -127,22 +127,6 @@ utilisateur_urlpatterns = [
     path('utilisateurs/supprimer/<int:user_id>/', views.supprimer_utilisateur, name='supprimer_utilisateur'),
     path('utilisateurs/<int:user_id>/gerer-projets/', views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
 ]
-# revision_urlpatterns = [
-#     # API de révision des prix
-#     path('api/decomptes/<int:decompte_id>/revision/', revision.revision_detail, name='api_revision_detail'),
-#     path('api/decomptes/<int:decompte_id>/revision/calculer/', revision.calculer_revision, name='api_calculer_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/valider/',  revision.valider_revision, name='api_valider_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/rejeter/', revision.rejeter_revision, name='api_rejeter_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/historique/', revision.historique_revision, name='api_historique_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/simuler/', revision.simuler_revision, name='api_simuler_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/rapport/', revision.rapport_revision, name='api_rapport_revision'),
-#     path('api/decomptes/<int:decompte_id>/revision/export/csv/', revision.exporter_revision_csv, name='api_export_revision_csv'),
-#     # API des indices
-#     path('api/indices/disponibles/', revision.indices_disponibles,  name='api_indices_disponibles'),
-#     path('api/decomptes/<int:decompte_id>/indices/disponibles/', revision.indices_disponibles, name='api_indices_disponibles_decompte'),
-#     # Santé des API
-#     path('api/health/', revision.api_health_check, name='api_health_check'),
-# ]
 os_urlpatterns = [
      
     path('projet/<int:projet_id>/ordres-service/', views.ordres_service , name='ordres_service'),
@@ -177,9 +161,6 @@ notifications_urlpatterns = [
     path('notifications/creer/', notifications.creer_notification, name='creer_notification'), 
 ]
 
-
-# urlpatterns
-
 urlpatterns = commun_urlpatterns 
 urlpatterns += suivi_urlpatterns
 urlpatterns += projets_urlpatterns
@@ -187,8 +168,26 @@ urlpatterns += base_donnees_urlpatterns
 urlpatterns += tache_urlpatterns
 urlpatterns += attachement_urlpatterns
 urlpatterns += utilisateur_urlpatterns
-# urlpatterns += revision_urlpatterns
 urlpatterns += os_urlpatterns
 urlpatterns += notifications_urlpatterns
+
+# urlpatterns += revision_urlpatterns
+
+# revision_urlpatterns = [
+#     # API de révision des prix
+#     path('api/decomptes/<int:decompte_id>/revision/', revision.revision_detail, name='api_revision_detail'),
+#     path('api/decomptes/<int:decompte_id>/revision/calculer/', revision.calculer_revision, name='api_calculer_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/valider/',  revision.valider_revision, name='api_valider_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/rejeter/', revision.rejeter_revision, name='api_rejeter_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/historique/', revision.historique_revision, name='api_historique_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/simuler/', revision.simuler_revision, name='api_simuler_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/rapport/', revision.rapport_revision, name='api_rapport_revision'),
+#     path('api/decomptes/<int:decompte_id>/revision/export/csv/', revision.exporter_revision_csv, name='api_export_revision_csv'),
+#     # API des indices
+#     path('api/indices/disponibles/', revision.indices_disponibles,  name='api_indices_disponibles'),
+#     path('api/decomptes/<int:decompte_id>/indices/disponibles/', revision.indices_disponibles, name='api_indices_disponibles_decompte'),
+#     # Santé des API
+#     path('api/health/', revision.api_health_check, name='api_health_check'),
+# ]
 
 

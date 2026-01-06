@@ -848,6 +848,12 @@ def supprimer_projet(request, projet_id):
 def apropos(request):
     return render(request, 'projets/apropos.html')
 
+from django.views.decorators.http import require_GET
+@require_GET
+def offline_view(request):
+    """Vue pour la page hors ligne"""
+    return render(request, 'projets/offline.html')
+
 class AjaxResponseMixin:
     def render_to_json_response(self, context, success=True, status=200):
         return JsonResponse({

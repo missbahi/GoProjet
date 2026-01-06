@@ -1,0 +1,67 @@
+<!-- projets/templates/projets/offline.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mode Hors Ligne - goProjet</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .offline-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .offline-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: #6c757d;
+        }
+        h1 {
+            color: #343a40;
+            margin-bottom: 15px;
+        }
+        p {
+            color: #6c757d;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #0A0302;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #2a1c1c;
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="offline-icon">📶</div>
+        <h1>Vous êtes hors ligne</h1>
+        <p>L'application nécessite une connexion internet pour fonctionner pleinement.</p>
+        <p>Certaines fonctionnalités peuvent rester disponibles. Revenez en ligne pour continuer.</p>
+        <button onclick="location.reload()" class="btn">Réessayer la connexion</button>
+    </div>
+</body>
+</html>
