@@ -2,7 +2,8 @@
 
 from django.urls import path, include
 from .views import views
-from .views import notifications, revision
+from .views import notifications
+from django.views.generic import TemplateView
 
 app_name = "projets"
 
@@ -16,6 +17,9 @@ commun_urlpatterns = [
     path('download-document/<str:model_name>/<int:object_id>/', views.secure_download, name='download_document'),    
     # API pour lister les taches 
     path('api/get-form-data/', views.get_form_data, name='get_form_data'),
+    # PWA URLs
+    path('manifest.json', TemplateView.as_view(template_name='manifest.json', content_type='application/json',), name='manifest'),
+    path('serviceworker.js', TemplateView.as_view( content_type='application/javascript',), name='serviceworker'),
 ]
 suivi_urlpatterns = [
     # Gestion des documents

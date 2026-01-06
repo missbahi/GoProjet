@@ -66,10 +66,7 @@ INSTALLED_APPS = [
     # Cloudinary - TOUJOURS ajoutées
     'cloudinary_storage',
     'cloudinary',
-    
-    # PWA
-    'pwa',
-    
+        
     # Vos applications
     'projets.apps.ProjetsConfig',
 ]
@@ -216,49 +213,18 @@ if PWA_CONFIG['ENABLED']:
             'purpose': 'any maskable'
         }
     ]
-    # PWA_APP_ICONS_APPLE = [
-    #     {
-    #         'src': '/static/icons/icon-72x72.png',
-    #         'sizes': '72x72',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-96x96.png',
-    #         'sizes': '96x96', 
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-128x128.png',
-    #         'sizes': '128x128',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-144x144.png',
-    #         'sizes': '144x144',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-152x152.png',
-    #         'sizes': '152x152',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-192x192.png',
-    #         'sizes': '192x192',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-384x384.png',
-    #         'sizes': '384x384',
-    #         'type': 'image/png'
-    #     },
-    #     {
-    #         'src': '/static/icons/icon-512x512.png',
-    #         'sizes': '512x512',
-    #         'type': 'image/png'
-    #     }
-    # ]
-    
+    PWA_SETTINGS = {
+        'name': PWA_APP_NAME,
+        'short_name': PWA_APP_NAME,
+        'description': PWA_APP_DESCRIPTION,
+        'theme_color': PWA_APP_THEME_COLOR,
+        'background_color': PWA_APP_BACKGROUND_COLOR,
+        'display': PWA_APP_DISPLAY,
+        'scope': PWA_APP_SCOPE,
+        'orientation': PWA_APP_ORIENTATION,
+        'start_url': PWA_APP_START_URL,
+        'icons': PWA_APP_ICONS,
+    }
     # Splash screens optionnels
     PWA_APP_SPLASH_SCREEN = [
         {
