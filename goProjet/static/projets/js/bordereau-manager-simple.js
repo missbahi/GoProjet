@@ -103,7 +103,8 @@ class Line {
         if (!grandParent) return false;
         
         const parentIndex = grandParent.getChildIndex(parent);
-        parent.removeChild(this);
+        if (!parent.removeChild(this)) return false;
+        console.log('Desindenting line ', this.id);        
         grandParent.insertChildAt(this, parentIndex + 1);
         
         // this.invalidateParentCaches();
@@ -115,7 +116,11 @@ class Line {
         this.children.push(child);
         this.invalidateCache();
     }
-
+    insertChildAt(child, index) {
+        child.parent = this;
+        this.children.splice(index, 0, child);
+        this.invalidateCache();
+    }
     removeChild(child) {
         const index = this.children.indexOf(child);
         if (index !== -1) {
@@ -457,7 +462,7 @@ class LineManager {
 
  
     desindentLine(start, nbRows = 1) {
-        console.log('desindentLine', start, nbRows);
+
         const cachedFlatList = this.getFlatList();
         const nbLines = cachedFlatList.length;
         if (start < 0 || start + nbRows > nbLines) return false;
@@ -997,7 +1002,7 @@ class BordereauManager {
         const startRow = selected.startRow;
         const result = this.lineManager.indentLine(startRow, selected.nbRows);
         if (result > 0) {
-            console.log('indentation successful. Inserted ' + result + ' lines.');
+            // console.log('indentation successful. Inserted ' + result + ' lines.');
             this.refreshTable();
         }
         else {
