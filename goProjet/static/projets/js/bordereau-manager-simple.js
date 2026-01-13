@@ -548,6 +548,7 @@ class BordereauManager {
         // Initialisation
         this.hot = null;
         this.lineManager = null;
+        this.colMontantIndex = 8; // Index de la colonne "montant"
         this.initialize();
     }
 
@@ -558,6 +559,9 @@ class BordereauManager {
         // Charger les données initiales si présentes
         if (window.bordereauData && Array.isArray(window.bordereauData)) {
             this.lineManager = new LineManager(this.lotNom, window.bordereauData);
+
+            // FORCER TOUTES LES LIGNES À ÊTRE EXPANDED À L'OUVERTURE
+            this.expandAllLines();
         }
         
         // Initialiser Handsontable
@@ -566,7 +570,14 @@ class BordereauManager {
         // Configurer les raccourcis clavier
         this.setupKeyboardShortcuts();
     }
-
+    expandAllLines() {
+        this.lineManager.lines.forEach(line => {
+            if (line.hasChildren) {
+                line.expanded = true;
+            }
+        });
+        this.lineManager.invalidateCache();
+    }
     initHandsontable() {
         const container = document.getElementById(this.containerId);
         if (!container) {
@@ -615,15 +626,14 @@ class BordereauManager {
             rowHeights: 40,
             manualColumnResize: true,
             outsideClickDeselects: false,
+
+            // GESTION DES LIGNES
             afterRemoveRow: this.handleAfterRemoveRow.bind(this),
-            // Gestion des changements
-            // afterChange: this.handleAfterChange.bind(this),
-            // beforeChange: this.handleBeforeChange.bind(this),
+
             // GESTION DU COLLAGE (SIMPLIFIÉ)
             beforePaste: (data, coords) => this.handlePaste(data, coords),
             
             // GESTION DES CHANGEMENTS
-            
             beforeChange: (changes, source) => this.handleBeforeChange(changes, source),
             afterChange: (changes, source) => {
                 if (!changes || source === 'loadData') return;
@@ -633,7 +643,10 @@ class BordereauManager {
                     this.handleCellChange(row, prop, newValue);
                 });
             },
-            
+
+            // GESTION DE LA SELECTION
+            afterSelection: () => this.displaySelectionSum(),
+
             // GESTION DU CLIC SUR LES TRIANGLES
             afterOnCellMouseDown: (event, coords, TD) => {
                 if (event.target.classList.contains('toggle-triangle')) {
@@ -644,7 +657,7 @@ class BordereauManager {
                     this.toggleExpansion(row);
                     return false;
                 }
-            }
+            },
         };
     }
 
@@ -968,6 +981,53 @@ class BordereauManager {
         });
     }
 
+    showSumSelectedCells(hotInstance) {
+        const selection = hotInstance.getSelected();
+        if (!selection) return;
+        
+        let [startRow, startCol, endRow, endCol] = selection[0];
+
+        // Ajuster si nécessaire
+        if (startRow > endRow) [startRow, endRow] = [endRow, startRow];
+        if (startCol > endCol) [startCol, endCol] = [endCol, startCol];
+
+        let sum = 0;
+        let cellCount = 0;
+        
+        for (let row = startRow; row <= endRow; row++) {
+            for (let col = startCol; col <= endCol; col++) {
+                // if (col < 3 || col > 7) continue;
+                
+                const rowData = hotInstance.getSourceDataAtRow(row);
+                let value = parseFloat(hotInstance.getDataAtCell(row, col)) || 0;
+                
+                if (!isNaN(value) && value !== 0) {
+                    sum += value;
+                    cellCount++;
+                }
+            }
+        }
+        return { sum, cellCount };
+    }
+
+    displaySelectionSum() {
+        if (!this.hot) return;
+        
+        const displayElement = document.getElementById('selectionSumDisplay');
+        if (!displayElement) return;
+
+        const result = this.showSumSelectedCells(this.hot);
+        if (result && result.cellCount > 1) {
+            const formattedSum = this.formatNumber(result.sum);
+            const average = this.formatNumber(result.sum / result.cellCount) || 0;
+            displayElement.textContent = `Somme : ${formattedSum} | Moyenne : ${average} | (${result.cellCount} cellules)`;
+            displayElement.style.display = 'block';
+        } else {
+            displayElement.style.display = 'none';
+        }
+    }
+
+
     // ============================================================================
     // FONCTIONS PUBLIQUES POUR LES BOUTONS
     // ============================================================================
@@ -1148,6 +1208,7 @@ window.indente = function() { window.bordereauManager?.indente(); };
 window.desindente = function() { window.bordereauManager?.desindente(); };
 window.exportExcel = function() { window.bordereauManager?.exportExcel(); };
 window.exportPDF = function() { window.bordereauManager?.exportPDF(); };
+
 
 // Auto-initialisation
 document.addEventListener('DOMContentLoaded', function() {
