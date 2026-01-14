@@ -589,6 +589,9 @@ class BordereauManager {
         
         // Initialiser l'affichage hiérarchique
         setTimeout(() => this.updateHiddenRows(), 100);
+
+        // Mettre à jour le total initial
+        this.updateTotal();
     }
 
     getHotConfig() {
