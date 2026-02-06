@@ -1,6 +1,5 @@
 /**
- * Gestionnaire de bordereau de prix - Version simplifiée
- * Gestion optimisée du collage externe (Excel)
+ * Gestionnaire de bordereau de prix - Version initiale
  */
 
 // ============================================================================
@@ -10,13 +9,13 @@
 class Line {
     constructor(id = null, numero = "", designation = "", unite = "", 
                 quantite = 0, pu = 0, parent = null, expanded = true) {
-        this.id = id;
+        this.id = id || this.generateId();
         this.children = [];
         this.numero = numero;
         this.designation = designation;
         this.unite = unite;
-        this.quantite = quantite;
-        this.prix_unitaire = pu;
+        this.quantite = parseFloat(quantite) || 0;
+        this.prix_unitaire = parseFloat(pu) || 0;
         this.parent = parent;
         this.expanded = expanded;
         
@@ -25,8 +24,12 @@ class Line {
         this._cachedLevel = null;
     }
 
+    generateId() {
+        return `line_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    }
+
     get level() {
-        // if (this._cachedLevel !== null) return this._cachedLevel;
+        if (this._cachedLevel !== null) return this._cachedLevel;
         
         let level = 0;
         let current = this.parent;
@@ -35,7 +38,7 @@ class Line {
             current = current.parent;
         }
         
-        // this._cachedLevel = level;
+        this._cachedLevel = level;
         return level;
     }
 
@@ -66,9 +69,23 @@ class Line {
             this.parent.invalidateCache();
         }
     }
+
     getChildIndex(child) {
         return this.children.indexOf(child);
     }
+
+    getNextSibling() {
+        if (!this.parent) return null;
+        const index = this.parent.getChildIndex(this);
+        return this.parent.children[index + 1] || null;
+    }
+
+    getPreviousSibling() {
+        if (!this.parent) return null;
+        const index = this.parent.getChildIndex(this);
+        return this.parent.children[index - 1] || null;
+    }
+
     getFirstChild() {
         return this.children[0] || null;
     }
@@ -78,36 +95,38 @@ class Line {
     }
 
     indent() {
+        const previousSibling = this.getPreviousSibling();
+        
+        // Ne peut pas indenter s'il n'y a pas de frère précédent
+        if (!previousSibling) return false;
+        
         const parent = this.parent;
         if (!parent) return false;
         
-        const currentIndex = parent.getChildIndex(this);
-        if (currentIndex === 0) return false;
-        
-        const previousSibling = parent.children[currentIndex - 1];
+        // Retirer de l'ancien parent
         parent.removeChild(this);
+        
+        // Ajouter au frère précédent comme enfant
         previousSibling.addChild(this);
         
-        // this.invalidateParentCaches();
         return true;
     }
 
     desindent() {
         const parent = this.parent;
-        if (!parent) return false;
         
-        // Si cette ligne n'est pas le dernier enfant de son parent, elle ne peut pas se déindenter
-        if (parent.getLastChild() !== this) return false;
+        // Doit avoir un parent et ne pas être à la racine
+        if (!parent || !parent.parent) return false;
         
         const grandParent = parent.parent;
-        if (!grandParent) return false;
-        
         const parentIndex = grandParent.getChildIndex(parent);
-        if (!parent.removeChild(this)) return false;
-        console.log('Desindenting line ', this.id);        
+        
+        // Retirer du parent actuel
+        parent.removeChild(this);
+        
+        // Insérer après le parent dans le grand-parent
         grandParent.insertChildAt(this, parentIndex + 1);
         
-        // this.invalidateParentCaches();
         return true;
     }
 
@@ -116,11 +135,13 @@ class Line {
         this.children.push(child);
         this.invalidateCache();
     }
+
     insertChildAt(child, index) {
         child.parent = this;
         this.children.splice(index, 0, child);
         this.invalidateCache();
     }
+
     removeChild(child) {
         const index = this.children.indexOf(child);
         if (index !== -1) {
@@ -132,8 +153,43 @@ class Line {
         return false;
     }
 
-    toggleExpanded() {
-        this.expanded = !this.expanded;
+    moveChild(child, newIndex) {
+        const currentIndex = this.getChildIndex(child);
+        if (currentIndex === -1) return false;
+        
+        // Retirer de l'index actuel
+        this.children.splice(currentIndex, 1);
+        
+        // Insérer à la nouvelle position
+        this.children.splice(newIndex, 0, child);
+        this.invalidateCache();
+        return true;
+    }
+
+    moveChildUp(child) {
+        const index = this.getChildIndex(child);
+        if (index > 0) {
+            return this.moveChild(child, index - 1);
+        }
+        return false;
+    }
+
+    moveChildDown(child) {
+        const index = this.getChildIndex(child);
+        if (index !== -1 && index < this.children.length - 1) {
+            return this.moveChild(child, index + 1);
+        }
+        return false;
+    }
+
+    moveUp() {
+        if (!this.parent) return false;
+        return this.parent.moveChildUp(this);
+    }
+
+    moveDown() {
+        if (!this.parent) return false;
+        return this.parent.moveChildDown(this);
     }
 
     get descendantIds() {
@@ -152,12 +208,72 @@ class Line {
 class LineManager {
     constructor(lotNom = "Bordereau", data = []) {
         this.root = new Line(null, "Root", lotNom);
-        this.lines = new Map(); // Map<id, Line>
-        this.flatIndex = new Map(); // Map<id, index>
+        this.lines = new Map(); 
+        this.flatIndex = new Map(); 
+        this.cacheInvalid = true;
         this.cachedFlatList = null;
         if (data && data.length > 0) {
             this.buildTree(data);
+        } else {
+            // Ajouter une ligne vide par défaut
+            this.addEmptyLine();
         }
+    }
+
+    // ============================================================================
+    // CONSTRUCTION DE L'ARBRE
+    // ============================================================================
+
+    buildTree(data) {
+        this.lines.clear();
+        this.cacheInvalid = true;
+        
+        // Étape 1: Créer tous les nœuds
+        const nodeMap = new Map();
+        const createdLines = [];
+        
+        data.forEach(row => {
+            if (!row || row.id === undefined) return;
+            
+            const line = new Line(
+                row.id,
+                row.numero || "",
+                row.designation || "",
+                row.unite || "",
+                parseFloat(row.quantite) || 0,
+                parseFloat(row.prix_unitaire) || 0,
+                null,
+                row._expanded !== undefined ? row._expanded : true
+            );
+            
+            nodeMap.set(row.id, line);
+            this.lines.set(row.id, line);
+            createdLines.push({line, parentId: row.parent_id});
+        });
+
+        // Étape 2: Construire la hiérarchie
+        createdLines.forEach(({line, parentId}) => {
+            if (parentId && nodeMap.has(parentId)) {
+                nodeMap.get(parentId).addChild(line);
+            } else {
+                this.root.addChild(line);
+            }
+        });
+
+        // Vérifier si l'arbre est vide
+        if (this.root.children.length === 0) {
+            this.addEmptyLine();
+        }
+        
+        this.invalidateCache();
+    }
+
+    addEmptyLine(parent = this.root) {
+        const line = new Line();
+        parent.addChild(line);
+        this.lines.set(line.id, line);
+        this.invalidateCache();
+        return line;
     }
 
     // ============================================================================
@@ -171,7 +287,6 @@ class LineManager {
      * @returns {Array} - Indices des nouvelles lignes créées
      */
     processExcelPaste(excelData, startRow = 0) {
-        // console.log(`Processing ${excelData.length} rows from Excel paste`);
         
         const newLineIndices = [];
         
@@ -183,7 +298,6 @@ class LineManager {
             const line = this.insertOrUpdateLineAt(targetIndex, lineData);
             newLineIndices.push(targetIndex);
             
-            // console.log(`Processed row ${index}: "${lineData.designation}"`);
         });
         
         // Invalider le cache
@@ -241,13 +355,13 @@ class LineManager {
             existingLine.quantite = lineData.quantite;
             existingLine.prix_unitaire = lineData.prix_unitaire;
             existingLine.expanded = lineData.expanded;
-            existingLine.invalidateCache();
+            // existingLine.invalidateCache();
             return existingLine;
         } else {
             // Créer une nouvelle ligne
-            const id = `paste_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+            // const id = `paste_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
             const newLine = new Line(
-                id,
+                null, // ID généré automatiquement
                 lineData.numero,
                 lineData.designation,
                 lineData.unite,
@@ -256,9 +370,9 @@ class LineManager {
                 this.root, // Parent racine par défaut
                 lineData.expanded
             );
-            
+            return this.root.addChild(newLine);
             // Insérer à la bonne position
-            return this.insertLineAtFlatIndex(newLine, index);
+            // return this.insertLineAtFlatIndex(newLine, index);
         }
     }
 
@@ -297,47 +411,7 @@ class LineManager {
     // ============================================================================
     // GESTION DE LA STRUCTURE HIÉRARCHIQUE
     // ============================================================================
-    buildTree(data) {
-        this.lines.clear();
-        this.cacheValid = false;
-        this.invalidateCache();
-        // Étape 1: Créer tous les nodes
-        const nodeMap = new Map();
-        
-        data.forEach(row => {
-            if (!row || row.id === null || row.id === undefined) return;
-            
-            let line = new Line(
-                row.id, 
-                row.numero || "",
-                row.designation || "Nouvelle ligne", 
-                row.unite || "", 
-                parseFloat(row.quantite) || 0, 
-                parseFloat(row.prix_unitaire) || 0,
-                null,
-                row._expanded !== undefined ? row._expanded : true
-            );
-            
-            nodeMap.set(row.id, line);
-            this.lines.set(row.id, line);
-        });
-
-        // Étape 2: Construire la hiérarchie
-        data.forEach(row => {
-            if (!row || !nodeMap.has(row.id)) return;
-            
-            const line = nodeMap.get(row.id);
-            
-            if (row.parent_id && nodeMap.has(row.parent_id)) {
-                nodeMap.get(row.parent_id).addChild(line);
-            } else {
-                this.root.addChild(line);
-            }
-        });
-        
-        // Mettre à jour l'index plat
-        this.updateFlatIndex();
-    }
+    
     getFlatList() {
         if (this.cachedFlatList) return this.cachedFlatList;
         
@@ -374,6 +448,7 @@ class LineManager {
         const flatList = this.getFlatList();
         return index >= 0 && index < flatList.length ? flatList[index] : null;
     }
+
     removeLineByIndex(rowIndex, amount = 1) {
         const flatList = this.getFlatList();
         try {
@@ -401,7 +476,9 @@ class LineManager {
     get nbLines() {
         return this.getFlatList().length;
     }
+
     getLineIndexById(id) {
+        this.updateFlatIndex();
         return this.flatIndex.get(id) || -1;
     }
 
@@ -459,7 +536,6 @@ class LineManager {
         
         return 0;
     }
-
  
     desindentLine(start, nbRows = 1) {
 
@@ -482,6 +558,36 @@ class LineManager {
         }
         
         return 0;
+    }
+
+    moveLineUp(index) {
+        const line = this.getLineByFlatIndex(index);
+        if (line) {
+            if (line.moveUp()) {
+                this.invalidateCache();
+                const newIndex = this.getLineIndexById(line.id);
+                return newIndex;
+            }
+        };
+        return -1;
+    }
+
+    moveLineDown(index) {
+        const line = this.getLineByFlatIndex(index);
+        if (line) {
+            if (line.moveDown()) {
+                this.invalidateCache();
+                const newIndex = this.getLineIndexById(line.id);
+                return newIndex;
+            }
+        };
+        return -1;
+    }
+    // Méthode utilitaire pour échanger deux lignes dans la liste plate (utile pour le déplacement)
+    swapLines(index1, index2) {
+        const flatList = this.getFlatList();
+        [flatList[index1], flatList[index2]] = [flatList[index2], flatList[index1]];
+        this.invalidateCache();
     }
 
     // ============================================================================
@@ -570,6 +676,7 @@ class BordereauManager {
         // Configurer les raccourcis clavier
         this.setupKeyboardShortcuts();
     }
+    
     expandAllLines() {
         this.lineManager.lines.forEach(line => {
             if (line.hasChildren) {
@@ -578,6 +685,7 @@ class BordereauManager {
         });
         this.lineManager.invalidateCache();
     }
+    
     initHandsontable() {
         const container = document.getElementById(this.containerId);
         if (!container) {
@@ -669,7 +777,6 @@ class BordereauManager {
     // ============================================================================
 
     handlePaste(data, coords) {
-        // console.log('Paste detected:', data);
         
         if (!data || !Array.isArray(data) || data.length === 0) {
             return true; // Laisser Handsontable gérer
@@ -678,10 +785,8 @@ class BordereauManager {
         // Déterminer la position de collage
         let startRow = 0;
         if (coords && Array.isArray(coords) && coords.length > 0) {
-            startRow = coords[0].start?.row || 0;
+            startRow = coords[0].startRow;
         }
-        
-        console.log(`Pasting ${data.length} rows at position ${startRow}`);
         
         // Traiter les données Excel
         this.processPastedData(data, startRow);
@@ -696,7 +801,6 @@ class BordereauManager {
         // 2. Mettre à jour le tableau en une seule opération
         this.refreshTable();
         
-        console.log(`Successfully pasted ${newIndices.length} rows`);
     }
 
     refreshTable() {
@@ -757,58 +861,9 @@ class BordereauManager {
     }
 
     handleAfterRemoveRow(index, amount, source) {
-        // console.log(`Removing line at index ${index} (${source}) (amount: ${amount})`);
         this.lineManager.removeLineByIndex(index, amount);
         this.updateTotal();
         this.dataChanged = true;
-    }
-
-    handleAfterChange(changes, source) {
-        if (!changes || this.updating) return;
-        
-        changes.forEach(change => {
-            const [row, prop, oldValue, newValue] = change;
-            const line = this.lineManager.getLineByIndex(row);
-
-            if (!line) return;
-            
-            switch(prop) {
-                case 'numero': 
-                    line.numero = newValue; 
-                    this.dataChanged = true;
-                    break;
-                case 'designation': 
-                    line.designation = newValue; 
-                    this.dataChanged = true;
-                    break;
-                case 'unite': 
-                    line.unite = newValue; 
-                    this.dataChanged = true;
-                    break;
-                case 'quantite': 
-                    line.quantite = parseFloat(newValue) || 0; 
-                    this.dataChanged = true;
-                    this.updateTotal();
-                    this.hot.setDataAtRowProp(row, 'montant', line.amount(), 'recalc');
-                    break;
-                case 'prix_unitaire': 
-                    line.prix_unitaire = parseFloat(newValue) || 0; 
-                    this.dataChanged = true;
-                    this.updateTotal();
-                    this.hot.setDataAtRowProp(row, 'montant', line.amount(), 'recalc');
-                    break;
-                case '_expanded': 
-                    line._expanded = newValue;
-                    // Mettre à jour l'affichage hiérarchique
-                    setTimeout(() => this.toggleChildrenVisibility(row), 50);
-                    break;
-            }
-        });
-        
-        // Si le changement vient d'un paste, traiter spécialement
-        if (source === 'paste' && this.pendingPaste) {
-            this.finalizePaste();
-        }
     }
 
     handleBeforeChange(changes, source) {
@@ -1030,7 +1085,6 @@ class BordereauManager {
         }
     }
 
-
     // ============================================================================
     // FONCTIONS PUBLIQUES POUR LES BOUTONS
     // ============================================================================
@@ -1065,7 +1119,6 @@ class BordereauManager {
         const startRow = selected.startRow;
         const result = this.lineManager.indentLine(startRow, selected.nbRows);
         if (result > 0) {
-            // console.log('indentation successful. Inserted ' + result + ' lines.');
             this.refreshTable();
         }
         else {
@@ -1083,13 +1136,44 @@ class BordereauManager {
         const startRow = selected.startRow;
         const result = this.lineManager.desindentLine(startRow, selected.nbRows);
         if (result > 0) {
-            console.log('desindentation successful. Desindented ' + result + ' lines.');
             this.refreshTable();
         }
         else {
             console.log('desindentation failed');
         }
         
+    }
+
+    moveDown() {
+        const selected = this.getSafeSelection();
+        if (!selected || selected.nbRows === 0) {
+            alert("Veuillez sélectionner une ligne");
+            return;
+        }
+        const startRow = selected.startRow;
+        const newIndex = this.lineManager.moveLineDown(startRow);
+
+        if (newIndex !== -1) {
+            this.refreshTable();
+            // Reselect the moved line
+            this.hot.selectCell(newIndex, selected.startCol);
+        }
+    }
+
+    moveUp() {
+        const selected = this.getSafeSelection();
+        if (!selected || selected.nbRows === 0) {
+            alert("Veuillez sélectionner une ligne");
+            return;
+        }
+        const startRow = selected.startRow;
+        const newIndex = this.lineManager.moveLineUp(startRow);
+
+        if (newIndex !== -1) {
+            this.refreshTable();
+            // Reselect the moved line
+            this.hot.selectCell(newIndex, selected.startCol);
+        }
     }
 
     saveData() {
@@ -1100,7 +1184,7 @@ class BordereauManager {
         }
         
         const flatList = this.lineManager.getFlatList();
-        console.log(flatList);
+
         const finalData = flatList.map(line => ({
             id: line.id,
             numero: line.numero,
@@ -1209,6 +1293,8 @@ window.saveData = function() { window.bordereauManager?.saveData(); };
 window.insertChildLine = function() { window.bordereauManager?.insertChildLine(); };
 window.indente = function() { window.bordereauManager?.indente(); };
 window.desindente = function() { window.bordereauManager?.desindente(); };
+window.moveUp = function() { window.bordereauManager?.moveUp(); };
+window.moveDown = function() { window.bordereauManager?.moveDown(); };
 window.exportExcel = function() { window.bordereauManager?.exportExcel(); };
 window.exportPDF = function() { window.bordereauManager?.exportPDF(); };
 

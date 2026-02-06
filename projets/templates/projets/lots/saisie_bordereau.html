@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
     
     <script src="{% static 'projets/js/nombre-lettres.js' %}"></script>
-    <script src="{% static 'projets/js/bordereau-manager-simple.js' %}"></script>
+    <script src="{% static 'projets/js/bdp-manager-v00.js' %}"></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
@@ -121,6 +121,22 @@
             margin-bottom: 1rem;
             border: 1px solid #4B5563;
         }
+        .btn-toolbar-purple {
+            background-color: #7c3aed;
+            color: white;
+            border: 1px solid #6d28d9;
+        }
+
+        .btn-toolbar-purple:hover {
+            background-color: #6d28d9;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(124, 58, 237, 0.2);
+        }
+
+        .btn-toolbar-purple:active {
+            background-color: #5b21b6;
+            transform: translateY(0);
+        }
         .btn {
             padding: 10px 16px;
             border-radius: 12px;
@@ -227,7 +243,7 @@
         .btn-toolbar:hover i {transform: scale(1.1);}
 
         /* Style pour l'affichage de la somme des cellules sélectionnées */
-        .selection-sum-display {
+        .selection-sum-display0 {
             position: fixed;
             bottom: 6px;
             right: 120px;
@@ -242,7 +258,18 @@
             z-index: 1000;
             display: none;
         }
-
+        .selection-sum-display {
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            font-weight: 600;
+            color: #059669; /* green-600 */
+            padding: 4px 8px;
+            background-color: #f3f4f6; /* gray-100 */
+            border-radius: 4px;
+            border: 1px solid #d1d5db; /* gray-300 */
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
         @media print {
             .navigation-buttons, .btn, .btn-toolbar, .selection-sum-display {
                 display: none;
@@ -345,11 +372,9 @@
             }
             
             .selection-sum-display {
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                font-size: 0.8rem;
-                padding: 4px 8px;
+                font-size: 12px;
+                min-width: 100px;
+                padding: 3px 6px;
             }
         }
 
@@ -457,7 +482,7 @@
     </style>
 </head>
 <body>
-    <div id="selectionSumDisplay" class="selection-sum-display"></div>
+
     <div class="main-container">
         <!-- En-tête -->
         <header class="header-section">
@@ -496,9 +521,10 @@
         </div>
 
         <!-- Barre d'outils -->
-        <div class="menu menu-fixed flex justify-between p-2 md:p-3 rounded-lg border border-gray-600 shadow-lg mb-3 md:mb-4">
-            <div class="flex items-center no-print w-full justify-center md:justify-start">
-                <div class="flex flex-wrap gap-1 md:gap-2 justify-center">
+        <div class="menu menu-fixed flex justify-between items-center p-2 md:p-3 rounded-lg border border-gray-600 shadow-lg mb-3 md:mb-4">
+            <!-- Partie gauche : Boutons -->
+            <div class="flex items-center no-print">
+                <div class="flex flex-wrap gap-1 md:gap-2">
                     <!-- Bouton Sauvegarde -->
                     <button onclick="saveData()" 
                             id="save-btn"
@@ -506,7 +532,10 @@
                             title="Enregistrer les modifications">
                         <i class="fas fa-save"></i>
                     </button>
-                    
+                    <div id="loading-indicator" class="hidden ml-2">
+                        <i class="fas fa-spinner fa-spin text-cyan-400"></i>
+                        <span class="text-sm ml-1">Chargement...</span>
+                    </div>
                     <!-- Bouton Ajouter ligne enfant -->
                     <button onclick="insertChildLine()" 
                             class="btn-toolbar btn-toolbar-warning group"
@@ -520,13 +549,25 @@
                             title="Désindenter (niveau -1)">
                         <i class="fas fa-outdent"></i>
                     </button>
-                    
                     <button onclick="indente()" 
                             class="btn-toolbar btn-toolbar-info group"
-                            title="Indenter (niveau +1)">
+                            data-tooltip="Indenter (Tab)"
+                            title="Indenter (Tab)">
                         <i class="fas fa-indent"></i>
                     </button>
-                    
+                    <!-- Bouton Monter -->
+                    <button onclick="moveUp()" 
+                            class="btn-toolbar btn-toolbar-purple group"
+                            title="Monter la ligne">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+
+                    <!-- Bouton Descendre -->
+                    <button onclick="moveDown()" 
+                            class="btn-toolbar btn-toolbar-purple group"
+                            title="Descendre la ligne">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
                     <!-- Boutons Export -->
                     <button onclick="exportExcel()" 
                             class="btn-toolbar btn-toolbar-success group"
@@ -540,6 +581,11 @@
                         <i class="fas fa-file-pdf"></i>
                     </button>
                 </div>
+            </div>
+            
+            <!-- Partie droite : Affichage somme -->
+            <div id="selectionSumDisplay" class="selection-sum-display ml-2 text-right min-w-[120px] hidden">
+                <!-- La somme s'affichera ici dynamiquement -->
             </div>
         </div>
         
@@ -567,7 +613,9 @@
                 {% endfor %}
             </div>
         {% endif %}
-        
+
+        <div id="dynamic-messages" class="mb-4"></div>
+
         <!-- Contenu principal -->
         <div class="content-section">
             <!-- Tableau Handsontable -->
