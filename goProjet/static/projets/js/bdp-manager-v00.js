@@ -203,6 +203,14 @@ class Line {
         traverse(this);
         return ids;
     }
+
+    toggleExpanded() {
+        if (this.hasChildren) {
+            this.expanded = !this.expanded;
+            return true;
+        }
+        return false;
+    }
 }
 
 class LineManager {
