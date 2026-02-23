@@ -12,7 +12,11 @@
   
   <style>
     body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
-    
+    p.no-data {
+      color: #8f9bac; 
+      font-style: italic; 
+      font-size: 13px;
+    }
     .card-custom {
       background: #3B3B3B;
       border: 1px solid #4B5563;
@@ -371,7 +375,7 @@
                 <span>Accéder</span>
               </a>
               {% else %}
-              <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
+              <p>il n'y a pas de lots pour ce projet</p>
               <a href="{% url 'projets:lots_projet' projet.id %}" 
                 class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                   <i class="fas fa-plus"></i>
@@ -386,7 +390,7 @@
                   <span>Accéder</span>
                 </a>
               {% else %}
-                <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de lots pour ce projet</p>
+                <p class="no-data">il n'y a pas de lots pour ce projet</p>
                 <a href="" 
                   class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                     <i class="fas fa-plus"></i>
@@ -413,7 +417,7 @@
             </a>
           </div>
           {% else %}
-          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de documents administratifs pour ce projet</p>
+          <p class="no-data">il n'y a pas de documents administratifs pour ce projet</p>
           <a href="{% url 'projets:documents' projet.id %}" 
               class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                 <i class="fas fa-plus"></i>
@@ -437,7 +441,7 @@
               </a>
             </div>
             {% else %}
-            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas de suivi enregistré pour ce projet</p>
+            <p class="no-data">il n'y a pas de suivi enregistré pour ce projet</p>
             <a href="{% url 'projets:suivi_execution' projet.id %}" 
               class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                 <i class="fas fa-plus"></i>
@@ -461,7 +465,7 @@
             </a>
           </div>
           {% else %}
-          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas d'ordres de service pour ce projet</p>
+          <p class="no-data">il n'y a pas d'ordres de service pour ce projet</p>
           <a href="{% url 'projets:ordres_service' projet.id %}" 
              class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-plus"></i>
@@ -485,7 +489,7 @@
             </a>
           </div>
           {% else %}
-          <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas encore d'attachements pour ce projet</p>
+          <p class="no-data">il n'y a pas encore d'attachements pour ce projet</p>
           <a href="" 
              class="btn-desactive w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
               <i class="fas fa-plus"></i>
@@ -509,7 +513,7 @@
                 <span>Gérer</span>
             </a>
             {% else %}
-            <p style="color: #8f9bac; font-style: italic; font-size: 13px;">il n'y a pas d'attachements pour ce projet</p>
+            <p class="no-data">il n'y a pas d'attachements pour ce projet</p>
             <a href="{% url 'projets:ajouter_attachement' projet.id %}" 
                class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
                 <i class="fas fa-plus"></i>

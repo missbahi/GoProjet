@@ -7,6 +7,8 @@ from django.views.generic import TemplateView
 
 app_name = "projets"
 
+
+# URL patterns pour les différentes fonctionnalités de l'application
 commun_urlpatterns = [
     # Home
     path('home/', views.home, name='home'),
@@ -21,6 +23,8 @@ commun_urlpatterns = [
     path('manifest.json', TemplateView.as_view(template_name='manifest.json', content_type='application/json',), name='manifest'),
     path('serviceworker.js', TemplateView.as_view( content_type='application/javascript',), name='serviceworker'),
 ]
+
+# Gestion des documents, du suivi d'exécution et des fichiers de suivi
 suivi_urlpatterns = [
     # Gestion des documents
     path('projet/<int:projet_id>/documents/', views.documents_projet, name='documents'), 
@@ -41,6 +45,8 @@ suivi_urlpatterns = [
     path('fichier_suivi/<int:fichier_id>/supprimer/', views.supprimer_fichier_suivi, name='supprimer_fichier_suivi'),
     path('projet/<int:projet_id>/suivi/<int:suivi_id>/fichiers/ajouter/', views.ajouter_fichier_suivi, name='ajouter_fichier_suivi'),
 ]
+
+# Gestion des projets et des lots
 projets_urlpatterns = [
      # Gestion des projets
     path('projets/', views.liste_projets, name='liste_projets'),
@@ -58,6 +64,8 @@ projets_urlpatterns = [
     path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', views.saisie_bordereau, name='saisie_bordereau'),
     path('api/lot/<int:lot_id>/save/', views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
 ]
+
+# Gestion de la base de données (ingénieurs, entreprises, clients)
 base_donnees_urlpatterns = [
      path('base-donnees/', views.base_donnees, name='base_donnees'),
     # Gestion des ingénieurs
@@ -78,16 +86,18 @@ base_donnees_urlpatterns = [
     path('clients/supprimer/<int:client_id>/', views.supprimer_client, name='supprimer_client'),
     path('base_donnees/clients/', views.partial_clients, name='partial_clients'),
 ]
+
+# Gestion des taches
 tache_urlpatterns = [
-     # Gestion des taches
     path('taches/', views.ListeTachesView.as_view(), name='liste_taches'),
     path('taches/nouvelle/', views.CreerTacheView.as_view(), name='creer_tache'),
     path('taches/<int:pk>/modifier/', views.ModifierTacheView.as_view(), name='modifier_tache'),
     path('taches/<int:pk>/supprimer/', views.SupprimerTacheView.as_view(), name='supprimer_tache'),
     path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'), 
 ]
+
+# Attachements au niveau du PROJET (pas du lot) et processus de validation des attachements
 attachement_urlpatterns = [
-      # Attachements au niveau du PROJET (pas du lot) 
     path('projet/<int:projet_id>/attachements/', views.liste_attachements, name='liste_attachements'),
     path('projet/<int:projet_id>/attachements/ajouter/', views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', views.modifier_attachement, name='modifier_attachement'),
@@ -115,8 +125,9 @@ attachement_urlpatterns = [
     # Fiche de contrôle
     path('projet/<int:projet_id>/fiche-contrle/', views.fiche_controle, name='fiche_controle'),
 ]
+
+# # Gestion du profil utilisateur et des utilisateurs
 utilisateur_urlpatterns = [
-     # Gestion du profil utilisateur
     path('modal/profile/', views.profile_modal, name='profile_modal'),
     path('modal/password/', views.password_modal, name='password_modal'),
     path('profile/update/', views.profile_update, name='profile_update'),
@@ -131,6 +142,8 @@ utilisateur_urlpatterns = [
     path('utilisateurs/supprimer/<int:user_id>/', views.supprimer_utilisateur, name='supprimer_utilisateur'),
     path('utilisateurs/<int:user_id>/gerer-projets/', views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
 ]
+
+# Gestion des ordres de service et API associées
 os_urlpatterns = [
      
     path('projet/<int:projet_id>/ordres-service/', views.ordres_service , name='ordres_service'),
@@ -141,8 +154,10 @@ os_urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', views.annuler_ordre_service, name='annuler_ordre_service'),
     path('api/projets/<int:projet_id>/jours-decoules/', views.api_jours_decoules, name='api_jours_decoules'),
 ]
+
+# Gestion des notifications
 notifications_urlpatterns = [
-     # Gestion des notifications
+     
     path('notifications/', notifications.liste_notifications, name='liste_notifications'),
     path('notifications/marquer-lue/<int:notification_id>/', 
          notifications.mark_notification_as_read, name='mark_notification_as_read'),

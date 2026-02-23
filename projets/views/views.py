@@ -167,13 +167,7 @@ def get_projet_from_instance(instance):
 
 def extract_public_id_from_url(url):
     """
-    Extrait le public_id d'une URL Cloudinary
-    
-    Exemples d'URL Cloudinary:
-    - http://res.cloudinary.com/cloud_name/raw/upload/v1234567/folder/filename.ext
-    - https://res.cloudinary.com/cloud_name/raw/upload/v1234567/folder/filename.ext
-    - http://res.cloudinary.com/cloud_name/raw/upload/folder/filename.ext (sans version)
-    
+    Extrait le public_id d'une URL Cloudinary   
     Retourne: folder/filename (sans extension)
     """
     if not url or 'cloudinary.com' not in url:
@@ -431,6 +425,7 @@ def landing(request):
         return redirect('projets:home')
     
     return redirect('projets:apropos')
+
 @login_required
 def home(request):
     # Nombre de projets
@@ -641,10 +636,12 @@ def modifier_utilisateur(request, user_id):
         return redirect('projets:liste_utilisateurs')
 
     return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {'user': user})
+
 @superuser_required
 def liste_utilisateurs(request):
     utilisateurs = User.objects.all()
     return render(request, 'projets/utilisateurs/liste_utilisateurs.html', {'utilisateurs': utilisateurs})
+
 @superuser_required
 def ajouter_utilisateur1111(request):
     if request.method == 'POST':
@@ -682,11 +679,13 @@ def ajouter_utilisateur(request):
         form = UserCreationForm()
     
     return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
+
 @superuser_required
 def supprimer_utilisateur(request, user_id):
     user = get_object_or_404(User, id=user_id)
     user.delete()
     return redirect('projets:liste_utilisateurs')   
+
 @superuser_required
 @user_passes_test(lambda u: u.is_superuser)
 def gerer_projets_utilisateur(request, user_id):
@@ -711,6 +710,7 @@ def gerer_projets_utilisateur(request, user_id):
     }
     
     return render(request, 'projets/utilisateurs/gerer_projets_utilisateur.html', context)
+
 # -------------- projets -------------------------
 from django.db.models import Q
 @login_required
@@ -767,6 +767,7 @@ def liste_projets(request):
         return render(request, 'projets/partials/liste_projets_partial.html', context)
     
     return render(request, 'projets/liste_projets.html', context)
+
 @chef_projet_required
 def ajouter_projet_modal(request):
     if request.method == 'POST':
@@ -838,6 +839,7 @@ def modifier_projet_modal(request, projet_id):
         'entreprises': Entreprise.objects.all(),
     }
     return render(request, 'projets/modals/modifier_projet_modal.html', context)
+
 @chef_projet_required
 def supprimer_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -896,6 +898,7 @@ class ListeTachesView(LoginRequiredMixin, ListView):
             context['responsables'] = User.objects.filter(projets__in=user.projets.all()).distinct()
         
         return context
+
 class ListeTachesView1(LoginRequiredMixin, ListView):
     model = Tache
     template_name = 'projets/taches/liste_taches.html'
@@ -920,6 +923,7 @@ class ListeTachesView1(LoginRequiredMixin, ListView):
             tache__isnull=False
         ).distinct().order_by('username')
         return context
+
 @login_required
 def get_form_data(request):
     user = request.user
@@ -945,6 +949,7 @@ def get_form_data(request):
         'responsables': list(responsables),
         'priorites': priorites  # Format clair {value, label}
     })
+
 class CreerTacheView(LoginRequiredMixin, CreateView):
     model = Tache
     form_class = TacheForm
@@ -1005,6 +1010,7 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
             }, status=400)
             
         return super().form_invalid(form)
+
 class ModifierTacheView(LoginRequiredMixin, UpdateView):
     model = Tache
     form_class = TacheForm
@@ -1068,6 +1074,7 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
             }, status=400)
             
         return super().form_invalid(form)
+
 class DetailTacheView(DetailView):
     model = Tache
     queryset = Tache.objects.select_related('projet', 'responsable')
@@ -1129,6 +1136,7 @@ class DetailTacheView(DetailView):
         
         # Requête normale - retourne HTML
         return super().get(request, *args, **kwargs)
+
 class SupprimerTacheView(LoginRequiredMixin, DeleteView):
     model = Tache
     success_url = reverse_lazy('projets:liste_taches')
@@ -1248,6 +1256,7 @@ def export_excel(request, projet_id):
     
     exporter = ExcelExporter(projet, lots)
     return exporter.export()
+
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
     if request.method == "POST":
@@ -1356,6 +1365,7 @@ def serve_avatar(request, filename):
                 return HttpResponse(f.read(), content_type='image/png')
         else:
             return HttpResponseNotFound('Avatar not found')
+
 # Définition de la taille maximale (5 Mo en octets)
 @login_required
 def upload_avatar(request):
@@ -1483,6 +1493,7 @@ def profile_update(request):
             return HttpResponseBadRequest(f"Erreur: {str(e)}")
     
     return HttpResponseBadRequest("Méthode non autorisée")
+
 @login_required
 def profile_modal(request):
     return render(request, 'projets/modals/profile_modal.html', {
@@ -1492,6 +1503,7 @@ def profile_modal(request):
 @login_required
 def password_modal(request):
     return render(request, 'projets/modals/password_modal.html')
+
 @login_required
 def password_change(request):
     if request.method == 'POST':
@@ -1554,6 +1566,7 @@ def ajouter_ingenieur(request):
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/ingenieurs.html', {'form': form})
     # Ajoutez du debug temporaire
+
 @superuser_required
 def modifier_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
@@ -1573,6 +1586,7 @@ def modifier_ingenieur(request, ingenieur_id):
                 }, status=400)
     
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
 @superuser_required
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
@@ -1611,6 +1625,7 @@ def ajouter_client(request):
     
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/clients.html', {'form': form})
+
 @superuser_required
 def modifier_client(request, client_id):
     client = Client.objects.get(id=client_id)
@@ -1637,6 +1652,7 @@ def modifier_client(request, client_id):
         form = ClientForm(instance=client)
     # Pour les requêtes non-AJAX
     return render(request, "projets/partials/clients.html", {"form": form})
+
 @superuser_required
 def supprimer_client(request, client_id):
     client = get_object_or_404(Client, id=client_id)
@@ -1675,6 +1691,7 @@ def ajouter_entreprise(request):
         'form': form, 
         'entreprise': entreprise
     })
+
 @superuser_required
 def modifier_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
@@ -1716,6 +1733,7 @@ def modifier_entreprise(request, entreprise_id):
         'form': form, 
         'entreprise': entreprise
     })
+
 @superuser_required
 def supprimer_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
@@ -1751,11 +1769,13 @@ def modifier_lot(request, projet_id, lot_id):
         'projet_id': projet_id,
     }
     return render(request, 'projets/lots/modifier_lot.html', context)
+
 @chef_projet_required
 def supprimer_lot(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     lot.delete()
     return redirect('projets:lots_projet', projet_id=projet_id)
+
 @chef_projet_required
 def lots_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1769,6 +1789,7 @@ def lots_projet(request, projet_id):
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
 
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
+
 @login_required
 def lots_details(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -1827,6 +1848,7 @@ def documents_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     documents = projet.documents_administratifs.all()
     return render(request, 'projets/documents_administratifs.html', {'projet': projet, 'documents': documents})
+
 def supprimer_document(request, projet_id, document_id):
     if request.method == 'POST':
         document = get_object_or_404(DocumentAdministratif, id=document_id, projet_id=projet_id)
@@ -1842,6 +1864,7 @@ def supprimer_document(request, projet_id, document_id):
     
     # Si ce n'est pas une requête POST, rediriger
     return redirect('projets:documents', projet_id=projet_id)
+
 def telecharger_document(request, document_id):
     try:
         return download_document(request, 'DocumentAdministratif', document_id)
@@ -1919,6 +1942,7 @@ def suivi_execution(request, projet_id):
         'choices': choices
         
     })
+
 def ajouter_suivi(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -1944,6 +1968,7 @@ def ajouter_suivi(request, projet_id):
             return redirect('projets:dashboard', projet_id=projet_id)
         
     return redirect('projets:suivi_execution', projet_id=projet_id)
+
 def supprimer_suivi(request, projet_id, suivi_id):
     if request.method == 'POST':
         suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet_id=projet_id)
@@ -1951,6 +1976,7 @@ def supprimer_suivi(request, projet_id, suivi_id):
         messages.success(request, "Le suivi a été supprimé avec succès.")
     
     return redirect('projets:suivi_execution', projet_id=projet_id)
+
 def modifier_suivi(request, projet_id, suivi_id):
     """
     Vue pour modifier un suivi d'exécution existant
@@ -1981,6 +2007,7 @@ def modifier_suivi(request, projet_id, suivi_id):
         'suivi': suivi,
     }
     return render(request, 'projets/suivi/modifier_suivi.html', context)
+
 def afficher_fichier_suivi(request, fichier_id):
     """
     Vue pour afficher/télécharger un fichier de suivi
@@ -2033,6 +2060,7 @@ def afficher_fichier_suivi(request, fichier_id):
         response['Content-Disposition'] = f'attachment; filename="{os.path.basename(fichier_suivi.fichier.url)}"'
     
     return response
+
 def supprimer_fichier_suivi(request, fichier_id):
     if request.method == 'POST':
         try: 
@@ -2057,6 +2085,7 @@ def supprimer_fichier_suivi(request, fichier_id):
             messages.error(request, f"Erreur lors de la suppression du fichier: {str(e)}")
         
     return redirect('projets:suivi_execution', projet_id=projet_id)
+
 def telecharger_fichier_suivi(request, fichier_id):
     try:
         fichier = get_object_or_404(FichierSuivi, id=fichier_id)
@@ -2064,6 +2093,7 @@ def telecharger_fichier_suivi(request, fichier_id):
     except Exception as e:
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         return redirect('projets:suivi_execution', projet_id=fichier.suivi.projet.id)
+
 def ajouter_fichier_suivi(request, projet_id, suivi_id):
     """
     Vue pour ajouter des fichiers à un suivi d'exécution existant avec Cloudinary
@@ -2155,6 +2185,7 @@ def liste_attachements(request, projet_id):
         'attachements': attachements,
     }
     return render(request, 'projets/decomptes/liste_attachements.html', context)
+
 @login_required
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -2302,6 +2333,7 @@ def ajouter_attachement(request, projet_id):
         'is_edition': False
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
+
 @login_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2438,6 +2470,7 @@ def modifier_attachement(request, attachement_id):
         'is_edition': True
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
+
 @login_required
 def detail_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2523,11 +2556,13 @@ def supprimer_attachement(request, attachement_id):
         'attachement': attachement,
         'count_lignes': count_lignes
     })
+
 def attachements_ajouter_decompte(request, attachement_id):
     """Vue pour l'ajout d'un décompte (redirige vers liste_decomptes avec formulaire ouvert)"""
     attachement = get_object_or_404(Attachement, id=attachement_id)
     projet = attachement.projet
     return redirect(f"{reverse('projets:liste_decomptes', args=[projet.id])}?ajouter=1&attachement_id={attachement_id}")
+
 @login_required
 def validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2580,6 +2615,7 @@ def validation_attachement(request, attachement_id):
         'user': request.user,
     }
     return render(request, 'projets/decomptes/validation_attachement.html', context)
+
 @login_required
 def reouvrir_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2658,6 +2694,7 @@ def ajouter_etape(request, process_id):
         return redirect('projets:liste_attachements')
     
     return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+
 @login_required
 def valider_etape(request, etape_id):
     """Valide une étape spécifique"""
@@ -2681,6 +2718,7 @@ def valider_etape(request, etape_id):
         return redirect('projets:liste_attachements')
     
     return redirect_to_attachement(etape)
+
 @login_required
 def passer_etape(request, etape_id):
     """Passe une étape optionnelle"""
@@ -2713,6 +2751,7 @@ def passer_etape(request, etape_id):
         return redirect('projets:liste_attachements')
     
     return redirect_to_attachement(etape)
+
 @login_required
 def modifier_etape(request, etape_id):
     """Modifie une étape non validée"""
@@ -2749,6 +2788,7 @@ def modifier_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect_to_attachement(etape)
+
 @login_required
 def reinitialiser_etape(request, etape_id):
     """Réinitialise une étape validée pour reprendre le processus"""
@@ -2784,6 +2824,7 @@ def reinitialiser_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect_to_attachement(etape)
+
 @login_required
 def supprimer_etape(request, etape_id):
     """Supprime une étape de validation"""
@@ -2827,10 +2868,12 @@ def supprimer_etape(request, etape_id):
         messages.error(request, "❌ Étape non trouvée.")
     
     return redirect('projets:validation_technique_attachement', attachement_id=attachement_id)
+
 def redirect_to_attachement(etape):
     """Redirige vers l'attachement parent de l'étape"""
     return redirect('projets:validation_technique_attachement', 
                    attachement_id=etape.processValidation.attachement.id)
+
 @login_required
 def transmettre_validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
@@ -2843,6 +2886,7 @@ def transmettre_validation_attachement(request, attachement_id):
         messages.error(request, f"Erreur lors de la transmission : {str(e)}")
     
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
+
 def telecharger_document_validation(request, etape_id):
     """Télécharge le document associé à une étape de validation"""
     etape = get_object_or_404(EtapeValidation, id=etape_id)
@@ -3041,14 +3085,17 @@ def liste_decomptes(request, projet_id):
     }
     
     return render(request, 'projets/decomptes/liste_decomptes.html', context)
+
 def projet_ajouter_decompte(request, projet_id):
     """Vue pour l'ajout d'un décompte (redirige vers liste_decomptes avec formulaire ouvert)"""
     projet = get_object_or_404(Projet, id=projet_id)
     return redirect(f"{reverse('projets:liste_decomptes', args=[projet.id])}?ajouter=1")
+
 def modifier_decompte(request, decompte_id):
     """Vue pour la modification d'un décompte (redirige vers liste_decomptes avec formulaire en mode modification)"""
     decompte = get_object_or_404(Decompte, id=decompte_id)
     return redirect(f"{reverse('projets:liste_decomptes', args=[decompte.attachement.projet.id])}?modifier={decompte.id}")
+
 def supprimer_decompte(request, decompte_id):
     """Vue pour la suppression d'un décompte"""
     decompte = get_object_or_404(Decompte, id=decompte_id)
@@ -3066,6 +3113,7 @@ def supprimer_decompte(request, decompte_id):
         'projet': decompte.attachement.projet
     }
     return render(request, 'projets/supprimer_decompte.html', context)
+
 def detail_decompte(request, decompte_id):
     """Vue pour afficher le détail d'un décompte"""
     decompte = get_object_or_404(Decompte, id=decompte_id)
@@ -3102,6 +3150,7 @@ def detail_decompte(request, decompte_id):
         'net_a_payer': net_a_payer
     }
     return render(request, 'projets/decomptes/detail_decompte.html', context)
+
 def calcul_retard_decompte(request, decompte_id):
     """API pour calculer si un décompte est en retard"""
     decompte = get_object_or_404(Decompte, id=decompte_id)
@@ -3402,6 +3451,7 @@ def ordres_service(request, projet_id):
         'form': form,
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
+
 def api_jours_decoules(request, projet_id):
     """API pour calculer les jours découlés"""
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3421,6 +3471,7 @@ def api_jours_decoules(request, projet_id):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
 def modifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3462,6 +3513,7 @@ def modifier_ordre_service(request, projet_id, ordre_id):
         'form': form,
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
+
 def supprimer_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3481,6 +3533,7 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
         'ordre': ordre,
     }
     return render(request, 'projets/ordres_service/supprimer_ordre_service.html', context)
+
 def details_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3490,6 +3543,7 @@ def details_ordre_service(request, projet_id, ordre_id):
         'ordre': ordre,
     }
     return render(request, 'projets/ordres_service/details_ordre_service.html', context)
+
 def notifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3549,6 +3603,7 @@ def notifier_ordre_service(request, projet_id, ordre_id):
             messages.error(request, f"❌ Erreur inattendue: {e}")
     return redirect('projets:ordres_service', projet_id=projet.id)
     # return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
+
 def annuler_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3576,6 +3631,7 @@ def annuler_ordre_service(request, projet_id, ordre_id):
             messages.error(request, f"❌ Erreur lors de l'annulation: {e}")
     
     return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
+
 def telecharger_document_os(request, ordre_id):
     ordre = get_object_or_404(OrdreService, id=ordre_id)
     try:

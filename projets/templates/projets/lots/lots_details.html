@@ -478,25 +478,10 @@
                     <i class="fas fa-file-excel"></i>
                     Excel
                 </a>
-                <!-- <button id="exportExcelBtn" class="btn btn-success">
-                    <i class="fas fa-file-excel"></i>
-                    Excel
-                </button>  -->
             </div>
         </nav>
 
         <!-- Informations du projet -->
-        <!-- <section class="info-card">
-            <div class="info-grid">
-                <div class="info-item">
-                    <i class="fas fa-hashtag info-icon text-cyan-400"></i>
-                    <div class="info-content">
-                        <div class="info-label">Nom du projet</div>
-                        <div class="info-value">{{ projet.nom }}</div>
-                    </div>
-                </div>
-            </div>
-        </section> -->
 
         <!-- Résumé financier -->
         <section class="summary-card">
@@ -563,7 +548,7 @@
                     </thead> 
                     <tbody>
                         {% for ligne in lot.lignes_table %}
-                            {% if ligne.montant > 0 %}
+                            {% if ligne.montant > 0 and ligne.id != 0 %}
                             <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
                                 <td>
                                     {% if ligne.has_children %}
@@ -629,6 +614,7 @@
                 </table>
             </div>
         </section>
+        
         {% empty %}
         <section class="empty-state">
             <i class="fas fa-file-contract empty-icon"></i>
@@ -651,12 +637,6 @@
             if (pdfBtn) {
                 pdfBtn.addEventListener('click', exportPDF);
             }
-            
-            // Gestionnaire pour le bouton Excel
-            // const excelBtn = document.getElementById('exportExcelBtn');
-            // if (excelBtn) {
-            //     excelBtn.addEventListener('click', exportExcel);
-            // }
         });
 
         // Fonction pour exporter en Excel (version améliorée)

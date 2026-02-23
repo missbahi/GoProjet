@@ -543,6 +543,7 @@ class LigneHierarchique:
         enfant.parent = self
         self.children.append(enfant)
         return enfant
+    
     def collapse(self, all=True):
         if self.parent: 
             self.collapsed = True
@@ -648,65 +649,3 @@ class LigneHierarchique:
         
         return None
     
-#     # Fonction utilitaire pour construire la hiérarchie
-# def construire_hierarchie(lignes_data):
-    # """
-    # Convertit une liste plate de lignes en structure hiérarchique
-    
-    # Args:
-    #     lignes_data: Liste de dictionnaires avec id et parent_id
-    
-    # Returns:
-    #     Tuple: (racines, dict_reference)
-    # """
-    
-    # lignes_objects = {}
-    # racines = []
-    
-    # # Vérifier si la liste est vide
-    # if not lignes_data:
-    #     return racines, lignes_objects
-    
-    # # 1. Créer tous les objets
-    # for ligne_data in lignes_data:
-    #     try:
-    #         ligne_obj = LigneHierarchique(ligne_data)
-    #         lignes_objects[ligne_obj.id] = ligne_obj
-    #     except KeyError as e:
-    #         print(f"Erreur lors de la création de l'objet LigneHierarchique: {e}")
-    #         continue
-    
-    # # 2. Construire la hiérarchie
-    # for ligne_obj in list(lignes_objects.values()):
-    #     if ligne_obj.parent_id:
-    #         parent = lignes_objects.get(ligne_obj.parent_id)
-    #         if parent:
-    #             parent.ajouter_enfant(ligne_obj)
-    #         else:
-    #             # Parent non trouvé, traiter comme racine
-    #             racines.append(ligne_obj)
-    #     else:
-    #         racines.append(ligne_obj)
-    
-    # # 3. Trier les racines par ID
-    # # racines.sort(key=lambda x: x.id)
-    
-    # # 4. Trier les enfants récursivement
-    # # def trier_enfants(noeud):
-    # #     noeud.children.sort(key=lambda x: x.id)
-    # #     for enfant in noeud.children:
-    # #         trier_enfants(enfant)
-    
-    # # for racine in racines:
-    # #     trier_enfants(racine)
-    
-    # # 5. collapse les lignes avec montant zéro
-    # for racine in racines:
-    #     if racine.amount() == 0:
-    #         racine.collapse()
-    # for ligne in lignes_objects.values():
-    #     ligne.montant = ligne.amount()
-    #     # if ligne.montant == 0:
-    #     #     ligne.collapsed = True
-
-    # return racines, lignes_objects
