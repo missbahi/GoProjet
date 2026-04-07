@@ -2,14 +2,15 @@
 <html lang="fr">
 <head> 
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
     <title>Bordereau - {{ lot.nom }}</title>
+    
     {% load static %}
     {% load formatters %}
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
-    
     <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
     
     <script src="{% static 'projets/js/nombre-lettres.js' %}"></script>
@@ -17,6 +18,7 @@
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    
     <style>
         body { 
             background-color: #2E2E2E; 

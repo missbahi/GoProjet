@@ -220,12 +220,67 @@ class LineManager {
         this.flatIndex = new Map(); 
         this.cacheInvalid = true;
         this.cachedFlatList = null;
+        this.emptyLineManager = new EmptyLineManager(this);
+
         if (data && data.length > 0) {
             this.buildTree(data);
         } else {
             // Ajouter une ligne vide par défaut
-            this.addEmptyLine();
+            for (let i = 0; i < 3; i++) {
+                this.addEmptyLine();
+            }
         }
+    }
+    /**
+     * Ajoute une ligne vide à un endroit spécifique
+     */
+    addEmptyLineAt(index, parent = this.root) {
+        const line = new Line();
+        line.designation = "";
+        
+        if (parent === this.root && index !== undefined) {
+            // Insérer à un index spécifique dans la racine
+            this.insertLineAtFlatIndex(line, index);
+        } else {
+            parent.addChild(line);
+        }
+        
+        this.lines.set(line.id, line);
+        this.invalidateCache();
+        return line;
+    }
+
+    /**
+     * Ajoute une ligne vide à la fin d'un parent donné.
+     *  Si aucun parent n'est spécifié, ajoute à la racine.
+     *   */
+    addEmptyLine(parent = this.root) {
+        const line = new Line();
+        parent.addChild(line);
+        this.lines.set(line.id, line);
+        this.invalidateCache();
+        return line;
+    }
+
+    /** 
+     * Nettoie les lignes vides (appelé avant sauvegarde)
+     */
+    cleanupEmptyLinesForSave() {
+        return this.emptyLineManager.prepareForSave();
+    }
+    
+    /**
+     * Garantit qu'il y a toujours des lignes vides pour l'édition
+     */
+    ensureEmptyLinesForEditing() {
+        return this.emptyLineManager.ensureEmptyLines();
+    }
+    
+    /**
+     * Vérifie si une ligne est vide
+     */
+    isEmptyLine(line) {
+        return this.emptyLineManager.isEmptyLine(line);
     }
 
     // ============================================================================
@@ -274,14 +329,6 @@ class LineManager {
         }
         
         this.invalidateCache();
-    }
-
-    addEmptyLine(parent = this.root) {
-        const line = new Line();
-        parent.addChild(line);
-        this.lines.set(line.id, line);
-        this.invalidateCache();
-        return line;
     }
 
     // ============================================================================
@@ -363,11 +410,10 @@ class LineManager {
             existingLine.quantite = lineData.quantite;
             existingLine.prix_unitaire = lineData.prix_unitaire;
             existingLine.expanded = lineData.expanded;
-            // existingLine.invalidateCache();
+            existingLine.invalidateCache();
             return existingLine;
         } else {
             // Créer une nouvelle ligne
-            // const id = `paste_${Date.now()}_${index}_${Math.random().toString(36).substr(2, 9)}`;
             const newLine = new Line(
                 null, // ID généré automatiquement
                 lineData.numero,
@@ -376,7 +422,7 @@ class LineManager {
                 lineData.quantite,
                 lineData.prix_unitaire,
                 this.root, // Parent racine par défaut
-                lineData.expanded
+                lineData.expanded !== undefined ? lineData.expanded : true
             );
             return this.root.addChild(newLine);
             // Insérer à la bonne position
@@ -648,6 +694,101 @@ class LineManager {
     }
 }
 
+class EmptyLineManager {
+    constructor(lineManager) {
+        this.lineManager = lineManager;
+        this.emptyLineThreshold = 3; // Garder 3 lignes vides à la fin
+    }
+    
+    /**
+     * Vérifie si une ligne est vide
+     */
+    isEmptyLine(line) {
+        return !line.designation || 
+               line.designation.trim() === '' || 
+               (line.quantite === 0 && 
+                line.prix_unitaire === 0 && 
+                (!line.numero || line.numero.trim() === ''));
+    }
+    
+    /**
+     * Vérifie si une ligne peut être supprimée (vide et sans enfants)
+     */
+    isRemovableEmptyLine(line) {
+        return this.isEmptyLine(line) && !line.hasChildren;
+    }
+    
+    /**
+     * Ajoute des lignes vides à la fin si nécessaire
+     */
+    ensureEmptyLines() {
+        const flatList = this.lineManager.getFlatList();
+        const emptyLinesCount = flatList.filter(line => this.isEmptyLine(line)).length;
+        
+        if (emptyLinesCount < this.emptyLineThreshold) {
+            const toAdd = this.emptyLineThreshold - emptyLinesCount;
+            for (let i = 0; i < toAdd; i++) {
+                this.lineManager.addEmptyLine();
+            }
+            this.lineManager.invalidateCache();
+            return toAdd;
+        }
+        return 0;
+    }
+    
+    /**
+     * Nettoie les lignes vides (pour sauvegarde)
+     */
+    cleanupEmptyLines() {
+        const flatList = this.lineManager.getFlatList();
+        const toRemove = [];
+        
+        // Parcourir à l'envers pour ne pas perturber les indices
+        for (let i = flatList.length - 1; i >= 0; i--) {
+            const line = flatList[i];
+            
+            // Supprimer les lignes vides sans enfants
+            if (this.isRemovableEmptyLine(line)) {
+                // Ne pas supprimer si c'est la seule ligne
+                if (flatList.length - toRemove.length <= 1) {
+                    break;
+                }
+                toRemove.push(line);
+            }
+        }
+        
+        // Supprimer les lignes
+        toRemove.forEach(line => {
+            if (line.parent) {
+                line.parent.removeChild(line);
+                this.lineManager.lines.delete(line.id);
+            }
+        });
+        
+        if (toRemove.length > 0) {
+            this.lineManager.invalidateCache();
+        }
+        
+        return toRemove.length;
+    }
+    
+    /**
+     * Nettoie spécifiquement pour la sauvegarde
+     */
+    prepareForSave() {
+        const removedCount = this.cleanupEmptyLines();
+        
+        // Ajouter exactement 1 ligne vide pour permettre l'ajout futur
+        const hasEmptyLines = this.lineManager.getFlatList().some(line => this.isEmptyLine(line));
+        if (!hasEmptyLines) {
+            this.lineManager.addEmptyLine();
+            return removedCount + 1;
+        }
+        
+        return removedCount;
+    }
+}
+
 // ============================================================================
 // GESTIONNAIRE PRINCIPAL
 // ============================================================================
@@ -658,6 +799,7 @@ class BordereauManager {
         this.lotNom = options.lotNom || 'Bordereau';
         this.csrfToken = options.csrfToken || '';
         this.saveUrl = options.saveUrl || '';
+        this.isSyncing = false; // Éviter les boucles de synchronisation
         
         // Initialisation
         this.hot = null;
@@ -684,7 +826,38 @@ class BordereauManager {
         // Configurer les raccourcis clavier
         this.setupKeyboardShortcuts();
     }
-    
+
+    /**
+     * Ajoute une nouvelle ligne vide
+     */
+    addNewEmptyLine(atEnd = true) {
+        let newLine;
+        
+        if (atEnd) {
+            newLine = this.lineManager.addEmptyLine();
+        } else {
+            const selected = this.hot.getSelected();
+            if (selected && selected.length > 0) {
+                const index = selected[0][0];
+                newLine = this.lineManager.addEmptyLineAt(index + 1);
+            } else {
+                newLine = this.lineManager.addEmptyLine();
+            }
+        }
+        
+        this.refreshTable(true);
+        
+        // Sélectionner la nouvelle ligne
+        setTimeout(() => {
+            const newIndex = this.lineManager.getLineIndexById(newLine.id);
+            if (newIndex !== -1) {
+                this.hot.selectCell(newIndex, 4); // Colonne Désignation
+                this.hot.scrollViewportTo(newIndex);
+            }
+        }, 50);
+        
+        return newLine;
+    }
     expandAllLines() {
         this.lineManager.lines.forEach(line => {
             if (line.hasChildren) {
@@ -736,18 +909,129 @@ class BordereauManager {
             rowHeaders: false,
             colHeaders: true,
             licenseKey: 'non-commercial-and-evaluation',
-            contextMenu: ['row_above', 'row_below', 'remove_row'],
+            // contextMenu: ['row_above', 'row_below', 'remove_row'],
             hiddenColumns: {columns: [0, 1, 2], indicators: false},
             hiddenRows: {rows: [], indicators: false},
-            minSpareRows: 5, // Plus de lignes vides pour faciliter le collage
+            minSpareRows: 0, // Plus de lignes vides pour faciliter le collage
             height: 'auto',
             width: 'auto',
             rowHeights: 40,
             manualColumnResize: true,
             outsideClickDeselects: false,
+            
+            // Menu contextuel personnalisé
+            contextMenu: {
+                items: {
+                    row_above: {
+                        name: 'Insérer une ligne au-dessus',
+                        // callback: (key, selection) => {
+                        //     const selected = this.getSafeSelection();
+                        //     if (!selected) return;
+                        //     const startRow = selected.start;
+                        //     this.handleManualRowInsertion(startRow, 1, 'row_above');
+                        // }
+                    },
+                    row_below: {
+                        name: 'Insérer une ligne en dessous',
+                        // callback: (key, selection) => {
+                        //     const selected = this.getSafeSelection();
+                        //     if (!selected) return;
+                        //     const startRow = selected.startRow;
+                        //     const insertIndex = startRow + 1;
+                        //     this.handleManualRowInsertion(insertIndex, 1, 'row_below');
+                        // }
+                    },
+                    remove_row: {
+                        name: 'Supprimer la(les) ligne(s)',
+                        callback: (key, selection) => {
+                            const selected = this.getSafeSelection();
+                            if (!selected) return;
+                            const startRow = selected.startRow;
+                            const endRow = selected.endRow;
+                            const amount = endRow - startRow + 1;
+                            this.handleManualRowDeletion(startRow, amount);
+                        }
+                    },
+                    sep1: { name: '---------' },
+                    copy: {
+                        name: 'Copier',
+                        callback: () => {
+                            this.hot.getPlugin('copyPaste').copy();
+                        }
+                    },
+                    paste: {
+                        name: 'Coller',
+                        callback: () => {
+                            // Le paste est déjà géré par beforePaste
+                            this.hot.getPlugin('copyPaste').paste();
+                        }
+                    }
+                }
+            },
+            
+            // Raccourcis clavier
+            keyboard: {
+                keys: [
+                    ['Ctrl/Cmd+Enter', () => {
+                        this.addNewEmptyLineAtEnd();
+                    }],
+                    ['Ctrl/Cmd+Shift+Up', () => {
+                        this.moveUp();
+                    }],
+                    ['Ctrl/Cmd+Shift+Down', () => {
+                        this.moveDown();
+                    }],
+                    ['Tab', (e) => {
+                        if (!e.shiftKey) {
+                            this.indente();
+                        } else {
+                            this.desindente();
+                        }
+                        return false; // Empêcher le comportement par défaut
+                    }]
+                ]
+            },
+
+            // Gérer l'ajout manuel de lignes
+            beforeCreateRow: (index, amount, source) => {
+                if (source === 'auto') {
+                    return false; // Empêcher l'ajout automatique
+                }
+                // Gérer l'ajout manuel (via context menu, Ctrl+C, etc.)
+                if (source === 'ContextMenu.row_above' || source === 'ContextMenu.row_below') {
+                    // Ajouter des lignes dans LineManager
+                    this.handleManualRowInsertion(index, amount, source);
+                    return false; // Bloquer l'ajout natif, on gère nous-mêmes
+                }
+                
+                // Pour les autres sources (paste, etc.), on gère aussi nous-mêmes
+                if (amount > 0) {
+                    this.handleManualRowInsertion(index, amount, source);
+                    return false;
+                }
+                return true;
+            },
+            
+            // Gérer la suppression de lignes
+            beforeRemoveRow: (index, amount) => {
+                // Ne pas supprimer la dernière ligne si elle est vide
+                const flatList = this.lineManager.getFlatList();
+                if (flatList.length - amount <= 0) {
+                    return false;
+                }
+                return true;
+            },
 
             // GESTION DES LIGNES
-            afterRemoveRow: this.handleAfterRemoveRow.bind(this),
+            afterRemoveRow: (index, amount) => {
+                this.handleAfterRemoveRow(index, amount);
+                
+                // Ajouter des lignes vides si nécessaire
+                setTimeout(() => {
+                    this.lineManager.ensureEmptyLinesForEditing();
+                    this.refreshTable(true);
+                }, 50);
+            },
 
             // GESTION DU COLLAGE (SIMPLIFIÉ)
             beforePaste: (data, coords) => this.handlePaste(data, coords),
@@ -778,6 +1062,123 @@ class BordereauManager {
                 }
             },
         };
+    }
+
+    /**
+     * Gère l'insertion manuelle de lignes
+     */
+    handleManualRowInsertion(index, amount, source) {        
+        const flatList = this.lineManager.getFlatList();
+        const newLines = [];
+        // Ajuster l'index selon la source
+        let adjustedIndex = index;
+        if (source === 'ContextMenu.rowBelow') {
+            adjustedIndex = index + 1;
+        } else if (source === 'ContextMenu.rowAbove') {
+            adjustedIndex = index;
+        }
+
+
+        for (let i = 0; i < amount; i++) {
+            let newLine;
+            const insertIndex = adjustedIndex + i;
+            
+            // Déterminer où insérer la ligne
+            if (insertIndex >= flatList.length) {
+                // Ajouter à la fin
+                newLine = this.lineManager.addEmptyLine();
+            } else if (insertIndex === 0) {
+                // Ajouter au début
+                newLine = this.lineManager.addEmptyLineAt(0);
+            } else {
+                // Insérer à un index spécifique
+                const targetLine = flatList[insertIndex];
+                if (targetLine && targetLine.parent) {
+                    // Insérer avant la ligne cible dans son parent
+                    const parent = targetLine.parent;
+                    const siblingIndex = parent.children.indexOf(targetLine);
+                    
+                    newLine = new Line(
+                        null,
+                        '',
+                        '',
+                        '',
+                        0,
+                        0,
+                        parent,
+                        true
+                    );
+                    
+                    parent.children.splice(siblingIndex, 0, newLine);
+                    this.lineManager.lines.set(newLine.id, newLine);
+                } else {
+                    newLine = this.lineManager.addEmptyLineAt(insertIndex);
+                }
+            }
+            
+            if (newLine) {
+                newLines.push(newLine);
+            }
+        }
+        
+        // Invalider le cache et rafraîchir
+        this.lineManager.invalidateCache();
+        this.refreshTable();
+        
+        // Sélectionner la première nouvelle ligne
+        if (newLines.length > 0) {
+            setTimeout(() => {
+                const firstNewIndex = this.lineManager.getLineIndexById(newLines[0].id);
+                if (firstNewIndex !== -1) {
+                    this.hot.selectCell(firstNewIndex, 4);
+                    this.hot.scrollViewportTo(firstNewIndex);
+                }
+            }, 50);
+        }
+        
+        return newLines;
+    }
+
+    /**
+     * Gère la suppression manuelle de lignes
+     */
+    handleManualRowDeletion(index, amount) {
+        console.log(`Suppression: ${amount} ligne(s) à l'index ${index}`);
+        
+        const flatList = this.lineManager.getFlatList();
+        
+        // Vérifier qu'on ne supprime pas toutes les lignes
+        if (flatList.length - amount <= 0) {
+            this.showMessage("Impossible de supprimer toutes les lignes", "warning");
+            return false;
+        }
+        
+        // Supprimer les lignes de la fin vers le début pour ne pas perturber les indices
+        for (let i = amount - 1; i >= 0; i--) {
+            const lineIndex = index + i;
+            const line = flatList[lineIndex];
+            
+            if (line && line.parent) {
+                console.log(`Suppression de la ligne à l'index ${lineIndex}`);
+                line.parent.removeChild(line);
+                this.lineManager.lines.delete(line.id);
+            }
+        }
+        
+        // Invalider le cache et rafraîchir
+        this.lineManager.invalidateCache();
+        this.refreshTable(true);
+        
+        // Sélectionner la ligne suivante
+        setTimeout(() => {
+            const newIndex = Math.min(index, this.lineManager.nbLines - 1);
+            if (newIndex >= 0) {
+                this.hot.selectCell(newIndex, 4);
+                this.hot.scrollViewportTo(newIndex);
+            }
+        }, 50);
+        
+        return true;
     }
 
     // ============================================================================
@@ -875,7 +1276,7 @@ class BordereauManager {
     }
 
     handleBeforeChange(changes, source) {
-        if (!changes) return true;
+        if (!changes) return true;     
         
         changes.forEach(change => {
             const [row, prop, oldValue, newValue] = change;
