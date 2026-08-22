@@ -443,7 +443,9 @@
                             <td>
                                 {% if utilisateur.is_superuser %}
                                     <span class="badge badge-superadmin">Super Admin</span>
-                                {% elif utilisateur.is_staff %}
+                                {% elif utilisateur.profile.role == 'GERANT' %}
+                                    <span class="badge badge-staff">Gérant</span>
+                                {% elif utilisateur.profile.role == 'STAFF' %}
                                     <span class="badge badge-staff">Staff</span>
                                 {% else %}
                                     <span class="badge badge-user">Utilisateur</span>
@@ -508,7 +510,9 @@
                         <div class="user-role-mobile">
                             {% if utilisateur.is_superuser %}
                                 <span class="badge badge-superadmin">Super Admin</span>
-                            {% elif utilisateur.is_staff %}
+                            {% elif utilisateur.profile.role == 'GERANT' %}
+                                <span class="badge badge-staff">Gérant</span>
+                            {% elif utilisateur.profile.role == 'STAFF' %}
                                 <span class="badge badge-staff">Staff</span>
                             {% else %}
                                 <span class="badge badge-user">Utilisateur</span>

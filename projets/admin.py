@@ -4,7 +4,8 @@ from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from .models.profile import Profile
 # from .models.revision import ConfigRevisionProjet, IndiceRevision, RevisionPrix, ValeurIndice
-from .models import Attachement, Decompte, DocumentAdministratif, OrdreService, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
+from .models import Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
+
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
@@ -24,6 +25,16 @@ class EntrepriseAdmin(admin.ModelAdmin):
     search_fields = ('nom', 'contact', 'email', 'telephone')
     list_per_page = 20
 
+@admin.register(Dossier)
+class DossierAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'date_creation', 'nombre_projets')
+    search_fields = ('nom', 'description')
+    list_per_page = 20
+
+    @admin.display(description='Nombre de projets')
+    def nombre_projets(self, dossier):
+        return dossier.projets.count()
+
 # ------------------------ Admin Appel d'Offre ------------------------
 @admin.register(AppelOffre)
 class AppelOffreAdmin(admin.ModelAdmin):
@@ -36,9 +47,9 @@ class AppelOffreAdmin(admin.ModelAdmin):
 # ------------------------ Admin Projet ------------------------
 @admin.register(Projet)
 class ProjetAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'numero', 'type_projet', 'localisation', 'entreprise', 'statut', 'date_debut', 'delai', 'avancement', 'en_retard')
+    list_display = ('nom', 'numero', 'dossier', 'type_projet', 'localisation', 'entreprise', 'statut', 'date_debut', 'delai', 'avancement', 'en_retard')
     list_filter = ('type_projet', 'statut', 'en_retard')
-    search_fields = ('nom', 'numero', 'maitre_ouvrage', 'localisation')
+    search_fields = ('nom', 'numero', 'dossier__nom', 'maitre_ouvrage', 'localisation')
     list_per_page = 20
     date_hierarchy = 'date_creation'
 
@@ -70,6 +81,7 @@ class OrdreServiceAdmin(admin.ModelAdmin):
 class TypeOrdreServiceAdmin(admin.ModelAdmin):
     list_display = ('nom', 'code', 'description')
     search_fields = ('nom', 'code', 'description')
+
 # ------------------------ Admin Tache ------------------------
 @admin.register(Tache)
 class TacheAdmin(admin.ModelAdmin):

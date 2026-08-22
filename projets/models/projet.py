@@ -80,8 +80,38 @@ class AppelOffre(models.Model):
             return (self.date_limite - date.today()).days
         return None
 
-# ------------------------ Projet ---------------------------- #
 
+
+# ------------------------ Dossier --------------------------- #
+class Dossier(models.Model):
+    nom = models.CharField(_("Nom du dossier"), max_length=150, unique=True)
+    description = models.TextField(_("Description"), blank=True)
+    gerant = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='dossiers_geres',
+        verbose_name=_("Gérant"),
+    )
+    utilisateurs = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='dossiers',
+        verbose_name=_("Utilisateurs du dossier"),
+    )
+    date_creation = models.DateTimeField(_("Date de création"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Dossier")
+        verbose_name_plural = _("Dossiers")
+        ordering = ['nom']
+
+    def __str__(self):
+        return self.nom
+
+
+# ------------------------ Projet ---------------------------- #
 class Projet(models.Model):
     TYPE_PROJET = [
         ('VRD', 'Voirie et Réseaux Divers'),
@@ -124,6 +154,14 @@ class Projet(models.Model):
         RECEPTION_DEFINITIVE = 'RD', _('Réception définitive')
         CLOTURE = 'CLO', _('Clôturé')
 
+    dossier = models.ForeignKey(
+        'Dossier',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='projets',
+        verbose_name=_("Dossier"),
+    )
     type_projet = models.CharField(_("Type de projet"), max_length=50, choices=TYPE_PROJET, default='VRD', null=True, blank=True)
     nom = models.CharField(_("Nom du projet"), max_length=50)
     objet = models.TextField(_("Objet du marché"), max_length=200)

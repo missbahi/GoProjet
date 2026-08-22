@@ -167,6 +167,12 @@
             color: var(--text-muted);
         }
 
+        #role,
+        #role option {
+            background-color: #ffffff;
+            color: #111827;
+        }
+
         /* Avatar section élégante */
         .avatar-section {
             text-align: center;
@@ -790,17 +796,29 @@
                                     placeholder="Nom">
                             </div>
 
+                            {% if can_manage_account_status %}
                             <div class="form-group">
                                 <label for="role">
                                     <i class="fas fa-user-tag"></i>
                                     Rôle
                                 </label>
                                 <select name="role" id="role" class="form-control">
-                                    <option value="user" {% if not user.is_staff and not user.is_superuser %}selected{% endif %}>Utilisateur</option>
-                                    <option value="staff" {% if user.is_staff and not user.is_superuser %}selected{% endif %}>Staff</option>
-                                    <option value="admin" {% if user.is_superuser %}selected{% endif %}>Super Admin</option>
+                                    {% for value, label in role_choices %}
+                                        <option value="{{ value }}" {% if user.profile.role == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
+                            {% endif %}
+                            {% if can_manage_user_dossiers %}
+                            <div class="form-group">
+                                <label for="dossiers"><i class="fas fa-folder"></i> Dossiers autorisés</label>
+                                <div class="space-y-2 rounded-lg border border-gray-700 p-3">
+                                    {% for dossier in dossiers %}
+                                        <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="dossiers" value="{{ dossier.id }}" {% if dossier in user.dossiers.all %}checked{% endif %}> {{ dossier.nom }}</label>
+                                    {% empty %}<span class="text-gray-400">Aucun dossier disponible</span>{% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -858,6 +876,7 @@
                         </label>
                     </div>
 
+                    {% if can_manage_account_status %}
                     <!-- Status Section -->
                     <div class="permissions-section animate-slide-in">
                         <h3 class="text-cyan-300 font-medium mb-4 flex items-center gap-3">
@@ -875,6 +894,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endif %}
 
                     <!-- Form Actions -->
                     <div class="form-actions">

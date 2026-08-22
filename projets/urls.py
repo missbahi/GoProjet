@@ -12,6 +12,8 @@ app_name = "projets"
 commun_urlpatterns = [
     # Home
     path('home/', views.home, name='home'),
+    path('dossiers/gerer/', views.gerer_dossiers, name='gerer_dossiers'),
+    path('dossiers/<int:dossier_id>/modifier/', views.modifier_dossier, name='modifier_dossier'),
     path('', views.landing, name='landing'),
     # Apropos
     path('apropos/', views.apropos, name='apropos'),

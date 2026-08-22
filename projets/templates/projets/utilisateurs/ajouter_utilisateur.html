@@ -80,6 +80,12 @@
             box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
         }
 
+        #id_role,
+        #id_role option {
+            background-color: #ffffff;
+            color: #111827;
+        }
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -296,6 +302,25 @@
                                value="{{ form.phone.value|default:'' }}">
                     </div>
 
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div class="form-group">
+                            <label for="id_role"><i class="fas fa-user-tag"></i> Rôle *</label>
+                            <select name="role" id="id_role" class="form-control" required>
+                                {% for value, label in form.role.field.choices %}
+                                    <option value="{{ value }}" {% if form.role.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-folder"></i> Dossiers autorisés</label>
+                            <div class="space-y-2 rounded-lg border border-gray-700 p-3">
+                                {% for checkbox in form.dossiers %}
+                                    <label class="flex items-center gap-2 text-sm">{{ checkbox.tag }} {{ checkbox.choice_label }}</label>
+                                {% empty %}<span class="text-gray-400">Aucun dossier disponible</span>{% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Permissions -->
                     <div class="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700">
                         <h3 class="text-cyan-300 font-medium mb-3 flex items-center gap-2">
@@ -304,26 +329,6 @@
                         </h3>
                         
                         <div class="space-y-3">
-                            <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
-                                <input type="checkbox" name="is_staff" id="id_is_staff" 
-                                       class="w-4 h-4 accent-cyan-500"
-                                       {% if form.is_staff.value %}checked{% endif %}>
-                                <div>
-                                    <div class="text-white font-medium">Accès staff</div>
-                                    <div class="text-gray-400 text-xs">Accès à l'interface d'administration</div>
-                                </div>
-                            </div>
-                            
-                            <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
-                                <input type="checkbox" name="is_superuser" id="id_is_superuser" 
-                                       class="w-4 h-4 accent-cyan-500"
-                                       {% if form.is_superuser.value %}checked{% endif %}>
-                                <div>
-                                    <div class="text-white font-medium">Super administrateur</div>
-                                    <div class="text-gray-400 text-xs">Toutes les permissions sans restriction</div>
-                                </div>
-                            </div>
-                            
                             <div class="flex items-center gap-3 p-3 hover:bg-gray-800/30 rounded">
                                 <input type="checkbox" name="is_active" id="id_is_active" checked 
                                        class="w-4 h-4 accent-cyan-500">

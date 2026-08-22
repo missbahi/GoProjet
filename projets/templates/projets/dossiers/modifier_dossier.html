@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier le dossier - GoProjet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        #id_nom,
+        #id_description,
+        #id_gerant {
+            background-color: #ffffff;
+            color: #111827;
+            border: 1px solid #9ca3af;
+        }
+
+        #id_nom::placeholder,
+        #id_description::placeholder,
+        #id_gerant::placeholder {
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#525252] text-white">
+    <main class="mx-auto max-w-4xl px-4 py-6 md:px-8">
+        <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wide text-green-400">Administration</p>
+                <h1 class="mt-1 text-2xl font-bold md:text-3xl"><i class="fas fa-folder-open mr-2 text-green-400"></i>Modifier le dossier</h1>
+                <p class="mt-2 text-gray-300">Ajoutez ou retirez des projets de « {{ dossier.nom }} ».</p>
+            </div>
+            <a href="{% url 'projets:gerer_dossiers' %}" class="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-700 px-4 py-2 font-medium transition hover:bg-gray-600">
+                <i class="fas fa-arrow-left"></i> Retour aux dossiers
+            </a>
+        </header>
+
+        <section class="rounded-xl border border-gray-700 bg-gray-800 p-5 shadow-xl md:p-7">
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="rounded-lg border border-red-500/50 bg-red-900/30 px-4 py-3 text-red-200">{{ form.non_field_errors }}</div>
+                {% endif %}
+                <div>
+                    <label for="{{ form.nom.id_for_label }}" class="mb-2 block font-medium">{{ form.nom.label }}</label>
+                    {{ form.nom }}
+                    {% for error in form.nom.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label for="{{ form.description.id_for_label }}" class="mb-2 block font-medium">{{ form.description.label }}</label>
+                    {{ form.description }}
+                    {% for error in form.description.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label for="{{ form.gerant.id_for_label }}" class="mb-2 block font-medium">{{ form.gerant.label }}</label>
+                    {{ form.gerant }}
+                    {% for error in form.gerant.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                        <label class="font-medium">{{ form.projets.label }}</label>
+                        <button type="button" id="toggle-projects" class="text-sm text-green-400 hover:text-green-300">Tout sélectionner</button>
+                    </div>
+                    <div class="max-h-96 space-y-2 overflow-y-auto rounded-lg border border-gray-600 bg-gray-900/50 p-3">
+                        {% for checkbox in form.projets %}
+                            <label class="flex cursor-pointer items-start gap-3 rounded-md px-2 py-2 hover:bg-gray-700">
+                                {{ checkbox.tag }}
+                                <span class="font-medium">{{ checkbox.choice_label }}</span>
+                            </label>
+                        {% empty %}
+                            <p class="px-2 py-3 text-gray-400">Aucun projet disponible.</p>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-2 text-sm text-gray-400">Décochez un projet pour le rendre disponible et le rattacher à un autre dossier.</p>
+                    {% for error in form.projets.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                </div>
+                <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#107C41] px-5 py-3 font-semibold transition hover:bg-[#159653]">
+                    <i class="fas fa-save"></i> Enregistrer les modifications
+                </button>
+            </form>
+        </section>
+    </main>
+    <script>
+        const toggleButton = document.getElementById('toggle-projects');
+        if (toggleButton) {
+            toggleButton.addEventListener('click', function () {
+                const checkboxes = document.querySelectorAll('input[name="projets"]');
+                const shouldCheck = Array.from(checkboxes).some((checkbox) => !checkbox.checked);
+                checkboxes.forEach((checkbox) => { checkbox.checked = shouldCheck; });
+                this.textContent = shouldCheck ? 'Tout désélectionner' : 'Tout sélectionner';
+            });
+        }
+    </script>
+</body>
+</html>

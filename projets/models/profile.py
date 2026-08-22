@@ -17,8 +17,8 @@ def avatar_upload_path(instance, filename):
 
 class Profile(models.Model):
     ROLE_CHOICES = [
-        ('ADMIN', 'Administrateur'),
-        ('CHEF_PROJET', 'Chef de Projet'),
+        ('GERANT', 'Gérant'),
+        ('STAFF', 'Staff'),
         ('UTILISATEUR', 'Utilisateur'),
     ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)

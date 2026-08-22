@@ -16,10 +16,10 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbid
 from django.urls import  reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django.views import View
-from projets.decorators import can_view_projet, chef_projet_required, superuser_required
+from projets.decorators import can_view_projet, chef_projet_required, est_gerant, gestion_utilisateurs_required, projets_accessibles, superuser_required
 from projets.exporters import ExcelExporter
 
-from ..forms import ClientForm, DecompteForm, DocumentAdministratifForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm
+from ..forms import ClientForm, DecompteForm, DossierForm, DocumentAdministratifForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm, UtilisateurCreationForm
 from ..models import *
 
 from django.views.generic import ListView
@@ -416,53 +416,50 @@ def access_denied(request):
 
 #------------------ Landing view - Page d'accueil ------------------
 def landing(request):
-    """Vue pour la page d'accueil"""
+    """Point d'entrée public et redirection après authentification."""
     if request.user.is_authenticated:
-        # Si l'utilisateur est déjà connecté, rediriger vers la page d'accueil
-        # ou la page de connexion sinon
-        if request.user.last_login:
-            return redirect('projets:liste_projets')
-        return redirect('projets:home')
+        return redirect('projets:liste_projets')
     
-    return redirect('projets:apropos')
+    return render(request, 'projets/apropos.html')
 
 @login_required
 def home(request):
     # Nombre de projets
     today = date.today()
-    projets_recents = request.user.projets.all().order_by('-date_creation')[:5]  # Derniers 5 projets créés
+    projets_utilisateur = projets_accessibles(request.user)
+    projets_recents = projets_utilisateur.order_by('-date_creation')[:5]  # Derniers 5 projets créés
     
     # Pour les graphiques - on prend les 10 derniers projets pour plus de données
-    projets_pour_graphiques = request.user.projets.all().order_by('-date_creation')[:10]
+    projets_pour_graphiques = projets_utilisateur.order_by('-date_creation')[:10]
     
     # Projets en retard (utilisant le nouveau champ en_retard)
-    projets_en_retard = request.user.projets.all().filter(en_retard=True).order_by('-date_debut')[:5]
+    projets_en_retard = projets_utilisateur.filter(en_retard=True).order_by('-date_debut')[:5]
     
     # Nouveaux appels d'offres (à traiter)
-    nouveaux_ao = request.user.projets.all().filter(a_traiter=True).order_by('-date_creation')[:5]
+    nouveaux_ao = projets_utilisateur.filter(a_traiter=True).order_by('-date_creation')[:5]
     
     # Réceptions récemment validées
-    receptions_validees = request.user.projets.all().filter(reception_validee=True).order_by('-date_reception')[:5]
+    receptions_validees = projets_utilisateur.filter(reception_validee=True).order_by('-date_reception')[:5]
     
     # Statistiques principales
-    nb_projets_en_cours = request.user.projets.all().filter(statut='COURS').count()
-    nb_projets_en_retard = request.user.projets.all().filter(en_retard=True).count()
+    nb_projets_en_cours = projets_utilisateur.filter(statut='COURS').count()
+    nb_projets_en_retard = projets_utilisateur.filter(en_retard=True).count()
 
     # Avancement moyen des projets en cours
-    avancement_moyen = request.user.projets.all().filter(statut='COURS').aggregate(moy=Avg('avancement'))['moy'] or 0
+    avancement_moyen = projets_utilisateur.filter(statut='COURS').aggregate(moy=Avg('avancement'))['moy'] or 0
     avancement_moyen = float(avancement_moyen)
 
     # Appels d'offres
-    nb_appels_offres = request.user.projets.all().filter(statut='AO').count()
-    nb_a_traiter = request.user.projets.all().filter(a_traiter=True).count()
+    nb_appels_offres = projets_utilisateur.filter(statut='AO').count()
+    nb_a_traiter = projets_utilisateur.filter(a_traiter=True).count()
     
     # Réceptions
-    nb_receptions_validees = request.user.projets.all().filter(reception_validee=True).count()
-    nb_receptions_en_retard = request.user.projets.all().filter(reception_validee=True, en_retard=True).count()
+    nb_receptions_validees = projets_utilisateur.filter(reception_validee=True).count()
+    nb_receptions_en_retard = projets_utilisateur.filter(reception_validee=True, en_retard=True).count()
     
     # Chiffre d'affaires
     annee_courante = date.today().year
-    ca_total = request.user.projets.all().filter(date_debut__year=annee_courante).aggregate(total=Sum('montant'))['total'] or 0
+    ca_total = projets_utilisateur.filter(date_debut__year=annee_courante).aggregate(total=Sum('montant'))['total'] or 0
     
     # Notifications non lues pour l'utilisateur connecté
     if request.user.is_authenticated:
@@ -519,7 +516,7 @@ def home(request):
         'categories': ['Mensuel', 'Trimestriel', 'Annuel'],  # Pour les filtres
         'stats': {
             'avancement_moyen': round(avancement_moyen, 0),
-            'nb_projets': request.user.projets.all().count(),
+            'nb_projets': projets_utilisateur.count(),
             'nb_en_retard': nb_projets_en_retard
         }
     }
@@ -564,7 +561,7 @@ def home(request):
     now = datetime.now()
     # Données mensuelles
     start_month = now - timedelta(days=30)
-    projets_mensuels = request.user.projets.all().filter(date_creation__gte=start_month)
+    projets_mensuels = projets_utilisateur.filter(date_creation__gte=start_month)
 
     chart_data['mensuel'] = {
         'labels': ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4'],
@@ -595,51 +592,108 @@ def home(request):
         'nb_notifications': nb_notifications,
         'echeances': echeances,
         'chart_data_json': chart_data_json,
-        'projets_noms': json.dumps([p.nom for p in request.user.projets.all().all()]),
+        'projets_noms': json.dumps([p.nom for p in projets_utilisateur]),
         'projets_noms_recents': json.dumps([p.nom for p in projets_recents]),
-        'projets_avancements': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in request.user.projets.all().all()]),
+        'projets_avancements': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in projets_utilisateur]),
         'avancement_projets_recents': json.dumps([round(p.avancement) if p.avancement is not None else 0 for p in projets_recents])
     }
     return render(request, 'projets/home.html', context)
 
+
+@superuser_required
+def gerer_dossiers(request):
+    if request.method == 'POST':
+        form = DossierForm(request.POST)
+        if form.is_valid():
+            dossier = form.save()
+            messages.success(
+                request,
+                f"Le dossier « {dossier.nom} » a été créé et ses projets ont été rattachés."
+            )
+            return redirect('projets:gerer_dossiers')
+    else:
+        form = DossierForm()
+
+    return render(request, 'projets/dossiers/gerer_dossiers.html', {
+        'form': form,
+        'dossiers': Dossier.objects.prefetch_related('projets'),
+        'projets_sans_dossier': Projet.objects.filter(
+            dossier__isnull=True
+        ).order_by('nom'),
+    })
+
+
+@superuser_required
+def modifier_dossier(request, dossier_id):
+    dossier = get_object_or_404(Dossier, id=dossier_id)
+    if request.method == 'POST':
+        form = DossierForm(request.POST, instance=dossier)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Le dossier « {dossier.nom} » a été modifié.")
+            return redirect('projets:gerer_dossiers')
+    else:
+        form = DossierForm(instance=dossier)
+
+    return render(request, 'projets/dossiers/modifier_dossier.html', {
+        'form': form,
+        'dossier': dossier,
+    })
+
 # --------------- Gestion des utilisateurs 
-@login_required     
-@user_passes_test(lambda u: u.is_superuser)
+@gestion_utilisateurs_required
 def modifier_utilisateur(request, user_id):
     user = get_object_or_404(User, id=user_id)
+    if user.is_superuser and user.pk != request.user.pk:
+        raise PermissionDenied
+    if not request.user.is_superuser and not user.dossiers.filter(gerant=request.user).exists():
+        raise PermissionDenied
 
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        role = request.POST.get('role')
+        can_manage_account_status = request.user.is_superuser and user.pk != request.user.pk
 
         user.email = email
         if password:
             user.set_password(password)
+        profile, created = Profile.objects.get_or_create(user=user)
 
-        if role == 'admin':
-            user.is_superuser = True
-            user.is_staff = True
-        elif role == 'staff':
-            user.is_superuser = False
-            user.is_staff = True
-        else:
+        if can_manage_account_status:
+            role = request.POST.get('role')
+            if role not in {'GERANT', 'STAFF', 'UTILISATEUR'}:
+                raise PermissionDenied
             user.is_superuser = False
             user.is_staff = False
+            profile.role = role
+            user.is_active = request.POST.get('is_active') == 'on'
 
         if 'avatar' in request.FILES:
-            profile, created = Profile.objects.get_or_create(user=user)
             profile.avatar = request.FILES['avatar']
             profile.save()
 
         user.save()
+        profile.save()
+        if request.user.is_superuser and user.pk != request.user.pk:
+            user.dossiers.set(Dossier.objects.filter(id__in=request.POST.getlist('dossiers')))
+        elif not request.user.is_superuser:
+            user.dossiers.set(Dossier.objects.filter(gerant=request.user, id__in=request.POST.getlist('dossiers')))
         return redirect('projets:liste_utilisateurs')
 
-    return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {'user': user})
+    return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {
+        'user': user,
+        'dossiers': Dossier.objects.all() if request.user.is_superuser else Dossier.objects.filter(gerant=request.user),
+        'role_choices': [('GERANT', 'Gérant'), ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')] if request.user.is_superuser else [('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')],
+        'can_manage_account_status': request.user.is_superuser and user.pk != request.user.pk,
+        'can_manage_user_dossiers': user.pk != request.user.pk,
+    })
 
-@superuser_required
+@gestion_utilisateurs_required
 def liste_utilisateurs(request):
-    utilisateurs = User.objects.all()
+    if request.user.is_superuser:
+        utilisateurs = User.objects.all()
+    else:
+        utilisateurs = User.objects.filter(dossiers__gerant=request.user).distinct()
     return render(request, 'projets/utilisateurs/liste_utilisateurs.html', {'utilisateurs': utilisateurs})
 
 @superuser_required
@@ -652,21 +706,13 @@ def ajouter_utilisateur1111(request):
         return redirect('projets:liste_utilisateurs')
     return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
 
-@superuser_required
+@gestion_utilisateurs_required
 def ajouter_utilisateur(request):
-    from django.contrib.auth.forms import UserCreationForm
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = UtilisateurCreationForm(request.POST, user=request.user)
         if form.is_valid():
             try:
-                user = form.save()
-                # Gérer les champs supplémentaires
-                user.email = request.POST.get('email', '')
-                user.first_name = request.POST.get('first_name', '')
-                user.last_name = request.POST.get('last_name', '')
-                user.is_staff = request.POST.get('is_staff') == 'on'
-                user.is_superuser = request.POST.get('is_superuser') == 'on'
-                user.save()
+                form.save()
                 return redirect('projets:liste_utilisateurs')
             except Exception as e:
                 print(f"Erreur lors de la création de l'utilisateur: {e}")
@@ -676,29 +722,35 @@ def ajouter_utilisateur(request):
             print("Erreurs de formulaire:")
             print(form.errors)
     else:
-        form = UserCreationForm()
+        form = UtilisateurCreationForm(user=request.user)
     
-    return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
+    return render(request, 'projets/utilisateurs/ajouter_utilisateur.html', {
+        'form': form,
+    })
 
-@superuser_required
+@gestion_utilisateurs_required
 def supprimer_utilisateur(request, user_id):
     user = get_object_or_404(User, id=user_id)
+    if not request.user.is_superuser and not user.dossiers.filter(gerant=request.user).exists():
+        raise PermissionDenied
     user.delete()
     return redirect('projets:liste_utilisateurs')   
 
-@superuser_required
-@user_passes_test(lambda u: u.is_superuser)
+@gestion_utilisateurs_required
 def gerer_projets_utilisateur(request, user_id):
     utilisateur = get_object_or_404(User, id=user_id)
-    tous_les_projets = Projet.objects.all()
-    projets_utilisateur = utilisateur.projets.all()
+    projets_autorises = projets_accessibles(request.user)
+    if not request.user.is_superuser and not utilisateur.dossiers.filter(gerant=request.user).exists():
+        raise PermissionDenied
+    tous_les_projets = projets_autorises
+    projets_utilisateur = utilisateur.projets.filter(id__in=projets_autorises.values('id'))
     
     if request.method == 'POST':
         # Gérer l'ajout/suppression de projets
         projets_selectionnes = request.POST.getlist('projets')
         
         # Mettre à jour la relation ManyToMany
-        utilisateur.projets.set(projets_selectionnes)
+        utilisateur.projets.set(projets_autorises.filter(id__in=projets_selectionnes))
         
         messages.success(request, f"Les projets de {utilisateur.username} ont été mis à jour avec succès.")
         return redirect('projets:liste_utilisateurs')
@@ -718,13 +770,8 @@ def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
     sort_order = request.GET.get('order', 'asc')
-    can_handler = request.user.is_superuser
-    if can_handler:
-        # Superuser voit tous les projets
-        projets = Projet.objects.all().order_by('nom')
-    else:
-        # Les autres utilisateurs voient seulement leurs projets
-        projets = request.user.projets.all().order_by('nom')
+    can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
+    projets = projets_accessibles(request.user).order_by('nom')
 
     if search_term and len(search_term) >= 3:
         # Recherche dans multiple champs
@@ -771,7 +818,7 @@ def liste_projets(request):
 @chef_projet_required
 def ajouter_projet_modal(request):
     if request.method == 'POST':
-        form = ProjetForm(request.POST)
+        form = ProjetForm(request.POST, user=request.user)
         if form.is_valid():
             projet = form.save()
             projet.montant = 0.0  # ou une autre valeur par défaut
@@ -793,7 +840,7 @@ def ajouter_projet_modal(request):
             messages.error(request,form.errors)
             return redirect('projets:liste_projets')
     
-    form = ProjetForm()
+    form = ProjetForm(user=request.user)
     
     context = {
         'form': form,
@@ -807,7 +854,7 @@ def ajouter_projet_modal(request):
 def modifier_projet_modal(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     if request.method == 'POST':
-        form = ProjetForm(request.POST, instance=projet)
+        form = ProjetForm(request.POST, instance=projet, user=request.user)
         if form.is_valid():
             projet = form.save()
             
@@ -830,7 +877,7 @@ def modifier_projet_modal(request, projet_id):
                     'message': 'Veuillez corriger les erreurs ci-dessous'
                 }, status=400)
     
-    form = ProjetForm(instance=projet)
+    form = ProjetForm(instance=projet, user=request.user)
     
     context = {
         'form': form,
@@ -876,7 +923,7 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         
         # Filtrage simple : superuser voit tout, sinon seulement les tâches de ses projets
         if not user.is_superuser:
-            queryset = queryset.filter(projet__users=user)
+            queryset = queryset.filter(projet__in=projets_accessibles(user))
         
         # Application des filtres
         filters = {
@@ -895,7 +942,7 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         if user.is_superuser:
             context['responsables'] = User.objects.filter(tache__isnull=False).distinct()
         else:
-            context['responsables'] = User.objects.filter(projets__in=user.projets.all()).distinct()
+            context['responsables'] = User.objects.filter(projets__in=projets_accessibles(user)).distinct()
         
         return context
 
@@ -934,7 +981,7 @@ def get_form_data(request):
         responsables = User.objects.all().values('id', 'username')
     else:
         # Utilisateur normal voit seulement ses projets
-        projets = user.projets.all().values('id', 'nom')
+        projets = projets_accessibles(user).values('id', 'nom')
         # Et seulement lui-même comme responsable possible
         responsables = User.objects.filter(id=user.id).values('id', 'username')
             
@@ -1181,6 +1228,7 @@ def base_donnees(request):
 
 #------------------ Gestion d'un projet ------------------
 @login_required
+@can_view_projet
 def dashboard_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = projet.lots.all()
@@ -1200,7 +1248,7 @@ def dashboard_projet(request, projet_id):
     documents_administratifs = DocumentAdministratif.objects.filter(projet=projet)
     ordre_services = OrdreService.objects.filter(projet=projet)
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
-    can_handler = request.user.is_superuser
+    can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
     context = {
         'can_handler': can_handler,
         'projet': projet,
@@ -1250,6 +1298,7 @@ def saisie_bordereau(request, projet_id, lot_id):
         'lignes': json_str,
     })
 
+@can_view_projet
 def export_excel(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
@@ -1791,6 +1840,7 @@ def lots_projet(request, projet_id):
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
 
 @login_required
+@can_view_projet
 def lots_details(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     can_editer = request.user.is_superuser
@@ -1844,11 +1894,13 @@ def lots_details(request, projet_id):
    
 # ------  Documents et Suivi ------
 @login_required
+@can_view_projet
 def documents_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     documents = projet.documents_administratifs.all()
     return render(request, 'projets/documents_administratifs.html', {'projet': projet, 'documents': documents})
 
+@can_view_projet
 def supprimer_document(request, projet_id, document_id):
     if request.method == 'POST':
         document = get_object_or_404(DocumentAdministratif, id=document_id, projet_id=projet_id)
@@ -1872,6 +1924,7 @@ def telecharger_document(request, document_id):
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         raise Http404("Erreur lors du téléchargement du document")
 
+@can_view_projet
 def ajouter_document(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -1932,6 +1985,7 @@ class AfficherDocumentView(View):
             raise Http404("Erreur lors du chargement du document")
             
 #----------------------- Suivi d'exécution ---------------------------
+@can_view_projet
 def suivi_execution(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     suivis = projet.suivis_execution.all()
@@ -1943,6 +1997,7 @@ def suivi_execution(request, projet_id):
         
     })
 
+@can_view_projet
 def ajouter_suivi(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -1969,6 +2024,7 @@ def ajouter_suivi(request, projet_id):
         
     return redirect('projets:suivi_execution', projet_id=projet_id)
 
+@can_view_projet
 def supprimer_suivi(request, projet_id, suivi_id):
     if request.method == 'POST':
         suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet_id=projet_id)
@@ -1977,6 +2033,7 @@ def supprimer_suivi(request, projet_id, suivi_id):
     
     return redirect('projets:suivi_execution', projet_id=projet_id)
 
+@can_view_projet
 def modifier_suivi(request, projet_id, suivi_id):
     """
     Vue pour modifier un suivi d'exécution existant
@@ -2094,6 +2151,7 @@ def telecharger_fichier_suivi(request, fichier_id):
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         return redirect('projets:suivi_execution', projet_id=fichier.suivi.projet.id)
 
+@can_view_projet
 def ajouter_fichier_suivi(request, projet_id, suivi_id):
     """
     Vue pour ajouter des fichiers à un suivi d'exécution existant avec Cloudinary
@@ -2176,6 +2234,7 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
 
 # ------------------------ Views pour Attachements ------------------------
 @login_required
+@can_view_projet
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('id')
@@ -2187,6 +2246,7 @@ def liste_attachements(request, projet_id):
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 
 @login_required
+@can_view_projet
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -2902,6 +2962,7 @@ def telecharger_document_validation(request, etape_id):
         return redirect_to_attachement(etape)
 # ------------------------ Views pour Décomptes ------------------------
 @login_required
+@can_view_projet
 def liste_decomptes(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -3086,6 +3147,7 @@ def liste_decomptes(request, projet_id):
     
     return render(request, 'projets/decomptes/liste_decomptes.html', context)
 
+@can_view_projet
 def projet_ajouter_decompte(request, projet_id):
     """Vue pour l'ajout d'un décompte (redirige vers liste_decomptes avec formulaire ouvert)"""
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3171,6 +3233,7 @@ def calcul_retard_decompte(request, decompte_id):
     })
 
 # -------------------- FICHE DE CONTROLE --------------------
+@can_view_projet
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('-date_etablissement')
@@ -3317,6 +3380,7 @@ def get_lignes_attachement(request, attachement_id):
 
 # ------------------------ Views pour Ordres de Service ------------------------
 @login_required
+@can_view_projet
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordres_service = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
@@ -3452,6 +3516,7 @@ def ordres_service(request, projet_id):
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
+@can_view_projet
 def api_jours_decoules(request, projet_id):
     """API pour calculer les jours découlés"""
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3472,6 +3537,7 @@ def api_jours_decoules(request, projet_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+@can_view_projet
 def modifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3514,6 +3580,7 @@ def modifier_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
+@can_view_projet
 def supprimer_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3534,6 +3601,7 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/supprimer_ordre_service.html', context)
 
+@can_view_projet
 def details_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3544,6 +3612,7 @@ def details_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/details_ordre_service.html', context)
 
+@can_view_projet
 def notifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3604,6 +3673,7 @@ def notifier_ordre_service(request, projet_id, ordre_id):
     return redirect('projets:ordres_service', projet_id=projet.id)
     # return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
 
+@can_view_projet
 def annuler_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)

@@ -1,13 +1,15 @@
 from decimal import Decimal
 import os
 from django import forms
+from django.db.models import Q
 
 from projets.models.projet import DocumentAdministratif
 
 # from projets.models.revision import RevisionPrix
-from .models import Client, Decompte, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService
+from .models import Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService
 
 from django.contrib.auth.models import User
+from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
 
@@ -54,11 +56,12 @@ class ProjetForm(forms.ModelForm):
     class Meta:
         model = Projet
         fields = [
-            'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
+            'dossier', 'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
             'delai', 'avancement', 'statut', 'montant', 'montant_soumission',
             'localisation', 'entreprise', 'revisable'
         ]
         widgets = {
+            'dossier': forms.Select(attrs={'placeholder': 'Dossier du projet'}),
             'type_projet': forms.Select(attrs={'placeholder': 'Type de projet'}),
             'nom': forms.TextInput(attrs={'placeholder': 'Nom du projet *'}),
             'maitre_ouvrage': forms.TextInput(attrs={'placeholder': 'Maître d\'ouvrage'}),
@@ -78,7 +81,14 @@ class ProjetForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+        if user and user.is_superuser:
+            self.fields['dossier'].queryset = Dossier.objects.all()
+        elif user:
+            self.fields['dossier'].queryset = Dossier.objects.filter(gerant=user)
+        else:
+            self.fields['dossier'].queryset = Dossier.objects.none()
         self.fields['revisable'].label = "Projet révisable"
         self.fields['revisable'].help_text = "Les prix seront ajustés selon les indices officiels"
         if self.instance and self.instance.date_debut:
@@ -100,6 +110,91 @@ class ProjetForm(forms.ModelForm):
         if montant_val < 0:
             raise forms.ValidationError("Le montant de soumission ne peut pas être négatif.")
         return montant_val
+
+
+class DossierForm(forms.ModelForm):
+    projets = forms.ModelMultipleChoiceField(
+        label=_("Projets à rattacher"),
+        queryset=Projet.objects.none(),
+        required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = Dossier
+        fields = ['nom', 'description', 'gerant']
+        widgets = {
+            'nom': forms.TextInput(attrs={'placeholder': 'Nom du dossier *'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Description du dossier'}),
+            'gerant': forms.Select(attrs={'placeholder': 'Gérant du dossier'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['gerant'].queryset = User.objects.filter(
+            is_superuser=False,
+            profile__role='GERANT',
+        ).order_by('username')
+        projets_disponibles = Projet.objects.filter(dossier__isnull=True)
+        if self.instance.pk:
+            projets_disponibles = Projet.objects.filter(
+                Q(dossier__isnull=True) | Q(dossier=self.instance)
+            )
+            self.initial['projets'] = self.instance.projets.values_list('id', flat=True)
+        self.fields['projets'].queryset = projets_disponibles.order_by('nom')
+
+    def save(self, commit=True):
+        dossier = super().save(commit=commit)
+        if commit:
+            projets_selectionnes = self.cleaned_data['projets']
+            Projet.objects.filter(dossier=dossier).exclude(
+                id__in=projets_selectionnes.values_list('id', flat=True)
+            ).update(dossier=None)
+            Projet.objects.filter(
+                id__in=projets_selectionnes.values_list('id', flat=True)
+            ).update(dossier=dossier)
+        return dossier
+
+
+class UtilisateurCreationForm(UserCreationForm):
+    ROLE_CHOICES = (
+        ('GERANT', 'Gérant'),
+        ('STAFF', 'Staff'),
+        ('UTILISATEUR', 'Utilisateur'),
+    )
+    email = forms.EmailField(required=False)
+    first_name = forms.CharField(required=False)
+    last_name = forms.CharField(required=False)
+    role = forms.ChoiceField(choices=ROLE_CHOICES)
+    dossiers = forms.ModelMultipleChoiceField(
+        queryset=Dossier.objects.none(), required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.creator = user
+        if user and user.is_superuser:
+            self.fields['dossiers'].queryset = Dossier.objects.all()
+        elif user:
+            self.fields['role'].choices = (
+                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')
+            )
+            self.fields['dossiers'].queryset = Dossier.objects.filter(gerant=user)
+
+    def save(self, commit=True):
+        user = super().save(commit=False)
+        user.email = self.cleaned_data.get('email', '')
+        user.first_name = self.cleaned_data.get('first_name', '')
+        user.last_name = self.cleaned_data.get('last_name', '')
+        user.is_staff = False
+        user.is_superuser = False
+        if commit:
+            user.save()
+            user.profile.role = self.cleaned_data['role']
+            user.profile.save()
+            user.dossiers.set(self.cleaned_data['dossiers'])
+        return user
         
 class ClientForm(forms.ModelForm):
     class Meta:

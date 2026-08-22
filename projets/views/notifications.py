@@ -9,6 +9,7 @@ from projets.models import Attachement, DocumentAdministratif, Notification, Ord
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
+from projets.decorators import can_view_projet, projets_accessibles
 
 @login_required
 def liste_notifications(request):
@@ -235,6 +236,7 @@ def creer_notification(request):
         return redirect(request.META.get('HTTP_REFERER', 'home')) 
 @login_required
 @require_GET
+@can_view_projet
 def notification_data_api(request, projet_id):
     """
     API pour récupérer les données nécessaires à la création de notification
@@ -243,7 +245,7 @@ def notification_data_api(request, projet_id):
     try:
         projet = get_object_or_404(Projet, id=projet_id)
         user = request.user
-        user_can_edit = user in projet.users.all() or user.is_superuser
+        user_can_edit = projets_accessibles(user).filter(id=projet.id).exists()
         # Vérifier les permissions de l'utilisateur
         if not user_can_edit:
             return JsonResponse({
