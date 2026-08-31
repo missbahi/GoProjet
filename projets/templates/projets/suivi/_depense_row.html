@@ -1,0 +1,44 @@
+{% load formatters l10n %}
+<tr>
+  {{ depense_form.id }}
+  {% if force_categorie %}
+    <input type="hidden" name="{{ depense_form.categorie.html_name }}" id="{{ depense_form.categorie.id_for_label }}" value="{{ force_categorie }}">
+  {% else %}
+    {{ depense_form.categorie }}
+  {% endif %}
+  <td class="pr-2 py-1">
+    {% if options %}
+      <select class="form-control depense-ref-select">
+        <option value="">— Sélectionner —</option>
+        {% for option in options %}
+          <option value="{{ option.designation }}"
+                  data-unite="{{ option.unite }}"
+                  data-prix="{{ option.prix|unlocalize }}"
+                  {% if depense_form.designation.value == option.designation %}selected{% endif %}>{{ option.designation }}</option>
+        {% endfor %}
+      </select>
+      <input type="hidden" name="{{ depense_form.designation.html_name }}" id="{{ depense_form.designation.auto_id }}" value="{{ depense_form.designation.value|default_if_none:'' }}">
+    {% else %}
+      {{ depense_form.designation }}
+    {% endif %}
+    <span class="hidden">{{ depense_form.observations }}</span>
+  </td>
+  <td class="pr-2 py-1">{{ depense_form.quantite }}</td>
+  <td class="pr-2 py-1">
+    {% if options %}
+      <input type="text" name="{{ depense_form.unite.html_name }}" id="{{ depense_form.unite.auto_id }}"
+             value="{{ depense_form.unite.value|default_if_none:'' }}"
+             class="form-control depense-unite bg-gray-800/60 cursor-not-allowed" readonly>
+    {% else %}
+      {{ depense_form.unite }}
+    {% endif %}
+  </td>
+  <td class="pr-2 py-1">{{ depense_form.prix_unitaire }}</td>
+  <td class="pr-2 py-1 depense-montant text-right whitespace-nowrap">{{ depense_form.instance.montant|format_currency }}</td>
+  <td class="py-1 text-center">
+    <label class="depense-delete-trigger cursor-pointer text-red-400 hover:text-red-300" title="Supprimer la ligne">
+      <span class="hidden">{{ depense_form.DELETE }}</span>
+      <i class="fas fa-trash"></i>
+    </label>
+  </td>
+</tr>

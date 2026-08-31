@@ -1,0 +1,14 @@
+<tr>
+  {{ stock_form.id }}
+  <td class="pr-2 py-1">{{ stock_form.designation }}</td>
+  <td class="pr-2 py-1">{{ stock_form.unite }}</td>
+  <td class="pr-2 py-1">{{ stock_form.quantite_entree }}</td>
+  <td class="pr-2 py-1">{{ stock_form.quantite_sortie }}</td>
+  <td class="pr-2 py-1">{{ stock_form.stock_restant }}</td>
+  <td class="py-1 text-center">
+    <label class="stock-delete-trigger cursor-pointer text-red-400 hover:text-red-300" title="Supprimer la ligne">
+      <span class="hidden">{{ stock_form.DELETE }}</span>
+      <i class="fas fa-trash"></i>
+    </label>
+  </td>
+</tr>

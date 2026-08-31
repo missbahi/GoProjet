@@ -13,6 +13,11 @@ def projets_accessibles(user):
     if user.is_superuser:
         return Projet.objects.all()
 
+    role = getattr(getattr(user, 'profile', None), 'role', None)
+    if role in {'POINTEUR', 'CHEF_CHANTIER'}:
+        # Restreint aux seuls projets explicitement affectés (pas tout le dossier).
+        return Projet.objects.filter(users=user).distinct()
+
     return Projet.objects.filter(
         Q(dossier__gerant=user) | Q(dossier__utilisateurs=user) |
         Q(users=user, dossier__isnull=True)
@@ -20,9 +25,29 @@ def projets_accessibles(user):
 
 
 def est_gerant(user):
-    return user.is_authenticated and not user.is_superuser and getattr(
-        getattr(user, 'profile', None), 'role', None
-    ) == 'GERANT'
+    if not user.is_authenticated or user.is_superuser:
+        return False
+    role = getattr(getattr(user, 'profile', None), 'role', None)
+    return role in {'GERANT', 'CHEF_PROJET'}
+
+
+def est_chef_projet(user):
+    return est_gerant(user)
+
+
+def est_chef_chantier(user):
+    if not user.is_authenticated or user.is_superuser or est_gerant(user):
+        return False
+
+    role = getattr(getattr(user, 'profile', None), 'role', None)
+    return role == 'CHEF_CHANTIER'
+
+
+def est_pointeur(user):
+    if not user.is_authenticated or user.is_superuser or est_chef_chantier(user):
+        return False
+    role = getattr(getattr(user, 'profile', None), 'role', None)
+    return role == 'POINTEUR'
 
 
 def gestion_utilisateurs_required(view_func):
@@ -34,6 +59,7 @@ def gestion_utilisateurs_required(view_func):
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+
 def superuser_required(view_func):
     """Décorateur pour restreindre l'accès aux superutilisateurs"""
     @wraps(view_func)
@@ -62,8 +88,8 @@ def chef_projet_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return login_required(view_func)(request, *args, **kwargs)
-        is_gerant = est_gerant(request.user)
-        if not (request.user.is_superuser or is_gerant):
+        is_chef = est_chef_projet(request.user)
+        if not (request.user.is_superuser or is_chef):
             raise PermissionDenied
         projet_id = kwargs.get('projet_id') or kwargs.get('pk')
         if projet_id and not projets_accessibles(request.user).filter(id=projet_id).exists():
@@ -98,6 +124,30 @@ def can_view_projet(view_func):
             except Projet.DoesNotExist:
                 raise PermissionDenied
         
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view
+
+def modules_projet_required(view_func):
+    """Comme can_view_projet, mais le pointeur est limité à la saisie des rapports journaliers."""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return login_required(view_func)(request, *args, **kwargs)
+
+        if not request.user.is_superuser:
+            if est_pointeur(request.user):
+                raise PermissionDenied
+
+            projet_id = kwargs.get('projet_id') or kwargs.get('pk')
+            if projet_id:
+                from .models import Projet
+                try:
+                    projet = Projet.objects.get(id=projet_id)
+                    if not projets_accessibles(request.user).filter(id=projet.id).exists():
+                        raise PermissionDenied
+                except Projet.DoesNotExist:
+                    raise PermissionDenied
+
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 

@@ -40,23 +40,6 @@
             box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); 
             outline: none;
         }
-        .upload-area {
-            border: 2px dashed #4B5563;
-            border-radius: 8px;
-            padding: 1.5rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            background: #2E2E2E;
-        }
-        .upload-area:hover {
-            border-color: #22d3ee;
-            background: rgba(34, 211, 238, 0.05);
-        }
-        .file-icon {
-            font-size: 2rem;
-            margin-bottom: 0.75rem;
-        }
         .badge-type {
             display: inline-block;
             padding: 0.25rem 0.5rem;
@@ -198,6 +181,13 @@
                 max-width: 1400px;
             }
         }
+        /* Style pour le formulaire de rapport */
+        .depense-item, .stock-item {
+            transition: all 0.2s ease;
+        }
+        .depense-item:hover, .stock-item:hover {
+            border-color: #22d3ee;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6">
@@ -269,11 +259,13 @@
             </div>
         </div>
 
-        <!-- Bouton pour afficher le formulaire d'ajout -->
-        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 text-center">
-            <button type="button" class="btn-primary px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 mx-auto text-sm sm:text-base btn-responsive w-full sm:w-auto" id="toggleSuiviForm">
-                <i class="fas fa-plus"></i> Ajouter un nouveau suivi
-            </button>
+        <!-- Boutons pour afficher les formulaires d'ajout -->
+        <div class="bg-[#3B3B3B] border border-[#4B5563] rounded-lg p-4 sm:p-6 mb-4 sm:mb-6">
+            <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
+                <button type="button" class="btn-primary px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive w-full sm:w-auto" id="toggleSuiviForm">
+                    <i class="fas fa-plus"></i> Ajouter un nouveau suivi
+                </button>
+            </div>
         </div>
 
         <!-- Section d'ajout d'un suivi (masquée par défaut) -->
@@ -471,7 +463,8 @@
 
     </div>
 
-<script>       
+<script>
+      
     // Gestion de l'affichage/masquage du formulaire
     const toggleButton = document.getElementById('toggleSuiviForm');
     const formContainer = document.getElementById('suiviFormContainer');

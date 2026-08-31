@@ -451,6 +451,50 @@
             {% endif %}
         </div>
 
+        <!-- Rapports journaliers -->
+        {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <h4 class="module-title">Rapports journaliers</h4>
+          <p class="module-description">Consultez les rapports quotidiens, dépenses, stocks et documents du chantier</p>
+          {% if rapports_journaliers %}
+          <p class="no-data">{{ rapports_journaliers.count }} rapport{{ rapports_journaliers.count|pluralize }} enregistré{{ rapports_journaliers.count|pluralize }}</p>
+          {% if dernier_rapport_journalier %}
+          <p class="text-gray-400 text-sm mb-3">Dernier rapport : {{ dernier_rapport_journalier.date|date:"d/m/Y" }}</p>
+          {% endif %}
+          <div class="module-actions">
+            <a href="{% url 'projets:rapports_journaliers' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-arrow-right"></i><span>Accéder aux rapports</span>
+            </a>
+          </div>
+          {% else %}
+          <p class="no-data">Aucun rapport journalier pour ce projet</p>
+          <a href="{% url 'projets:rapports_journaliers' projet.id %}" class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+            <i class="fas fa-plus"></i><span>Créer le premier rapport</span>
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Situations mensuelles -->
+        {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
+        <div class="module-card group">
+          <div class="module-icon"><i class="fas fa-calendar-check"></i></div>
+          <h4 class="module-title">Situations mensuelles</h4>
+          <p class="module-description">Suivez le chiffre d'affaires, les dépenses et l'état des stocks par mois</p>
+          {% if situations_mensuelles %}
+          <p class="no-data">{{ situations_mensuelles.count }} situation{{ situations_mensuelles.count|pluralize }} enregistrée{{ situations_mensuelles.count|pluralize }}</p>
+          {% if derniere_situation_mensuelle %}<p class="text-gray-400 text-sm mb-3">Dernière période : {{ derniere_situation_mensuelle.mois|stringformat:'02d' }}/{{ derniere_situation_mensuelle.annee }}</p>{% endif %}
+          <a href="{% url 'projets:situations_mensuelles' projet.id %}" class="btn-primary w-full px-3 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive"><i class="fas fa-arrow-right"></i><span>Accéder aux situations</span></a>
+          {% else %}
+          <p class="no-data">Aucune situation mensuelle pour ce projet</p>
+          <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="btn-success w-full px-3 py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive"><i class="fas fa-plus"></i><span>Créer la première situation</span></a>
+          {% endif %}
+        </div>
+        {% endif %}
+
         <!-- Ordres de services -->
         <div class="module-card group">
           <div class="module-icon">

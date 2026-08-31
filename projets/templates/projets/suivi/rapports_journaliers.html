@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapports journaliers - {{ projet.nom }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .panel { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee, #0ea5e9); color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #0ea5e9, #22d3ee); }   
+        .btn-dashboard { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .btn-dashboard:hover { background: linear-gradient(135deg, #059669, #10b981); }
+        .btn-secondary { background: #4B5563; color: white; }
+        .btn-secondary:hover { background: #374151; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .btn-warning:hover { background: linear-gradient(135deg, #d97706, #f59e0b); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: white; }
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626, #ef4444); }
+        .document-link { color: #22d3ee; }
+        .document-link:hover { color: #67e8f9; }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+    <main class="max-w-6xl mx-auto">
+        <header class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div>
+                <a href="{% url 'projets:dashboard' projet.id %}" class="btn-dashboard px-4 py-2 rounded-lg  inline-flex items-center justify-center gap-2">
+                    <i class="fas fa-diagram-project"></i> <span class="hidden sm:inline">Tableau de bord</span>
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mt-2">
+                    <i class="fas fa-calendar-day mr-2"></i>Rapports journaliers
+                </h1>
+                <p class="text-gray-400 mt-1">{{ projet.nom }}</p>
+            </div>
+            <a href="{% url 'projets:ajouter_rapport_journalier' projet.id %}"
+               class="btn-primary rounded-lg px-4 py-2 font-medium inline-flex items-center justify-center gap-2">
+                <i class="fas fa-plus"></i> Nouveau rapport
+            </a>
+        </header>
+
+        <section class="panel p-4 sm:p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 class="text-lg font-semibold text-cyan-300">Historique</h2>
+                <span class="text-sm text-gray-400">{{ rapports|length }} rapport{{ rapports|length|pluralize }}</span>
+            </div>
+
+            {% if rapports %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-400 border-b border-gray-600">
+                            <th class="py-3 pr-4">Date</th>
+                            <th class="py-3 pr-4">Rédacteur</th>
+                            <th class="py-3 pr-4">Dépenses</th>
+                            <th class="py-3 pr-4">Document</th>
+                            <th class="py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for rapport in rapports %}
+                        <tr class="border-b border-gray-700/70 hover:bg-gray-800/40">
+                            <td class="py-3 pr-4 whitespace-nowrap">{{ rapport.date|date:"d/m/Y" }}</td>
+                            <td class="py-3 pr-4">{{ rapport.redacteur|default:"—" }}</td>
+                            <td class="py-3 pr-4 text-amber-300 whitespace-nowrap">{{ rapport.total_depenses_annotated }} DH</td>
+                            <td class="py-3 pr-4">
+                                {% if rapport.document %}
+                                <a href="{{ rapport.document.url }}" target="_blank" class="document-link inline-flex items-center gap-2 max-w-[220px] truncate" title="Ouvrir le document">
+                                    <i class="fas fa-file-pdf"></i><span class="truncate">{{ rapport.document_nom }}</span>
+                                </a>
+                                {% else %}
+                                <span class="text-gray-500"><i class="fas fa-file-circle-xmark mr-1"></i>Aucun document</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 text-right">
+                                <div class="inline-flex items-center gap-2">
+                                    <a href="{% url 'projets:detail_rapport_journalier' projet.id rapport.id %}" class="btn-secondary rounded px-2.5 py-1.5" title="Consulter le rapport" aria-label="Consulter le rapport">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}" class="btn-warning rounded px-2.5 py-1.5" title="Modifier le rapport" aria-label="Modifier le rapport">
+                                        <i class="fas fa-pen"></i>
+                                    </a>
+                                    <form method="post" action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}" class="inline" onsubmit="return confirm('Supprimer ce rapport et son document ?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-danger rounded px-2.5 py-1.5" title="Supprimer le rapport" aria-label="Supprimer le rapport">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-12 text-gray-400">
+                <i class="fas fa-calendar-xmark text-3xl mb-3"></i>
+                <p>Aucun rapport journalier n'est enregistré pour ce projet.</p>
+                <a href="{% url 'projets:ajouter_rapport_journalier' projet.id %}" class="btn-primary rounded-lg px-4 py-2 mt-4 inline-flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Créer un rapport
+                </a>
+            </div>
+            {% endif %}
+        </section>
+    </main>
+</body>
+</html>

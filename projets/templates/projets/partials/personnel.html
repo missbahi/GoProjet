@@ -1,0 +1,66 @@
+<h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
+    <i class="fa-solid fa-users-gear mr-3"></i> Liste du personnel
+</h2>
+
+{% if personnel %}
+<div class="bg-gray-800 p-2 overflow-x-auto">
+    <table class="min-w-full bg-[#2E2E2E]">
+        <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+            <tr>
+                <th class="px-4 py-3 text-left">Nom</th>
+                <th class="px-4 py-3 text-left">Fonction</th>
+                <th class="px-4 py-3 text-left">Téléphone</th>
+                <th class="px-4 py-3 text-left">Unité</th>
+                <th class="px-4 py-3 text-right">Tarif (DH)</th>
+                <th class="px-4 py-3 text-center">Actif</th>
+                <th class="px-4 py-3 text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-gray-800 divide-y divide-green-800">
+            {% for personne in personnel %}
+            <tr class="text-[#AECBD6]">
+                <td class="px-4 py-3">{{ personne.nom }}</td>
+                <td class="px-4 py-3">{{ personne.fonction }}</td>
+                <td class="px-4 py-3">{{ personne.telephone }}</td>
+                <td class="px-4 py-3">{{ personne.unite }}</td>
+                <td class="px-4 py-3 text-right">{{ personne.tarif }}</td>
+                <td class="px-4 py-3 text-center">
+                    {% if personne.actif %}
+                        <i class="fa-solid fa-circle-check text-green-400"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-xmark text-red-400"></i>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center space-x-3">
+                    <button data-edit-personnel-button
+                            data-id="{{ personne.id }}"
+                            data-nom="{{ personne.nom }}"
+                            data-fonction="{{ personne.fonction }}"
+                            data-telephone="{{ personne.telephone }}"
+                            data-unite="{{ personne.unite }}"
+                            data-tarif="{{ personne.tarif }}"
+                            data-actif="{{ personne.actif|yesno:'true,false' }}"
+                            class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <a href="{% url 'projets:supprimer_personnel' personne.id %}"
+                       class="text-red-500 hover:text-red-400 transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="p-4 bg-green-900 text-green-200 rounded-lg shadow mb-4 border border-green-700">
+    Aucun membre du personnel enregistré.
+</div>
+{% endif %}
+<div class="mt-6">
+    <button data-add-personnel-button
+            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">
+        <i class="fa-solid fa-plus mr-2"></i> Ajouter un membre du personnel
+    </button>
+</div>

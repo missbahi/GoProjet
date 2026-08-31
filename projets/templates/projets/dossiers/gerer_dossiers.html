@@ -9,10 +9,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         #id_nom,
-        #id_description {
+        #id_description,
+        #id_activite,
+        #id_gerant {
             background-color: #ffffff;
             color: #111827;
             border: 1px solid #9ca3af;
+        }
+
+        #id_activite option,
+        #id_gerant option {
+            background-color: #ffffff;
+            color: #111827;
         }
 
         #id_nom::placeholder,
@@ -59,6 +67,11 @@
                         {% for error in form.description.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
                     </div>
                     <div>
+                        <label for="{{ form.activite.id_for_label }}" class="mb-2 block font-medium">{{ form.activite.label }}</label>
+                        {{ form.activite }}
+                        {% for error in form.activite.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                    </div>
+                    <div>
                         <label for="{{ form.gerant.id_for_label }}" class="mb-2 block font-medium">{{ form.gerant.label }}</label>
                         {{ form.gerant }}
                         {% for error in form.gerant.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
@@ -98,6 +111,7 @@
                                 <div class="flex items-start justify-between gap-3">
                                     <h3 class="font-semibold text-green-300">{{ dossier.nom }}</h3>
                                     <div class="flex items-center gap-3">
+                                        <span class="whitespace-nowrap text-sm text-cyan-300">{{ dossier.get_activite_display }}</span>
                                         <span class="whitespace-nowrap text-sm text-gray-400">{{ dossier.projets.count }} projet(s)</span>
                                         <a href="{% url 'projets:modifier_dossier' dossier.id %}" class="text-green-400 hover:text-green-300" title="Modifier le dossier">
                                             <i class="fas fa-pen"></i>

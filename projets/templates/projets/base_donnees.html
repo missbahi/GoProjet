@@ -179,6 +179,54 @@
                             </button>
                         </div>
                     </li>
+                    <li>
+                        <div id="menu-personnel" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')" class="w-full text-left">
+                                <i class="fas fa-users-gear"></i>
+                                <span class="text-sm lg:text-base"> Gestion du Personnel</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-materiel" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')" class="w-full text-left">
+                                <i class="fas fa-truck-monster"></i>
+                                <span class="text-sm lg:text-base"> Gestion du Matériel</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-locations" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')" class="w-full text-left">
+                                <i class="fas fa-location-dot"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Locations</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-sous-traitances" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')" class="w-full text-left">
+                                <i class="fas fa-handshake"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Sous-traitances</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-consommables" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')" class="w-full text-left">
+                                <i class="fas fa-boxes-stacked"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Consommables</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
+                        <div id="menu-fournitures" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')" class="w-full text-left">
+                                <i class="fas fa-truck"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Fournitures</span>
+                            </button>
+                        </div>
+                    </li>
                 </ul>
             </div>
         </nav>
@@ -202,7 +250,7 @@
             <div class="mb-6">
                 <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
                 <ul class="space-y-2">
-                    <li>
+                    <li><!-- Ingénieurs / Chefs de projets -->
                         <div id="menu-ingenieurs-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
                             <button onclick="loadModuleMobile('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs-mobile')" class="w-full text-left">
                                 <i class="fas fa-user-tie"></i>
@@ -210,7 +258,7 @@
                             </button>
                         </div>
                     </li>
-                    <li>
+                    <li><!-- Clients -->
                         <div id="menu-clients-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
                             <button onclick="loadModuleMobile('{% url 'projets:partial_clients' %}', 'menu-clients-mobile')" class="w-full text-left">
                                 <i class="fas fa-users"></i>
@@ -218,11 +266,59 @@
                             </button> 
                         </div>
                     </li>
-                    <li>
+                    <li><!-- Entreprises -->
                         <div id="menu-entreprises-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
                             <button onclick="loadModuleMobile('{% url 'projets:partial_entreprises' %}', 'menu-entreprises-mobile')" class="w-full text-left">
                                 <i class="fas fa-building"></i>
                                 <span class="text-sm">Entreprises</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Personnel -->
+                        <div id="menu-personnel-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_personnel' %}', 'menu-personnel-mobile')" class="w-full text-left">
+                                <i class="fas fa-users-gear"></i>
+                                <span class="text-sm">Personnel</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Matériel -->
+                        <div id="menu-materiel-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_materiel' %}', 'menu-materiel-mobile')" class="w-full text-left">
+                                <i class="fas fa-truck-monster"></i>
+                                <span class="text-sm">Matériel</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Sous-traitances -->
+                        <div id="menu-sous-traitances-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances-mobile')" class="w-full text-left">
+                                <i class="fas fa-handshake"></i>
+                                <span class="text-sm">Sous-traitances</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Consommables -->
+                        <div id="menu-consommables-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_consommables' %}', 'menu-consommables-mobile')" class="w-full text-left">
+                                <i class="fas fa-boxes-stacked"></i>
+                                <span class="text-sm">Consommables</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Fournitures -->
+                        <div id="menu-fournitures-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_fournitures' %}', 'menu-fournitures-mobile')" class="w-full text-left">
+                                <i class="fas fa-truck"></i>
+                                <span class="text-sm">Fournitures</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li><!-- Locations -->
+                        <div id="menu-locations-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_locations' %}', 'menu-locations-mobile')" class="w-full text-left">
+                                <i class="fas fa-location-dot"></i>
+                                <span class="text-sm">Locations</span>
                             </button>
                         </div>
                     </li>
@@ -570,6 +666,712 @@
     </div>
 </div>
 
+<!-- Modal d'ajout personnel -->
+<div id="addPersonnelModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un membre du personnel
+            </h3>
+            <button onclick="closeAddPersonnelModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addPersonnelForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addPersonnelNom" class="block text-sm font-medium text-green-300 mb-1">Nom</label>
+                <input type="text" id="addPersonnelNom" name="nom"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addPersonnelFonction" class="block text-sm font-medium text-green-300 mb-1">Fonction</label>
+                <input type="text" id="addPersonnelFonction" name="fonction"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addPersonnelTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="addPersonnelTelephone" name="telephone"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addPersonnelUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addPersonnelUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addPersonnelTarif" class="block text-sm font-medium text-green-300 mb-1">Tarif (DH)</label>
+                <input type="number" step="0.01" id="addPersonnelTarif" name="tarif"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addPersonnelActif" name="actif" checked
+                       class="h-4 w-4">
+                <label for="addPersonnelActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddPersonnelModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification personnel -->
+<div id="editPersonnelModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier le personnel
+            </h3>
+            <button onclick="closeEditPersonnelModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editPersonnelForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editPersonnelId" name="id">
+            <div class="mb-3">
+                <label for="editPersonnelNom" class="block text-sm font-medium text-green-300 mb-1">Nom</label>
+                <input type="text" id="editPersonnelNom" name="nom"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editPersonnelFonction" class="block text-sm font-medium text-green-300 mb-1">Fonction</label>
+                <input type="text" id="editPersonnelFonction" name="fonction"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editPersonnelTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
+                <input type="text" id="editPersonnelTelephone" name="telephone"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editPersonnelUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editPersonnelUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editPersonnelTarif" class="block text-sm font-medium text-green-300 mb-1">Tarif (DH)</label>
+                <input type="number" step="0.01" id="editPersonnelTarif" name="tarif"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editPersonnelActif" name="actif"
+                       class="h-4 w-4">
+                <label for="editPersonnelActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditPersonnelModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout matériel -->
+<div id="addMaterielModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un matériel
+            </h3>
+            <button onclick="closeAddMaterielModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addMaterielForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addMaterielDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addMaterielDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addMaterielType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addMaterielType" name="type_materiel"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addMaterielImmatriculation" class="block text-sm font-medium text-green-300 mb-1">Immatriculation / N° de série</label>
+                <input type="text" id="addMaterielImmatriculation" name="immatriculation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addMaterielUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addMaterielUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addMaterielPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="addMaterielPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addMaterielActif" name="actif" checked
+                       class="h-4 w-4">
+                <label for="addMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddMaterielModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification matériel -->
+<div id="editMaterielModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier le matériel
+            </h3>
+            <button onclick="closeEditMaterielModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editMaterielForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editMaterielId" name="id">
+            <div class="mb-3">
+                <label for="editMaterielDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editMaterielDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editMaterielType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editMaterielType" name="type_materiel"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editMaterielImmatriculation" class="block text-sm font-medium text-green-300 mb-1">Immatriculation / N° de série</label>
+                <input type="text" id="editMaterielImmatriculation" name="immatriculation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editMaterielUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editMaterielUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editMaterielPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editMaterielPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editMaterielActif" name="actif"
+                       class="h-4 w-4">
+                <label for="editMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditMaterielModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout location -->
+<div id="addLocationModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter une location
+            </h3>
+            <button onclick="closeAddLocationModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addLocationForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addLocationDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addLocationDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addLocationType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addLocationType" name="type_materiel"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addLocationLocataire" class="block text-sm font-medium text-green-300 mb-1">Locataire</label>
+                <input type="text" id="addLocationLocataire" name="locataire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addLocationUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addLocationUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addLocationPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="addLocationPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addLocationActif" name="actif" checked class="h-4 w-4">
+                <label for="addLocationActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddLocationModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification location -->
+<div id="editLocationModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier la location
+            </h3>
+            <button onclick="closeEditLocationModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editLocationForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editLocationId" name="id">
+            <div class="mb-3">
+                <label for="editLocationDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editLocationDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editLocationType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editLocationType" name="type_materiel"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editLocationLocataire" class="block text-sm font-medium text-green-300 mb-1">Locataire</label>
+                <input type="text" id="editLocationLocataire" name="locataire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editLocationUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editLocationUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editLocationPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editLocationPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editLocationActif" name="actif" class="h-4 w-4">
+                <label for="editLocationActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditLocationModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout sous-traitance -->
+<div id="addSousTraitanceModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter une sous-traitance
+            </h3>
+            <button onclick="closeAddSousTraitanceModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addSousTraitanceForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addSousTraitanceDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addSousTraitanceDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addSousTraitanceType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addSousTraitanceType" name="type_sous_traitance"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addSousTraitancePrestataire" class="block text-sm font-medium text-green-300 mb-1">Prestataire</label>
+                <input type="text" id="addSousTraitancePrestataire" name="prestataire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addSousTraitanceUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addSousTraitanceUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addSousTraitancePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="addSousTraitancePrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addSousTraitanceActif" name="actif" checked class="h-4 w-4">
+                <label for="addSousTraitanceActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddSousTraitanceModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification sous-traitance -->
+<div id="editSousTraitanceModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier la sous-traitance
+            </h3>
+            <button onclick="closeEditSousTraitanceModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editSousTraitanceForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editSousTraitanceId" name="id">
+            <div class="mb-3">
+                <label for="editSousTraitanceDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editSousTraitanceDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editSousTraitanceType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editSousTraitanceType" name="type_sous_traitance"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editSousTraitancePrestataire" class="block text-sm font-medium text-green-300 mb-1">Prestataire</label>
+                <input type="text" id="editSousTraitancePrestataire" name="prestataire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editSousTraitanceUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editSousTraitanceUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editSousTraitancePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editSousTraitancePrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editSousTraitanceActif" name="actif" class="h-4 w-4">
+                <label for="editSousTraitanceActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditSousTraitanceModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout consommable -->
+<div id="addConsommableModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un consommable
+            </h3>
+            <button onclick="closeAddConsommableModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addConsommableForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addConsommableDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addConsommableDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addConsommableType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addConsommableType" name="type_consommable"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addConsommableFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
+                <input type="text" id="addConsommableFournisseur" name="fournisseur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addConsommableUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addConsommableUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addConsommablePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="addConsommablePrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addConsommableActif" name="actif" checked class="h-4 w-4">
+                <label for="addConsommableActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddConsommableModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification consommable -->
+<div id="editConsommableModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier le consommable
+            </h3>
+            <button onclick="closeEditConsommableModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editConsommableForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editConsommableId" name="id">
+            <div class="mb-3">
+                <label for="editConsommableDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editConsommableDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editConsommableType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editConsommableType" name="type_consommable"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editConsommableFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
+                <input type="text" id="editConsommableFournisseur" name="fournisseur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editConsommableUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editConsommableUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editConsommablePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editConsommablePrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editConsommableActif" name="actif" class="h-4 w-4">
+                <label for="editConsommableActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditConsommableModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal d'ajout fourniture -->
+<div id="addFournitureModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter une fourniture
+            </h3>
+            <button onclick="closeAddFournitureModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addFournitureForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addFournitureDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addFournitureDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addFournitureType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addFournitureType" name="type_fourniture"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addFournitureFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
+                <input type="text" id="addFournitureFournisseur" name="fournisseur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addFournitureUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addFournitureUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addFournitureUniPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="addFournitureUniPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addFournitureActif" name="actif" checked class="h-4 w-4">
+                <label for="addFournitureActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddFournitureModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification fourniture -->
+<div id="editFournitureModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier la fourniture
+            </h3>
+            <button onclick="closeEditFournitureModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editFournitureForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editFournitureId" name="id">
+            <div class="mb-3">
+                <label for="editFournitureDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editFournitureDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editFournitureType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editFournitureType" name="type_fourniture"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editFournitureFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
+                <input type="text" id="editFournitureFournisseur" name="fournisseur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editFournitureUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editFournitureUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editFournitureUniPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editFournitureUniPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editFournitureActif" name="actif" class="h-4 w-4">
+                <label for="editFournitureActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditFournitureModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
 
 <script>
@@ -577,6 +1379,13 @@
     let currentIngenieurId = null;
     let currentClientId = null;
     let currentEntrepriseId = null;
+    let currentPersonnelId = null;
+    let currentMaterielId = null;
+    let currentLocationId = null;
+    let currentSousTraitanceId = null;
+    let currentConsommableId = null;
+    let currentFournitureId = null;
+    
 
     // Gestion de la sidebar mobile
     document.getElementById('mobileMenuBtn').addEventListener('click', function() {
@@ -673,8 +1482,6 @@
         }
     });
 
-    // === RESTE DU CODE JAVASCRIPT (inchangé mais optimisé pour mobile) ===
-    // [Le reste du code JavaScript reste identique mais est optimisé pour mobile]
     // Fonctions d'ouverture/fermeture des modals
     function openEditIngenieurModal(id, nom) {
         currentIngenieurId = id;
@@ -784,6 +1591,222 @@
         document.getElementById('addEntrepriseAdresse').value = '';
     }
 
+    // Fonctions pour le personnel
+    function openEditPersonnelModal(id, nom, fonction, telephone, unite, tarif, actif) {
+        currentPersonnelId = id;
+        document.getElementById('editPersonnelId').value = id;
+        document.getElementById('editPersonnelNom').value = nom;
+        document.getElementById('editPersonnelFonction').value = fonction || '';
+        document.getElementById('editPersonnelTelephone').value = telephone || '';
+        document.getElementById('editPersonnelUnite').value = unite || '';
+        document.getElementById('editPersonnelTarif').value = tarif || '';
+        document.getElementById('editPersonnelActif').checked = actif === 'true';
+        document.getElementById('editPersonnelModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddPersonnelModal() {
+        document.getElementById('addPersonnelModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditPersonnelModal() {
+        document.getElementById('editPersonnelModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editPersonnelForm').classList.remove('was-validated');
+        document.getElementById('editPersonnelNom').classList.remove('border-red-500');
+        document.querySelectorAll('#editPersonnelForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddPersonnelModal() {
+        document.getElementById('addPersonnelModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addPersonnelForm').classList.remove('was-validated');
+        document.getElementById('addPersonnelNom').classList.remove('border-red-500');
+        document.querySelectorAll('#addPersonnelForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addPersonnelForm').reset();
+    }
+
+    // Fonctions pour le matériel
+    function openEditMaterielModal(id, designation, type, immatriculation, unite, prixUnitaire, actif) {
+        currentMaterielId = id;
+        document.getElementById('editMaterielId').value = id;
+        document.getElementById('editMaterielDesignation').value = designation;
+        document.getElementById('editMaterielType').value = type || '';
+        document.getElementById('editMaterielImmatriculation').value = immatriculation || '';
+        document.getElementById('editMaterielUnite').value = unite || '';
+        document.getElementById('editMaterielPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editMaterielActif').checked = actif === 'true';
+        document.getElementById('editMaterielModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddMaterielModal() {
+        document.getElementById('addMaterielModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditMaterielModal() {
+        document.getElementById('editMaterielModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editMaterielForm').classList.remove('was-validated');
+        document.getElementById('editMaterielDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddMaterielModal() {
+        document.getElementById('addMaterielModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addMaterielForm').classList.remove('was-validated');
+        document.getElementById('addMaterielDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addMaterielForm').reset();
+    }
+
+    // Fonctions pour les locations
+    function openEditLocationModal(id, designation, type, locataire, unite, prixUnitaire, actif) {
+        currentLocationId = id;
+        document.getElementById('editLocationId').value = id;
+        document.getElementById('editLocationDesignation').value = designation;
+        document.getElementById('editLocationType').value = type || '';
+        document.getElementById('editLocationLocataire').value = locataire || '';
+        document.getElementById('editLocationUnite').value = unite || '';
+        document.getElementById('editLocationPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editLocationActif').checked = actif === 'true';
+        document.getElementById('editLocationModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddLocationModal() {
+        document.getElementById('addLocationModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditLocationModal() {
+        document.getElementById('editLocationModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editLocationForm').classList.remove('was-validated');
+        document.getElementById('editLocationDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editLocationForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddLocationModal() {
+        document.getElementById('addLocationModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addLocationForm').classList.remove('was-validated');
+        document.getElementById('addLocationDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addLocationForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addLocationForm').reset();
+    }
+
+    // Fonctions pour les sous-traitances
+    function openEditSousTraitanceModal(id, designation, type, prestataire, unite, prixUnitaire, actif) {
+        currentSousTraitanceId = id;
+        document.getElementById('editSousTraitanceId').value = id;
+        document.getElementById('editSousTraitanceDesignation').value = designation;
+        document.getElementById('editSousTraitanceType').value = type || '';
+        document.getElementById('editSousTraitancePrestataire').value = prestataire || '';
+        document.getElementById('editSousTraitanceUnite').value = unite || '';
+        document.getElementById('editSousTraitancePrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editSousTraitanceActif').checked = actif === 'true';
+        document.getElementById('editSousTraitanceModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddSousTraitanceModal() {
+        document.getElementById('addSousTraitanceModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditSousTraitanceModal() {
+        document.getElementById('editSousTraitanceModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editSousTraitanceForm').classList.remove('was-validated');
+        document.getElementById('editSousTraitanceDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editSousTraitanceForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddSousTraitanceModal() {
+        document.getElementById('addSousTraitanceModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addSousTraitanceForm').classList.remove('was-validated');
+        document.getElementById('addSousTraitanceDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addSousTraitanceForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addSousTraitanceForm').reset();
+    }
+
+    // Fonctions pour les consommables
+    function openEditConsommableModal(id, designation, type, fournisseur, unite, prixUnitaire, actif) {
+        currentConsommableId = id;
+        document.getElementById('editConsommableId').value = id;
+        document.getElementById('editConsommableDesignation').value = designation;
+        document.getElementById('editConsommableType').value = type || '';
+        document.getElementById('editConsommableFournisseur').value = fournisseur || '';
+        document.getElementById('editConsommableUnite').value = unite || '';
+        document.getElementById('editConsommablePrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editConsommableActif').checked = actif === 'true';
+        document.getElementById('editConsommableModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddConsommableModal() {
+        document.getElementById('addConsommableModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditConsommableModal() {
+        document.getElementById('editConsommableModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editConsommableForm').classList.remove('was-validated');
+        document.getElementById('editConsommableDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editConsommableForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddConsommableModal() {
+        document.getElementById('addConsommableModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addConsommableForm').classList.remove('was-validated');
+        document.getElementById('addConsommableDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addConsommableForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addConsommableForm').reset();
+    }
+
+    // Fonctions pour les fournitures
+    function openEditFournitureModal(id, designation, type, fournisseur, unite, prixUnitaire, actif) {
+        currentFournitureId = id;
+        document.getElementById('editFournitureId').value = id;
+        document.getElementById('editFournitureDesignation').value = designation;
+        document.getElementById('editFournitureType').value = type || '';
+        document.getElementById('editFournitureFournisseur').value = fournisseur || '';
+        document.getElementById('editFournitureUnite').value = unite || '';
+        document.getElementById('editFournitureUniPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editFournitureActif').checked = actif === 'true';
+        document.getElementById('editFournitureModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddFournitureModal() {
+        document.getElementById('addFournitureModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditFournitureModal() {
+        document.getElementById('editFournitureModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editFournitureForm').classList.remove('was-validated');
+        document.getElementById('editFournitureDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editFournitureForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddFournitureModal() {
+        document.getElementById('addFournitureModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addFournitureForm').classList.remove('was-validated');
+        document.getElementById('addFournitureDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addFournitureForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addFournitureForm').reset();
+    }
+
     function closeAllModals() {
         closeEditIngenieurModal();
         closeAddIngenieurModal();
@@ -791,10 +1814,21 @@
         closeAddClientModal();
         closeEditEntrepriseModal();
         closeAddEntrepriseModal();
+        closeEditPersonnelModal();
+        closeAddPersonnelModal();
+        closeEditMaterielModal();
+        closeAddMaterielModal();
+        closeEditLocationModal();
+        closeAddLocationModal();
+        closeEditSousTraitanceModal();
+        closeAddSousTraitanceModal();
+        closeEditConsommableModal();
+        closeAddConsommableModal();
+        closeEditFournitureModal();
+        closeAddFournitureModal();
     }
 
     // === DELEGATION D'EVENEMENTS : GESTION CENTRALISÉE ===
-    // [Le reste du code de délégation d'événements reste identique]
     document.addEventListener('click', function(e) {
         // Boutons d'ajout (Ingénieurs, Clients, Entreprises)
         if (e.target.matches('[data-add-ingenieur-button]')) {
@@ -806,6 +1840,24 @@
         } else if (e.target.matches('[data-add-entreprise-button]')) {
             e.preventDefault();
             openAddEntrepriseModal();
+        } else if (e.target.matches('[data-add-personnel-button]')) {
+            e.preventDefault();
+            openAddPersonnelModal();
+        } else if (e.target.matches('[data-add-materiel-button]')) {
+            e.preventDefault();
+            openAddMaterielModal();
+        } else if (e.target.matches('[data-add-location-button]')) {
+            e.preventDefault();
+            openAddLocationModal();
+        } else if (e.target.matches('[data-add-sous-traitance-button]')) {
+            e.preventDefault();
+            openAddSousTraitanceModal();
+        } else if (e.target.matches('[data-add-consommable-button]')) {
+            e.preventDefault();
+            openAddConsommableModal();
+        } else if (e.target.matches('[data-add-fourniture-button]')) {
+            e.preventDefault();
+            openAddFournitureModal();
         }
         
         // Boutons d'édition Ingénieurs
@@ -840,13 +1892,97 @@
             openEditEntrepriseModal(id, nom, contact, email, telephone, adresse);
         }
         
+        // Boutons d'édition Personnel
+        if (e.target.matches('[data-edit-personnel-button]') || e.target.closest('[data-edit-personnel-button]')) {
+            const button = e.target.matches('[data-edit-personnel-button]') ? e.target : e.target.closest('[data-edit-personnel-button]');
+            const id = button.getAttribute('data-id');
+            const nom = button.getAttribute('data-nom');
+            const fonction = button.getAttribute('data-fonction');
+            const telephone = button.getAttribute('data-telephone');
+            const unite = button.getAttribute('data-unite');
+            const tarif = button.getAttribute('data-tarif');
+            const actif = button.getAttribute('data-actif');
+            openEditPersonnelModal(id, nom, fonction, telephone, unite, tarif, actif);
+        }
+        
+        // Boutons d'édition Matériel
+        if (e.target.matches('[data-edit-materiel-button]') || e.target.closest('[data-edit-materiel-button]')) {
+            const button = e.target.matches('[data-edit-materiel-button]') ? e.target : e.target.closest('[data-edit-materiel-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const immatriculation = button.getAttribute('data-immatriculation');
+            const unite = button.getAttribute('data-unite');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditMaterielModal(id, designation, type, immatriculation, unite, prixUnitaire, actif);
+        }
+        
+        // Boutons d'édition Locations
+        if (e.target.matches('[data-edit-location-button]') || e.target.closest('[data-edit-location-button]')) {
+            const button = e.target.matches('[data-edit-location-button]') ? e.target : e.target.closest('[data-edit-location-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const locataire = button.getAttribute('data-locataire');
+            const unite = button.getAttribute('data-unite');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditLocationModal(id, designation, type, locataire, unite, prixUnitaire, actif);
+        }
+        
+        // Boutons d'édition Sous-traitances
+        if (e.target.matches('[data-edit-sous-traitance-button]') || e.target.closest('[data-edit-sous-traitance-button]')) {
+            const button = e.target.matches('[data-edit-sous-traitance-button]') ? e.target : e.target.closest('[data-edit-sous-traitance-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const prestataire = button.getAttribute('data-prestataire');
+            const unite = button.getAttribute('data-unite');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditSousTraitanceModal(id, designation, type, prestataire, unite, prixUnitaire, actif);
+        }
+        
+        // Boutons d'édition Consommables
+        if (e.target.matches('[data-edit-consommable-button]') || e.target.closest('[data-edit-consommable-button]')) {
+            const button = e.target.matches('[data-edit-consommable-button]') ? e.target : e.target.closest('[data-edit-consommable-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const fournisseur = button.getAttribute('data-fournisseur');
+            const unite = button.getAttribute('data-unite');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditConsommableModal(id, designation, type, fournisseur, unite, prixUnitaire, actif);
+        }
+        
+        // Boutons d'édition Fournitures
+        if (e.target.matches('[data-edit-fourniture-button]') || e.target.closest('[data-edit-fourniture-button]')) {
+            const button = e.target.matches('[data-edit-fourniture-button]') ? e.target : e.target.closest('[data-edit-fourniture-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const fournisseur = button.getAttribute('data-fournisseur');
+            const unite = button.getAttribute('data-unite');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditFournitureModal(id, designation, type, fournisseur, unite, prixUnitaire, actif);
+        }
+        
         // Boutons de suppression
         if (e.target.matches('a[href*="supprimer"]') || e.target.closest('a[href*="supprimer"]')) {
             const link = e.target.matches('a[href*="supprimer"]') ? e.target : e.target.closest('a[href*="supprimer"]');
             e.preventDefault();
             
             const entityType = link.href.includes('ingenieur') ? 'ingénieur' : 
-                            link.href.includes('client') ? 'client' : 'entreprise';
+                            link.href.includes('client') ? 'client' : 
+                            link.href.includes('entreprise') ? 'entreprise' :
+                            link.href.includes('personnel') ? 'membre du personnel' :
+                            link.href.includes('materiel') ? 'matériel' :
+                            link.href.includes('location') ? 'location' :
+                            link.href.includes('sous_traitance') ? 'sous-traitance' :
+                            link.href.includes('consommable') ? 'consommable' : 'fourniture';
             
             if (!confirm(`Supprimer cet ${entityType} ?`)) return;
             
@@ -866,6 +2002,18 @@
                         loadModule('{% url 'projets:partial_clients' %}', 'menu-clients');
                     } else if (link.href.includes('entreprise')) {
                         loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises');
+                    } else if (link.href.includes('personnel')) {
+                        loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel');
+                    } else if (link.href.includes('materiel')) {
+                        loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel');
+                    } else if (link.href.includes('location')) {
+                        loadModule('{% url 'projets:partial_locations' %}', 'menu-locations');
+                    } else if (link.href.includes('sous_traitance')) {
+                        loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances');
+                    } else if (link.href.includes('consommable')) {
+                        loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables');
+                    } else if (link.href.includes('fourniture')) {
+                        loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures');
                     }
                 } else {
                     alert('Erreur lors de la suppression.');
@@ -903,11 +2051,46 @@
         } else if (e.target.matches('#editEntrepriseForm')) {
             e.preventDefault();
             handleEditEntreprise(e.target);
+        } else if (e.target.matches('#addPersonnelForm')) {
+            e.preventDefault();
+            handleAddPersonnel(e.target);
+        } else if (e.target.matches('#editPersonnelForm')) {
+            e.preventDefault();
+            handleEditPersonnel(e.target);
+        } else if (e.target.matches('#addMaterielForm')) {
+            e.preventDefault();
+            handleAddMateriel(e.target);
+        } else if (e.target.matches('#editMaterielForm')) {
+            e.preventDefault();
+            handleEditMateriel(e.target);
+        } else if (e.target.matches('#addLocationForm')) {
+            e.preventDefault();
+            handleAddLocation(e.target);
+        } else if (e.target.matches('#editLocationForm')) {
+            e.preventDefault();
+            handleEditLocation(e.target);
+        } else if (e.target.matches('#addSousTraitanceForm')) {
+            e.preventDefault();
+            handleAddSousTraitance(e.target);
+        } else if (e.target.matches('#editSousTraitanceForm')) {
+            e.preventDefault();
+            handleEditSousTraitance(e.target);
+        } else if (e.target.matches('#addConsommableForm')) {
+            e.preventDefault();
+            handleAddConsommable(e.target);
+        } else if (e.target.matches('#editConsommableForm')) {
+            e.preventDefault();
+            handleEditConsommable(e.target);
+        } else if (e.target.matches('#addFournitureForm')) {
+            e.preventDefault();
+            handleAddFourniture(e.target);
+        } else if (e.target.matches('#editFournitureForm')) {
+            e.preventDefault();
+            handleEditFourniture(e.target);
         }
     });
 
     // === FONCTIONS DE GESTION DES FORMULAIRES ===
-    // [Les fonctions de gestion des formulaires restent identiques]
     // Ingénieurs
     function handleAddIngenieur(form) {
         const nomInput = document.getElementById('addNom');
@@ -1191,6 +2374,588 @@
                         alert('Une erreur est survenue lors de la modification.');
                     });
                     
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Personnel
+    function handleAddPersonnel(form) {
+        const nomInput = document.getElementById('addPersonnelNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#addPersonnelForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#addPersonnelForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_PERSONNEL_URL = "{% url 'projets:ajouter_personnel' %}";
+
+        fetch(`${AJOUTER_PERSONNEL_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddPersonnelModal();
+                loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditPersonnel(form) {
+        const nomInput = document.getElementById('editPersonnelNom');
+        let isValid = true;
+
+        if (!nomInput.value.trim()) {
+            nomInput.classList.add('border-red-500');
+            document.querySelector('#editPersonnelForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            nomInput.classList.remove('border-red-500');
+            document.querySelector('#editPersonnelForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editPersonnelId').value;
+
+        fetch(`/personnel/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditPersonnelModal();
+                loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Matériel
+    function handleAddMateriel(form) {
+        const designationInput = document.getElementById('addMaterielDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addMaterielForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addMaterielForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_MATERIEL_URL = "{% url 'projets:ajouter_materiel' %}";
+
+        fetch(`${AJOUTER_MATERIEL_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddMaterielModal();
+                loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditMateriel(form) {
+        const designationInput = document.getElementById('editMaterielDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editMaterielForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editMaterielForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editMaterielId').value;
+
+        fetch(`/materiel/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditMaterielModal();
+                loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Locations
+    function handleAddLocation(form) {
+        const designationInput = document.getElementById('addLocationDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addLocationForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addLocationForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_LOCATION_URL = "{% url 'projets:ajouter_location' %}";
+
+        fetch(`${AJOUTER_LOCATION_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddLocationModal();
+                loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditLocation(form) {
+        const designationInput = document.getElementById('editLocationDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editLocationForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editLocationForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editLocationId').value;
+
+        fetch(`/locations/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditLocationModal();
+                loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Sous-traitances
+    function handleAddSousTraitance(form) {
+        const designationInput = document.getElementById('addSousTraitanceDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addSousTraitanceForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addSousTraitanceForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_SOUS_TRAITANCE_URL = "{% url 'projets:ajouter_sous_traitance' %}";
+
+        fetch(`${AJOUTER_SOUS_TRAITANCE_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddSousTraitanceModal();
+                loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditSousTraitance(form) {
+        const designationInput = document.getElementById('editSousTraitanceDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editSousTraitanceForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editSousTraitanceForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editSousTraitanceId').value;
+
+        fetch(`/sous_traitances/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditSousTraitanceModal();
+                loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Consommables
+    function handleAddConsommable(form) {
+        const designationInput = document.getElementById('addConsommableDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addConsommableForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addConsommableForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_CONSOMMABLE_URL = "{% url 'projets:ajouter_consommable' %}";
+
+        fetch(`${AJOUTER_CONSOMMABLE_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddConsommableModal();
+                loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditConsommable(form) {
+        const designationInput = document.getElementById('editConsommableDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editConsommableForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editConsommableForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editConsommableId').value;
+
+        fetch(`/consommables/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditConsommableModal();
+                loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Fournitures
+    function handleAddFourniture(form) {
+        const designationInput = document.getElementById('addFournitureDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addFournitureForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addFournitureForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_FOURNITURE_URL = "{% url 'projets:ajouter_fourniture' %}";
+
+        fetch(`${AJOUTER_FOURNITURE_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddFournitureModal();
+                loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditFourniture(form) {
+        const designationInput = document.getElementById('editFournitureDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editFournitureForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editFournitureForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const id = document.getElementById('editFournitureId').value;
+
+        fetch(`/fournitures/modifier/${id}/?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditFournitureModal();
+                loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
             } else {
                 alert('Erreur lors de la modification.');
             }

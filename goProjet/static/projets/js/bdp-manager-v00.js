@@ -63,10 +63,27 @@ class Line {
     invalidateCache() {
         this._cachedAmount = null;
         this._cachedLevel = null;
-        
-        // Invalider aussi les parents
+
+        // Le niveau des descendants dépend de ce nœud (ex: après indent/desindent)
+        this.invalidateChildrenLevel();
+
+        // Le montant des ancêtres dépend de ce nœud
         if (this.parent) {
-            this.parent.invalidateCache();
+            this.parent.invalidateAmountCache();
+        }
+    }
+
+    invalidateChildrenLevel() {
+        this.children.forEach(child => {
+            child._cachedLevel = null;
+            child.invalidateChildrenLevel();
+        });
+    }
+
+    invalidateAmountCache() {
+        this._cachedAmount = null;
+        if (this.parent) {
+            this.parent.invalidateAmountCache();
         }
     }
 
@@ -225,11 +242,10 @@ class LineManager {
         if (data && data.length > 0) {
             this.buildTree(data);
         } else {
-            // Ajouter une ligne vide par défaut
-            for (let i = 0; i < 3; i++) {
-                this.addEmptyLine();
-            }
+            this.ensureEmptyLinesForEditing();
         }
+
+        this.ensureEmptyLinesForEditing();
     }
     /**
      * Ajoute une ligne vide à un endroit spécifique
@@ -342,39 +358,68 @@ class LineManager {
      * @returns {Array} - Indices des nouvelles lignes créées
      */
     processExcelPaste(excelData, startRow = 0) {
-        
         const newLineIndices = [];
+        const invalidRows = [];
+        let blankRows = 0;
         
         excelData.forEach((excelRow, index) => {
             const targetIndex = startRow + index;
+            if (this.isBlankExcelRow(excelRow)) {
+                blankRows++;
+                return;
+            }
+
             const lineData = this.parseExcelRow(excelRow);
+            if (!lineData) {
+                invalidRows.push(index + 1);
+                return;
+            }
             
             // Créer ou mettre à jour la ligne
-            const line = this.insertOrUpdateLineAt(targetIndex, lineData);
+            this.insertOrUpdateLineAt(targetIndex, lineData);
             newLineIndices.push(targetIndex);
-            
         });
         
         // Invalider le cache
         this.invalidateCache();
+
+        console.info('Collage Excel:', {
+            rowsReceived: excelData.length,
+            rowsProcessed: newLineIndices.length,
+            blankRows,
+            invalidRows: invalidRows.length,
+        });
+
+        if (invalidRows.length > 0) {
+            this.showMessage(
+                `Collage refusé pour les lignes Excel invalides : ${invalidRows.join(', ')}. ` +
+                'Les colonnes PU et Quantité doivent contenir des nombres positifs.',
+                'warning'
+            );
+        }
         
         return newLineIndices;
     }
 
     /**
-     * Parse une ligne Excel selon le format: [N°, Désignation, Unité, PU, Quantité]
+    * Parse une ligne Excel selon le format: [N°, Désignation, Unité, Quantité, PU]
      * @param {Array} excelRow - Ligne Excel
      * @returns {Object} - Données structurées pour Line
      */
     parseExcelRow(excelRow) {
-        // Format attendu: ['1', 'Installation du chantier ', 'f', '200 000,00 ', '1,00']
+        const quantite = this.parseFrenchNumber(excelRow[3]);
+        const prixUnitaire = this.parseFrenchNumber(excelRow[4]);
+
+        if (prixUnitaire === null || quantite === null || prixUnitaire < 0 || quantite < 0) {
+            return null;
+        }
         
         return {
             numero: this.cleanString(excelRow[0] || ''),
             designation: this.cleanString(excelRow[1] || 'Nouvelle ligne'),
             unite: this.cleanString(excelRow[2] || ''),
-            prix_unitaire: this.parseFrenchNumber(excelRow[3] || '0'),
-            quantite: this.parseFrenchNumber(excelRow[4] || '0'),
+            prix_unitaire: prixUnitaire,
+            quantite: quantite,
             expanded: true
         };
     }
@@ -385,15 +430,35 @@ class LineManager {
     }
 
     parseFrenchNumber(value) {
-        if (!value) return 0;
-        
-        const str = String(value).trim()
-            .replace(/\s/g, '')      // Supprimer les espaces
-            .replace(',', '.')       // Remplacer virgule par point
-            .replace(/[^\d.-]/g, ''); // Garder seulement chiffres, point, moins
-        
-        const num = parseFloat(str);
-        return isNaN(num) ? 0 : num;
+        if (value === null || value === undefined || String(value).trim() === '') return 0;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+
+        let str = String(value).trim()
+            .replace(/[\s\u00a0']/g, '')
+            .replace(/[^\d,.-]/g, '');
+
+        if (!str || !/^-?(?:\d+|\d+[.,]\d+|[.,]\d+)$/.test(str)) return null;
+
+        const lastComma = str.lastIndexOf(',');
+        const lastDot = str.lastIndexOf('.');
+        if (lastComma !== -1 && lastDot !== -1) {
+            const decimalSeparator = lastComma > lastDot ? ',' : '.';
+            const groupingSeparator = decimalSeparator === ',' ? '.' : ',';
+            str = str.replaceAll(groupingSeparator, '').replace(decimalSeparator, '.');
+        } else if (lastComma !== -1) {
+            str = str.replace(',', '.');
+        } else if ((str.match(/\./g) || []).length > 1) {
+            str = str.replaceAll('.', '');
+        }
+
+        const num = Number(str);
+        return Number.isFinite(num) ? num : null;
+    }
+
+    isBlankExcelRow(excelRow) {
+        return !Array.isArray(excelRow) || excelRow.slice(0, 5).every(
+            value => value === null || value === undefined || String(value).trim() === ''
+        );
     }
 
     /**
@@ -572,22 +637,30 @@ class LineManager {
         const cachedFlatList = this.getFlatList();
         const nbLines = cachedFlatList.length;
         if (start < 0 || start + nbRows > nbLines) return false;
-        
-        // obtenir les lignes à indenter
+
         const lines = cachedFlatList.slice(start, start + nbRows);
-        
-        // boucler sur les lignes et les indenter et calculer le nombre de fois que les lignes sont indented
-        let maxIndentNumber = 0;
-        lines.forEach(line => {
-            if (line.indent()) maxIndentNumber++;
+        if (lines.length === 0) return 0;
+
+        const firstLine = lines[0];
+        const oldParent = firstLine.parent;
+        const newParent = firstLine.getPreviousSibling();
+        if (!oldParent || !newParent) return 0;
+
+        // Ne garder que les vraies lignes sœurs de la première : les descendants
+        // déjà présents dans la sélection (lignes repliées masquées) suivent
+        // automatiquement leur parent, il ne faut pas les indenter séparément.
+        const siblings = lines.filter(line => line.parent === oldParent);
+
+        siblings.forEach(line => {
+            oldParent.removeChild(line);
+            newParent.addChild(line);
         });
-        
-        // mettre à jour la liste plate si au moins une ligne a été indented
-        if (maxIndentNumber > 0) {
+
+        if (siblings.length > 0) {
             this.invalidateCache();
-            return maxIndentNumber;
+            return siblings.length;
         }
-        
+
         return 0;
     }
  
@@ -596,21 +669,32 @@ class LineManager {
         const cachedFlatList = this.getFlatList();
         const nbLines = cachedFlatList.length;
         if (start < 0 || start + nbRows > nbLines) return false;
-        
-        // obtenir les lignes à désindenter
+
         const lines = cachedFlatList.slice(start, start + nbRows);
-        
-        let maxDesindentNumber = 0;
-        lines.forEach(line => {
-            if (line.desindent()) maxDesindentNumber++;
+        if (lines.length === 0) return 0;
+
+        const firstLine = lines[0];
+        const oldParent = firstLine.parent;
+        if (!oldParent || !oldParent.parent) return 0;
+        const grandParent = oldParent.parent;
+
+        // Ne garder que les vraies lignes sœurs de la première (voir indentLine).
+        const siblings = lines.filter(line => line.parent === oldParent);
+
+        // Index calculé une seule fois puis incrémenté : l'ancien parent ne bouge
+        // pas dans grandParent.children pendant la boucle, ce qui préserve l'ordre.
+        let insertIndex = grandParent.getChildIndex(oldParent) + 1;
+        siblings.forEach(line => {
+            oldParent.removeChild(line);
+            grandParent.insertChildAt(line, insertIndex);
+            insertIndex++;
         });
-        
-        // mettre à jour la liste plate si au moins une ligne a été désindented
-        if (maxDesindentNumber > 0) {
+
+        if (siblings.length > 0) {
             this.invalidateCache();
-            return maxDesindentNumber;
+            return siblings.length;
         }
-        
+
         return 0;
     }
 
@@ -723,7 +807,12 @@ class EmptyLineManager {
      */
     ensureEmptyLines() {
         const flatList = this.lineManager.getFlatList();
-        const emptyLinesCount = flatList.filter(line => this.isEmptyLine(line)).length;
+        let emptyLinesCount = 0;
+
+        for (let index = flatList.length - 1; index >= 0; index--) {
+            if (!this.isRemovableEmptyLine(flatList[index])) break;
+            emptyLinesCount++;
+        }
         
         if (emptyLinesCount < this.emptyLineThreshold) {
             const toAdd = this.emptyLineThreshold - emptyLinesCount;
@@ -800,6 +889,8 @@ class BordereauManager {
         this.csrfToken = options.csrfToken || '';
         this.saveUrl = options.saveUrl || '';
         this.isSyncing = false; // Éviter les boucles de synchronisation
+        this.dataChanged = false;
+        this.allLinesExpanded = true;
         
         // Initialisation
         this.hot = null;
@@ -825,6 +916,8 @@ class BordereauManager {
         
         // Configurer les raccourcis clavier
         this.setupKeyboardShortcuts();
+        this.setupPlainTextPaste();
+        this.markDataSaved();
     }
 
     /**
@@ -846,6 +939,7 @@ class BordereauManager {
         }
         
         this.refreshTable(true);
+        this.markDataChanged();
         
         // Sélectionner la nouvelle ligne
         setTimeout(() => {
@@ -865,6 +959,47 @@ class BordereauManager {
             }
         });
         this.lineManager.invalidateCache();
+    }
+
+    toggleExpandedAll() {
+        const shouldExpand = !this.allLinesExpanded;
+        this.lineManager.lines.forEach(line => {
+            if (line.hasChildren) line.expanded = shouldExpand;
+        });
+        this.allLinesExpanded = shouldExpand;
+        this.lineManager.invalidateCache();
+        this.refreshTable();
+        this.updateExpandAllButton();
+    }
+
+    updateExpandAllButton() {
+        const button = document.getElementById('toggle-expanded-all-btn');
+        if (!button) return;
+
+        const icon = button.querySelector('i');
+        const expand = !this.allLinesExpanded;
+        button.title = expand ? 'Développer toutes les lignes filles' : 'Réduire toutes les lignes filles';
+        if (icon) icon.className = expand ? 'fas fa-expand-alt' : 'fas fa-compress-alt';
+    }
+
+    markDataChanged() {
+        this.dataChanged = true;
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = false;
+            saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            saveBtn.title = 'Enregistrer les modifications';
+        }
+    }
+
+    markDataSaved() {
+        this.dataChanged = false;
+        const saveBtn = document.getElementById('save-btn');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            saveBtn.title = 'Aucune modification à enregistrer';
+        }
     }
     
     initHandsontable() {
@@ -909,7 +1044,11 @@ class BordereauManager {
             rowHeaders: false,
             colHeaders: true,
             licenseKey: 'non-commercial-and-evaluation',
-            // contextMenu: ['row_above', 'row_below', 'remove_row'],
+            copyPaste: {
+                rowsLimit: Infinity,
+                columnsLimit: Infinity,
+                pasteMode: 'overwrite',
+            },
             hiddenColumns: {columns: [0, 1, 2], indicators: false},
             hiddenRows: {rows: [], indicators: false},
             minSpareRows: 0, // Plus de lignes vides pour faciliter le collage
@@ -924,22 +1063,9 @@ class BordereauManager {
                 items: {
                     row_above: {
                         name: 'Insérer une ligne au-dessus',
-                        // callback: (key, selection) => {
-                        //     const selected = this.getSafeSelection();
-                        //     if (!selected) return;
-                        //     const startRow = selected.start;
-                        //     this.handleManualRowInsertion(startRow, 1, 'row_above');
-                        // }
                     },
                     row_below: {
                         name: 'Insérer une ligne en dessous',
-                        // callback: (key, selection) => {
-                        //     const selected = this.getSafeSelection();
-                        //     if (!selected) return;
-                        //     const startRow = selected.startRow;
-                        //     const insertIndex = startRow + 1;
-                        //     this.handleManualRowInsertion(insertIndex, 1, 'row_below');
-                        // }
                     },
                     remove_row: {
                         name: 'Supprimer la(les) ligne(s)',
@@ -1045,6 +1171,13 @@ class BordereauManager {
                     const [row, prop, oldValue, newValue] = change;
                     this.handleCellChange(row, prop, newValue);
                 });
+
+                this.markDataChanged();
+                this.scheduleEmptyLineCheck();
+            },
+
+            afterRender: () => {
+                this.scheduleEmptyLineCheck();
             },
 
             // GESTION DE LA SELECTION
@@ -1124,6 +1257,7 @@ class BordereauManager {
         // Invalider le cache et rafraîchir
         this.lineManager.invalidateCache();
         this.refreshTable();
+        this.markDataChanged();
         
         // Sélectionner la première nouvelle ligne
         if (newLines.length > 0) {
@@ -1168,6 +1302,7 @@ class BordereauManager {
         // Invalider le cache et rafraîchir
         this.lineManager.invalidateCache();
         this.refreshTable(true);
+        this.markDataChanged();
         
         // Sélectionner la ligne suivante
         setTimeout(() => {
@@ -1185,11 +1320,23 @@ class BordereauManager {
     // GESTION DU COLLAGE (VERSION SIMPLIFIÉE)
     // ============================================================================
 
-    handlePaste(data, coords) {
+    handlePaste(data, coords, fromNativeClipboard = false) {
+        if (this.plainTextPasteHandled && !fromNativeClipboard) {
+            this.plainTextPasteHandled = false;
+            return false;
+        }
+
         
         if (!data || !Array.isArray(data) || data.length === 0) {
             return true; // Laisser Handsontable gérer
         }
+
+        console.info('Handsontable beforePaste:', {
+            rowsReceived: data.length,
+            columnsReceived: Math.max(...data.map(row => Array.isArray(row) ? row.length : 0)),
+            startRow: coords?.[0]?.startRow ?? 0,
+            startColumn: coords?.[0]?.startCol ?? 0,
+        });
         
         // Déterminer la position de collage
         let startRow = 0;
@@ -1206,6 +1353,7 @@ class BordereauManager {
     processPastedData(excelData, startRow) {
         // 1. Traiter les données dans le LineManager
         const newIndices = this.lineManager.processExcelPaste(excelData, startRow);
+        if (newIndices.length > 0) this.markDataChanged();
         
         // 2. Mettre à jour le tableau en une seule opération
         this.refreshTable();
@@ -1215,10 +1363,8 @@ class BordereauManager {
     refreshTable() {
         if (!this.hot) return;
         
-        // 1. Mettre à jour les données
-        this.hot.updateSettings({
-            data: this.lineManager.toTableData()
-        });
+        // 1. Mettre à jour les données sans recréer la configuration de la grille
+        this.hot.loadData(this.lineManager.toTableData());
         
         // 2. Mettre à jour les lignes cachées
         this.updateHiddenRows();
@@ -1267,6 +1413,19 @@ class BordereauManager {
         if (property === 'quantite' || property === 'prix_unitaire') {
             this.hot.setDataAtRowProp(row, 'montant', line.amount);
         }
+    }
+
+    scheduleEmptyLineCheck() {
+        if (this.emptyLineCheckScheduled) return;
+
+        this.emptyLineCheckScheduled = true;
+        setTimeout(() => {
+            this.emptyLineCheckScheduled = false;
+
+            if (this.lineManager.ensureEmptyLinesForEditing() > 0) {
+                this.refreshTable();
+            }
+        }, 50);
     }
 
     handleAfterRemoveRow(index, amount, source) {
@@ -1336,7 +1495,7 @@ class BordereauManager {
         const isTitle = line.hasChildren;
 
         if (isTitle) {
-            td.className = (td.className || '') + ' title-row';
+            td.className = (td.className || '') + ` title-row title-row-level-${Math.min(niveau, 4)}`;
         }
         
         if (prop === 'designation') {
@@ -1362,7 +1521,7 @@ class BordereauManager {
         
         if (line.hasChildren) {
             td.textContent = '';
-            td.className = (td.className || '') + ' title-row';
+            td.className = (td.className || '') + ` title-row title-row-level-${Math.min(line.level, 4)}`;
         } else if (value === 0 || value === '' || value === null) {
             td.textContent = '';
         }
@@ -1376,7 +1535,7 @@ class BordereauManager {
         
         if (line.hasChildren) {
             td.textContent = line.amount === 0 ? '' : this.formatNumber(line.amount);
-            td.className = 'htRight title-row';
+            td.className = `htRight title-row title-row-level-${Math.min(line.level, 4)}`;
         } else {
             td.textContent = line.amount === 0 ? '' : this.formatNumber(line.amount);
             td.className = 'htRight montant-cell';
@@ -1448,6 +1607,42 @@ class BordereauManager {
         });
     }
 
+    setupPlainTextPaste() {
+        document.addEventListener('paste', (event) => {
+            if (!this.hot || !this.hot.isListening()) return;
+            if (this.hot.getActiveEditor()?.isOpened()) return;
+
+            const plainText = event.clipboardData?.getData('text/plain');
+            if (!plainText || !plainText.includes('\t')) return;
+
+            const selected = this.getSafeSelection();
+            if (!selected) return;
+
+            const rows = plainText
+                .replace(/\r\n?/g, '\n')
+                .split('\n');
+            if (rows.length > 1 && rows[rows.length - 1] === '') rows.pop();
+
+            const data = rows.map(row => row.split('\t'));
+            if (data.length === 0) return;
+
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            this.plainTextPasteHandled = true;
+            console.info('Presse-papiers texte utilisé pour le collage Excel:', {
+                rowsReceived: data.length,
+                columnsReceived: Math.max(...data.map(row => row.length)),
+            });
+            this.handlePaste(data, [{
+                startRow: selected.startRow,
+                startCol: selected.startCol,
+            }], true);
+            setTimeout(() => {
+                this.plainTextPasteHandled = false;
+            }, 0);
+        }, true);
+    }
+
     showSumSelectedCells(hotInstance) {
         const selection = hotInstance.getSelected();
         if (!selection) return;
@@ -1494,6 +1689,48 @@ class BordereauManager {
         }
     }
 
+    showMessage(message, type = 'info') {
+        const container = document.getElementById('dynamic-messages');
+        if (!container) {
+            console.warn(message);
+            return;
+        }
+
+        container.innerHTML = '';
+        const alert = document.createElement('div');
+        alert.className = `alert-${type} p-3 rounded-xl shadow-lg`;
+        alert.textContent = message;
+        container.appendChild(alert);
+    }
+
+    /**
+     * Affiche un toast discret dans la barre d'outils (remplace le message des totaux s'il est actif).
+     */
+    showToolbarToast(message, type = 'success') {
+        const sumDisplay = document.getElementById('selectionSumDisplay');
+        if (sumDisplay) {
+            sumDisplay.style.display = 'none';
+        }
+
+        const toast = document.getElementById('toolbarToast');
+        if (!toast) {
+            console.info(message);
+            return;
+        }
+
+        clearTimeout(this._toolbarToastTimeout);
+        toast.textContent = message;
+        toast.className = `toolbar-toast toolbar-toast-${type}`;
+        toast.classList.remove('hidden');
+        void toast.offsetWidth; // relance l'animation si un toast était déjà visible
+        toast.classList.add('toolbar-toast-visible');
+
+        this._toolbarToastTimeout = setTimeout(() => {
+            toast.classList.remove('toolbar-toast-visible');
+            toast.classList.add('hidden');
+        }, 2500);
+    }
+
     // ============================================================================
     // FONCTIONS PUBLIQUES POUR LES BOUTONS
     // ============================================================================
@@ -1528,6 +1765,7 @@ class BordereauManager {
         const startRow = selected.startRow;
         const result = this.lineManager.indentLine(startRow, selected.nbRows);
         if (result > 0) {
+            this.markDataChanged();
             this.refreshTable();
         }
         else {
@@ -1545,6 +1783,7 @@ class BordereauManager {
         const startRow = selected.startRow;
         const result = this.lineManager.desindentLine(startRow, selected.nbRows);
         if (result > 0) {
+            this.markDataChanged();
             this.refreshTable();
         }
         else {
@@ -1563,6 +1802,7 @@ class BordereauManager {
         const newIndex = this.lineManager.moveLineDown(startRow);
 
         if (newIndex !== -1) {
+            this.markDataChanged();
             this.refreshTable();
             // Reselect the moved line
             this.hot.selectCell(newIndex, selected.startCol);
@@ -1579,6 +1819,7 @@ class BordereauManager {
         const newIndex = this.lineManager.moveLineUp(startRow);
 
         if (newIndex !== -1) {
+            this.markDataChanged();
             this.refreshTable();
             // Reselect the moved line
             this.hot.selectCell(newIndex, selected.startCol);
@@ -1587,6 +1828,7 @@ class BordereauManager {
 
     saveData() {
         const saveBtn = document.getElementById('save-btn');
+        if (!this.dataChanged) return;
         if (saveBtn) {
             saveBtn.disabled = true;
             saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enregistrement...';
@@ -1618,38 +1860,33 @@ class BordereauManager {
         .then(data => {
             if (data.status === 'ok') {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i>';
-                alert(data.message);
-                // window.location.reload();
-                // Si le backend a créé de nouveaux IDs, les mettre à jour dans lineManager
+                this.showToolbarToast(data.message, 'success');
                 if (data.lignes) {
-                    console.log(data.lignes);
-                    Object.entries(data.lignes).forEach(([oldId, newId]) =>{
+                    Object.entries(data.lignes).forEach(([oldId, newId]) => {
                         const line = this.lineManager.lines.get(oldId);
-                        if (line) {
-                            // Mettre à jour l'ID
-                            line.id = newId;
-                            
-                            // Mettre à jour dans la Map
-                            this.lineManager.lines.delete(oldId);
-                            this.lineManager.lines.set(newId, line);
-                            
-                            console.log(`ID mis à jour: ${oldId} -> ${newId}`);
-                        }
-                    this.lineManager.invalidateCache()
+                        if (!line) return;
+                        line.id = newId;
+                        this.lineManager.lines.delete(oldId);
+                        this.lineManager.lines.set(newId, line);
                     });
+                    this.lineManager.invalidateCache();
                 }
+                this.markDataSaved();
             } else {
                 throw new Error(data.message);
             }
         })
         .catch(error => {
             console.error('Erreur:', error);
-            alert("Erreur d'enregistrement : " + error.message);
+            this.showToolbarToast("Erreur d'enregistrement : " + error.message, 'error');
         })
         .finally(() => {
             if (saveBtn) {
-                saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+                if (this.dataChanged) {
+                    saveBtn.disabled = false;
+                    saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
             }
         });
     }
@@ -1699,6 +1936,7 @@ window.initializeBordereau = function(options = {}) {
 
 // Fonctions globales pour les boutons
 window.saveData = function() { window.bordereauManager?.saveData(); };
+window.toggleExpandedAll = function() { window.bordereauManager?.toggleExpandedAll(); };
 window.insertChildLine = function() { window.bordereauManager?.insertChildLine(); };
 window.indente = function() { window.bordereauManager?.indente(); };
 window.desindente = function() { window.bordereauManager?.desindente(); };

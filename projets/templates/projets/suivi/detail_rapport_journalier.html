@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport journalier - {{ rapport.date|date:"d/m/Y" }} - {{ projet.nom }}</title>
+    {% load static formatters %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1rem; }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-warning:hover { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+        table th, table td { padding: 0.5rem 0.75rem; }
+        table thead th { border-bottom: 1px solid #4B5563; text-align: left; color: #9CA3AF; }
+        table tbody tr { border-bottom: 1px solid #374151; }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+    <div class="max-w-5xl mx-auto">
+        <div class="mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-calendar-day"></i> Rapport journalier du {{ rapport.date|date:"d/m/Y" }}
+            </h1>
+            <h2 class="text-lg text-[#2B9C62]">{{ projet.nom }}</h2>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 mb-6">
+            <a href="{% url 'projets:rapports_journaliers' projet.id %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base">
+                <i class="fas fa-arrow-left"></i> Rapports journaliers
+            </a>
+            <a href="{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}" class="btn-warning px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base">
+                <i class="fas fa-pen-to-square"></i> Modifier
+            </a>
+            <form method="post" action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}"
+                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport journalier et toutes ses lignes ?');">
+                {% csrf_token %}
+                <button type="submit" class="btn-danger px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base w-full">
+                    <i class="fas fa-trash"></i> Supprimer
+                </button>
+            </form>
+        </div>
+
+        <div class="card grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+            <p><strong class="text-[#AECBD6]">Météo :</strong> {{ rapport.meteo|default:"—" }}</p>
+            <p><strong class="text-[#AECBD6]">Température :</strong> {% if rapport.temperature %}{{ rapport.temperature }} °C{% else %}—{% endif %}</p>
+            <p><strong class="text-[#AECBD6]">Rédacteur :</strong> {{ rapport.redacteur|default:"—" }}</p>
+        </div>
+
+        {% if rapport.travaux_realises %}
+        <div class="card">
+            <h3 class="text-cyan-300 font-semibold mb-2"><i class="fas fa-hammer mr-1"></i> Travaux réalisés</h3>
+            <p class="whitespace-pre-line text-sm">{{ rapport.travaux_realises }}</p>
+        </div>
+        {% endif %}
+
+        {% if rapport.evenements %}
+        <div class="card">
+            <h3 class="text-cyan-300 font-semibold mb-2"><i class="fas fa-exclamation-circle mr-1"></i> Événements</h3>
+            <p class="whitespace-pre-line text-sm">{{ rapport.evenements }}</p>
+        </div>
+        {% endif %}
+
+        {% if rapport.observations %}
+        <div class="card">
+            <h3 class="text-cyan-300 font-semibold mb-2"><i class="fas fa-sticky-note mr-1"></i> Observations</h3>
+            <p class="whitespace-pre-line text-sm">{{ rapport.observations }}</p>
+        </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-amber-300 font-semibold"><i class="fas fa-coins mr-1"></i> Dépenses</h3>
+                <span class="text-white font-bold">{{ rapport.total_depenses|format_currency }}</span>
+            </div>
+            {% if depenses_groupees %}
+                {% for value, label, depenses_categorie, total in depenses_groupees %}
+                <div class="mb-3 rounded-lg border border-gray-700 overflow-hidden">
+                    <button type="button"
+                            class="categorie-toggle w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-800/60 hover:bg-gray-800 text-left"
+                            data-target="depense-recap-{{ value }}">
+                        <span class="flex items-center gap-2 text-amber-300 font-medium text-sm">
+                            <i class="fas fa-chevron-right toggle-icon transition-transform duration-200"></i> {{ label }}
+                        </span>
+                        <span class="flex items-center gap-3 text-xs sm:text-sm">
+                            <span class="text-gray-400">{{ depenses_categorie|length }} ligne(s)</span>
+                            <span class="font-semibold text-amber-300 text-right min-w-[110px]">{{ total|format_currency }}</span>
+                        </span>
+                    </button>
+                    <div class="hidden p-3" id="depense-recap-{{ value }}">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr>
+                                    <th>Désignation</th>
+                                    <th>Quantité</th>
+                                    <th>Unité</th>
+                                    <th>PU</th>
+                                    <th class="text-right">Montant</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for depense in depenses_categorie %}
+                                <tr>
+                                    <td>{{ depense.designation }}</td>
+                                    <td>{{ depense.quantite }}</td>
+                                    <td>{{ depense.unite|default:"—" }}</td>
+                                    <td>{{ depense.prix_unitaire|format_currency }}</td>
+                                    <td class="text-right">{{ depense.montant|format_currency }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+            <p class="text-gray-400 text-sm">Aucune dépense enregistrée.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h3 class="text-green-300 font-semibold mb-3"><i class="fas fa-boxes-stacked mr-1"></i> Mouvements de stock</h3>
+            {% if rapport.stocks.all %}
+            <table class="w-full text-sm">
+                <thead>
+                    <tr>
+                        <th>Désignation</th>
+                        <th>Unité</th>
+                        <th>Quantité entrée</th>
+                        <th>Quantité sortie</th>
+                        <th>Stock restant</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for stock in rapport.stocks.all %}
+                    <tr>
+                        <td>{{ stock.designation }}</td>
+                        <td>{{ stock.unite|default:"—" }}</td>
+                        <td>{{ stock.quantite_entree }}</td>
+                        <td>{{ stock.quantite_sortie }}</td>
+                        <td>{{ stock.stock_restant }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-gray-400 text-sm">Aucun mouvement de stock enregistré.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+        document.querySelectorAll('.categorie-toggle').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                const target = document.getElementById(btn.dataset.target);
+                target.classList.toggle('hidden');
+                const icon = btn.querySelector('.toggle-icon');
+                if (icon) icon.classList.toggle('rotate-90');
+            });
+        });
+    </script>
+</body>
+</html>

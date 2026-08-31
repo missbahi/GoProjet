@@ -355,6 +355,12 @@
                                 title="Voir le detail de cet attachement">
                                     <i class="fa-solid fa-eye"></i> 
                                 </a>
+                                <button type="button"
+                                    onclick="openValidationTraceModal('{% url 'projets:tracabilite_validation_attachement' attachement.id %}')"
+                                    class="mr-2 text-violet-400 hover:text-violet-300 transition inline-flex items-center"
+                                    title="Consulter la traçabilité des validations">
+                                    <i class="fa-solid fa-clipboard-check"></i>
+                                </button>
                                 <!-- Modifier -->
                                 <a href="{% url 'projets:modifier_attachement' attachement.id %}" 
                                    class="mr-1 text-green-400 hover:text-green-300 transition inline-flex items-center"
@@ -396,6 +402,19 @@
                 <p class="text-[#AECBD6]">Aucun attachement pour ce projet.</p>
             </div>
             {% endif %}
+        </div>
+    </div>
+
+    <!-- Modale de traçabilité des validations -->
+    <div id="validationTraceModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true" aria-labelledby="validationTraceTitle">
+        <div class="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-lg border border-cyan-600 bg-[#2E2E2E] shadow-2xl">
+            <div class="sticky top-0 flex items-center justify-between border-b border-[#4B5563] bg-[#3B3B3B] px-5 py-4">
+                <h2 id="validationTraceTitle" class="text-lg font-semibold text-cyan-300">Traçabilité des validations</h2>
+                <button type="button" onclick="closeValidationTraceModal()" class="text-gray-300 hover:text-white" title="Fermer">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="validationTraceContent" class="space-y-4 p-5 text-[#AECBD6]"></div>
         </div>
     </div>
 
@@ -443,6 +462,98 @@
     
      <!-- Fonctions pour gérer la modale de suppression -->
 <script>
+    function closeValidationTraceModal() {
+        document.getElementById('validationTraceModal').classList.add('hidden');
+        document.getElementById('validationTraceModal').classList.remove('flex');
+        document.body.style.overflow = 'auto';
+    }
+
+    function traceText(label, value) {
+        if (!value) return null;
+        const item = document.createElement('p');
+        const title = document.createElement('span');
+        title.className = 'font-semibold text-cyan-300';
+        title.textContent = `${label} : `;
+        item.append(title, document.createTextNode(value));
+        return item;
+    }
+
+    async function openValidationTraceModal(url) {
+        const modal = document.getElementById('validationTraceModal');
+        const content = document.getElementById('validationTraceContent');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        content.textContent = 'Chargement de la traçabilité...';
+
+        try {
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('Impossible de charger la traçabilité.');
+            const data = await response.json();
+            content.replaceChildren();
+
+            const reference = document.createElement('p');
+            reference.className = 'text-sm text-gray-300';
+            reference.textContent = `Attachement : ${data.attachement}`;
+            content.appendChild(reference);
+
+            if (!data.validations.length) {
+                const empty = document.createElement('p');
+                empty.className = 'rounded border border-gray-600 bg-[#3B3B3B] p-4 text-gray-300';
+                empty.textContent = 'Aucune validation n’a encore été enregistrée.';
+                content.appendChild(empty);
+                return;
+            }
+
+            data.validations.forEach(validation => {
+                const card = document.createElement('section');
+                card.className = 'rounded-lg border border-[#4B5563] bg-[#3B3B3B] p-4';
+                const heading = document.createElement('h3');
+                heading.className = 'mb-3 font-semibold text-white';
+                heading.textContent = `${validation.type} - ${validation.statut}`;
+                card.appendChild(heading);
+                ['validateur', 'date_validation', 'commentaires', 'motifs_rejet'].forEach(key => {
+                    const labels = { validateur: 'Validé par', date_validation: 'Date', commentaires: 'Remarques', motifs_rejet: 'Motif du refus' };
+                    const item = traceText(labels[key], validation[key]);
+                    if (item) card.appendChild(item);
+                });
+
+                if (validation.document_url) {
+                    const documentLine = document.createElement('p');
+                    documentLine.className = 'mt-3 flex flex-wrap items-center gap-3';
+                    const name = document.createElement('span');
+                    name.textContent = validation.document_nom;
+                    const view = document.createElement('a');
+                    view.href = `${validation.document_url}?download=false`;
+                    view.target = '_blank';
+                    view.className = 'text-cyan-300 hover:text-cyan-100';
+                    view.textContent = 'Consulter';
+                    const download = document.createElement('a');
+                    download.href = `${validation.document_url}?download=true`;
+                    download.target = '_blank';
+                    download.className = 'text-cyan-300 hover:text-cyan-100';
+                    download.textContent = 'Télécharger';
+                    documentLine.append(name, view, download);
+                    card.appendChild(documentLine);
+                }
+
+                if (validation.etapes.length) {
+                    const list = document.createElement('ul');
+                    list.className = 'mt-4 space-y-2 border-t border-[#4B5563] pt-3 text-sm';
+                    validation.etapes.forEach(etape => {
+                        const item = document.createElement('li');
+                        item.textContent = `${etape.nom} - ${etape.statut}${etape.validateur ? ` (${etape.validateur})` : ''}${etape.commentaire ? ` : ${etape.commentaire}` : ''}`;
+                        list.appendChild(item);
+                    });
+                    card.appendChild(list);
+                }
+                content.appendChild(card);
+            });
+        } catch (error) {
+            content.textContent = error.message;
+        }
+    }
+
     let currentAttachementId = null;
     let currentAttachementNumero = null;
     

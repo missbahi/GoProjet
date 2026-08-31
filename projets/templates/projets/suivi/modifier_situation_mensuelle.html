@@ -1,0 +1,16 @@
+{% extends 'projets/base.html' %}
+{% block content %}
+<div class="max-w-5xl mx-auto p-4">
+    <div class="mb-5">
+        <a href="{% url 'projets:situations_mensuelles' projet.id %}" class="text-sm text-gray-400 hover:text-white"><i class="fas fa-arrow-left mr-1"></i>Situations mensuelles</a>
+        <h1 class="text-2xl font-bold mt-2">Modifier la situation {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}</h1>
+        <p class="text-gray-400">{{ projet.nom }}</p>
+    </div>
+    <div class="p-4 rounded border border-gray-700 bg-gray-800">
+        {% include 'projets/suivi/_formulaire_situation_mensuelle.html' %}
+    </div>
+    <form method="post" action="{% url 'projets:supprimer_situation_mensuelle' projet.id situation.id %}" class="mt-4" onsubmit="return confirm('Supprimer cette situation et son document ?');">
+        {% csrf_token %}<button class="px-4 py-2 rounded bg-red-700 text-white" type="submit"><i class="fas fa-trash mr-1"></i>Supprimer la situation</button>
+    </form>
+</div>
+{% endblock %}

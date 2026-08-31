@@ -273,7 +273,7 @@
             transition: all 0.2s ease;
         }
         @media print {
-            .navigation-buttons, .btn, .btn-toolbar, .selection-sum-display {
+            .navigation-buttons, .btn, .btn-toolbar, .selection-sum-display, .toolbar-toast {
                 display: none;
             }
             .no-print {
@@ -530,9 +530,16 @@
                     <!-- Bouton Sauvegarde -->
                     <button onclick="saveData()" 
                             id="save-btn"
-                            class="btn-toolbar btn-toolbar-primary group"
-                            title="Enregistrer les modifications">
+                            class="btn-toolbar btn-toolbar-primary group opacity-50 cursor-not-allowed"
+                            title="Aucune modification à enregistrer"
+                            disabled>
                         <i class="fas fa-save"></i>
+                    </button>
+                    <button onclick="toggleExpandedAll()"
+                            id="toggle-expanded-all-btn"
+                            class="btn-toolbar btn-toolbar-info group"
+                            title="Réduire toutes les lignes filles">
+                        <i class="fas fa-compress-alt"></i>
                     </button>
                     <div id="loading-indicator" class="hidden ml-2">
                         <i class="fas fa-spinner fa-spin text-cyan-400"></i>
@@ -585,7 +592,8 @@
                 </div>
             </div>
             
-            <!-- Partie droite : Affichage somme -->
+            <!-- Partie droite : Toast d'enregistrement + Affichage somme -->
+            <div id="toolbarToast" class="toolbar-toast hidden"></div>
             <div id="selectionSumDisplay" class="selection-sum-display ml-2 text-right min-w-[120px] hidden">
                 <!-- La somme s'affichera ici dynamiquement -->
             </div>
@@ -701,6 +709,30 @@
         color: #FBBF24 !important;
         font-size: 13px !important;
     }
+    /* Couleur des lignes de titre différenciée par niveau hiérarchique */
+    .handsontable-custom .title-row.title-row-level-0 { color: #FBBF24 !important; }
+    .handsontable-custom .title-row.title-row-level-1 { color: #22d3ee !important; }
+    .handsontable-custom .title-row.title-row-level-2 { color: #a78bfa !important; }
+    .handsontable-custom .title-row.title-row-level-3 { color: #34d399 !important; }
+    .handsontable-custom .title-row.title-row-level-4 { color: #f472b6 !important; }
+
+    /* Toast d'enregistrement dans la barre d'outils */
+    .toolbar-toast {
+        margin-left: 0.5rem;
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 600;
+        color: white;
+        white-space: nowrap;
+        opacity: 0;
+        transform: translateY(-4px);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .toolbar-toast.hidden { display: none; }
+    .toolbar-toast-visible { opacity: 1; transform: translateY(0); }
+    .toolbar-toast-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+    .toolbar-toast-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
 
     /* ===== EN-TÊTES DE COLONNES ===== */
     .handsontable-custom thead th {

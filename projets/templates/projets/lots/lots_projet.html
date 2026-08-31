@@ -237,15 +237,18 @@
                                class="btn-primary px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive">
                                 <i class="fas fa-edit"></i> Bordereau
                             </a>
-                            <button onclick="showEditForm({{ lot.id }}, '{{ lot.nom|escapejs }}', '{{ lot.description|default:""|escapejs }}')" 
+                            <button onclick="showEditForm({{ lot.id }}, '{{ lot.nom|escapejs }}', '{{ lot.description|default:""|escapejs }}', '{{ lot.taux_tva|default_if_none:""|escapejs }}')" 
                                class="btn-warning px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive">
                                 <i class="fas fa-cog"></i> Modifier
                             </button>
-                            <a href="{% url 'projets:supprimer_lot' projet.id lot.id %}" 
-                               class="btn-danger px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive"
-                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce lot ?')">
-                                <i class="fas fa-trash"></i> Supprimer
-                            </a>
+                            <form method="post" action="{% url 'projets:supprimer_lot' projet.id lot.id %}"
+                                  onsubmit="return confirm('Attention : la suppression du lot « {{ lot.nom|escapejs }} » supprimera également {{ lot.lignes.count }} ligne(s) de bordereau. Voulez-vous continuer ?')">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="btn-danger px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2 btn-responsive">
+                                    <i class="fas fa-trash"></i> Supprimer
+                                </button>
+                            </form>
                         </div>
                     </div>
                     
@@ -284,7 +287,7 @@
                 {% csrf_token %}
                 <input type="hidden" id="edit-lot-id" name="lot_id">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 form-grid">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 form-grid">
                     <div>
                         <label for="edit-nom" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Nom du lot *
@@ -305,6 +308,18 @@
                                 name="description" 
                                 class="form-control" 
                                 placeholder="Description du lot">
+                    </div>
+                    <div>
+                        <label for="edit-taux_tva" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Taux de TVA (%)
+                        </label>
+                        <input type="number" 
+                                id="edit-taux_tva" 
+                                name="taux_tva" 
+                                class="form-control" 
+                                step="0.01" min="0" max="100"
+                                placeholder="Taux du projet (20% par défaut)">
+                        <p class="text-xs text-gray-500 mt-1">0 = lot hors TVA. Vide = hérite du taux du projet.</p>
                     </div>
                 </div>
 
@@ -331,7 +346,7 @@
             <form method="POST" class="space-y-4">
                 {% csrf_token %}
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 form-grid">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 form-grid">
                     <div>
                         <label for="nom" class="block text-sm font-medium text-[#AECBD6] mb-2">
                             Nom du lot *
@@ -353,6 +368,18 @@
                                class="form-control" 
                                placeholder="Description du lot">
                     </div>
+                    <div>
+                        <label for="taux_tva" class="block text-sm font-medium text-[#AECBD6] mb-2">
+                            Taux de TVA (%)
+                        </label>
+                        <input type="number" 
+                               id="taux_tva" 
+                               name="taux_tva" 
+                               class="form-control" 
+                               step="0.01" min="0" max="100"
+                               value="20">
+                        <p class="text-xs text-gray-500 mt-1">0 = lot hors TVA.</p>
+                    </div>
                 </div>
 
                 <div class="flex gap-3 pt-4">
@@ -367,11 +394,12 @@
 
     <script>
         // Fonctions pour gérer l'édition des lots
-        function showEditForm(lotId, nom, description) {
+        function showEditForm(lotId, nom, description, tauxTva) {
             // Remplir le formulaire avec les données du lot
             document.getElementById('edit-lot-id').value = lotId;
             document.getElementById('edit-nom').value = nom;
             document.getElementById('edit-description').value = description || '';
+            document.getElementById('edit-taux_tva').value = tauxTva || '';
             
             // Mettre à jour l'action du formulaire
             const form = document.getElementById('edit-form');

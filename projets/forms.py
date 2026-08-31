@@ -1,17 +1,33 @@
 from decimal import Decimal
+from datetime import date
+import hashlib
 import os
 from django import forms
+from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
 
 from projets.models.projet import DocumentAdministratif
 
 # from projets.models.revision import RevisionPrix
-from .models import Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache, Attachement, OrdreService
+from .models import (
+    Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
+    Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
+    StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
+    StockSituationMensuelle, DocumentSituationMensuelle, Personnel, Materiel,
+    Location, SousTraitance, Consommable, Fourniture,
+)
 
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
 from django.utils import timezone
+
+
+class FrenchDecimalField(forms.DecimalField):
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = value.replace('\u00a0', '').replace(' ', '').replace(',', '.')
+        return super().to_python(value)
 
 class ProfileForm(forms.ModelForm):
     class Meta:
@@ -57,7 +73,7 @@ class ProjetForm(forms.ModelForm):
         model = Projet
         fields = [
             'dossier', 'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
-            'delai', 'avancement', 'statut', 'montant', 'montant_soumission',
+            'delai', 'avancement', 'statut', 'montant', 'montant_soumission', 'taux_tva',
             'localisation', 'entreprise', 'revisable'
         ]
         widgets = {
@@ -73,6 +89,7 @@ class ProjetForm(forms.ModelForm):
             'statut': forms.Select(attrs={'placeholder': 'Statut du projet'}),
             'montant': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Montant estimé (DH)'}),
             'montant_soumission': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Montant soumission (DH)'}),
+            'taux_tva': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Taux TVA par défaut (%)', 'step': '0.01', 'min': '0', 'max': '100'}),
             'localisation': forms.TextInput(attrs={'placeholder': 'Localisation du projet'}),
             'entreprise': forms.Select(attrs={'placeholder': 'Nom de l\'entreprise'}),
             'revisable': forms.CheckboxInput(attrs={'class': 'hidden peer', 'id': 'revisable-toggle'
@@ -91,6 +108,8 @@ class ProjetForm(forms.ModelForm):
             self.fields['dossier'].queryset = Dossier.objects.none()
         self.fields['revisable'].label = "Projet révisable"
         self.fields['revisable'].help_text = "Les prix seront ajustés selon les indices officiels"
+        if not self.instance.pk:
+            self.fields['taux_tva'].initial = 20.0
         if self.instance and self.instance.date_debut:
             self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
                 
@@ -122,18 +141,20 @@ class DossierForm(forms.ModelForm):
 
     class Meta:
         model = Dossier
-        fields = ['nom', 'description', 'gerant']
+        fields = ['nom', 'description', 'activite', 'gerant']
         widgets = {
             'nom': forms.TextInput(attrs={'placeholder': 'Nom du dossier *'}),
             'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Description du dossier'}),
-            'gerant': forms.Select(attrs={'placeholder': 'Gérant du dossier'}),
+            'gerant': forms.Select(attrs={'placeholder': 'Chef de projet du dossier'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, projet=None, **kwargs):
+        kwargs.pop('projet', None)
         super().__init__(*args, **kwargs)
+        self.projet = projet or getattr(self.instance, 'projet', None)
         self.fields['gerant'].queryset = User.objects.filter(
             is_superuser=False,
-            profile__role='GERANT',
+            profile__role__in=['GERANT', 'CHEF_PROJET'],
         ).order_by('username')
         projets_disponibles = Projet.objects.filter(dossier__isnull=True)
         if self.instance.pk:
@@ -158,7 +179,9 @@ class DossierForm(forms.ModelForm):
 
 class UtilisateurCreationForm(UserCreationForm):
     ROLE_CHOICES = (
-        ('GERANT', 'Gérant'),
+        ('CHEF_PROJET', 'Chef de projet'),
+        ('CHEF_CHANTIER', 'Chef de chantier'),
+        ('POINTEUR', 'Pointeur'),
         ('STAFF', 'Staff'),
         ('UTILISATEUR', 'Utilisateur'),
     )
@@ -178,7 +201,8 @@ class UtilisateurCreationForm(UserCreationForm):
             self.fields['dossiers'].queryset = Dossier.objects.all()
         elif user:
             self.fields['role'].choices = (
-                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')
+                ('CHEF_CHANTIER', 'Chef de chantier'), ('POINTEUR', 'Pointeur'),
+                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
             )
             self.fields['dossiers'].queryset = Dossier.objects.filter(gerant=user)
 
@@ -211,6 +235,37 @@ class EntrepriseForm(forms.ModelForm):
     class Meta:
         model = Entreprise
         fields = ['nom', 'contact', 'email', 'telephone', 'adresse']
+
+class PersonnelForm(forms.ModelForm):
+    class Meta:
+        model = Personnel
+        fields = ['nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif']
+
+class MaterielForm(forms.ModelForm):
+    class Meta:
+        model = Materiel
+        fields = ['designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif']
+
+class LocationForm(forms.ModelForm):
+    class Meta:
+        model = Location
+        fields = ['designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif']
+
+class SousTraitanceForm(forms.ModelForm):
+    class Meta:
+        model = SousTraitance
+        fields = ['designation', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif']
+
+class ConsommableForm(forms.ModelForm):
+    class Meta:
+        model = Consommable
+        fields = ['designation', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
+
+class FournitureForm(forms.ModelForm):
+    class Meta:
+        model = Fourniture
+        fields = ['designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
+
 
 class TacheForm(forms.ModelForm):
     class Meta:
@@ -485,3 +540,257 @@ class DocumentAdministratifForm(forms.ModelForm):
             'class': 'form-select',
             'required': 'required',
         })
+
+class RapportJournalierForm(forms.ModelForm):
+    class Meta:
+        model = RapportJournalier
+        fields = ['date', 'meteo', 'temperature', 'travaux_realises', 'evenements', 'observations', 'redacteur']
+        widgets = {
+            'date': forms.DateInput(attrs={
+                'type': 'date',
+                'class': 'form-control'
+            }),
+            'travaux_realises': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'evenements': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'observations': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+        }
+
+    def __init__(self, *args, projet=None, **kwargs):
+        self.projet = projet
+        super().__init__(*args, **kwargs)
+        if self.projet is None:
+            self.projet = getattr(self.instance, 'projet', None)
+        
+        # Forcer le format de date ISO pour le champ HTML5 date
+        if self.instance and self.instance.date:
+            self.initial['date'] = self.instance.date.strftime('%Y-%m-%d')
+        
+        # Appliquer les classes CSS
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+            
+        # S'assurer que le champ date est bien au format ISO
+        if 'date' in self.fields:
+            self.fields['date'].input_formats = ['%Y-%m-%d']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        date_rapport = cleaned_data.get('date')
+        if date_rapport and self.projet:
+            rapports_existants = RapportJournalier.objects.filter(
+                projet=self.projet, date=date_rapport
+            )
+            if self.instance.pk:
+                rapports_existants = rapports_existants.exclude(pk=self.instance.pk)
+            if rapports_existants.exists():
+                self.add_error(
+                    'date',
+                    'Un rapport journalier existe déjà pour ce projet à cette date.',
+                )
+
+        fichier = self.files.get('document')
+        if fichier:
+            if fichier.size > 10 * 1024 * 1024:
+                raise forms.ValidationError('Le document ne doit pas dépasser 10 Mo.')
+            extensions_autorisees = {
+                '.pdf', '.doc', '.docx', '.xls', '.xlsx',
+                '.jpg', '.jpeg', '.png', '.gif',
+            }
+            if os.path.splitext(fichier.name)[1].lower() not in extensions_autorisees:
+                raise forms.ValidationError(
+                    'Type de document non supporté.'
+                )
+        return cleaned_data
+
+class DepenseRapportJournalierForm(forms.ModelForm):
+    class Meta:
+        model = DepenseRapportJournalier
+        fields = ['categorie', 'designation', 'quantite', 'unite', 'prix_unitaire', 'observations']
+        widgets = {
+            'categorie': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name != 'categorie':
+                field.widget.attrs.setdefault('class', 'form-control')
+
+class StockRapportJournalierForm(forms.ModelForm):
+    class Meta:
+        model = StockRapportJournalier
+        fields = ['designation', 'unite', 'quantite_entree', 'quantite_sortie', 'stock_restant']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+class SituationMensuelleForm(forms.ModelForm):
+    periode = forms.CharField(label='Mois de la situation', required=False, widget=forms.TextInput(attrs={'type': 'month'}))
+    chiffre_affaires = FrenchDecimalField(
+        max_digits=15, decimal_places=2,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'situation-field js-french-number'}),
+    )
+    class Meta:
+        model = SituationMensuelle
+        fields = ['annee', 'mois', 'date_debut', 'date_fin', 'chiffre_affaires', 'observations']
+        widgets = {
+            'annee': forms.HiddenInput(),
+            'mois': forms.HiddenInput(),
+            'date_debut': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'date_fin': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'observations': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, projet=None, **kwargs):
+        self.projet = projet
+        super().__init__(*args, **kwargs)
+        self.order_fields([
+            'periode', 'date_debut', 'date_fin', 'chiffre_affaires',
+            'observations', 'annee', 'mois',
+        ])
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'situation-field')
+        if self.projet is None:
+            self.projet = getattr(self.instance, 'projet', None)
+        if self.instance.pk:
+            self.initial['periode'] = f'{self.instance.annee:04d}-{self.instance.mois:02d}'
+            if self.instance.date_debut:
+                self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
+            if self.instance.date_fin:
+                self.initial['date_fin'] = self.instance.date_fin.strftime('%Y-%m-%d')
+        else:
+            today = timezone.localdate()
+            self.initial['periode'] = today.strftime('%Y-%m')
+            self.initial.setdefault('date_debut', today.replace(day=1).strftime('%Y-%m-%d'))
+            next_month = (today.replace(day=28) + timezone.timedelta(days=4)).replace(day=1)
+            self.initial.setdefault('date_fin', (next_month - timezone.timedelta(days=1)).strftime('%Y-%m-%d'))
+
+    def clean(self):
+        cleaned_data = super().clean()
+        annee = cleaned_data.get('annee')
+        mois = cleaned_data.get('mois')
+        periode = cleaned_data.get('periode')
+        if periode:
+            try:
+                annee, mois = (int(part) for part in periode.split('-'))
+                cleaned_data['annee'] = annee
+                cleaned_data['mois'] = mois
+            except (TypeError, ValueError):
+                self.add_error('periode', 'Sélectionnez un mois valide.')
+        date_debut = cleaned_data.get('date_debut')
+        date_fin = cleaned_data.get('date_fin')
+        if annee and mois:
+            if not date_debut:
+                date_debut = date(int(annee), int(mois), 1)
+                cleaned_data['date_debut'] = date_debut
+            if not date_fin:
+                next_month = date_debut.replace(day=28) + timezone.timedelta(days=4)
+                cleaned_data['date_fin'] = next_month.replace(day=1) - timezone.timedelta(days=1)
+        if date_debut and date_fin and date_debut > date_fin:
+            self.add_error('date_fin', 'La date de fin doit être postérieure à la date de début.')
+        if annee and mois and self.projet:
+            existantes = SituationMensuelle.objects.filter(
+                projet=self.projet, annee=annee, mois=mois
+            )
+            if self.instance.pk:
+                existantes = existantes.exclude(pk=self.instance.pk)
+            if existantes.exists():
+                self.add_error('mois', 'Une situation existe déjà pour cette période.')
+        return cleaned_data
+
+
+class DocumentSituationMensuelleForm(forms.ModelForm):
+    class Meta:
+        model = DocumentSituationMensuelle
+        fields = ['fichier']
+        widgets = {'fichier': forms.FileInput(attrs={'accept': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif'})}
+
+    def clean_fichier(self):
+        fichier = self.cleaned_data['fichier']
+        if fichier.size > 10 * 1024 * 1024:
+            raise forms.ValidationError('Le document ne doit pas dépasser 10 Mo.')
+        if os.path.splitext(fichier.name)[1].lower() not in {'.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif'}:
+            raise forms.ValidationError('Type de document non supporté.')
+        digest = hashlib.sha256()
+        for chunk in fichier.chunks():
+            digest.update(chunk)
+        fichier.seek(0)
+        self.checksum = digest.hexdigest()
+        return fichier
+
+
+class DocumentSituationMensuelleBaseFormSet(BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        checksums = set()
+        existing = set(
+            self.queryset.exclude(checksum='').values_list('checksum', flat=True)
+        )
+        for form in self.forms:
+            if not hasattr(form, 'checksum') or form.cleaned_data.get('DELETE'):
+                continue
+            checksum = form.checksum
+            if checksum in checksums or checksum in existing:
+                raise forms.ValidationError(
+                    'Ce document existe déjà dans cette situation mensuelle.'
+                )
+            checksums.add(checksum)
+
+class DepenseSituationMensuelleForm(forms.ModelForm):
+    montant = FrenchDecimalField(
+        max_digits=15, decimal_places=2,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    class Meta:
+        model = DepenseSituationMensuelle
+        fields = ['categorie', 'designation', 'montant']
+        widgets = {'categorie': forms.HiddenInput()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            if name != 'categorie':
+                field.widget.attrs.setdefault('class', 'form-control')
+
+class StockSituationMensuelleForm(forms.ModelForm):
+    quantite = FrenchDecimalField(
+        max_digits=12, decimal_places=3,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    prix_unitaire = FrenchDecimalField(
+        max_digits=15, decimal_places=2,
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    class Meta:
+        model = StockSituationMensuelle
+        fields = ['designation', 'unite', 'quantite', 'prix_unitaire']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+DepenseRapportJournalierFormSet = forms.inlineformset_factory(
+    RapportJournalier, DepenseRapportJournalier,
+    form=DepenseRapportJournalierForm, extra=0, can_delete=True,
+)
+
+StockRapportJournalierFormSet = forms.inlineformset_factory(
+    RapportJournalier, StockRapportJournalier,
+    form=StockRapportJournalierForm, extra=0, can_delete=True,
+)
+DepenseSituationMensuelleFormSet = forms.inlineformset_factory(
+    SituationMensuelle, DepenseSituationMensuelle,
+    form=DepenseSituationMensuelleForm, extra=0, can_delete=True,
+)
+StockSituationMensuelleFormSet = forms.inlineformset_factory(
+    SituationMensuelle, StockSituationMensuelle,
+    form=StockSituationMensuelleForm, extra=0, can_delete=True,
+)
+DocumentSituationMensuelleFormSet = forms.inlineformset_factory(
+    SituationMensuelle, DocumentSituationMensuelle,
+    form=DocumentSituationMensuelleForm, formset=DocumentSituationMensuelleBaseFormSet,
+    extra=1, can_delete=True,
+)

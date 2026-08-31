@@ -1,6 +1,5 @@
 # ------------------------ Profile ------------------------ #
 import os
-import os
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import User
@@ -17,7 +16,10 @@ def avatar_upload_path(instance, filename):
 
 class Profile(models.Model):
     ROLE_CHOICES = [
-        ('GERANT', 'Gérant'),
+        ('CHEF_PROJET', 'Chef de projet'),
+        ('GERANT', 'Chef de projet (historique)'),
+        ('CHEF_CHANTIER', 'Chef de chantier'),
+        ('POINTEUR', 'Pointeur'),
         ('STAFF', 'Staff'),
         ('UTILISATEUR', 'Utilisateur'),
     ]
@@ -33,35 +35,22 @@ class Profile(models.Model):
         null=True,
         verbose_name="Téléphone",
         help_text="Téléphone de contact")
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        avatar = CloudinaryField('image', folder='avatars',
-            transformation=[
-                {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
-            ],
-            default='https://res.cloudinary.com/ddfqmth4q/image/upload/v1764860471/default_qu1agn.png',
-            # https://res.cloudinary.com/ddfqmth4q/image/upload/v1/avatars/defult.png
-        )
-    else:
-        avatar = models.ImageField(
-            upload_to=avatar_upload_path, 
-            default='avatars/default.png', 
-            blank=True
-        )
+    avatar = models.ImageField(
+        upload_to=avatar_upload_path,
+        default='avatars/default.jpeg',
+        blank=True,
+    )
     def __str__(self):
         return f"{self.user.username} Profile"
     
     @property
     def avatar_url(self):
-        """Retourne l'URL de l'avatar - fonctionne avec Cloudinary et local"""
+        """Retourne l'URL de l'avatar avec le backend de stockage configuré."""
         if self.avatar and hasattr(self.avatar, 'url'):
             url = self.avatar.url
             url = url.replace(' =', '')
             return url
-        elif getattr(settings, 'USE_CLOUDINARY', False):
-            return "https://res.cloudinary.com/ddfqmth4q/image/upload/v1764860471/default_qu1agn.png"
-        return '/static/images/default.png'
+        return self.avatar.storage.url('avatars/default.jpeg')
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

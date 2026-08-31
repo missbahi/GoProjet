@@ -1,6 +1,5 @@
 from decimal import Decimal
 import os
-import cloudinary
 from django.db import models
 from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
@@ -80,12 +79,21 @@ class AppelOffre(models.Model):
             return (self.date_limite - date.today()).days
         return None
 
-
-
 # ------------------------ Dossier --------------------------- #
 class Dossier(models.Model):
+    class Activite(models.TextChoices):
+        TRAVAUX = 'TRAVAUX', _('Travaux')
+        FOURNITURES = 'FOURNITURES', _('Fournitures')
+        SERVICES = 'SERVICES', _('Services')
+
     nom = models.CharField(_("Nom du dossier"), max_length=150, unique=True)
     description = models.TextField(_("Description"), blank=True)
+    activite = models.CharField(
+        _("Activité"),
+        max_length=20,
+        choices=Activite.choices,
+        default=Activite.TRAVAUX,
+    )
     gerant = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -109,7 +117,6 @@ class Dossier(models.Model):
 
     def __str__(self):
         return self.nom
-
 
 # ------------------------ Projet ---------------------------- #
 class Projet(models.Model):
@@ -172,6 +179,10 @@ class Projet(models.Model):
     revisable = models.BooleanField(_("Revisable"), default=False, null=True, blank=True)
     montant = models.DecimalField(_("Montant estimé (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
     montant_soumission = models.DecimalField(_("Montant de la soumission (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
+    taux_tva = models.DecimalField(
+        _("Taux de TVA par défaut (%)"), max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text=_("Utilisé comme repli par les lots dont le taux de TVA n'est pas renseigné.")
+    )
  
     statut = models.CharField(_("Statut"), max_length=15, choices=Statut.choices, default=Statut.APPEL_OFFRE)
     date_debut = models.DateField(_("Date de début prévue"), null=True, blank=True)
@@ -470,20 +481,10 @@ class OrdreService(models.Model):
     date_limite = models.DateField(null=True, blank=True)
     date_effet = models.DateField(null=True, blank=True)
     
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', 
-                                    folder='ordres_services', 
-                                    resource_type='raw', 
-                                    null=True, 
-                                    blank=True,
-                                    db_column='documents')
-    else:
-        fichier = models.FileField(upload_to='ordres_services/', 
-                                     null=True, 
-                                     blank=True,
-                                     db_column='documents')
+    fichier = models.FileField(upload_to='ordres_services/',
+                                 null=True,
+                                 blank=True,
+                                 db_column='documents')
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='BROUILLON')
     ordre_sequence = models.IntegerField(help_text="Ordre dans la séquence du projet")
@@ -503,8 +504,6 @@ class OrdreService(models.Model):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     def __str__(self):
@@ -655,12 +654,7 @@ class DocumentAdministratif(models.Model):
     ]
     projet = models.ForeignKey('Projet', on_delete=models.CASCADE, related_name='documents_administratifs', verbose_name=_("Projet"))
     
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', folder='documents_administratifs', resource_type='raw', default=None)
-    else:
-        fichier = models.FileField(_("Fichier"), upload_to=document_upload_path)
+    fichier = models.FileField(_("Fichier"), upload_to=document_upload_path)
         
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     type_document = models.CharField(_("Type de document"), max_length=100, choices=TYPE_CHOICES, default='', blank=True)
@@ -676,8 +670,6 @@ class DocumentAdministratif(models.Model):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     def __str__(self):
@@ -828,9 +820,15 @@ class LineBPU(Line):
             return self.quantite * self.pu
 
 class LotProjet(models.Model):
+    TAUX_TVA_PAR_DEFAUT = Decimal('20.00')
+
     projet = models.ForeignKey(Projet, on_delete=models.CASCADE, related_name='lots', verbose_name=_("Projet"))
     nom = models.CharField(_("Nom du lot"), max_length=200)
     description = models.TextField(_("Description"), blank=True)
+    taux_tva = models.DecimalField(
+        _("Taux de TVA (%)"), max_digits=5, decimal_places=2, null=True, blank=True,
+        help_text=_("0 = lot hors TVA. Laisser vide pour utiliser le taux du projet.")
+    )
 
     class Meta:
         verbose_name = _("Lot du projet")
@@ -841,13 +839,21 @@ class LotProjet(models.Model):
         return f"{self.projet.nom} – {self.nom}"
 
     @property
+    def taux_tva_applicable(self):
+        """Taux TVA effectif : celui du lot, sinon celui du projet, sinon 20% par défaut."""
+        for taux in (self.taux_tva, getattr(self.projet, 'taux_tva', None)):
+            if taux is not None:
+                return taux
+        return self.TAUX_TVA_PAR_DEFAUT
+
+    @property
     def montant_total_ht(self):
         total = self.lignes.aggregate(total_ht=Sum('montant_calcule'))['total_ht']
         return total if total is not None else Decimal('0.00')
 
     @property
     def montant_tva(self):
-        return self.montant_total_ht * Decimal('0.20')
+        return self.montant_total_ht * (self.taux_tva_applicable / Decimal('100'))
 
     @property
     def montant_total_ttc(self):
@@ -855,9 +861,8 @@ class LotProjet(models.Model):
 
     @property
     def montant_formate(self):
-        mnt_ht = self.montant_total_ht * Decimal('1.20')
-        mnt_txt = "{:,.2f}".format(mnt_ht).replace(",", " ") if mnt_ht else "0.00"
-        return mnt_txt
+        mnt_ttc = self.montant_total_ttc
+        return "{:,.2f}".format(mnt_ttc).replace(",", " ") if mnt_ttc else "0.00"
     @property
     def montant_realise(self):
         total = self.lignes.aggregate(total_ht=Sum('montant_realise'))['total_ht']
@@ -866,8 +871,9 @@ class LotProjet(models.Model):
     def to_line_tree(self):
         lignes_dict = {}
         root = Line(numero="Root", designation=self.nom)
+        lignes = list(self.lignes.all())
         
-        for ligne in self.lignes.all():
+        for ligne in lignes:
             lignes_dict[ligne.id] = LineBPU(
                 id=ligne.id,
                 numero=ligne.numero,
@@ -877,7 +883,7 @@ class LotProjet(models.Model):
                 pu=ligne.prix_unitaire,
             )
 
-        for ligne in self.lignes.all():
+        for ligne in lignes:
             line_instance = lignes_dict[ligne.id]
             if ligne.parent_id:
                 parent_instance = lignes_dict.get(ligne.parent_id)
@@ -1002,6 +1008,10 @@ class Notification(models.Model):
         ('PROJET_MODIFIE', 'Projet modifié'),
         ('PROJET_EN_ARRET', 'Projet en arret'),
         ('NOUVEAU_PROJET', 'Nouveau projet'),
+        ('NOUVEAU_RAPPORT_JOURNALIER', 'Nouveau rapport journalier'),
+        ('RAPPORT_JOURNALIER_MODIFIE', 'Rapport journalier modifié'),
+        ('NOUVELLE_SITUATION_MENSUELLE', 'Nouvelle situation mensuelle'),
+        ('SITUATION_MENSUELLE_MODIFIEE', 'Situation mensuelle modifiée'),
         
         # ATTACHEMENTS
         ('ATTACHEMENT_BROUILLON', 'Attachement en cours de travail'),
@@ -1470,7 +1480,7 @@ class SuiviExecution(models.Model):
     def delete(self, *args, **kwargs):
         """
         Supprime le suivi et TOUS ses fichiers associés
-        (Cloudinary ou local)
+        via le backend de stockage configuré
         """
         
         for fichier_suivi in self.fichiers.all(): 
@@ -1485,19 +1495,13 @@ class FichierSuivi(models.Model):
     
     suivi = models.ForeignKey(SuiviExecution, on_delete=models.CASCADE, related_name='fichiers', verbose_name=_("Suivi"))
     
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', folder='suivis_execution', resource_type='raw', default=None)
-    else:
-        fichier = models.FileField(_("Fichier"), upload_to=upload_path)
+    fichier = models.FileField(_("Fichier"), upload_to=upload_path)
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     description = models.CharField(_("Description"), max_length=255, blank=True)
     date_ajout = models.DateTimeField(_("Date d'ajout"), default=timezone.now)
     @property
     def get_public_id(self):
-        if getattr(settings, 'USE_CLOUDINARY', False):
-            return self.fichier.public_id + '.' + self.fichier.format
+        return None
     class Meta:
         verbose_name = _("Fichier joint au suivi")
         verbose_name_plural = _("Fichiers joints au suivi")
@@ -1507,8 +1511,6 @@ class FichierSuivi(models.Model):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     def __str__(self):

@@ -3,16 +3,19 @@ from django.dispatch import receiver
 from django.utils import timezone
 from datetime import date
 
-from projets.models import Attachement, DocumentAdministratif, EtapeValidation, FichierSuivi, Notification, OrdreService, Projet
+from projets.models import Attachement, DocumentAdministratif, EtapeValidation, FichierSuivi, Notification, OrdreService, Projet, RapportJournalier, SituationMensuelle
 from django.contrib.auth.models import User
 
 @receiver(post_save, sender=Projet)
 def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
     if created:
         # Notification pour nouveau projet
+        utilisateur = instance.users.first()
+        if not utilisateur:
+            return
         from projets.services.notification_service import NotificationService
         NotificationService.creer_notification_personnalisee(
-            utilisateur=instance.users.first(),
+            utilisateur=utilisateur,
             type_notif='PROJET_MODIFIE',
             titre=f"Nouveau projet: {instance.nom}",
             message=f"Le projet {instance.nom} a été créé.",
@@ -107,3 +110,47 @@ def verifier_echeances_os(sender, instance: OrdreService, **kwargs):
             Notification.creer_notification_os(instance, 'OS_ECHEANCE')
         elif jours_restants == 1:
             Notification.creer_notification_os(instance, 'OS_ECHEANCE')
+
+
+def _utilisateurs_concernes(projet):
+    from django.db.models import Q
+    return User.objects.filter(
+        Q(projets=projet) |
+        Q(dossiers_geres__projets=projet) |
+        Q(dossiers=projet.dossier)
+    ).distinct()
+
+
+@receiver(post_save, sender=RapportJournalier)
+def notifier_rapport_journalier(sender, instance, created, **kwargs):
+    type_notif = 'NOUVEAU_RAPPORT_JOURNALIER' if created else 'RAPPORT_JOURNALIER_MODIFIE'
+    titre = 'Nouveau rapport journalier' if created else 'Rapport journalier modifié'
+    for utilisateur in _utilisateurs_concernes(instance.projet):
+        Notification.objects.create(
+            utilisateur=utilisateur,
+            projet=instance.projet,
+            type_notification=type_notif,
+            titre=f'{titre} - {instance.projet.nom}',
+            message=f'Le rapport du {instance.date:%d/%m/%Y} du projet {instance.projet.nom} est disponible.',
+            action_url=f'/projet/{instance.projet_id}/rapports-journaliers/{instance.pk}/',
+            objet_id=instance.pk,
+            objet_type='rapport_journalier',
+        )
+
+
+@receiver(post_save, sender=SituationMensuelle)
+def notifier_situation_mensuelle(sender, instance, created, **kwargs):
+    type_notif = 'NOUVELLE_SITUATION_MENSUELLE' if created else 'SITUATION_MENSUELLE_MODIFIEE'
+    titre = 'Nouvelle situation mensuelle' if created else 'Situation mensuelle modifiée'
+    periode = f'{instance.mois:02d}/{instance.annee}'
+    for utilisateur in _utilisateurs_concernes(instance.projet):
+        Notification.objects.create(
+            utilisateur=utilisateur,
+            projet=instance.projet,
+            type_notification=type_notif,
+            titre=f'{titre} - {instance.projet.nom}',
+            message=f'La situation mensuelle {periode} du projet {instance.projet.nom} est disponible.',
+            action_url=f'/projet/{instance.projet_id}/situations-mensuelles/',
+            objet_id=instance.pk,
+            objet_type='situation_mensuelle',
+        )

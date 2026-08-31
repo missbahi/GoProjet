@@ -20,6 +20,9 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from projets.views import views as projets_views
 
+handler403 = 'projets.views.views.permission_denied'
+handler404 = 'projets.views.views.page_not_found'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     # URLs PWA 

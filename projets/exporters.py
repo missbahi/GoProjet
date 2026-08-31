@@ -61,6 +61,7 @@ class ExcelExporter:
         ws['A3'] = "Informations du projet"
         ws['A3'].font = Font(bold=True)
         
+        montant_total_ttc = sum(float(lot.montant_total_ttc) for lot in self.lots)
         data = [
             ["Numéro", self.projet.numero],
             ["Nom", self.projet.nom],
@@ -69,7 +70,7 @@ class ExcelExporter:
             ["Résumé financier", ""],
             ["Total lots", len(self.lots)],
             ["Montant total HT", float(self.projet.montant_total())],
-            ["Montant total TTC", float(self.projet.montant_total()) * 1.2],  # Exemple TVA 20%
+            ["Montant total TTC", montant_total_ttc],  # TVA appliquée par lot (taux_tva_applicable)
         ]
         
         for i, row in enumerate(data, start=4):
@@ -110,7 +111,7 @@ class ExcelExporter:
         
         # Total
         ws.append(["", "", "", "", "Total HT:", lot.montant_total_ht])
-        ws.append(["", "", "", "", "Total TTC:", lot.montant_total_ttc])  # Exemple TVA
+        ws.append(["", "", "", "", f"Total TTC ({lot.taux_tva_applicable}%):", lot.montant_total_ttc])
         
         # Appliquer les styles
         self.apply_styles(ws)

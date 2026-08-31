@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier le rapport journalier - {{ projet.nom }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1rem 1.5rem; margin-bottom: 1rem; }
+        .btn-primary { background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%); border: none; color: white; }
+        .btn-primary:hover { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); }
+        .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); border: none; color: white; }
+        .btn-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); border: none; color: white; }
+        .btn-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); border: none; color: white; }
+        .btn-warning:hover { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border: none; color: white; }
+        .btn-danger:hover { background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); }
+        .form-control {
+            background-color: #2E2E2E;
+            border: 1px solid #4B5563;
+            color: #AECBD6;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .form-control:focus { border-color: #22d3ee; box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); outline: none; }
+        .alert-auto-dismiss { animation: fadeOut 5s forwards; }
+        @keyframes fadeOut { 0% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; display: none; } }
+        .alert-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .alert-error { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: white; }
+        .alert-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+        .alert-info { background: linear-gradient(135deg, #0ea5e9 0%, #0369a1 100%); color: white; }
+        
+        /* Animation d'entrée */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 480px) {
+            .card { padding: 0.75rem; }
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+    <div class="max-w-5xl mx-auto">
+        <!-- En-tête -->
+        <div class="mb-6">
+            <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-calendar-day"></i> 
+                {% if rapport %}
+                    Modifier le rapport du {{ rapport.date|date:"d/m/Y" }}
+                {% else %}
+                    Nouveau rapport journalier
+                {% endif %}
+            </h1>
+            <h2 class="text-lg text-[#2B9C62]">{{ projet.nom }}</h2>
+            <div class="flex items-center mt-2 text-xs sm:text-sm text-gray-400">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>Remplissez tous les champs obligatoires pour enregistrer le rapport</span>
+            </div>
+        </div>
+
+        <!-- Boutons de navigation -->
+        <div class="flex flex-wrap gap-2 sm:gap-3 mb-6">
+            <a href="{% url 'projets:rapports_journaliers' projet.id %}" 
+               class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base transition-colors">
+                <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline"> Rapports journaliers</span>
+                <span class="sm:hidden">Retour</span>
+            </a>
+            {% if rapport %}
+                <a href="{% url 'projets:detail_rapport_journalier' projet.id rapport.id %}" 
+                   class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base transition-colors">
+                    <i class="fas fa-eye"></i> <span class="hidden sm:inline">Consulter</span>
+                    <span class="sm:hidden">Voir</span>
+                </a>
+                <form method="post" 
+                      action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}"
+                      class="inline-block"
+                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce rapport journalier et toutes ses lignes ?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn-danger px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base transition-colors w-full sm:w-auto">
+                        <i class="fas fa-trash"></i> <span class="hidden sm:inline">Supprimer</span>
+                        <span class="sm:hidden">Suppr.</span>
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        <!-- Messages flash -->
+        {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                    <div class="alert-auto-dismiss p-3 sm:p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center fade-in">
+                        <span class="text-sm sm:text-base">{{ message }}</span>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 ml-2 flex-shrink-0">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Formulaire -->
+        <div class="card">
+            {% include 'projets/suivi/_formulaire_rapport_journalier.html' %}
+        </div>
+
+        <!-- Pied de page -->
+        <div class="mt-6 text-center text-xs text-gray-500">
+            <p>
+                <i class="fas fa-lock text-gray-600"></i> 
+                Les données sont enregistrées de manière sécurisée
+            </p>
+        </div>
+    </div>
+
+    <!-- Scripts supplémentaires pour la suppression des messages -->
+    <script>
+        // Masquer automatiquement les messages après 5 secondes
+        setTimeout(function() {
+            document.querySelectorAll('.alert-auto-dismiss').forEach(function(alert) {
+                alert.style.display = 'none';
+            });
+        }, 5000);
+    </script>
+</body>
+</html>

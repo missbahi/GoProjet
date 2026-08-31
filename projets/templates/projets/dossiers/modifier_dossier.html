@@ -9,10 +9,17 @@
     <style>
         #id_nom,
         #id_description,
-        #id_gerant {
+        #id_gerant,
+        #id_activite {
             background-color: #ffffff;
             color: #111827;
             border: 1px solid #9ca3af;
+        }
+
+        #id_gerant option,
+        #id_activite option {
+            background-color: #ffffff;
+            color: #111827;
         }
 
         #id_nom::placeholder,
@@ -50,6 +57,11 @@
                     <label for="{{ form.description.id_for_label }}" class="mb-2 block font-medium">{{ form.description.label }}</label>
                     {{ form.description }}
                     {% for error in form.description.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
+                </div>
+                <div>
+                    <label for="{{ form.activite.id_for_label }}" class="mb-2 block font-medium">{{ form.activite.label }}</label>
+                    {{ form.activite }}
+                    {% for error in form.activite.errors %}<p class="mt-1 text-sm text-red-300">{{ error }}</p>{% endfor %}
                 </div>
                 <div>
                     <label for="{{ form.gerant.id_for_label }}" class="mb-2 block font-medium">{{ form.gerant.label }}</label>

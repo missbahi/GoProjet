@@ -1,0 +1,66 @@
+<h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
+    <i class="fa-solid fa-handshake mr-3"></i> Liste des sous-traitances
+</h2>
+
+{% if sous_traitances %}
+<div class="bg-gray-800 p-2 overflow-x-auto">
+    <table class="min-w-full bg-[#2E2E2E]">
+        <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+            <tr>
+                <th class="px-4 py-3 text-left">Désignation</th>
+                <th class="px-4 py-3 text-left">Type</th>
+                <th class="px-4 py-3 text-left">Prestataire</th>
+                <th class="px-4 py-3 text-left">Unité</th>
+                <th class="px-4 py-3 text-right">Prix unitaire (DH)</th>
+                <th class="px-4 py-3 text-center">Actif</th>
+                <th class="px-4 py-3 text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="bg-gray-800 divide-y divide-green-800">
+            {% for sous_traitance in sous_traitances %}
+            <tr class="text-[#AECBD6]">
+                <td class="px-4 py-3">{{ sous_traitance.designation }}</td>
+                <td class="px-4 py-3">{{ sous_traitance.type_sous_traitance }}</td>
+                <td class="px-4 py-3">{{ sous_traitance.prestataire }}</td>
+                <td class="px-4 py-3">{{ sous_traitance.unite }}</td>
+                <td class="px-4 py-3 text-right">{{ sous_traitance.prix_unitaire }}</td>
+                <td class="px-4 py-3 text-center">
+                    {% if sous_traitance.actif %}
+                        <i class="fa-solid fa-circle-check text-green-400"></i>
+                    {% else %}
+                        <i class="fa-solid fa-circle-xmark text-red-400"></i>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3 text-center space-x-3">
+                    <button data-edit-sous-traitance-button
+                            data-id="{{ sous_traitance.id }}"
+                            data-designation="{{ sous_traitance.designation }}"
+                            data-type="{{ sous_traitance.type_sous_traitance }}"
+                            data-prestataire="{{ sous_traitance.prestataire }}"
+                            data-unite="{{ sous_traitance.unite }}"
+                            data-prix-unitaire="{{ sous_traitance.prix_unitaire }}"
+                            data-actif="{{ sous_traitance.actif|yesno:'true,false' }}"
+                            class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <a href="{% url 'projets:supprimer_sous_traitance' sous_traitance.id %}"
+                       class="text-red-500 hover:text-red-400 transition">
+                        <i class="fa-solid fa-trash"></i>
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="p-4 bg-green-900 text-green-200 rounded-lg shadow mb-4 border border-green-700">
+    Aucune sous-traitance enregistrée.
+</div>
+{% endif %}
+<div class="mt-6">
+    <button data-add-sous-traitance-button
+            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">
+        <i class="fa-solid fa-plus mr-2"></i> Ajouter une sous-traitance
+    </button>
+</div>

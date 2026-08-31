@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveau rapport journalier - {{ projet.nom }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        .card { background: #3B3B3B; border: 1px solid #4B5563; border-radius: 8px; padding: 1rem 1.5rem; }
+        .form-control { background: #2E2E2E; border: 1px solid #4B5563; color: #AECBD6; border-radius: 0.5rem; padding: 0.5rem 0.75rem; width: 100%; }
+        .btn-secondary { background: #4B5563; color: white; }
+    </style>
+</head>
+<body class="p-4 sm:p-6">
+    <main class="max-w-5xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+                <a href="{% url 'projets:rapports_journaliers' projet.id %}" class="text-sm text-gray-400 hover:text-white">
+                    <i class="fas fa-arrow-left mr-1"></i> Rapports journaliers
+                </a>
+                <h1 class="text-2xl sm:text-3xl font-bold text-cyan-400 mt-2">
+                    <i class="fas fa-calendar-plus mr-2"></i>Nouveau rapport journalier
+                </h1>
+                <p class="text-gray-400 mt-1">{{ projet.nom }}</p>
+            </div>
+        </div>
+        <section class="card">
+            {% include 'projets/suivi/_formulaire_rapport_journalier.html' %}
+        </section>
+    </main>
+</body>
+</html>

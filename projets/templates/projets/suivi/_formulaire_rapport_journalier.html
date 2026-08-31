@@ -1,0 +1,963 @@
+{% load formatters %}
+<style>
+  .rapport-upload-area {
+    box-sizing: border-box;
+    display: flex;
+    min-height: 150px;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    border: 2px dashed #64748b;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    background: rgba(15, 23, 42, 0.35);
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+  }
+  .rapport-upload-area:hover,
+  .rapport-upload-area:focus-within,
+  .rapport-upload-area.border-cyan-400 {
+    border-color: #22d3ee;
+    background: rgba(34, 211, 238, 0.08);
+  }
+  .rapport-upload-area:active {
+    transform: scale(0.995);
+  }
+  .rapport-upload-area .file-icon {
+    margin-bottom: 0.35rem;
+    font-size: 2rem;
+  }
+  .rapport-existing-document {
+    display: flex;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+  .rapport-document-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .rapport-document-button {
+    display: inline-flex;
+    min-height: 34px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    .rapport-existing-document {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    .rapport-document-actions {
+      width: 100%;
+    }
+    .rapport-document-button {
+      flex: 1;
+    }
+  }
+ 
+</style>
+<div>
+  <form method="post"
+        enctype="multipart/form-data"
+        action="{% if rapport %}{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}{% else %}{% url 'projets:ajouter_rapport_journalier' projet.id %}{% endif %}"
+        class="space-y-4">
+    {% csrf_token %}
+    
+    <!-- ============ CHAMPS DU FORMULAIRE ============ -->
+    <div class="grid gap-3 md:grid-cols-3">
+        {% for field in form %}
+            <div class="{% if field.name == 'travaux_realises' or field.name == 'evenements' or field.name == 'observations' %}md:col-span-3{% endif %}">
+                <label class="mb-1 block text-sm font-medium text-gray-300" for="{{ field.id_for_label }}">{{ field.label }}</label>
+                
+                {# Traitement spécial pour le champ date #}
+                {% if field.name == 'date' %}
+                    {# Utiliser la valeur brute de l'initial ou la valeur du formulaire #}
+                    {% with date_value=field.value|default:'' %}
+                        <input type="date" 
+                              name="{{ field.name }}" 
+                              id="{{ field.id_for_label }}" 
+                              value="{{ date_value }}"
+                              class="form-control"
+                              {% if field.field.required %}required{% endif %}>
+                    {% endwith %}
+                {% else %}
+                    {{ field }}
+                {% endif %}
+                
+                {% for error in field.errors %}<p class="mt-1 text-xs text-red-300">{{ error }}</p>{% endfor %}
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- ============ SECTION UPLOAD DE DOCUMENT ============ -->
+    <div class="border-t border-[#4B5563] pt-4">
+      <div class="flex items-center gap-2 mb-3">
+        <i class="fas fa-paperclip text-cyan-400"></i>
+        <h4 class="text-sm font-medium text-cyan-300">Document joint</h4>
+        <span class="text-xs text-gray-500">(optionnel)</span>
+        {% if rapport and rapport.document %}
+          <span class="ml-2 text-xs text-green-400">
+            <i class="fas fa-check-circle"></i> Document existant
+          </span>
+        {% endif %}
+      </div>
+
+      <!-- Document existant en mode modification -->
+      {% if rapport and rapport.document %}
+        <div class="rapport-existing-document bg-[#2E2E2E] border border-[#4B5563] rounded p-3 mb-3">
+          <div class="flex items-center gap-2 min-w-0">
+            <i class="fas fa-file-pdf text-red-500"></i>
+            <span class="text-gray-300 text-sm truncate">{{ rapport.document_nom }}</span>
+            <span class="text-xs text-gray-500 hidden sm:inline">({{ rapport.document.size|filesizeformat }})</span>
+          </div>
+          <div class="rapport-document-actions">
+            <a href="{{ rapport.document.url }}" target="_blank" 
+               class="rapport-document-button btn-info px-3 py-1 rounded text-xs font-medium hover:scale-105 transition-transform">
+              <i class="fas fa-eye"></i> Voir
+            </a>
+            <button type="button" 
+                    class="rapport-document-button btn-danger px-3 py-1 rounded text-xs font-medium hover:scale-105 transition-transform"
+                    onclick="if(confirm('Supprimer ce document ?')) document.getElementById('delete_document_form').submit();">
+              <i class="fas fa-trash"></i> Supprimer
+            </button>
+          </div>
+        </div>
+      {% endif %}
+
+      <!-- Zone de drop -->
+      <label class="rapport-upload-area" id="rapportDropZone" for="rapportFileInput">
+        <div class="file-icon text-cyan-400">
+          <i class="fas fa-cloud-upload-alt"></i>
+        </div>
+        <p class="text-gray-300 text-sm">
+          <span class="text-cyan-400 font-medium">Cliquez pour sélectionner</span> ou glissez-déposez
+          {% if rapport and rapport.document %}
+            <span class="text-amber-400 text-xs block mt-1">⚠️ Le nouveau document remplacera l'ancien</span>
+          {% endif %}
+        </p>
+        <p class="text-gray-500 text-xs mt-1">PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max 10MB)</p>
+        <input type="file" name="document" id="rapportFileInput" class="hidden" 
+               accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif">
+      </label>
+
+      <!-- Info du fichier sélectionné -->
+      <div id="rapportFileInfo" class="hidden bg-[#2E2E2E] border border-[#4B5563] rounded p-3 mt-3 flex items-center justify-between">
+        <div class="flex items-center gap-2 min-w-0">
+          <i class="fas fa-file text-cyan-400"></i>
+          <span id="rapportFileName" class="text-gray-300 text-sm truncate"></span>
+          <span class="text-xs text-gray-500 hidden sm:inline" id="rapportFileSize"></span>
+        </div>
+        <button type="button" class="text-gray-400 hover:text-white flex-shrink-0 ml-2" onclick="removeRapportFile()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      {% if rapport and rapport.document %}
+        <p class="text-xs text-amber-400 mt-2">
+          <i class="fas fa-info-circle"></i> Si vous sélectionnez un nouveau document, l'ancien sera automatiquement remplacé.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- ============ SECTION DÉPENSES ============ -->
+    <div>
+      <h6 class="mb-2 font-semibold text-amber-300">Dépenses</h6>
+      {{ depenses.management_form }}
+      <div id="depenses-categories" data-total-forms-id="{{ depenses.management_form.TOTAL_FORMS.auto_id }}">
+        {% for value, label, categorie_forms, total, options in depenses_groupees %}
+          <div class="mb-3 rounded-lg border border-gray-700 overflow-hidden" data-depense-categorie="{{ value }}">
+            <button type="button"
+                    class="categorie-toggle w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-800/60 hover:bg-gray-800 text-left"
+                    data-target="depense-table-{{ value }}">
+              <span class="flex items-center gap-2 text-amber-300 font-medium text-sm">
+                <i class="fas fa-chevron-right toggle-icon transition-transform duration-200{% if categorie_forms %} rotate-90{% endif %}"></i> {{ label }}
+              </span>
+              <span class="flex items-center gap-3 text-xs sm:text-sm">
+                <span class="text-gray-400"><span class="depense-count" data-categorie="{{ value }}">{{ categorie_forms|length }}</span> ligne(s)</span>
+                <span class="depense-total font-semibold text-amber-300 text-right min-w-[110px]" data-categorie="{{ value }}">{{ total|format_currency }}</span>
+              </span>
+            </button>
+            <div class="{% if not categorie_forms %}hidden{% endif %} p-3" id="depense-table-{{ value }}">
+              {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
+                <div class="flex items-center justify-between mb-2 pb-2 border-b border-gray-700/60">
+                  <span class="text-xs text-gray-400">
+                    <i class="fas fa-info-circle text-amber-400/80 mr-1"></i> Référentiel de saisie : <strong class="text-amber-300">{{ label }}</strong>
+                  </span>
+                  <button type="button"
+                          onclick="ouvrirModalBDD('{{ value }}', '{{ label|escapejs }}')"
+                          title="Consulter le référentiel BDD pour {{ label }}"
+                          class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-cyan-300 bg-cyan-950/70 border border-cyan-700/60 rounded-md hover:bg-cyan-900 hover:border-cyan-400 hover:text-white transition-all shadow-sm">
+                    <i class="fas fa-database text-cyan-400"></i>
+                    <span>Consultation BDD {{ label }}</span>
+                    <i class="fas fa-search text-[10px] opacity-75 ml-0.5"></i>
+                  </button>
+                </div>
+              {% endif %}
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-left text-gray-400 border-b border-gray-700">
+                    <th class="py-1 pr-2">Désignation</th>
+                    <th class="py-1 pr-2 w-24">Quantité</th>
+                    <th class="py-1 pr-2 w-20">Unité</th>
+                    <th class="py-1 pr-2 w-28">PU</th>
+                    <th class="py-1 pr-2 w-32 text-right">Montant</th>
+                    <th class="py-1 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody id="depense-tbody-{{ value }}">
+                  {% for depense_form in categorie_forms %}{% include 'projets/suivi/_depense_row.html' with depense_form=depense_form options=options %}{% endfor %}
+                </tbody>
+              </table>
+              <button type="button" class="depense-add-btn btn-info mt-2 px-3 py-1 rounded text-xs font-medium" data-categorie="{{ value }}">
+                <i class="fas fa-plus"></i> Ajouter une ligne
+              </button>
+            </div>
+          </div>
+          <template id="depense-empty-form-template-{{ value }}">
+            {% include 'projets/suivi/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value options=options %}
+          </template>
+          <script id="referentiel-data-{{ value }}" type="application/json">
+          [
+            {% for opt in options %}
+              {
+                "designation": "{{ opt.designation|escapejs }}",
+                "unite": "{{ opt.unite|escapejs }}",
+                "prix": {{ opt.prix|stringformat:"f"|default:"0" }}
+              }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+          ]
+          </script>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- ============ SECTION STOCKS ============ -->
+    <div>
+      <h6 class="mb-2 font-semibold text-green-300">Stocks</h6>
+      {{ stocks.management_form }}
+      <div class="rounded-lg border border-gray-700 overflow-hidden" id="stocks-container" data-total-forms-id="{{ stocks.management_form.TOTAL_FORMS.auto_id }}">
+        <button type="button"
+                class="categorie-toggle w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-800/60 hover:bg-gray-800 text-left"
+                data-target="stock-table">
+          <span class="flex items-center gap-2 text-green-300 font-medium text-sm">
+            <i class="fas fa-chevron-right toggle-icon transition-transform duration-200{% if stocks.forms %} rotate-90{% endif %}"></i> Mouvements de stock
+          </span>
+          <span class="text-xs text-gray-400">
+            <span class="stock-count">{{ stocks.forms|length }}</span> ligne(s)
+          </span>
+        </button>
+        <div class="{% if not stocks.forms %}hidden{% endif %} p-3" id="stock-table">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="text-left text-gray-400 border-b border-gray-700">
+                <th class="py-1 pr-2">Désignation</th>
+                <th class="py-1 pr-2 w-24">Unité</th>
+                <th class="py-1 pr-2 w-28">Quantité entrée</th>
+                <th class="py-1 pr-2 w-28">Quantité sortie</th>
+                <th class="py-1 pr-2 w-28">Stock restant</th>
+                <th class="py-1 w-10"></th>
+              </tr>
+            </thead>
+            <tbody id="stock-tbody">
+              {% for stock_form in stocks.forms %}{% include 'projets/suivi/_stock_row.html' with stock_form=stock_form %}{% endfor %}
+            </tbody>
+          </table>
+          <button type="button" id="stock-add-btn" class="btn-info mt-2 px-3 py-1 rounded text-xs font-medium">
+            <i class="fas fa-plus"></i> Ajouter une ligne
+          </button>
+        </div>
+      </div>
+      <template id="stock-empty-form-template">
+        {% include 'projets/suivi/_stock_row.html' with stock_form=stocks.empty_form %}
+      </template>
+    </div>
+
+    <!-- ============ BOUTONS D'ACTION ============ -->
+    <div class="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-[#4B5563]">
+      <a href="{% url 'projets:rapports_journaliers' projet.id %}" 
+         class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium text-sm sm:text-base transition-colors text-center">
+        <i class="fas fa-arrow-left mr-1"></i> Retour
+      </a>
+      <button type="submit" class="btn-success rounded-lg px-4 sm:px-6 py-2 font-medium flex items-center justify-center gap-2 text-sm sm:text-base">
+        <i class="fas fa-save"></i> {% if rapport %}Enregistrer les modifications{% else %}Enregistrer le rapport{% endif %}
+      </button>
+    </div>
+  </form>
+
+  {% if rapport and rapport.document %}
+    <form id="delete_document_form" method="post"
+          action="{% url 'projets:supprimer_document_rapport_journalier' projet.id rapport.id %}"
+          class="hidden">
+      {% csrf_token %}
+    </form>
+  {% endif %}
+
+<script>
+(function() {
+    // ============================================================
+    // GESTION DE L'UPLOAD - Version non destructive
+    // ============================================================
+    
+    function initUpload() {
+        const dropZone = document.getElementById('rapportDropZone');
+        const fileInput = document.getElementById('rapportFileInput');
+        const fileInfo = document.getElementById('rapportFileInfo');
+        const fileName = document.getElementById('rapportFileName');
+        const fileSize = document.getElementById('rapportFileSize');
+        
+        // Vérifier que tous les éléments existent
+        if (!dropZone || !fileInput || !fileInfo) {
+            return false;
+        }
+        
+        // Éviter les doublons d'initialisation
+        if (dropZone.dataset.initialized === 'true') {
+            return true;
+        }
+        
+        
+        // ============================================================
+        // DRAG & DROP
+        // ============================================================
+        dropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.add('border-cyan-400', 'bg-cyan-400/10');
+        });
+        
+        dropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('border-cyan-400', 'bg-cyan-400/10');
+        });
+        
+        dropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.classList.remove('border-cyan-400', 'bg-cyan-400/10');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
+            }
+        });
+        
+        // ============================================================
+        // SÉLECTION DE FICHIER
+        // ============================================================
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                handleFileSelect(this.files[0]);
+            }
+        });
+        
+        // ============================================================
+        // GESTION DU FICHIER SÉLECTIONNÉ
+        // ============================================================
+        function handleFileSelect(file) {
+            // Vérifier la taille (max 10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                alert('Le fichier est trop volumineux (max 10MB)');
+                removeFile();
+                return;
+            }
+            
+            // Vérifier le type de fichier
+            const validExtensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif'];
+            const ext = '.' + file.name.split('.').pop().toLowerCase();
+            
+            if (!validExtensions.includes(ext)) {
+                alert('Type de fichier non supporté. Utilisez: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG ou GIF.');
+                removeFile();
+                return;
+            }
+            
+            // Afficher les infos du fichier
+            fileName.textContent = file.name;
+            fileSize.textContent = '(' + (file.size / 1024 / 1024).toFixed(2) + ' MB)';
+            fileInfo.classList.remove('hidden');
+            dropZone.classList.add('hidden');
+            
+        }
+        
+        // ============================================================
+        // SUPPRESSION DU FICHIER
+        // ============================================================
+        window.removeRapportFile = function() {
+            removeFile();
+        };
+        
+        function removeFile() {
+            fileInput.value = '';
+            fileInfo.classList.add('hidden');
+            dropZone.classList.remove('hidden');
+        }
+        
+        // Marquer comme initialisé
+        dropZone.dataset.initialized = 'true';
+        return true;
+    }
+    
+    // ============================================================
+    // CORRECTION DES DATES
+    // ============================================================
+    function fixDateInputs() {
+        document.querySelectorAll('input[type="date"]').forEach(function(input) {
+            let value = input.value;
+            if (!value) return;
+            
+            // Si la valeur est au format DD/MM/YYYY
+            if (value.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                const parts = value.split('/');
+                const year = parts[2];
+                const month = parts[1].padStart(2, '0');
+                const day = parts[0].padStart(2, '0');
+                input.value = `${year}-${month}-${day}`;
+            }
+            
+            // Si la valeur est au format DD-MM-YYYY
+            if (value.match(/^\d{2}-\d{2}-\d{4}$/)) {
+                const parts = value.split('-');
+                const year = parts[2];
+                const month = parts[1].padStart(2, '0');
+                const day = parts[0].padStart(2, '0');
+                input.value = `${year}-${month}-${day}`;
+            }
+            
+            // Si la valeur est au format DD.MM.YYYY
+            if (value.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                const parts = value.split('.');
+                const year = parts[2];
+                const month = parts[1].padStart(2, '0');
+                const day = parts[0].padStart(2, '0');
+                input.value = `${year}-${month}-${day}`;
+            }
+        });
+    }
+    
+    // ============================================================
+    // RÉINITIALISATION DES SCRIPTS DU FORMULAIRE
+    // ============================================================
+    function reinitScripts() {
+        
+        // Réinitialiser l'upload
+        const dropZone = document.getElementById('rapportDropZone');
+        if (dropZone) {
+            dropZone.dataset.initialized = 'false';
+        }
+        
+        // Réinitialiser les dépenses
+        reinitDepenses();
+        
+        // Réinitialiser les stocks
+        reinitStocks();
+        
+        // Initialiser l'upload
+        setTimeout(initUpload, 50);
+        setTimeout(fixDateInputs, 100);
+    }
+    
+    // ============================================================
+    // RÉINITIALISATION DES DÉPENSES
+    // ============================================================
+    function reinitDepenses() {
+        const categoriesContainer = document.getElementById('depenses-categories');
+        const totalFormsInput = categoriesContainer ? document.getElementById(categoriesContainer.dataset.totalFormsId) : null;
+        
+        if (!totalFormsInput) return;
+        
+        
+        function formatMontantFr(nombre) {
+            return nombre.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+        }
+
+        function ligneMontant(row) {
+            const quantiteInput = row.querySelector('input[name$="-quantite"]');
+            const puInput = row.querySelector('input[name$="-prix_unitaire"]');
+            const quantite = quantiteInput ? parseFloat(quantiteInput.value) || 0 : 0;
+            const pu = puInput ? parseFloat(puInput.value) || 0 : 0;
+            return quantite * pu;
+        }
+
+        function updateLigneMontant(row) {
+            const montantCell = row.querySelector('.depense-montant');
+            if (montantCell) montantCell.textContent = formatMontantFr(ligneMontant(row));
+        }
+
+        function updateCount(categorie) {
+            const tbody = document.getElementById('depense-tbody-' + categorie);
+            const countEl = document.querySelector('.depense-count[data-categorie="' + categorie + '"]');
+            const totalEl = document.querySelector('.depense-total[data-categorie="' + categorie + '"]');
+            if (!tbody) return;
+            const visibleRows = Array.from(tbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+            if (countEl) countEl.textContent = visibleRows.length;
+            if (totalEl) {
+                const total = visibleRows.reduce(function(sum, row) { return sum + ligneMontant(row); }, 0);
+                totalEl.textContent = formatMontantFr(total);
+            }
+        }
+
+        function attachRowReferentiel(row, categorie) {
+            const select = row.querySelector('.depense-ref-select');
+            if (!select || select.dataset.bound) return;
+            select.dataset.bound = 'true';
+
+            const designationInput = row.querySelector('input[name$="-designation"]');
+            const uniteInput = row.querySelector('input[name$="-unite"]');
+            const puInput = row.querySelector('input[name$="-prix_unitaire"]');
+
+            select.addEventListener('change', function() {
+                const option = select.options[select.selectedIndex];
+                const designation = option ? option.value : '';
+                if (designationInput) designationInput.value = designation;
+                if (uniteInput) uniteInput.value = designation ? (option.dataset.unite || '') : '';
+                // Le prix du référentiel n'est qu'une proposition : il reste modifiable.
+                if (puInput) puInput.value = designation ? (option.dataset.prix || '') : '';
+                updateLigneMontant(row);
+                updateCount(categorie);
+            });
+        }
+
+        function attachRowRemoval(row, categorie) {
+            const trigger = row.querySelector('.depense-delete-trigger');
+            ['input[name$="-quantite"]', 'input[name$="-prix_unitaire"]'].forEach(function(selector) {
+                const input = row.querySelector(selector);
+                if (input && !input.dataset.bound) {
+                    input.dataset.bound = 'true';
+                    input.addEventListener('input', function() {
+                        updateLigneMontant(row);
+                        updateCount(categorie);
+                    });
+                }
+            });
+            attachRowReferentiel(row, categorie);
+            if (!trigger || trigger.dataset.bound) return;
+            trigger.dataset.bound = 'true';
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const idInput = row.querySelector('input[name$="-id"]');
+                const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+                if (idInput && idInput.value) {
+                    if (deleteCheckbox) deleteCheckbox.checked = true;
+                    row.style.display = 'none';
+                } else {
+                    row.remove();
+                }
+                updateCount(categorie);
+            });
+        }
+
+        function addDepenseLigne(categorie) {
+            const emptyTemplate = document.getElementById('depense-empty-form-template-' + categorie);
+            if (!emptyTemplate) return;
+            const index = parseInt(totalFormsInput.value, 10);
+            const html = emptyTemplate.innerHTML.replace(/__prefix__/g, index);
+            const fragment = document.createElement('tbody');
+            fragment.innerHTML = html;
+            const row = fragment.querySelector('tr');
+
+            const tbody = document.getElementById('depense-tbody-' + categorie);
+            tbody.appendChild(row);
+            totalFormsInput.value = index + 1;
+
+            attachRowRemoval(row, categorie);
+            updateCount(categorie);
+        }
+
+        // Lier les lignes déjà présentes
+        document.querySelectorAll('tbody[id^="depense-tbody-"]').forEach(function(tbody) {
+            const categorie = tbody.id.replace('depense-tbody-', '');
+            tbody.querySelectorAll('tr').forEach(function(row) { attachRowRemoval(row, categorie); });
+        });
+
+        // Boutons d'ajout
+        document.querySelectorAll('.depense-add-btn').forEach(function(btn) {
+            // Éviter les doublons
+            if (btn.dataset.bound) return;
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', function() {
+                addDepenseLigne(btn.dataset.categorie);
+            });
+        });
+
+        // Toggle des catégories
+        document.querySelectorAll('.categorie-toggle').forEach(function(btn) {
+            if (btn.dataset.bound) return;
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', function() {
+                const target = document.getElementById(btn.dataset.target);
+                target.classList.toggle('hidden');
+                const icon = btn.querySelector('.toggle-icon');
+                if (icon) icon.classList.toggle('rotate-90');
+            });
+        });
+        
+    }
+    
+    // ============================================================
+    // RÉINITIALISATION DES STOCKS
+    // ============================================================
+    function reinitStocks() {
+        const stocksContainer = document.getElementById('stocks-container');
+        const emptyTemplate = document.getElementById('stock-empty-form-template');
+        const addBtn = document.getElementById('stock-add-btn');
+        const stockTbody = document.getElementById('stock-tbody');
+        const countEl = document.querySelector('.stock-count');
+        const stockTotalFormsInput = stocksContainer ? document.getElementById(stocksContainer.dataset.totalFormsId) : null;
+        
+        if (!stockTotalFormsInput || !emptyTemplate || !addBtn || !stockTbody) return;
+        
+
+        function updateStockCount() {
+            const visibleRows = Array.from(stockTbody.querySelectorAll('tr')).filter(row => row.style.display !== 'none');
+            if (countEl) countEl.textContent = visibleRows.length;
+        }
+
+        function attachStockRowRemoval(row) {
+            const trigger = row.querySelector('.stock-delete-trigger');
+            if (!trigger || trigger.dataset.bound) return;
+            trigger.dataset.bound = 'true';
+            trigger.addEventListener('click', function(e) {
+                e.preventDefault();
+                const idInput = row.querySelector('input[name$="-id"]');
+                const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
+                if (idInput && idInput.value) {
+                    if (deleteCheckbox) deleteCheckbox.checked = true;
+                    row.style.display = 'none';
+                } else {
+                    row.remove();
+                }
+                updateStockCount();
+            });
+        }
+
+        function addStockLigne() {
+            const index = parseInt(stockTotalFormsInput.value, 10);
+            const html = emptyTemplate.innerHTML.replace(/__prefix__/g, index);
+            const fragment = document.createElement('tbody');
+            fragment.innerHTML = html;
+            const row = fragment.querySelector('tr');
+
+            stockTbody.appendChild(row);
+            stockTotalFormsInput.value = index + 1;
+
+            attachStockRowRemoval(row);
+            updateStockCount();
+        }
+
+        // Lier les lignes existantes
+        stockTbody.querySelectorAll('tr').forEach(function(row) { attachStockRowRemoval(row); });
+        
+        // Bouton d'ajout
+        if (!addBtn.dataset.bound) {
+            addBtn.dataset.bound = 'true';
+            addBtn.addEventListener('click', addStockLigne);
+        }
+        
+        // Toggle du tableau des stocks
+        const toggleBtn = stocksContainer.querySelector('.categorie-toggle');
+        if (toggleBtn && !toggleBtn.dataset.bound) {
+            toggleBtn.dataset.bound = 'true';
+            toggleBtn.addEventListener('click', function() {
+                const target = document.getElementById(toggleBtn.dataset.target);
+                target.classList.toggle('hidden');
+                const icon = toggleBtn.querySelector('.toggle-icon');
+                if (icon) icon.classList.toggle('rotate-90');
+            });
+        }
+        
+    }
+    
+    // ============================================================
+    // ÉCOUTEUR PERSONNALISÉ POUR LE CHARGEMENT AJAX
+    // ============================================================
+    document.addEventListener('rapportFormLoaded', function() {
+        // Attendre un court instant pour que le DOM soit mis à jour
+        setTimeout(reinitScripts, 100);
+    });
+    
+    // ============================================================
+    // INITIALISATION INITIALE
+    // ============================================================
+    function initializeAll() {
+        
+        // Initialiser l'upload si les éléments existent
+        const dropZone = document.getElementById('rapportDropZone');
+        if (dropZone) {
+            initUpload();
+            fixDateInputs();
+        }
+        
+        // Réinitialiser les dépenses et les stocks
+        reinitDepenses();
+        reinitStocks();
+        
+    }
+    
+    // Tentative d'initialisation immédiate
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+        setTimeout(initializeAll, 100);
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(initializeAll, 100);
+        });
+    }
+    
+    // MutationObserver pour détecter l'arrivée du formulaire
+    if (window.MutationObserver) {
+        let observerTimeout = null;
+        const observer = new MutationObserver(function(mutations) {
+            const dropZone = document.getElementById('rapportDropZone');
+            if (dropZone && dropZone.dataset.initialized !== 'true') {
+                // Éviter les appels multiples
+                clearTimeout(observerTimeout);
+                observerTimeout = setTimeout(function() {
+                    reinitScripts();
+                }, 200);
+            }
+        });
+        
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: false
+        });
+        
+    }
+    
+    // Exposer la fonction de réinitialisation globalement
+    window.reinitRapportUpload = function() {
+        reinitScripts();
+    };
+    
+})();
+</script>
+
+<!-- ============ MODAL CONSULTATION BASE DE DONNÉES (VERSION OPTIMISÉE) ============ -->
+<div id="modalBDDConsultation" 
+     onclick="if(event.target===this) fermerModalBDD();" 
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="modalBDDTitle"
+     class="fixed inset-0 z-50 hidden flex items-center justify-center p-3 md:p-4"
+     style="background: rgba(0, 0, 0, 0.50);">
+  
+  <div class="bg-[#1e293b]/95 border border-cyan-700/60 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden animate-fadeIn"
+       style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(34, 211, 238, 0.1);">
+    
+    <!-- Header Modal -->
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700 bg-slate-900/80">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-lg bg-cyan-950 border border-cyan-700/60 flex items-center justify-center text-cyan-400 text-lg shadow-sm">
+          <i class="fas fa-database"></i>
+        </div>
+        <div>
+          <h3 class="text-sm md:text-base font-semibold text-cyan-300" id="modalBDDTitle">Base de données référentiel</h3>
+          <p class="text-xs text-gray-400">Consultation des éléments enregistrés en base de données</p>
+        </div>
+      </div>
+      <button type="button" onclick="fermerModalBDD()" class="text-gray-400 hover:text-white text-lg px-2.5 py-1 rounded-lg hover:bg-slate-800 transition">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+
+    <!-- Filtre & Recherche -->
+    <div class="p-3 md:p-4 border-b border-gray-700/60 bg-slate-900/40 flex items-center justify-between gap-3">
+      <div class="relative flex-1">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+        <input type="text" id="modalBDDSearch" onkeyup="filtrerModalBDD()" placeholder="Rechercher une désignation, unité..." 
+               class="w-full bg-slate-800/80 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50">
+      </div>
+      {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
+        <a href="{% url 'projets:base_donnees' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-600/50 rounded-lg hover:bg-amber-900/70 transition shrink-0" title="Gérer le référentiel global BDD">
+          <i class="fas fa-external-link-alt text-amber-400"></i>
+          <span class="hidden sm:inline">Gérer la BDD</span>
+        </a>
+      {% endif %}
+    </div>
+
+    <!-- Body Modal : Tableau -->
+    <div class="p-3 md:p-4 overflow-y-auto flex-1 modal-scroll">
+      <table class="w-full text-xs text-left text-gray-300">
+        <thead class="text-gray-400 border-b border-gray-700 uppercase bg-slate-900/80 sticky top-0">
+          <tr>
+            <th class="py-2.5 px-3">Désignation</th>
+            <th class="py-2.5 px-3 text-center w-20 md:w-24">Unité</th>
+            <th class="py-2.5 px-3 text-right w-28 md:w-36">Prix Unitaire</th>
+            <th class="py-2.5 px-3 text-center w-24">Action</th>
+          </tr>
+        </thead>
+        <tbody id="modalBDDTbody" class="divide-y divide-gray-800">
+          <!-- Injecté par JavaScript -->
+        </tbody>
+      </table>
+      <div id="modalBDDEmpty" class="hidden text-center py-8 text-gray-400 text-xs">
+        <i class="fas fa-search-minus text-2xl mb-2 text-gray-500 block"></i>
+        Aucun élément trouvé dans la base de données pour cette catégorie.
+      </div>
+    </div>
+
+    <!-- Footer Modal -->
+    <div class="flex items-center justify-between px-5 py-3 border-t border-gray-700 bg-slate-900/80">
+      <span class="text-xs text-gray-400" id="modalBDDCount">0 élément(s) disponible(s)</span>
+      <button type="button" onclick="fermerModalBDD()" class="px-4 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-xs font-medium transition">
+        Fermer
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+window.ouvrirModalBDD = function(codeCategorie, labelCategorie) {
+  const modal = document.getElementById('modalBDDConsultation');
+  const title = document.getElementById('modalBDDTitle');
+  const searchInput = document.getElementById('modalBDDSearch');
+  const tbody = document.getElementById('modalBDDTbody');
+  const emptyEl = document.getElementById('modalBDDEmpty');
+  const countEl = document.getElementById('modalBDDCount');
+
+  if (!modal || !tbody) return;
+
+  if (title) title.textContent = 'Référentiel BDD : ' + labelCategorie;
+  if (searchInput) searchInput.value = '';
+
+  let list = [];
+  const scriptEl = document.getElementById('referentiel-data-' + codeCategorie);
+  if (scriptEl) {
+    try {
+      list = JSON.parse(scriptEl.textContent || '[]');
+    } catch (err) {
+      console.error('Erreur lecture JSON référentiel:', err);
+      list = [];
+    }
+  }
+
+  tbody.innerHTML = '';
+
+  if (list.length === 0) {
+    if (emptyEl) emptyEl.classList.remove('hidden');
+    if (countEl) countEl.textContent = '0 élément disponible';
+  } else {
+    if (emptyEl) emptyEl.classList.add('hidden');
+    if (countEl) countEl.textContent = list.length + ' élément(s) disponible(s)';
+
+    list.forEach(function(item) {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-800/70 transition-colors';
+      const prixNum = parseFloat(item.prix) || 0;
+      const prixFormatted = prixNum.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+      const safeDesignation = (item.designation || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      const safeUnite = (item.unite || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+      
+      tr.innerHTML = `
+        <td class="py-2.5 px-3 font-medium text-amber-200">${item.designation}</td>
+        <td class="py-2.5 px-3 text-center text-gray-400">${item.unite || '-'}</td>
+        <td class="py-2.5 px-3 text-right font-mono text-cyan-300 font-semibold">${prixFormatted}</td>
+        <td class="py-2.5 px-3 text-center">
+          <button type="button" 
+                  onclick="ajouterDepuisModalBDD('${codeCategorie}', '${safeDesignation}', '${safeUnite}', ${prixNum})"
+                  class="px-2.5 py-1 bg-cyan-900/70 hover:bg-cyan-600 text-cyan-200 hover:text-white rounded text-[11px] font-medium transition flex items-center justify-center gap-1 mx-auto shadow-sm"
+                  title="Insérer cet élément dans le rapport">
+            <i class="fas fa-plus text-[10px]"></i> Insérer
+          </button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  modal.classList.remove('hidden');
+};
+
+window.fermerModalBDD = function() {
+  const modal = document.getElementById('modalBDDConsultation');
+  if (modal) modal.classList.add('hidden');
+};
+
+window.filtrerModalBDD = function() {
+  const q = (document.getElementById('modalBDDSearch').value || '').toLowerCase();
+  const rows = document.querySelectorAll('#modalBDDTbody tr');
+  let visibleCount = 0;
+  rows.forEach(function(tr) {
+    const text = tr.textContent.toLowerCase();
+    if (text.includes(q)) {
+      tr.style.display = '';
+      visibleCount++;
+    } else {
+      tr.style.display = 'none';
+    }
+  });
+  const emptyEl = document.getElementById('modalBDDEmpty');
+  if (emptyEl) {
+    if (visibleCount === 0 && rows.length > 0) emptyEl.classList.remove('hidden');
+    else emptyEl.classList.add('hidden');
+  }
+  const countEl = document.getElementById('modalBDDCount');
+  if (countEl) countEl.textContent = visibleCount + ' élément(s) trouvé(s)';
+};
+
+window.ajouterDepuisModalBDD = function(codeCategorie, designation, unite, prix) {
+  // 1. Dérouler la catégorie si elle est masquée
+  const tableContainer = document.getElementById('depense-table-' + codeCategorie);
+  if (tableContainer && tableContainer.classList.contains('hidden')) {
+    tableContainer.classList.remove('hidden');
+    const toggleBtn = document.querySelector(`.categorie-toggle[data-target="depense-table-${codeCategorie}"]`);
+    if (toggleBtn) {
+      const icon = toggleBtn.querySelector('.toggle-icon');
+      if (icon) icon.classList.add('rotate-90');
+    }
+  }
+
+  // 2. Déclencher le bouton d'ajout de ligne
+  const addBtn = document.querySelector('.depense-add-btn[data-categorie="' + codeCategorie + '"]');
+  if (addBtn) addBtn.click();
+
+  // 3. Remplir la nouvelle ligne créée
+  const tbody = document.getElementById('depense-tbody-' + codeCategorie);
+  if (tbody) {
+    const rows = tbody.querySelectorAll('tr');
+    const lastRow = rows[rows.length - 1];
+    if (lastRow) {
+      const select = lastRow.querySelector('.depense-ref-select');
+      const designationInput = lastRow.querySelector('input[name$="-designation"]');
+      const uniteInput = lastRow.querySelector('input[name$="-unite"]');
+      const puInput = lastRow.querySelector('input[name$="-prix_unitaire"]');
+
+      if (select) {
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value === designation) {
+            select.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      if (designationInput) designationInput.value = designation;
+      if (uniteInput) uniteInput.value = unite;
+      if (puInput) puInput.value = prix;
+
+      // Déclencher le recalcul automatique du montant
+      if (puInput) {
+        puInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  }
+
+  // 4. Fermer la modal
+  fermerModalBDD();
+};
+
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') fermerModalBDD();
+});
+</script>
+</div>

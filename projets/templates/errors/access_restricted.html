@@ -1,0 +1,174 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if page_not_found %}Page introuvable{% else %}Accès restreint{% endif %} | GoProjet</title>
+    {% if page_not_found %}
+        <meta name="http-status" content="404">
+    {% else %}
+        <meta name="http-status" content="403">
+    {% endif %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes errorFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-15px) scale(0.97);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .error-card {
+            animation: errorFadeIn 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        /* Effet de brillance subtil sur l'icône */
+        .error-icon {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .error-icon::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.1) 0%, transparent 60%);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Hover amélioré sur les boutons */
+        .btn-hover-effect {
+            transition: all 0.2s ease;
+        }
+        .btn-hover-effect:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .btn-hover-effect:active {
+            transform: translateY(0px) scale(0.98);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-[#172128] p-4 text-slate-100">
+    <main class="flex min-h-[calc(100vh-2rem)] items-center justify-center">
+        <section role="dialog" 
+                 aria-modal="true" 
+                 aria-labelledby="error-title"
+                 aria-describedby="error-description"
+                 class="error-card w-full max-w-md rounded-lg border border-slate-600 bg-[#26343c] p-7 text-center shadow-2xl"
+                 style="box-shadow: 0 20px 60px -12px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);">
+            
+            <!-- Icône -->
+            <div class="error-icon mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full 
+                        {% if page_not_found %}bg-amber-500/20 text-amber-300{% else %}bg-rose-500/20 text-rose-300{% endif %}">
+                <i class="fa-solid {% if page_not_found %}fa-map-location-dot{% else %}fa-lock{% endif %} text-2xl"></i>
+            </div>
+            
+            <!-- Titre -->
+            <h1 id="error-title" class="text-xl font-semibold text-white">
+                {% if page_not_found %}Page introuvable{% else %}Accès restreint{% endif %}
+            </h1>
+            
+            <!-- Message -->
+            <p id="error-description" class="mt-3 text-sm leading-6 text-slate-300">
+                {% if page_not_found %}
+                    Cette page n'existe plus ou son adresse est incorrecte.
+                {% else %}
+                    Cette action n'est pas disponible avec vos droits ou dans l'état actuel de cet élément.
+                {% endif %}
+            </p>
+            
+            <!-- Détails additionnels (optionnel) -->
+            <div class="mt-3 flex items-center justify-center gap-3 text-xs text-slate-400">
+                <span class="inline-flex items-center gap-1">
+                    <i class="fa-regular fa-circle-question"></i>
+                    {% if page_not_found %}
+                        Erreur 404
+                    {% else %}
+                        Erreur 403
+                    {% endif %}
+                </span>
+                {% if not page_not_found %}
+                    <span class="w-px h-3 bg-slate-600"></span>
+                    <span class="inline-flex items-center gap-1">
+                        <i class="fa-regular fa-user"></i>
+                        {{ user.get_role_display|default:"Utilisateur" }}
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+                <button type="button" 
+                        onclick="history.back()" 
+                        class="btn-hover-effect inline-flex items-center justify-center gap-2 rounded-md border border-slate-500 px-4 py-2 text-sm font-medium text-slate-100 hover:bg-slate-700/80 active:bg-slate-800">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Retour
+                </button>
+                <a href="{% url 'home' %}" 
+                   class="btn-hover-effect inline-flex items-center justify-center gap-2 rounded-md bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-500 active:bg-cyan-700">
+                    <i class="fa-solid fa-house"></i>
+                    Accueil
+                </a>
+            </div>
+            
+            <!-- Contact support (optionnel) -->
+            <div class="mt-6 border-t border-slate-600/50 pt-4">
+                <p class="text-xs text-slate-500">
+                    <i class="fa-regular fa-life-ring mr-1"></i>
+                    Besoin d'aide ? 
+                    <a href="mailto:missbahi@gmail.com" class="text-cyan-400 hover:text-cyan-300 transition-colors">
+                        Contactez le support
+                    </a>
+                </p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Gestion du piège de focus
+        (function() {
+            const dialog = document.querySelector('[role="dialog"]');
+            if (!dialog) return;
+
+            const focusableElements = dialog.querySelectorAll(
+                'button, a, input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            );
+            const firstElement = focusableElements[0];
+            const lastElement = focusableElements[focusableElements.length - 1];
+
+            // Piège de focus
+            dialog.addEventListener('keydown', function(e) {
+                if (e.key === 'Tab') {
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstElement) {
+                            e.preventDefault();
+                            lastElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastElement) {
+                            e.preventDefault();
+                            firstElement.focus();
+                        }
+                    }
+                }
+            });
+
+            // Focus automatique sur le premier élément
+            if (firstElement) {
+                setTimeout(() => firstElement.focus(), 100);
+            }
+        })();
+    </script>
+</body>
+</html>

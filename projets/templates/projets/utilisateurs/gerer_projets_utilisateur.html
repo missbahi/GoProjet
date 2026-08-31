@@ -552,10 +552,20 @@
                                         <i class="fas fa-crown text-xs"></i>
                                         Super Admin
                                     </span>
-                                {% elif utilisateur.profile.role == 'GERANT' %}
+                                {% elif utilisateur.profile.role == 'GERANT' or utilisateur.profile.role == 'CHEF_PROJET' %}
                                     <span class="badge badge-staff">
                                         <i class="fas fa-user-tie text-xs"></i>
-                                        Gérant
+                                        Chef de projet
+                                    </span>
+                                {% elif utilisateur.profile.role == 'CHEF_CHANTIER' %}
+                                    <span class="badge badge-staff">
+                                        <i class="fas fa-user-tie text-xs"></i>
+                                        Chef de chantier
+                                    </span>
+                                {% elif utilisateur.profile.role == 'POINTEUR' %}
+                                    <span class="badge badge-staff">
+                                        <i class="fas fa-user-tie text-xs"></i>
+                                        Pointeur
                                     </span>
                                 {% elif utilisateur.profile.role == 'STAFF' %}
                                     <span class="badge badge-staff">

@@ -36,11 +36,25 @@ suivi_urlpatterns = [
     path('projet/<int:projet_id>/documents/ajouter/', views.ajouter_document, name='ajouter_document'),
     
     # Suivi d'exécution
+    path('projet/<int:projet_id>/rapports-journaliers/ajouter/', views.ajouter_rapport_journalier, name='ajouter_rapport_journalier'),
+    path('projet/<int:projet_id>/rapports-journaliers/', views.rapports_journaliers, name='rapports_journaliers'),
+    path('projet/<int:projet_id>/rapports-journaliers/formulaire/', views.formulaire_rapport_journalier, name='formulaire_rapport_journalier'),
+    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/', views.detail_rapport_journalier, name='detail_rapport_journalier'),
+    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/modifier/', views.modifier_rapport_journalier, name='modifier_rapport_journalier'),
+    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/supprimer/', views.supprimer_rapport_journalier, name='supprimer_rapport_journalier'),
+    path('projet/<int:projet_id>/situations-mensuelles/', views.situations_mensuelles, name='situations_mensuelles'),
+    path('projet/<int:projet_id>/situations-mensuelles/ajouter/', views.ajouter_situation_mensuelle, name='ajouter_situation_mensuelle'),
+    path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/modifier/', views.modifier_situation_mensuelle, name='modifier_situation_mensuelle'),
+    path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer/', views.supprimer_situation_mensuelle, name='supprimer_situation_mensuelle'),
+    path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer-document/', views.supprimer_document_situation_mensuelle, name='supprimer_document_situation_mensuelle'),
     path('projet/<int:projet_id>/suivi/', views.suivi_execution, name='suivi_execution'),
     path('projet/<int:projet_id>/suivi/ajouter/', views.ajouter_suivi, name='ajouter_suivi'),
     path('projet/<int:projet_id>/suivi/supprimer/<int:suivi_id>/', views.supprimer_suivi, name='supprimer_suivi'),
     path('projet/<int:projet_id>/suivi/modifier/<int:suivi_id>/', views.modifier_suivi, name='modifier_suivi'),
-    
+
+    # Suivi d'exécution - Suppression de document du rapport journalier
+    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/supprimer-document/', views.supprimer_document_rapport_journalier, name='supprimer_document_rapport_journalier'),
+
     # Fichiers de suivi
     path('fichier_suivi/<int:fichier_id>/afficher/', views.afficher_fichier_suivi, name='afficher_fichier_suivi'),
     path('fichier_suivi/<int:fichier_id>/telecharger/', views.telecharger_fichier_suivi, name='telecharger_fichier_suivi'),
@@ -87,6 +101,42 @@ base_donnees_urlpatterns = [
     path('clients/modifier/<int:client_id>/', views.modifier_client, name='modifier_client'),
     path('clients/supprimer/<int:client_id>/', views.supprimer_client, name='supprimer_client'),
     path('base_donnees/clients/', views.partial_clients, name='partial_clients'),
+
+    # Gestion du personnel
+    path('personnel/ajouter/', views.ajouter_personnel, name='ajouter_personnel'),
+    path('personnel/modifier/<int:personnel_id>/', views.modifier_personnel, name='modifier_personnel'),
+    path('personnel/supprimer/<int:personnel_id>/', views.supprimer_personnel, name='supprimer_personnel'),
+    path('base_donnees/personnel/', views.partial_personnel, name='partial_personnel'),
+
+    # Gestion du matériel
+    path('materiel/ajouter/', views.ajouter_materiel, name='ajouter_materiel'),
+    path('materiel/modifier/<int:materiel_id>/', views.modifier_materiel, name='modifier_materiel'),
+    path('materiel/supprimer/<int:materiel_id>/', views.supprimer_materiel, name='supprimer_materiel'),
+    path('base_donnees/materiel/', views.partial_materiel, name='partial_materiel'),
+
+    # Gestion des locations
+    path('locations/ajouter/', views.ajouter_location, name='ajouter_location'),
+    path('locations/modifier/<int:location_id>/', views.modifier_location, name='modifier_location'),
+    path('locations/supprimer/<int:location_id>/', views.supprimer_location, name='supprimer_location'),
+    path('base_donnees/locations/', views.partial_locations, name='partial_locations'),
+
+    # Gestion des sous-traitances
+    path('sous_traitances/ajouter/', views.ajouter_sous_traitance, name='ajouter_sous_traitance'),
+    path('sous_traitances/modifier/<int:sous_traitance_id>/', views.modifier_sous_traitance, name='modifier_sous_traitance'),
+    path('sous_traitances/supprimer/<int:sous_traitance_id>/', views.supprimer_sous_traitance, name='supprimer_sous_traitance'),
+    path('base_donnees/sous_traitances/', views.partial_sous_traitances, name='partial_sous_traitances'),
+
+    # Gestion des consommables
+    path('consommables/ajouter/', views.ajouter_consommable, name='ajouter_consommable'),
+    path('consommables/modifier/<int:consommable_id>/', views.modifier_consommable, name='modifier_consommable'),
+    path('consommables/supprimer/<int:consommable_id>/', views.supprimer_consommable, name='supprimer_consommable'),
+    path('base_donnees/consommables/', views.partial_consommables, name='partial_consommables'),
+
+    # Gestion des fournitures
+    path('fournitures/ajouter/', views.ajouter_fourniture, name='ajouter_fourniture'),
+    path('fournitures/modifier/<int:fourniture_id>/', views.modifier_fourniture, name='modifier_fourniture'),
+    path('fournitures/supprimer/<int:fourniture_id>/', views.supprimer_fourniture, name='supprimer_fourniture'),
+    path('base_donnees/fournitures/', views.partial_fournitures, name='partial_fournitures'),
 ]
 
 # Gestion des taches
@@ -104,6 +154,7 @@ attachement_urlpatterns = [
     path('projet/<int:projet_id>/attachements/ajouter/', views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', views.modifier_attachement, name='modifier_attachement'),
     path('attachements/<int:attachement_id>/', views.detail_attachement, name='detail_attachement'),
+    path('attachements/<int:attachement_id>/tracabilite-validation/', views.tracabilite_validation_attachement, name='tracabilite_validation_attachement'),
     path('attachements/supprimer/<int:attachement_id>/', views.supprimer_attachement, name='supprimer_attachement'),
     path('attachements/<int:attachement_id>/ajouter_decompte/', views.attachements_ajouter_decompte, name='attachements_ajouter_decompte'),
     # validation processus

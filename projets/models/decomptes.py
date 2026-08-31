@@ -27,20 +27,21 @@ class Attachement(models.Model):
     statut = models.CharField(max_length=15, choices=STATUT_ATTACHEMENT, default='BROUILLON')
     observations = models.TextField(blank=True, verbose_name="Observations")
     
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', folder='attachements', resource_type='raw', default=None, blank=True, null=True)
-    else:
-        fichier = models.FileField(upload_to='attachements/%Y/%m/', null=True, blank=True)
+    fichier = models.FileField(upload_to='attachements/%Y/%m/', null=True, blank=True)
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     
     date_creation = models.DateTimeField(auto_now_add=True)
+    modifie_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='attachements_modifies', verbose_name="Modifié par")
 
     class Meta: 
         verbose_name = "Attachement"
         verbose_name_plural = "Attachements"
         ordering = ['-date_etablissement', '-numero']
+
+    def marquer_modification(self, user):
+        if user is not None:
+            self.modifie_par = user
+        return self
 
     def initialiser_processus_validation(self, demandeur):
         types_validation = [
@@ -65,8 +66,6 @@ class Attachement(models.Model):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     @property
@@ -82,6 +81,7 @@ class Attachement(models.Model):
         if not self.peut_etre_reouvert_par(user):
             raise PermissionError("Vous n'avez pas la permission de réouvrir cet attachement")
         
+        self.marquer_modification(user)
         self.statut = 'BROUILLON'
         self.save()
         
@@ -92,13 +92,16 @@ class Attachement(models.Model):
             commentaires='',
             motifs_rejet=''
         )
+        self.statut = 'BROUILLON'
+        self.save(update_fields=['statut', 'modifie_par'])
     
     def transmettre(self, user):
         if self.statut != 'SIGNE':
             raise ValueError("Seuls les attachements signés peuvent être transmis.")
         
+        self.marquer_modification(user)
         self.statut = 'TRANSMIS'
-        self.save()
+        self.save(update_fields=['statut', 'modifie_par'])
         
         self.initialiser_processus_validation(demandeur=user)
     @property
@@ -155,12 +158,14 @@ class LigneAttachement(models.Model):
         return not self.numero or not self.unite or (self.quantite_initiale is None or self.quantite_initiale == 0)
     
     def save(self, *args, **kwargs):
-        if not self.pk:
-            cumul_precedent = LigneAttachement.objects.filter(
-                ligne_lot=self.ligne_lot,
-                attachement__date_etablissement__lt=self.attachement.date_etablissement
-            ).aggregate(total=Sum('quantite_realisee'))['total'] or 0
-            self.quantite_cumulee = cumul_precedent + self.quantite_realisee
+        if self.quantite_realisee is None:
+            self.quantite_realisee = 0
+        # Principe métier retenu : l'attachement courant indique la quantité cumulée à
+        # vérifier et à attacher pour la ligne concernée. On ne recalculera pas en fonction
+        # des montants déjà attachés auparavant, car le cumul sert à contrôler la prestation
+        # dans l'attachement courant et parfois il peut être partiellement négatif lors des
+        # corrections / ajustements de métré.
+        self.quantite_cumulee = self.quantite_realisee
         super().save(*args, **kwargs)
 
 # ------------------------ Processus de validation ------------------------
@@ -191,21 +196,11 @@ class ProcessValidation(models.Model):
     commentaires = models.TextField(blank=True, null=True, verbose_name="Commentaires sur la validation")
     motifs_rejet = models.TextField(blank=True, null=True, verbose_name="Motifs de rejet le cas échéant")
     
-    # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier= CloudinaryField('raw', 
-                                folder='validations_attachements', 
-                                resource_type='raw', 
-                                null=True, 
-                                blank=True,
-                                db_column='fichier_validation',)
-    else:
-        fichier = models.FileField(upload_to='validations_attachements/%Y/%m/', 
-                                   null=True, 
-                                   blank=True, 
-                                   verbose_name="Fichier de validation",
-                                   db_column='fichier_validation',)
+    fichier = models.FileField(upload_to='validations_attachements/%Y/%m/',
+                               null=True,
+                               blank=True,
+                               verbose_name="Fichier de validation",
+                               db_column='fichier_validation',)
     
     ordre_validation = models.PositiveIntegerField(default=1, verbose_name="Ordre dans le processus de validation")
     est_obligatoire = models.BooleanField(default=True, verbose_name="Validation obligatoire")
@@ -217,8 +212,6 @@ class ProcessValidation(models.Model):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     
@@ -243,12 +236,33 @@ class ProcessValidation(models.Model):
         self._update_statut_attachement()
 
     def _update_statut_attachement(self):
-        validations_obligatoires = self.attachement.validations.filter(est_obligatoire=True)
+        attachement = self.attachement
+        validations_obligatoires = attachement.validations.filter(est_obligatoire=True)
         validations_validees = validations_obligatoires.filter(statut_validation='VALIDE')
-        
-        if validations_obligatoires.count() == validations_validees.count():
-            self.attachement.statut = 'VALIDE'
-            self.attachement.save()
+        validations_rejetees = validations_obligatoires.filter(statut_validation='REJETE')
+        validations_en_correction = validations_obligatoires.filter(statut_validation='CORRECTION')
+
+        if validations_rejetees.exists():
+            attachement.statut = 'REFUSE'
+            attachement.modifie_par = self.demandeur_validation or self.validateur
+            attachement.save(update_fields=['statut', 'modifie_par'])
+            return
+
+        if validations_en_correction.exists():
+            attachement.statut = 'MODIFIE'
+            attachement.modifie_par = self.demandeur_validation or self.validateur
+            attachement.save(update_fields=['statut', 'modifie_par'])
+            return
+
+        if validations_obligatoires.count() and validations_obligatoires.count() == validations_validees.count():
+            attachement.statut = 'VALIDE'
+            attachement.modifie_par = self.validateur or self.demandeur_validation
+            attachement.save(update_fields=['statut', 'modifie_par'])
+            return
+
+        if attachement.statut not in ['BROUILLON', 'SIGNE', 'TRANSMIS', 'VALIDE', 'REFUSE', 'MODIFIE']:
+            attachement.statut = 'TRANSMIS'
+            attachement.save(update_fields=['statut'])
 
     @property
     def est_en_retard(self):
@@ -266,19 +280,23 @@ class ProcessValidation(models.Model):
     def peut_etre_valide_par(self, user):
         if self.statut_validation != 'EN_ATTENTE':
             return False
-        
+
         if user.is_superuser:
             return True
-        
+
         if user.is_staff and self.type_validation in ['TECHNIQUE', 'ADMINISTRATIVE']:
             return True
-        
+
+        role = getattr(getattr(user, 'profile', None), 'role', None)
+        if role in {'GERANT', 'CHEF_PROJET'}:
+            return True
+
         if self.validateur and self.validateur == user:
             return True
-        
+
         if user.has_perm('projets.valider_attachement'):
             return True
-        
+
         return False
     
     @property
@@ -298,7 +316,6 @@ class ProcessValidation(models.Model):
             raise PermissionError("Cet utilisateur ne peut pas valider cette étape")
         if not self.verifier_etapes_validation():
             return False
-            #raise ValueError("Toutes les étapes de validation doivent être validées avant de valider cet attachement")
         
         self.statut_validation = 'VALIDE'
         self.validateur = user
@@ -306,6 +323,7 @@ class ProcessValidation(models.Model):
         if fichier:
             self.fichier = fichier
         self.save()
+        self._update_statut_attachement()
         return True
 
     def rejeter(self, user, motifs, fichier=None):
@@ -318,6 +336,7 @@ class ProcessValidation(models.Model):
         if fichier:
             self.fichier = fichier
         self.save()
+        self._update_statut_attachement()
 
     def demander_correction(self, user, commentaires):
         if not self.peut_etre_valide_par(user):
@@ -327,6 +346,7 @@ class ProcessValidation(models.Model):
         self.validateur = user
         self.commentaires = commentaires
         self.save()
+        self._update_statut_attachement()
 
     @classmethod
     def get_validations_en_attente(cls, user=None):
@@ -366,29 +386,17 @@ class EtapeValidation(models.Model):
     valide_par = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
     commentaire = models.TextField(blank=True)
     obligatoire = models.BooleanField(default=True)
-        # Champ compatible Cloudinary
-    if getattr(settings, 'USE_CLOUDINARY', False):
-        from cloudinary.models import CloudinaryField
-        fichier = CloudinaryField('raw', 
-                                    folder='validations_attachements_etapes', 
-                                    resource_type='raw', 
-                                    null=True, 
-                                    blank=True,
-                                    db_column='fichier_validation')
-    else:
-        fichier = models.FileField(upload_to='validations_attachements_etapes/%Y/%m/', 
-                                    null=True, 
-                                    blank=True, 
-                                    verbose_name="Fichier de validation",
-                                    db_column='fichier_validation')
+    fichier = models.FileField(upload_to='validations_attachements_etapes/%Y/%m/',
+                                null=True,
+                                blank=True,
+                                verbose_name="Fichier de validation",
+                                db_column='fichier_validation')
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     @property
     def get_file_name(self):
         if self.original_filename:
             return self.original_filename
         elif self.fichier:
-            if getattr(settings, 'USE_CLOUDINARY', False):
-                return self.__str__()
             return os.path.basename(self.fichier.name)
         return ""
     class Meta:

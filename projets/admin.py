@@ -4,7 +4,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 from .models.profile import Profile
 # from .models.revision import ConfigRevisionProjet, IndiceRevision, RevisionPrix, ValeurIndice
-from .models import Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService
+from .models import (
+    Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet,
+    Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService,
+    Personnel, Materiel, Location, SousTraitance, Fourniture, Consommable
+)
 
 class ProfileInline(admin.StackedInline):
     model = Profile
@@ -148,5 +152,48 @@ class SuiviExecutionAdmin(admin.ModelAdmin):
     list_filter = ('type_suivi', 'importance', 'date', 'date_creation', 'date_modification')
     search_fields = ('titre', 'description', 'projet__nom', 'redacteur')
     date_hierarchy = 'date'
+    list_per_page = 20
+
+# ------------------------ Admin Ressources ------------------------
+@admin.register(Personnel)
+class PersonnelAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif')
+    list_filter = ('actif', 'fonction')
+    search_fields = ('nom', 'fonction')
+    list_per_page = 20
+
+@admin.register(Materiel)
+class MaterielAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_materiel')
+    search_fields = ('designation', 'immatriculation')
+    list_per_page = 20
+
+@admin.register(Location)
+class LocationAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_materiel')
+    search_fields = ('designation', 'locataire')
+    list_per_page = 20
+
+@admin.register(SousTraitance)
+class SousTraitanceAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_sous_traitance')
+    search_fields = ('designation', 'prestataire')
+    list_per_page = 20
+
+@admin.register(Fourniture)
+class FournitureAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_fourniture')
+    search_fields = ('designation', 'fournisseur')
+    list_per_page = 20
+
+@admin.register(Consommable)
+class ConsommableAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_consommable')
+    search_fields = ('designation', 'fournisseur')
     list_per_page = 20
     

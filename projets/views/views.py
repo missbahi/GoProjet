@@ -1,46 +1,68 @@
 from datetime import date, datetime
-import re
 
 from django.utils import timezone 
 from django.utils.timezone import timedelta
 import json
 import os
-import cloudinary
 from django.apps import apps
 from django.conf import settings
 
 from django.forms import ValidationError
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import render, get_object_or_404, redirect
 
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseForbidden, HttpResponseNotFound, HttpResponseRedirect, JsonResponse, FileResponse, Http404
 from django.urls import  reverse, reverse_lazy
 from django.utils.translation import gettext as _
 from django.views import View
-from projets.decorators import can_view_projet, chef_projet_required, est_gerant, gestion_utilisateurs_required, projets_accessibles, superuser_required
+from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required, est_gerant, gestion_utilisateurs_required, modules_projet_required, projets_accessibles, superuser_required
 from projets.exporters import ExcelExporter
+from projets.services.attachement_service import DonneesAttachementInvalides, enregistrer_lignes_attachement
 
-from ..forms import ClientForm, DecompteForm, DossierForm, DocumentAdministratifForm, EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm, AttachementForm, UtilisateurCreationForm
+from ..forms import (
+    ClientForm, DecompteForm, DossierForm, DocumentAdministratifForm,
+    EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm,
+    AttachementForm, UtilisateurCreationForm, RapportJournalierForm,
+    DepenseRapportJournalierFormSet, StockRapportJournalierFormSet,
+    SituationMensuelleForm, DepenseSituationMensuelleFormSet,
+    StockSituationMensuelleFormSet, DocumentSituationMensuelleFormSet,
+    PersonnelForm, MaterielForm, LocationForm, SousTraitanceForm,
+    ConsommableForm, FournitureForm,
+)
 from ..models import *
 
 from django.views.generic import ListView
 
-from django.db.models import Sum, Avg, Q 
+from django.db import IntegrityError, transaction
+from django.db.models import OuterRef, Subquery, Sum, Avg, Q, Value
+from django.db.models.functions import Coalesce
 from django.contrib import messages
 
 from django.contrib.auth.models import User 
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 import logging
 
-from projets.signals.files_handler import delete_cloudinary_file
 logger = logging.getLogger(__name__)
+
+
+def permission_denied(request, exception=None):
+    return render(request, 'errors/access_restricted.html', status=403)
+
+
+def page_not_found(request, exception=None):
+    return render(request, 'errors/access_restricted.html', {
+        'page_not_found': True,
+    }, status=404)
 
 #------------------ POur la Gestion des taches ------------------
 from django.views.generic import ListView, CreateView, UpdateView, DeleteView, DetailView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
-from decimal import Decimal
+from django.core.files.storage import default_storage
+from decimal import Decimal, InvalidOperation
 from django.contrib.auth import views as auth_views
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 VIEWABLE_TYPES = {
@@ -55,104 +77,13 @@ VIEWABLE_TYPES = {
         '.htm': 'text/html',
     }
 
-def force_clean(value):
-        import re
-        value = str(value).strip()
-        
-        # Supprimer tout sauf lettres et chiffres
-        cleaned = re.sub(r'[^a-zA-Z0-9]', '', str(value))
-        return cleaned
-    
-def upload_to_cloudinary(file, folder, public_id=None, ressource_type='raw'):
-    """Upload un fichier vers Cloudinary avec retry et fallback"""
-
-    cloud_name = settings.CLOUDINARY_CLOUD_NAME
-    cloud_name_clean = force_clean(cloud_name)    
-    try:
-        # Méthode 1: Configurer AVANT d'importer uploader
-        cloudinary.config(
-            cloud_name=cloud_name_clean,
-            api_key=settings.CLOUDINARY_API_KEY,
-            api_secret=settings.CLOUDINARY_API_SECRET,
-            secure=True
-        )
-        if public_id is None:
-            public_id = file.name
-        upload_result = cloudinary.uploader.upload(
-            file.read(),
-            **{
-                # 'cloud_name': cloud_name_clean,
-                # 'api_key': settings.CLOUDINARY_API_KEY,
-                # 'api_secret': settings.CLOUDINARY_API_SECRET,
-                'folder': folder,
-                'public_id': public_id,
-                'resource_type': ressource_type,
-                'use_filename': True,
-                'unique_filename': True,
-            }
-        )
-        return upload_result['public_id']
-    
-    except cloudinary.exceptions.Error as e:
-        print(f"Erreur Cloudinary: {e}")
-        logger.warning(f"Erreur Cloudinary: {e}")
-        #Erreur lors de l'ajout du fichier PV 15-12-2025 11.43.pdf: 'str' object has no attribute 'name'
-        return None
-
-def delete_from_cloudinary(public_id, resource_type='raw'):
-    """
-    Supprime un fichier de Cloudinary de manière sécurisée
-    
-    Args:
-        public_id (str): L'identifiant public du fichier sur Cloudinary
-        resource_type (str): Type de ressource ('image', 'video', 'raw', 'auto')
-    
-    Returns:
-        bool: True si suppression réussie, False sinon
-    """
-    try:
-        cloud_name = settings.CLOUDINARY_CLOUD_NAME
-        cloud_name_clean = force_clean(cloud_name)   
-        # 1. Validation des paramètres
-        if not public_id or not isinstance(public_id, str):
-            logger.error(f"Public_id invalide: {public_id}")
-            return False
-        # 2. Configuration Cloudinary (si pas déjà fait)
-        if not cloudinary.config().cloud_name:
-            cloudinary.config(
-                cloud_name=cloud_name_clean,
-                api_key=settings.CLOUDINARY_API_KEY,
-                api_secret=settings.CLOUDINARY_API_SECRET,
-                secure=True
-            )
-        
-        # 3. Suppression avec gestion d'erreur détaillée
-        result = cloudinary.uploader.destroy(
-            public_id,
-            resource_type=resource_type,
-            invalidate=True  # Invalide le cache CDN
-        )
-        
-        # 4. Analyse de la réponse
-        if result.get('result') == 'ok':
-            logger.info(f"Fichier Cloudinary supprimé: {public_id}")
-            return True
-        elif result.get('result') == 'not found':
-            logger.warning(f"Fichier non trouvé sur Cloudinary: {public_id}")
-            return True  # Considéré comme "déjà supprimé"
-        else:
-            logger.error(f"Erreur Cloudinary pour {public_id}: {result}")
-            return False
-            
-    except cloudinary.exceptions.Error as e:
-        logger.error(f"Erreur Cloudinary API pour {public_id}: {str(e)}")
-        return False
-    except Exception as e:
-        logger.error(f"Erreur inattendue suppression Cloudinary {public_id}: {str(e)}")
-        return False
-
 def get_file_field(instance):
-    return getattr(instance, 'fichier', None) or getattr(instance, 'documents', None) or getattr(instance, 'fichier_validation', None)
+    return (
+        getattr(instance, 'fichier', None)
+        or getattr(instance, 'documents', None)
+        or getattr(instance, 'fichier_validation', None)
+        or getattr(instance, 'document', None)
+    )
 
 def get_projet_from_instance(instance):
     if hasattr(instance, 'projet'):
@@ -165,50 +96,14 @@ def get_projet_from_instance(instance):
         return instance.processValidation.attachement.projet
     return None
 
-def extract_public_id_from_url(url):
-    """
-    Extrait le public_id d'une URL Cloudinary   
-    Retourne: folder/filename (sans extension)
-    """
-    if not url or 'cloudinary.com' not in url:
-        return None
-    
-    # Pattern pour extraire le public_id
-    patterns = [
-        r'res\.cloudinary\.com/[^/]+/(?:image|video|raw)/upload/(?:v\d+/)?(.+?)(?:\.[a-zA-Z0-9]+)?$',
-        r'res\.cloudinary\.com/[^/]+/(?:image|video|raw)/upload/(.+)$',
-    ]
-    
-    for pattern in patterns:
-        match = re.search(pattern, url)
-        if match:
-            public_id = match.group(1)
-            # Retirer l'extension si présente
-            if '.' in public_id:
-                public_id = public_id.rsplit('.', 1)[0]
-            return public_id
-    
-    return None
-
-def extract_filename_from_url(url):
-    """Extrait un nom de fichier depuis une URL Cloudinary"""
-    if not url:
-        return None
-    
-    filename = url.split('/')[-1]
-    if '?' in filename:
-        filename = filename.split('?')[0]
-    if '._' in filename:
-        filename = filename.split('._')[0] + '.' + filename.split('.')[-1]
-    
-    return filename
-
 def clean_url(url, replace_https=True):
     """Nettoie l'URL en supprimant les espaces et forçant le https"""
-    # Verifie si l'une de ces caracteres se trouvent dans l'url : ' ', '=', '%20' 
-    check_chars:bool = any(char in url for char in [' ', '=', '%20'])
-    if check_chars:
-        url = url.replace(' ', '').replace('=', '').replace('%20', '')
+    if not url:
+        return url
+    # Ne pas altérer les querystrings signées (R2/S3), juste normaliser les bords.
+    url = str(url).strip()
+    if ' ' in url:
+        url = url.replace(' ', '%20')
     if replace_https:
         if url.startswith('http://'):
             url = url.replace('http://', 'https://')
@@ -253,13 +148,13 @@ def secure_download(request, model_name, object_id):
         if hasattr(obj, 'original_filename') and obj.original_filename:
             original_filename = obj.original_filename
         else:
-            original_filename = extract_filename_from_url(file_field.url)
-        # Redirection vers Cloudinary avec le nom original
+            original_filename = os.path.basename(getattr(file_field, 'name', 'fichier'))
+        # Téléchargement avec nom de fichier explicite
         return serve_file_with_original_name(file_field, original_filename)
     else:        
         # On récupère l'URL du fichier
         url = clean_url(file_field.url)
-        # Redirection vers Cloudinary
+        # Redirection vers le backend de stockage
         return HttpResponseRedirect(url)
 
 def download_document(request, model_name, object_id):
@@ -286,27 +181,10 @@ def download_document(request, model_name, object_id):
     if not file_field:
         return HttpResponseForbidden("Aucun fichier lié à cet objet")
     
-     # On récupère l'URL du fichier
-    file_name = extract_filename_from_url(file_field.url)
-    try:
-        cloud_name = settings.CLOUDINARY_CLOUD_NAME
-        cloud_name_clean = force_clean(cloud_name)  
-        cloudinary.config(
-            cloud_name=cloud_name_clean,
-            api_key=settings.CLOUDINARY_API_KEY,
-            api_secret=settings.CLOUDINARY_API_SECRET
-        )
-        result = cloudinary.Search().expression(file_name).execute()
-        if not result:
-            return HttpResponseNotFound("Fichier non trouvé")
-    except Exception as e:
-        print(f"❌ Erreur Cloudinary: {e}")
-        return HttpResponseNotFound("Fichier non rencontré")
-    resources = result.get('resources')
-    if not resources or len(resources) == 0:
-        return HttpResponseNotFound("Fichier non rencontré")
-    resource = resources[0]
-    secure_url = resource.get('secure_url')
+    if not hasattr(file_field, 'url'):
+        return HttpResponseNotFound("Fichier non accessible")
+
+    secure_url = clean_url(file_field.url)
     return HttpResponseRedirect(secure_url)
 
 def delete_document(request, model_name, object_id):
@@ -333,26 +211,23 @@ def delete_document(request, model_name, object_id):
     if not file_field:
         return False, "Aucun fichier lié à cet objet"
     
-    # On supprime le fichier
+    # On supprime le fichier quel que soit le backend (local ou R2/S3)
     try:
-        if hasattr(obj, 'public_id') and file_field.public_id:
-            public_id = file_field.public_id + '.' + file_field.format
-            cloudinary.uploader.destroy(public_id, resource_type='raw')
-            return True, f"Fichier supprimé: {public_id}"
-        else:
-            return False, "Fichier non rencontré"
+        file_name = getattr(file_field, 'name', '')
+        file_field.delete(save=False)
+        return True, f"Fichier supprimé: {file_name}"
     except Exception as e:
-        return False, f"Erreur Cloudinary: {e}"
+        return False, f"Erreur suppression fichier: {e}"
     
 def serve_file_with_original_name(file_field, original_filename):
-    """Télécharge le fichier avec le nom original"""
+    """Télécharge le fichier avec le nom original (tous backends)."""
     try:
         import requests
         import urllib.parse
         
-        cloudinary_url = clean_url(file_field.url)
+        file_url = clean_url(file_field.url)
         
-        response = requests.get(cloudinary_url, stream=True)
+        response = requests.get(file_url, stream=True)
         response.raise_for_status()
         
         django_response = HttpResponse(
@@ -426,6 +301,7 @@ def landing(request):
 def home(request):
     # Nombre de projets
     today = date.today()
+    profile = request.user.profile
     projets_utilisateur = projets_accessibles(request.user)
     projets_recents = projets_utilisateur.order_by('-date_creation')[:5]  # Derniers 5 projets créés
     
@@ -590,6 +466,7 @@ def home(request):
         'resume_cartes': resume_cartes,
         'notifications': notifications,
         'nb_notifications': nb_notifications,
+        'profile': profile,
         'echeances': echeances,
         'chart_data_json': chart_data_json,
         'projets_noms': json.dumps([p.nom for p in projets_utilisateur]),
@@ -653,19 +530,27 @@ def modifier_utilisateur(request, user_id):
         email = request.POST.get('email')
         password = request.POST.get('password')
         can_manage_account_status = request.user.is_superuser and user.pk != request.user.pk
+        can_manage_roles = (request.user.is_superuser or est_gerant(request.user)) and user.pk != request.user.pk
 
         user.email = email
         if password:
             user.set_password(password)
         profile, created = Profile.objects.get_or_create(user=user)
 
-        if can_manage_account_status:
+        if can_manage_roles:
             role = request.POST.get('role')
-            if role not in {'GERANT', 'STAFF', 'UTILISATEUR'}:
+            roles_autorises = (
+                {'CHEF_PROJET', 'GERANT', 'CHEF_CHANTIER', 'POINTEUR', 'STAFF', 'UTILISATEUR'}
+                if request.user.is_superuser
+                else {'CHEF_CHANTIER', 'POINTEUR', 'STAFF', 'UTILISATEUR'}
+            )
+            if role not in roles_autorises:
                 raise PermissionDenied
             user.is_superuser = False
             user.is_staff = False
             profile.role = role
+
+        if can_manage_account_status:
             user.is_active = request.POST.get('is_active') == 'on'
 
         if 'avatar' in request.FILES:
@@ -683,8 +568,17 @@ def modifier_utilisateur(request, user_id):
     return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {
         'user': user,
         'dossiers': Dossier.objects.all() if request.user.is_superuser else Dossier.objects.filter(gerant=request.user),
-        'role_choices': [('GERANT', 'Gérant'), ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')] if request.user.is_superuser else [('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur')],
+        'role_choices': (
+            [
+                ('CHEF_PROJET', 'Chef de projet'), ('CHEF_CHANTIER', 'Chef de chantier'),
+                ('POINTEUR', 'Pointeur'), ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
+            ] if request.user.is_superuser else [
+                ('CHEF_CHANTIER', 'Chef de chantier'), ('POINTEUR', 'Pointeur'),
+                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
+            ]
+        ),
         'can_manage_account_status': request.user.is_superuser and user.pk != request.user.pk,
+        'can_manage_roles': can_manage_roles,
         'can_manage_user_dossiers': user.pk != request.user.pk,
     })
 
@@ -695,16 +589,6 @@ def liste_utilisateurs(request):
     else:
         utilisateurs = User.objects.filter(dossiers__gerant=request.user).distinct()
     return render(request, 'projets/utilisateurs/liste_utilisateurs.html', {'utilisateurs': utilisateurs})
-
-@superuser_required
-def ajouter_utilisateur1111(request):
-    if request.method == 'POST':
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        user = User.objects.create_user(username=username, email=email, password=password)
-        return redirect('projets:liste_utilisateurs')
-    return render(request, 'projets/utilisateurs/ajouter_utilisateur.html')
 
 @gestion_utilisateurs_required
 def ajouter_utilisateur(request):
@@ -817,20 +701,32 @@ def liste_projets(request):
 
 @chef_projet_required
 def ajouter_projet_modal(request):
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         form = ProjetForm(request.POST, user=request.user)
         if form.is_valid():
-            projet = form.save()
-            projet.montant = 0.0  # ou une autre valeur par défaut
-            projet.users.add(request.user)  # Ajouter l'utilisateur actuel au projet
+            projet = form.save(commit=False)
+            projet.montant = 0
             projet.save()
-            if request.GET.get('modal'):
+            projet.users.add(request.user)
+
+            from projets.services.notification_service import NotificationService
+            NotificationService.creer_notification_personnalisee(
+                utilisateur=request.user,
+                type_notif='PROJET_MODIFIE',
+                titre=f"Nouveau projet: {projet.nom}",
+                message=f"Le projet {projet.nom} a été créé.",
+                projet=projet,
+                niveau_urgence='MOYEN',
+            )
+
+            if is_ajax:
                 return JsonResponse({'success': True})
             
             messages.success(request, 'Projet ajouté avec succès.')
             return redirect('projets:liste_projets')
         else:
-            if request.GET.get('modal'):
+            if is_ajax:
                 return JsonResponse({
                     'success': False,
                     'errors': form.errors.as_json()
@@ -845,7 +741,6 @@ def ajouter_projet_modal(request):
     context = {
         'form': form,
         'statuts': Projet.Statut.choices,
-        'entreprises': Entreprise.objects.all()
     }
         
     return render(request, 'projets/modals/ajouter_projet_modal.html', context)
@@ -946,30 +841,6 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         
         return context
 
-class ListeTachesView1(LoginRequiredMixin, ListView):
-    model = Tache
-    template_name = 'projets/taches/liste_taches.html'
-    context_object_name = 'taches'
-    queryset = Tache.objects.select_related('projet', 'responsable')
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        filters = {
-            'responsable_id': self.request.GET.get('responsable'),
-            'terminee': {'true': True, 'false': False}.get(self.request.GET.get('terminee')),
-            'priorite': self.request.GET.get('priorite')
-        }
-        
-        return queryset.filter(**{
-            k: v for k, v in filters.items() if v is not None
-        })
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['responsables'] = User.objects.filter(
-            tache__isnull=False
-        ).distinct().order_by('username')
-        return context
 
 @login_required
 def get_form_data(request):
@@ -985,7 +856,6 @@ def get_form_data(request):
         # Et seulement lui-même comme responsable possible
         responsables = User.objects.filter(id=user.id).values('id', 'username')
             
-    # CORRECTION: Format explicite pour les priorités
     priorites = [
         {'value': value, 'label': label} 
         for value, label in Tache.PRIORITE
@@ -1213,16 +1083,48 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
 def partial_ingenieurs(request):
     ingenieurs = Ingenieur.objects.all()
     return render(request, 'projets/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
+
 @chef_projet_required
 def partial_entreprises(request):
     entreprises = Entreprise.objects.all()
     return render(request, 'projets/partials/entreprises.html', {'entreprises': entreprises})
+
 @chef_projet_required
 def partial_clients(request):
     clients = Client.objects.all()
     return render(request, 'projets/partials/clients.html', {'clients': clients})
 
-@superuser_required
+@chef_projet_required
+def partial_personnel(request):
+    personnel = Personnel.objects.all()
+    return render(request, 'projets/partials/personnel.html', {'personnel': personnel})
+
+@chef_projet_required
+def partial_materiel(request):
+    materiel = Materiel.objects.all()
+    return render(request, 'projets/partials/materiel.html', {'materiel': materiel})
+
+@chef_projet_required
+def partial_locations(request):
+    locations = Location.objects.all()
+    return render(request, 'projets/partials/locations.html', {'locations': locations})
+
+@chef_projet_required
+def partial_sous_traitances(request):
+    sous_traitances = SousTraitance.objects.all()
+    return render(request, 'projets/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
+
+@chef_projet_required
+def partial_consommables(request):
+    consommables = Consommable.objects.all()
+    return render(request, 'projets/partials/consommables.html', {'consommables': consommables})
+
+@chef_projet_required
+def partial_fournitures(request):
+    fournitures = Fourniture.objects.all()
+    return render(request, 'projets/partials/fournitures.html', {'fournitures': fournitures})
+
+@chef_projet_required
 def base_donnees(request):
     return render(request, 'projets/base_donnees.html')
 
@@ -1230,7 +1132,11 @@ def base_donnees(request):
 @login_required
 @can_view_projet
 def dashboard_projet(request, projet_id):
-    projet = get_object_or_404(Projet, id=projet_id)
+    projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
+    rapports_journaliers = projet.rapports_journaliers.all()
+    dernier_rapport_journalier = rapports_journaliers.first()
+    situations_mensuelles = projet.situations_mensuelles.all()
+    derniere_situation_mensuelle = situations_mensuelles.first()
     lots = projet.lots.all()
     mnt = 0
     for lot in lots:
@@ -1262,10 +1168,29 @@ def dashboard_projet(request, projet_id):
         'attachements': attachements,
         'documents_administratifs': documents_administratifs,
         'ordre_services': ordre_services,
-        'suivis_execution': suivis_execution
+        'suivis_execution': suivis_execution,
+        'rapports_journaliers': rapports_journaliers,
+        'dernier_rapport_journalier': dernier_rapport_journalier,
+        'situations_mensuelles': situations_mensuelles,
+        'derniere_situation_mensuelle': derniere_situation_mensuelle,
     }
     
     return render(request, 'projets/dashboard.html', context)
+
+
+@login_required
+@can_view_projet
+def rapports_journaliers(request, projet_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapports = projet.rapports_journaliers.annotate(
+        total_depenses_annotated=Coalesce(
+            Sum('depenses__montant'), Value(Decimal('0.00'))
+        )
+    ).prefetch_related('depenses')
+    return render(request, 'projets/suivi/rapports_journaliers.html', {
+        'projet': projet,
+        'rapports': rapports,
+    })
 
 #------------------ Gestion des bordereaux ------------------
 @chef_projet_required
@@ -1298,13 +1223,34 @@ def saisie_bordereau(request, projet_id, lot_id):
         'lignes': json_str,
     })
 
-@can_view_projet
+@chef_projet_required
 def export_excel(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
     
     exporter = ExcelExporter(projet, lots)
     return exporter.export()
+
+
+def _iter_lignes_bordereau_hierarchiques(projet):
+    """Retourne les lignes d'un projet dans le même ordre hiérarchique que la saisie du bordereau."""
+    for lot in LotProjet.objects.filter(projet=projet).order_by('id'):
+        lot_root = lot.to_line_tree()
+        for ligne in lot_root.get_descendants():
+            yield ligne
+
+
+def _est_ligne_titre_bordereau(ligne):
+    """Détermine si une ligne est une ligne de titre selon la logique du bordereau."""
+    if hasattr(ligne, 'has_children') and ligne.has_children():
+        return True
+    return (
+        not getattr(ligne, 'numero', None)
+        or not getattr(ligne, 'unite', None)
+        or getattr(ligne, 'quantite', None) is None
+        or float(getattr(ligne, 'quantite', 0) or 0) == 0
+    )
+
 
 @chef_projet_required
 def sauvegarder_lignes_bordereau(request, lot_id):
@@ -1407,19 +1353,13 @@ def serve_avatar(request, filename):
         with open(avatar_path, 'rb') as f:
             return HttpResponse(f.read(), content_type='image/jpeg')
     else:
-        # Servir l'avatar par défaut
-        default_avatar = os.path.join(settings.STATIC_ROOT, 'images', 'default.png')
-        if os.path.exists(default_avatar):
-            with open(default_avatar, 'rb') as f:
-                return HttpResponse(f.read(), content_type='image/png')
-        else:
-            return HttpResponseNotFound('Avatar not found')
+        return redirect(default_storage.url('avatars/default.jpeg'))
 
 # Définition de la taille maximale (5 Mo en octets)
 @login_required
 def upload_avatar(request):
     """
-    Gère la requête POST pour l'upload et la sauvegarde de l'avatar avec Cloudinary
+    Gère la requête POST pour l'upload et la sauvegarde de l'avatar.
     """
     if request.method == 'POST':
         avatar_file = request.FILES.get('avatar')
@@ -1444,22 +1384,7 @@ def upload_avatar(request):
         try:
             profile = request.user.profile
             
-            # Gestion Cloudinary vs stockage local
-            if avatar_file and getattr(settings, 'USE_CLOUDINARY', False):
-                # # Upload vers Cloudinary
-                # upload_result = cloudinary.uploader.upload(
-                #     avatar_file,
-                #     folder="avatars",
-                #     transformation=[
-                #         {'width': 300, 'height': 300, 'crop': 'fill', 'gravity': 'face'}
-                #     ]
-                # )
-                public_id = request.user.username + '-' + 'avatar'
-                file_url = upload_to_cloudinary(avatar_file, 'avatars', public_id, 'image')
-                profile.avatar = file_url if file_url else None
-            else:
-                # Stockage local classique
-                profile.avatar = avatar_file
+            profile.avatar = avatar_file
                 
             profile.save()
             
@@ -1588,7 +1513,7 @@ def partial_calendiers(request):
     return render(request, 'projets/partials/calendrier.html', context)
 
 # ------  Ingenieurs ------
-@superuser_required
+@chef_projet_required
 def ajouter_ingenieur(request):
     if request.method == 'POST':
         form = IngenieurForm(request.POST)
@@ -1616,7 +1541,7 @@ def ajouter_ingenieur(request):
     return render(request, 'projets/partials/ingenieurs.html', {'form': form})
     # Ajoutez du debug temporaire
 
-@superuser_required
+@chef_projet_required
 def modifier_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     
@@ -1636,7 +1561,7 @@ def modifier_ingenieur(request, ingenieur_id):
     
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
-@superuser_required
+@chef_projet_required
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
     ingenieur.delete()
@@ -1648,7 +1573,7 @@ def supprimer_ingenieur(request, ingenieur_id):
     return redirect("projets:partial_ingenieurs")
 
 # -------- Clients --------
-@superuser_required
+@chef_projet_required
 def ajouter_client(request):
     if request.method == 'POST':
         form = ClientForm(request.POST)
@@ -1675,7 +1600,7 @@ def ajouter_client(request):
     # Pour les requêtes non-AJAX, retourner le template normal
     return render(request, 'projets/partials/clients.html', {'form': form})
 
-@superuser_required
+@chef_projet_required
 def modifier_client(request, client_id):
     client = Client.objects.get(id=client_id)
     
@@ -1702,7 +1627,7 @@ def modifier_client(request, client_id):
     # Pour les requêtes non-AJAX
     return render(request, "projets/partials/clients.html", {"form": form})
 
-@superuser_required
+@chef_projet_required
 def supprimer_client(request, client_id):
     client = get_object_or_404(Client, id=client_id)
     client.delete()
@@ -1713,7 +1638,7 @@ def supprimer_client(request, client_id):
     return redirect("projets:partial_clients")
 
 # -------- Entreprises --------
-@superuser_required
+@chef_projet_required
 def ajouter_entreprise(request):
     if request.method == 'POST':
         form = EntrepriseForm(request.POST)
@@ -1741,7 +1666,7 @@ def ajouter_entreprise(request):
         'entreprise': entreprise
     })
 
-@superuser_required
+@chef_projet_required
 def modifier_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
     
@@ -1783,7 +1708,7 @@ def modifier_entreprise(request, entreprise_id):
         'entreprise': entreprise
     })
 
-@superuser_required
+@chef_projet_required
 def supprimer_entreprise(request, entreprise_id):
     entreprise = get_object_or_404(Entreprise, id=entreprise_id)
     entreprise.delete()
@@ -1796,7 +1721,297 @@ def supprimer_entreprise(request, entreprise_id):
     messages.success(request, "Entreprise supprimé avec succès.")
     return redirect("projets:partial_entreprises")
 
+# -------- Personnel --------
+@chef_projet_required
+def ajouter_personnel(request):
+    if request.method == 'POST':
+        form = PersonnelForm(request.POST)
+        if form.is_valid():
+            personnel = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Le personnel ' + personnel.nom + ' a été ajouté avec succès'
+                })
+            return redirect('projets:partial_personnel')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = PersonnelForm()
+    return render(request, 'projets/partials/personnel.html', {'form': form})
+
+@chef_projet_required
+def modifier_personnel(request, personnel_id):
+    personnel = get_object_or_404(Personnel, id=personnel_id)
+
+    if request.method == 'POST':
+        form = PersonnelForm(request.POST, instance=personnel)
+        if form.is_valid():
+            personnel = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Personnel ' + personnel.nom + ' modifié avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_personnel(request, personnel_id):
+    personnel = get_object_or_404(Personnel, id=personnel_id)
+    personnel.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Personnel " + personnel.nom + " supprimé avec succès."})
+
+    messages.success(request, "Personnel supprimé avec succès.")
+    return redirect("projets:partial_personnel")
+
+# -------- Matériel --------
+@chef_projet_required
+def ajouter_materiel(request):
+    if request.method == 'POST':
+        form = MaterielForm(request.POST)
+        if form.is_valid():
+            materiel = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Le matériel ' + materiel.designation + ' a été ajouté avec succès'
+                })
+            return redirect('projets:partial_materiel')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = MaterielForm()
+    return render(request, 'projets/partials/materiel.html', {'form': form})
+
+@chef_projet_required
+def modifier_materiel(request, materiel_id):
+    materiel = get_object_or_404(Materiel, id=materiel_id)
+
+    if request.method == 'POST':
+        form = MaterielForm(request.POST, instance=materiel)
+        if form.is_valid():
+            materiel = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Matériel ' + materiel.designation + ' modifié avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_materiel(request, materiel_id):
+    materiel = get_object_or_404(Materiel, id=materiel_id)
+    materiel.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Matériel " + materiel.designation + " supprimé avec succès."})
+
+    messages.success(request, "Matériel supprimé avec succès.")
+    return redirect("projets:partial_materiel")
+
+# -------- Locations --------
+@chef_projet_required
+def ajouter_location(request):
+    if request.method == 'POST':
+        form = LocationForm(request.POST)
+        if form.is_valid():
+            location = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'La location ' + location.designation + ' a été ajoutée avec succès'
+                })
+            return redirect('projets:partial_locations')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = LocationForm()
+    return render(request, 'projets/partials/locations.html', {'form': form})
+
+@chef_projet_required
+def modifier_location(request, location_id):
+    location = get_object_or_404(Location, id=location_id)
+
+    if request.method == 'POST':
+        form = LocationForm(request.POST, instance=location)
+        if form.is_valid():
+            location = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Location ' + location.designation + ' modifiée avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_location(request, location_id):
+    location = get_object_or_404(Location, id=location_id)
+    location.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Location " + location.designation + " supprimée avec succès."})
+
+    messages.success(request, "Location supprimée avec succès.")
+    return redirect("projets:partial_locations")
+
+# -------- Sous-traitances --------
+@chef_projet_required
+def ajouter_sous_traitance(request):
+    if request.method == 'POST':
+        form = SousTraitanceForm(request.POST)
+        if form.is_valid():
+            sous_traitance = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'La sous-traitance ' + sous_traitance.designation + ' a été ajoutée avec succès'
+                })
+            return redirect('projets:partial_sous_traitances')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = SousTraitanceForm()
+    return render(request, 'projets/partials/sous_traitances.html', {'form': form})
+
+@chef_projet_required
+def modifier_sous_traitance(request, sous_traitance_id):
+    sous_traitance = get_object_or_404(SousTraitance, id=sous_traitance_id)
+
+    if request.method == 'POST':
+        form = SousTraitanceForm(request.POST, instance=sous_traitance)
+        if form.is_valid():
+            sous_traitance = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Sous-traitance ' + sous_traitance.designation + ' modifiée avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_sous_traitance(request, sous_traitance_id):
+    sous_traitance = get_object_or_404(SousTraitance, id=sous_traitance_id)
+    sous_traitance.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Sous-traitance " + sous_traitance.designation + " supprimée avec succès."})
+
+    messages.success(request, "Sous-traitance supprimée avec succès.")
+    return redirect("projets:partial_sous_traitances")
+
+# -------- Consommables --------
+@chef_projet_required
+def ajouter_consommable(request):
+    if request.method == 'POST':
+        form = ConsommableForm(request.POST)
+        if form.is_valid():
+            consommable = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Le consommable ' + consommable.designation + ' a été ajouté avec succès'
+                })
+            return redirect('projets:partial_consommables')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = ConsommableForm()
+    return render(request, 'projets/partials/consommables.html', {'form': form})
+
+@chef_projet_required
+def modifier_consommable(request, consommable_id):
+    consommable = get_object_or_404(Consommable, id=consommable_id)
+
+    if request.method == 'POST':
+        form = ConsommableForm(request.POST, instance=consommable)
+        if form.is_valid():
+            consommable = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Consommable ' + consommable.designation + ' modifié avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_consommable(request, consommable_id):
+    consommable = get_object_or_404(Consommable, id=consommable_id)
+    consommable.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Consommable " + consommable.designation + " supprimé avec succès."})
+
+    messages.success(request, "Consommable supprimé avec succès.")
+    return redirect("projets:partial_consommables")
+
+# -------- Fournitures --------
+@chef_projet_required
+def ajouter_fourniture(request):
+    if request.method == 'POST':
+        form = FournitureForm(request.POST)
+        if form.is_valid():
+            fourniture = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'La fourniture ' + fourniture.designation + ' a été ajoutée avec succès'
+                })
+            return redirect('projets:partial_fournitures')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = FournitureForm()
+    return render(request, 'projets/partials/fournitures.html', {'form': form})
+
+@chef_projet_required
+def modifier_fourniture(request, fourniture_id):
+    fourniture = get_object_or_404(Fourniture, id=fourniture_id)
+
+    if request.method == 'POST':
+        form = FournitureForm(request.POST, instance=fourniture)
+        if form.is_valid():
+            fourniture = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Fourniture ' + fourniture.designation + ' modifiée avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_fourniture(request, fourniture_id):
+    fourniture = get_object_or_404(Fourniture, id=fourniture_id)
+    fourniture.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Fourniture " + fourniture.designation + " supprimée avec succès."})
+
+    messages.success(request, "Fourniture supprimée avec succès.")
+    return redirect("projets:partial_fournitures")
+
 # ------  Lots ------
+def _parse_taux_tva(raw_value):
+    """Valide le taux de TVA saisi ; vide => None (hérite du taux du projet)."""
+    raw_value = (raw_value or '').strip()
+    if raw_value == '':
+        return None
+    try:
+        taux = Decimal(raw_value.replace(',', '.'))
+    except (InvalidOperation, ValueError):
+        raise ValueError("Le taux de TVA doit être un nombre.")
+    if taux < 0 or taux > 100:
+        raise ValueError("Le taux de TVA doit être compris entre 0 et 100.")
+    return taux
+
+
 @chef_projet_required
 def modifier_lot(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
@@ -1808,7 +2023,14 @@ def modifier_lot(request, projet_id, lot_id):
         if not nouveau_nom:
             messages.error(request, "Le nom du lot ne peut pas être vide")
         else:
+            try:
+                taux_tva = _parse_taux_tva(request.POST.get('taux_tva'))
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('projets:lots_projet', projet_id=projet_id)
             lot.nom = nouveau_nom
+            lot.description = request.POST.get("description", "").strip()
+            lot.taux_tva = taux_tva
             lot.save()
             messages.success(request, "Le nom du lot a été mis à jour avec succès")
             return redirect('projets:lots_projet', projet_id=projet_id)
@@ -1822,7 +2044,8 @@ def modifier_lot(request, projet_id, lot_id):
 @chef_projet_required
 def supprimer_lot(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
-    lot.delete()
+    if request.method == 'POST':
+        lot.delete()
     return redirect('projets:lots_projet', projet_id=projet_id)
 
 @chef_projet_required
@@ -1832,7 +2055,17 @@ def lots_projet(request, projet_id):
     if request.method == "POST":
         nom_lot = request.POST.get("nom")
         if nom_lot:
-            LotProjet.objects.create(projet=projet, nom=nom_lot)
+            try:
+                taux_tva = _parse_taux_tva(request.POST.get('taux_tva', '20'))
+            except ValueError as e:
+                messages.error(request, str(e))
+                return redirect('projets:lots_projet', projet_id=projet_id)
+            LotProjet.objects.create(
+                projet=projet,
+                nom=nom_lot,
+                description=request.POST.get('description', '').strip(),
+                taux_tva=taux_tva,
+            )
 
         return redirect('projets:lots_projet', projet_id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
@@ -1840,7 +2073,7 @@ def lots_projet(request, projet_id):
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})    
 
 @login_required
-@can_view_projet
+@chef_projet_required
 def lots_details(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     can_editer = request.user.is_superuser
@@ -1894,13 +2127,13 @@ def lots_details(request, projet_id):
    
 # ------  Documents et Suivi ------
 @login_required
-@can_view_projet
+@modules_projet_required
 def documents_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     documents = projet.documents_administratifs.all()
     return render(request, 'projets/documents_administratifs.html', {'projet': projet, 'documents': documents})
 
-@can_view_projet
+@modules_projet_required
 def supprimer_document(request, projet_id, document_id):
     if request.method == 'POST':
         document = get_object_or_404(DocumentAdministratif, id=document_id, projet_id=projet_id)
@@ -1924,12 +2157,12 @@ def telecharger_document(request, document_id):
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         raise Http404("Erreur lors du téléchargement du document")
 
-@can_view_projet
+@modules_projet_required
 def ajouter_document(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
     if request.method == 'POST':
-        form = DocumentAdministratifForm(request.POST, request.FILES, user=request.user)
+        form = DocumentAdministratifForm(request.POST, request.FILES)
         if form.is_valid():
 
             type_document = request.POST.get('type_document')
@@ -1948,20 +2181,14 @@ def ajouter_document(request, projet_id):
             
             # Créer le document
             try:
-                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                    
-                    document = DocumentAdministratif(
-                        projet=projet,
-                        type_document=type_document,
-                        date_remise=date_remise if date_remise else None,
-                    )
-                    public_id = projet.nom + "_" + type_document + "_" + str(document.id)
-                    file_url = upload_to_cloudinary(fichier, "documents_administratifs", public_id)
-                    document.fichier = file_url if file_url else None
-                else:
-                    # Stockage local
-                    document.fichier = fichier
-                     
+                document = DocumentAdministratif(
+                    projet=projet,
+                    type_document=type_document,
+                    date_remise=date_remise if date_remise else None,
+                    description=request.POST.get('description', ''),
+                )
+                document.fichier = fichier
+                document.original_filename = fichier.name
                 document.save()
             except Exception as e:
                 messages.error(request, f"Une erreur s'est produite lors de l'ajout du document: {str(e)}")
@@ -1974,7 +2201,7 @@ def ajouter_document(request, projet_id):
     return redirect('projets:documents', projet_id=projet_id)
 
 class AfficherDocumentView(View):
-    """Vue avec téléchargement direct depuis Cloudinary"""
+    """Vue avec téléchargement direct depuis le backend de stockage"""
     def get(self, request, document_id):
         try:
             response = download_document(request, 'DocumentAdministratif', document_id)
@@ -1985,19 +2212,531 @@ class AfficherDocumentView(View):
             raise Http404("Erreur lors du chargement du document")
             
 #----------------------- Suivi d'exécution ---------------------------
+def _projet_travaux_or_403(projet_id):
+    projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
+    if not projet.dossier_id or projet.dossier.activite != Dossier.Activite.TRAVAUX:
+        raise PermissionDenied("Ce suivi est réservé aux dossiers de travaux.")
+    return projet
+
+@login_required
+@can_edit_projet
+def ajouter_rapport_journalier(request, projet_id):
+    projet = _projet_travaux_or_403(projet_id)
+    
+    if request.method == 'POST':
+        form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
+        depenses = DepenseRapportJournalierFormSet(request.POST)
+        stocks = StockRapportJournalierFormSet(request.POST)
+        
+        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+            rapport = form.save(commit=False)
+            rapport.projet = projet
+            
+            # Gestion du fichier
+            fichier = request.FILES.get('document')
+            if fichier:
+                rapport.document = fichier
+                rapport.original_filename = fichier.name
+            
+            try:
+                with transaction.atomic():
+                    rapport.save()
+                    depenses.instance = rapport
+                    stocks.instance = rapport
+                    depenses.save()
+                    stocks.save()
+            except IntegrityError:
+                messages.error(
+                    request,
+                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
+                )
+                return redirect('projets:rapports_journaliers', projet_id=projet.id)
+            
+            messages.success(request, 'Rapport journalier enregistré avec succès.')
+            return redirect('projets:rapports_journaliers', projet_id=projet.id)
+        else:
+            # Afficher les erreurs
+            error_messages = []
+            if form.errors:
+                error_messages.append(f"Formulaire: {form.errors.as_text()}")
+            if depenses.errors:
+                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
+            if stocks.errors:
+                error_messages.append(f"Stocks: {stocks.errors.as_text()}")
+            
+            messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
+            return render(request, 'projets/suivi/ajouter_rapport_journalier.html', {
+                'projet': projet,
+                'form': form,
+                'depenses': depenses,
+                'stocks': stocks,
+                'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+            })
+    
+    today = timezone.now().date()
+    form = RapportJournalierForm(initial={
+        'date': today.strftime('%Y-%m-%d'),
+        'redacteur': request.user.get_full_name() or request.user.username,
+    })
+    depenses = DepenseRapportJournalierFormSet()
+    stocks = StockRapportJournalierFormSet()
+    return render(request, 'projets/suivi/ajouter_rapport_journalier.html', {
+        'projet': projet,
+        'form': form,
+        'depenses': depenses,
+        'stocks': stocks,
+        'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+    })
+
+@login_required
 @can_view_projet
-def suivi_execution(request, projet_id):
+def detail_rapport_journalier(request, projet_id, rapport_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = get_object_or_404(
+        RapportJournalier.objects.annotate(
+            total_depenses_annotated=Coalesce(
+                Sum('depenses__montant'), Value(Decimal('0.00'))
+            )
+        ).prefetch_related('depenses', 'stocks'),
+        id=rapport_id, projet=projet
+    )
+    depenses_groupees = []
+    for value, label in CategorieDepenseTravaux.choices:
+        depenses_categorie = [d for d in rapport.depenses.all() if d.categorie == value]
+        if depenses_categorie:
+            total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
+            depenses_groupees.append((value, label, depenses_categorie, total))
+    return render(request, 'projets/suivi/detail_rapport_journalier.html', {
+        'projet': projet,
+        'rapport': rapport,
+        'depenses_groupees': depenses_groupees,
+    })
+
+
+def _referentiel_depenses():
+    """Entrées du référentiel (base de données) proposées par catégorie de dépense."""
+    def options(queryset, champ_designation, champ_prix):
+        return [
+            {
+                'designation': getattr(obj, champ_designation),
+                'unite': obj.unite or '',
+                'prix': getattr(obj, champ_prix) or Decimal('0.00'),
+            }
+            for obj in queryset
+        ]
+
+    return {
+        CategorieDepenseTravaux.PERSONNEL: options(
+            Personnel.objects.filter(actif=True).order_by('nom'), 'nom', 'tarif'
+        ),
+        CategorieDepenseTravaux.MATERIEL: options(
+            Materiel.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
+        ),
+        CategorieDepenseTravaux.LOCATION: options(
+            Location.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
+        ),
+        CategorieDepenseTravaux.SOUS_TRAITANCE: options(
+            SousTraitance.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
+        ),
+        CategorieDepenseTravaux.FOURNITURE: options(
+            Fourniture.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
+        ),
+        CategorieDepenseTravaux.CONSOMMABLE: options(
+            Consommable.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
+        ),
+    }
+
+
+def _grouper_depenses_par_categorie(depenses_formset):
+    groupes = {value: [] for value, label in CategorieDepenseTravaux.choices}
+    for depense_form in depenses_formset.forms:
+        categorie = depense_form.instance.categorie
+        if categorie in groupes:
+            groupes[categorie].append(depense_form)
+    referentiel = _referentiel_depenses()
+    return [
+        (
+            value, label, groupes[value],
+            sum((f.instance.montant or Decimal('0.00') for f in groupes[value]), Decimal('0.00')),
+            referentiel.get(value, []),
+        )
+        for value, label in CategorieDepenseTravaux.choices
+    ]
+
+
+@login_required
+@can_edit_projet
+def formulaire_rapport_journalier(request, projet_id):
+    projet = _projet_travaux_or_403(projet_id)
+    
+    if request.method == 'POST':
+        form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
+        depenses = DepenseRapportJournalierFormSet(request.POST)
+        stocks = StockRapportJournalierFormSet(request.POST)
+        
+        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+            rapport = form.save(commit=False)
+            rapport.projet = projet
+            
+            # Gestion du fichier
+            fichier = request.FILES.get('document')
+            if fichier:
+                rapport.document = fichier
+                rapport.original_filename = fichier.name
+            
+            try:
+                with transaction.atomic():
+                    rapport.save()
+                    depenses.instance = rapport
+                    stocks.instance = rapport
+                    depenses.save()
+                    stocks.save()
+            except IntegrityError:
+                messages.error(
+                    request,
+                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
+                )
+                return redirect('projets:rapports_journaliers', projet_id=projet.id)
+            
+            messages.success(request, 'Rapport journalier enregistré avec succès.')
+            return redirect('projets:rapports_journaliers', projet_id=projet.id)
+        else:
+            # Afficher les erreurs
+            error_messages = []
+            if form.errors:
+                error_messages.append(f"Formulaire: {form.errors.as_text()}")
+            if depenses.errors:
+                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
+            if stocks.errors:
+                error_messages.append(f"Stocks: {stocks.errors.as_text()}")
+            
+            messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
+            return render(request, 'projets/suivi/_formulaire_rapport_journalier.html', {
+                'projet': projet,
+                'form': form,
+                'depenses': depenses,
+                'stocks': stocks,
+                'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+                'erreurs': True,
+            })
+    else:
+        # Initialiser avec la date au format ISO
+        today = timezone.now().date()
+        form = RapportJournalierForm(initial={
+            'date': today.strftime('%Y-%m-%d'),  # Format ISO explicite
+            'redacteur': request.user.get_full_name() or request.user.username
+        })
+        depenses = DepenseRapportJournalierFormSet()
+        stocks = StockRapportJournalierFormSet()
+    
+    depenses_groupees = _grouper_depenses_par_categorie(depenses)
+    
+    return render(request, 'projets/suivi/_formulaire_rapport_journalier.html', {
+        'projet': projet,
+        'form': form,
+        'depenses': depenses,
+        'stocks': stocks,
+        'depenses_groupees': depenses_groupees,
+    })
+
+
+@login_required
+@can_edit_projet
+def modifier_rapport_journalier(request, projet_id, rapport_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+
+    if request.method == 'POST':
+        form = RapportJournalierForm(
+            request.POST, request.FILES, instance=rapport, projet=projet
+        )
+        depenses = DepenseRapportJournalierFormSet(request.POST, instance=rapport)
+        stocks = StockRapportJournalierFormSet(request.POST, instance=rapport)
+        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+            rapport = form.save(commit=False)
+            fichier = request.FILES.get('document')
+            with transaction.atomic():
+                if fichier:
+                    if rapport.document:
+                        rapport.document.delete(save=False)
+                    rapport.document = fichier
+                    rapport.original_filename = fichier.name
+                rapport.save()
+                depenses.save()
+                stocks.save()
+            messages.success(request, 'Rapport journalier modifié.')
+            return redirect('projets:rapports_journaliers', projet_id=projet.id)
+        messages.error(request, "Le rapport journalier n'a pas pu être modifié. Vérifiez les informations saisies.")
+        return render(request, 'projets/suivi/modifier_rapport_journalier.html', {
+            'projet': projet,
+            'rapport': rapport,
+            'form': form,
+            'depenses': depenses,
+            'stocks': stocks,
+            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+        })
+    else:
+        form = RapportJournalierForm(instance=rapport)
+        # S'assurer que la date est au bon format
+        if rapport.date:
+            form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
+        depenses = DepenseRapportJournalierFormSet(instance=rapport)
+        stocks = StockRapportJournalierFormSet(instance=rapport)
+
+    return render(request, 'projets/suivi/modifier_rapport_journalier.html', {
+        'projet': projet,
+        'rapport': rapport,
+        'form': form,
+        'depenses': depenses,
+        'stocks': stocks,
+        'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+    })
+
+
+@login_required
+@can_edit_projet
+def supprimer_rapport_journalier(request, projet_id, rapport_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+    if request.method == 'POST':
+        rapport.delete()
+        messages.success(request, 'Rapport journalier supprimé.')
+    return redirect('projets:rapports_journaliers', projet_id=projet_id)
+
+
+@login_required
+@can_edit_projet
+def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+    if request.method == 'POST':
+        if rapport.document:
+            # Supprime le fichier physique quel que soit le backend de stockage (local ou R2/S3)
+            rapport.document.delete(save=False)
+            rapport.original_filename = ''
+            rapport.save(update_fields=['document', 'original_filename'])
+            messages.success(request, 'Document supprimé du rapport journalier.')
+        else:
+            messages.info(request, 'Aucun document à supprimer.')
+    return redirect('projets:modifier_rapport_journalier', projet_id=projet_id, rapport_id=rapport_id)
+
+
+@login_required
+@chef_projet_required
+def situations_mensuelles(request, projet_id):
+    projet = _projet_travaux_or_403(projet_id)
+    depenses_total = DepenseSituationMensuelle.objects.filter(
+        situation_id=OuterRef('pk')
+    ).values('situation_id').annotate(total=Sum('montant')).values('total')
+    stocks_total = StockSituationMensuelle.objects.filter(
+        situation_id=OuterRef('pk')
+    ).values('situation_id').annotate(total=Sum('valeur')).values('total')
+    situations = projet.situations_mensuelles.annotate(
+        total_depenses_annotated=Coalesce(
+            Subquery(depenses_total), Value(Decimal('0.00'))
+        ),
+        total_stock_annotated=Coalesce(
+            Subquery(stocks_total), Value(Decimal('0.00'))
+        ),
+    ).prefetch_related('depenses', 'stocks')
+    return render(request, 'projets/suivi/situations_mensuelles.html', {
+        'projet': projet,
+        'situations': situations,
+    })
+
+
+def _group_situation_expenses(formset):
+    groups = {value: [] for value, label in CategorieDepenseTravaux.choices}
+    for form in formset.forms:
+        if form.instance.categorie in groups:
+            groups[form.instance.categorie].append(form)
+    return [
+        (
+            value,
+            label,
+            groups[value],
+            sum((form.instance.montant or Decimal('0.00') for form in groups[value]), Decimal('0.00')),
+        )
+        for value, label in CategorieDepenseTravaux.choices
+    ]
+
+@login_required
+@can_view_projet
+def upload_rapport_document(request, projet_id, rapport_id):
+    """Upload un document pour un rapport journalier"""
     projet = get_object_or_404(Projet, id=projet_id)
-    suivis = projet.suivis_execution.all()
+    rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+    
+    if request.method != 'POST':
+        messages.error(request, "Méthode non autorisée")
+        return redirect('projets:suivi_execution', projet_id=projet_id)
+    
+    fichier = request.FILES.get('document')
+    if not fichier:
+        messages.error(request, "Aucun fichier sélectionné")
+        return redirect('projets:suivi_execution', projet_id=projet_id)
+    
+    # Vérifier la taille (max 10MB)
+    if fichier.size > 10 * 1024 * 1024:
+        messages.error(request, "Le fichier ne doit pas dépasser 10MB")
+        return redirect('projets:suivi_execution', projet_id=projet_id)
+    
+    # Vérifier le type de fichier
+    valid_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif']
+    ext = os.path.splitext(fichier.name)[1].lower()
+    if ext not in valid_extensions:
+        messages.error(request, f"Type de fichier non supporté. Utilisez: {', '.join(valid_extensions)}")
+        return redirect('projets:suivi_execution', projet_id=projet_id)
+    
+    try:
+        # Supprimer l'ancien document s'il existe
+        if rapport.document and rapport.document.name:
+            rapport.document.delete(save=False)
+        
+        # Sauvegarder le nouveau document
+        rapport.document = fichier
+        rapport.original_filename = fichier.name
+        rapport.save()
+        
+        messages.success(request, f"Document '{fichier.name}' ajouté avec succès au rapport du {rapport.date.strftime('%d/%m/%Y')}")
+    except Exception as e:
+        messages.error(request, f"Erreur lors de l'upload: {str(e)}")
+    
+    return redirect('projets:suivi_execution', projet_id=projet_id)
+
+
+@login_required
+@chef_projet_required
+def ajouter_situation_mensuelle(request, projet_id):
+    projet = _projet_travaux_or_403(projet_id)
+    depenses = DepenseSituationMensuelleFormSet(request.POST or None)
+    stocks = StockSituationMensuelleFormSet(request.POST or None)
+    documents = DocumentSituationMensuelleFormSet(request.POST or None, request.FILES or None)
+    if request.method == 'POST':
+        form = SituationMensuelleForm(request.POST, request.FILES, projet=projet)
+        if form.is_valid():
+            situation = form.save(commit=False)
+            situation.projet = projet
+            periode = form.cleaned_data.get('periode')
+            if periode:
+                year, month = (int(part) for part in periode.split('-'))
+                situation.annee, situation.mois = year, month
+            depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
+            stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
+            documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
+            if depenses.is_valid() and stocks.is_valid() and documents.is_valid():
+                try:
+                    with transaction.atomic():
+                        situation.save()
+                        depenses.instance = situation
+                        stocks.instance = situation
+                        depenses.save()
+                        stocks.save()
+                        documents.save()
+                except IntegrityError:
+                    form.add_error('mois', 'Une situation existe déjà pour cette période.')
+                else:
+                    messages.success(request, 'Situation mensuelle enregistrée.')
+                    return redirect('projets:situations_mensuelles', projet_id=projet.id)
+    else:
+        form = SituationMensuelleForm(initial={
+            'annee': timezone.now().year,
+            'mois': timezone.now().month,
+        })
+        depenses = DepenseSituationMensuelleFormSet()
+        stocks = StockSituationMensuelleFormSet()
+        documents = DocumentSituationMensuelleFormSet()
+
+    return render(request, 'projets/suivi/ajouter_situation_mensuelle.html', {
+        'projet': projet,
+        'form': form,
+        'depenses': depenses,
+        'stocks': stocks,
+        'documents': documents,
+        'depenses_groupees': _group_situation_expenses(depenses),
+    })
+
+
+@login_required
+@chef_projet_required
+def modifier_situation_mensuelle(request, projet_id, situation_id):
+    projet = _projet_travaux_or_403(projet_id)
+    situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
+    if request.method == 'POST':
+        form = SituationMensuelleForm(request.POST, request.FILES, instance=situation, projet=projet)
+        depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
+        stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
+        documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
+        if form.is_valid() and depenses.is_valid() and stocks.is_valid() and documents.is_valid():
+            situation = form.save(commit=False)
+            with transaction.atomic():
+                situation.save()
+                depenses.save()
+                stocks.save()
+                documents.save()
+            messages.success(request, 'Situation mensuelle modifiée.')
+            return redirect('projets:situations_mensuelles', projet_id=projet.id)
+    else:
+        form = SituationMensuelleForm(instance=situation)
+        depenses = DepenseSituationMensuelleFormSet(instance=situation)
+        stocks = StockSituationMensuelleFormSet(instance=situation)
+        documents = DocumentSituationMensuelleFormSet(instance=situation)
+    return render(request, 'projets/suivi/modifier_situation_mensuelle.html', {
+        'projet': projet, 'situation': situation, 'form': form,
+        'depenses': depenses, 'stocks': stocks,
+        'depenses_groupees': _group_situation_expenses(depenses),
+        'documents': documents,
+    })
+
+
+@login_required
+@chef_projet_required
+def supprimer_situation_mensuelle(request, projet_id, situation_id):
+    projet = _projet_travaux_or_403(projet_id)
+    situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
+    if request.method == 'POST':
+        situation.delete()
+        messages.success(request, 'Situation mensuelle supprimée.')
+    return redirect('projets:situations_mensuelles', projet_id=projet.id)
+
+
+@login_required
+@chef_projet_required
+def supprimer_document_situation_mensuelle(request, projet_id, situation_id):
+    projet = _projet_travaux_or_403(projet_id)
+    situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
+    if request.method == 'POST':
+        document = get_object_or_404(DocumentSituationMensuelle, id=request.POST.get('document_id'), situation=situation)
+        document.delete()
+        messages.success(request, 'Document mensuel supprimé.')
+    return redirect('projets:modifier_situation_mensuelle', projet_id=projet.id, situation_id=situation.id)
+
+
+@modules_projet_required
+def suivi_execution(request, projet_id):
+    projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
+    
+    # Optimisation: précharger les fichiers avec prefetch_related
+    suivis = projet.suivis_execution.all().prefetch_related('fichiers')
+    
     choices = SuiviExecution.TYPE_SUIVI_CHOICES
+    
+    rapports_journaliers = []
+    if projet.dossier_id and projet.dossier.activite == Dossier.Activite.TRAVAUX:
+        rapports_journaliers = projet.rapports_journaliers.annotate(
+            total_depenses_annotated=Coalesce(
+                Sum('depenses__montant'), Value(Decimal('0.00'))
+            )
+        )[:10]
+    
     return render(request, 'projets/suivi/suivi_execution.html', {
         'projet': projet,
         'suivis': suivis,
-        'choices': choices
-        
+        'choices': choices,
+        'rapports_journaliers': rapports_journaliers,
     })
 
-@can_view_projet
+@modules_projet_required
 def ajouter_suivi(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -2024,7 +2763,7 @@ def ajouter_suivi(request, projet_id):
         
     return redirect('projets:suivi_execution', projet_id=projet_id)
 
-@can_view_projet
+@modules_projet_required
 def supprimer_suivi(request, projet_id, suivi_id):
     if request.method == 'POST':
         suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet_id=projet_id)
@@ -2033,7 +2772,7 @@ def supprimer_suivi(request, projet_id, suivi_id):
     
     return redirect('projets:suivi_execution', projet_id=projet_id)
 
-@can_view_projet
+@modules_projet_required
 def modifier_suivi(request, projet_id, suivi_id):
     """
     Vue pour modifier un suivi d'exécution existant
@@ -2065,6 +2804,7 @@ def modifier_suivi(request, projet_id, suivi_id):
     }
     return render(request, 'projets/suivi/modifier_suivi.html', context)
 
+@modules_projet_required
 def afficher_fichier_suivi(request, fichier_id):
     """
     Vue pour afficher/télécharger un fichier de suivi
@@ -2093,31 +2833,7 @@ def afficher_fichier_suivi(request, fichier_id):
         messages.error(request, "Impossible d'ouvrir le fichier.")
         return redirect('projets:suivi_execution', projet_id=fichier_suivi.suivi.projet.id)
     
-    if extension in viewable_types:
-        # Afficher dans le navigateur
-        if extension == '.pdf':
-            response = HttpResponse(response.content, content_type='application/pdf')
-        elif extension in {'.jpg', '.jpeg'}:
-            response = HttpResponse(response.content, content_type='image/jpeg')
-        elif extension == '.png':
-            response = HttpResponse(response.content, content_type='image/png')
-        elif extension == '.gif':
-            response = HttpResponse(response.content, content_type='image/gif')
-        elif extension in {'.txt', '.csv'}:
-            response = HttpResponse(response.content, content_type='text/plain; charset=utf-8')
-        elif extension in {'.html', '.htm'}:
-            response = HttpResponse(response.content, content_type='text/html; charset=utf-8')
-        else:
-            response = HttpResponse(response.content, content_type='application/octet-stream')
-        
-        response['Content-Disposition'] = f'inline; filename="{os.path.basename(fichier_suivi.fichier.url)}"'
-    else:
-        # Forcer le téléchargement
-        response = HttpResponse(response.content, content_type='application/octet-stream')
-        response['Content-Disposition'] = f'attachment; filename="{os.path.basename(fichier_suivi.fichier.url)}"'
-    
-    return response
-
+@modules_projet_required
 def supprimer_fichier_suivi(request, fichier_id):
     if request.method == 'POST':
         try: 
@@ -2143,6 +2859,8 @@ def supprimer_fichier_suivi(request, fichier_id):
         
     return redirect('projets:suivi_execution', projet_id=projet_id)
 
+
+@modules_projet_required
 def telecharger_fichier_suivi(request, fichier_id):
     try:
         fichier = get_object_or_404(FichierSuivi, id=fichier_id)
@@ -2151,10 +2869,10 @@ def telecharger_fichier_suivi(request, fichier_id):
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         return redirect('projets:suivi_execution', projet_id=fichier.suivi.projet.id)
 
-@can_view_projet
+@modules_projet_required
 def ajouter_fichier_suivi(request, projet_id, suivi_id):
     """
-    Vue pour ajouter des fichiers à un suivi d'exécution existant avec Cloudinary
+    Vue pour ajouter des fichiers à un suivi d'exécution existant
     """
     projet = get_object_or_404(Projet, id=projet_id)
     suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet=projet)
@@ -2191,15 +2909,10 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
                     description=description
                 )
                 
-                # Gestion Cloudinary vs local
-                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                    public_id = projet.nom + f"/{suivi_id}/{fichier.name}"
-                    file_url = upload_to_cloudinary(fichier, "suivis_execution", public_id)
-                    fichier_suivi.fichier = file_url if file_url else None
-                else:
-                    fichier_suivi.fichier = fichier
+                fichier_suivi.fichier = fichier
+                fichier_suivi.original_filename = fichier.name
                 fichier_suivi.save()
-                fichiers_ajoutes.append(fichier_suivi.fichier)
+                fichiers_ajoutes.append(fichier_suivi.get_file_name)
             except Exception as e:
                 error_msg = f"Erreur lors de l'ajout du fichier {fichier.name}: {str(e)}"
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -2233,8 +2946,18 @@ def ajouter_fichier_suivi(request, projet_id, suivi_id):
     return render(request, 'projets/suivi/ajouter_fichier_suivi.html', context)
 
 # ------------------------ Views pour Attachements ------------------------
+def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
+    if not request.user.is_superuser and not projets_accessibles(request.user).filter(
+        id=attachement.projet_id
+    ).exists():
+        raise PermissionDenied("Vous n'avez pas accès à cet attachement.")
+
+    if statuts_autorises and attachement.statut not in statuts_autorises:
+        raise PermissionDenied("Cette action n'est pas autorisée pour le statut actuel de l'attachement.")
+
+
 @login_required
-@can_view_projet
+@modules_projet_required
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('id')
@@ -2246,104 +2969,70 @@ def liste_attachements(request, projet_id):
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 
 @login_required
-@can_view_projet
+@modules_projet_required
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
-    # Récupérer toutes les lignes de bordereau du projet
-    lignes_bordereau = LigneBordereau.objects.filter(
-        lot__projet=projet
-    ).select_related('lot').order_by('lot__id', 'id')
+    # Récupérer toutes les lignes du projet dans le même ordre hiérarchique que la saisie du bordereau
+    lignes_bordereau = list(_iter_lignes_bordereau_hierarchiques(projet))
 
     if request.method == 'POST':
         form = AttachementForm(request.POST, request.FILES)
         if form.is_valid():
             try:
-                attachement = form.save(commit=False)
-                attachement.projet = projet
-                # Gestion du fichier avec Cloudinary
-                fichier = request.FILES.get('fichier')
-                if fichier and getattr(settings, 'USE_CLOUDINARY', False):
-                    public_id = projet.nom + f"_{fichier.name}"
-                    file_url = upload_to_cloudinary(fichier, "attachements", public_id)
-                    attachement.fichier = file_url if file_url else None
-                else:
+                with transaction.atomic():
+                    attachement = form.save(commit=False)
+                    attachement.projet = projet
+                    fichier = request.FILES.get('fichier')
                     attachement.fichier = fichier
-                attachement.modifie_par = request.user
-                attachement.save()
-                
-                lignes_data_json = request.POST.get('lignes_attachement')
-                if lignes_data_json:
-                    lignes_data = json.loads(lignes_data_json)
-                    
-                    # Retirer les titres de la fin
-                    while lignes_data and lignes_data[-1].get('is_title'):
-                        lignes_data.pop()
-                        
-                    for ligne_data in lignes_data:
-                        # Convertir en Decimal pour éviter les problèmes de type
-                        quantite_realisee = Decimal(str(ligne_data.get('quantite_realisee', 0)))
-                        ligne_bordereau_id = ligne_data['id']
-                        ligne_bordereau = LigneBordereau.objects.get(id=ligne_bordereau_id)
-                        
-                        is_title = ligne_bordereau.is_title
-                        
-                        # SAUVEGARDER TOUTES LES LIGNES (titres inclus)
-                        if quantite_realisee > 0 or is_title:
-                            quantite_cumulee = quantite_realisee
+                    if fichier:
+                        attachement.original_filename = fichier.name
+                    attachement.marquer_modification(request.user)
+                    attachement.save()
 
-                            LigneAttachement.objects.create(
-                                attachement=attachement,
-                                ligne_lot=ligne_bordereau,
-                                numero=ligne_bordereau.numero,
-                                designation=ligne_bordereau.designation,
-                                unite=ligne_bordereau.unite,
-                                prix_unitaire=ligne_bordereau.prix_unitaire,
-                                quantite_initiale=ligne_bordereau.quantite,
-                                quantite_realisee=quantite_realisee if not is_title else Decimal('0'),
-                                quantite_cumulee=quantite_cumulee,
-                            )
-                
+                    enregistrer_lignes_attachement(
+                        attachement,
+                        request.POST.get('lignes_attachement'),
+                    )
+
                 messages.success(request, "Attachement créé avec succès !")
                 return redirect('projets:liste_attachements', projet_id=projet.id)
-                
+
+            except DonneesAttachementInvalides as e:
+                messages.error(request, f"Données d'attachement invalides : {str(e)}")
             except Exception as e:
                 messages.error(request, f"Erreur lors de la création : {str(e)}")
         else:
-            print(form.errors)
             messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     
     else:           
         form = AttachementForm(initial={
             'statut': 'BROUILLON',            
         })
-    
-    # Préparer les données pour Handsontable (GET)
+     
+    # Préparer les données pour Handsontable (GET) selon le même ordre hiérarchique que la saisie du bordereau
     lignes_data = []
     
     for ligne in lignes_bordereau:
-        if not ligne.is_title:
-            quantite_deja_realisee = ligne.get_quantite_deja_realisee
-        else:
-            quantite_deja_realisee = None
+        is_title = _est_ligne_titre_bordereau(ligne)
+        ligne_bordereau = LigneBordereau.objects.select_related('lot', 'parent').get(pk=ligne.id)
+        quantite_deja_realisee = ligne_bordereau.get_quantite_deja_realisee if not is_title else None
 
-        # Ajouter la ligne aux données pour Handsontable
         ligne_dict = {
             'id': ligne.id,
-            'parent_id': ligne.parent.id if ligne.parent else None,
+            'parent_id': ligne.parent.id if getattr(ligne, 'parent', None) else None,
             'numero': ligne.numero,
-            'niveau': ligne.niveau,
+            'niveau': ligne.level() if hasattr(ligne, 'level') else ligne.niveau,
             'designation': ligne.designation,
             'unite': ligne.unite,
-            'is_title': ligne.is_title,
-            'est_titre': ligne.est_titre,
+            'is_title': is_title,
+            'est_titre': hasattr(ligne, 'has_children') and ligne.has_children(),
         }
         
-        if not ligne.is_title:
-            # Convertir les Decimal en float pour JavaScript
+        if not is_title:
             ligne_dict.update({
-                'quantite_prevue': float(ligne.quantite) if ligne.quantite is not None else 0.0,
-                'prix_unitaire': float(ligne.prix_unitaire) if ligne.prix_unitaire is not None else 0.0,
+                'quantite_prevue': float(ligne_bordereau.quantite) if ligne_bordereau.quantite is not None else 0.0,
+                'prix_unitaire': float(ligne_bordereau.prix_unitaire) if ligne_bordereau.prix_unitaire is not None else 0.0,
                 'quantite_deja_realisee': float(quantite_deja_realisee) if quantite_deja_realisee is not None else 0.0,
                 'quantite_realisee': float(quantite_deja_realisee) if quantite_deja_realisee is not None else 0.0,
                 'montant': 0.0,
@@ -2359,16 +3048,13 @@ def ajouter_attachement(request, projet_id):
         
         lignes_data.append(ligne_dict)
 
-    # Convertir la liste de dictionnaires en JSON pour le template
     lignes_json = json.dumps(lignes_data, default=str)
     
-    # Calcul du prochain numéro et dates
     nb_attachements = Attachement.objects.filter(projet=projet).count()
     next_numero = nb_attachements + 1
     date_fin_periode = timezone.now().date()
     
     if next_numero == 1:
-        # SI C'est le premier attachement, la date de debut de la periode est la date de OSC si elle existe, sinon aujourd'hui
         osc = projet.ordres_service.filter(type_os__code='OSC', statut='NOTIFIE').first()
         if osc and osc.date_effet:
             date_debut_periode = osc.date_effet
@@ -2376,16 +3062,14 @@ def ajouter_attachement(request, projet_id):
             date_debut_periode = timezone.now().date()
     else:
         dernier_attachement = Attachement.objects.filter(projet=projet).latest('date_etablissement')
-        # La date de debut de la periode est la date de fin du dernier attachement
         date_debut_periode = dernier_attachement.date_fin_periode
-        # La date de fin de la periode est la date de debut de la periode + 30 jours
     date_fin_periode = date_debut_periode + timedelta(days=30)
     
     context = {
         'projet': projet,
         'form': form,
         'lignes': lignes_json,
-        'total_lignes': lignes_bordereau.count(),
+        'total_lignes': len(lignes_bordereau),
         'date_etablissement': date_fin_periode,
         'numero': 'DP' + str(next_numero).zfill(2),
         'date_debut_periode': date_debut_periode,
@@ -2397,60 +3081,31 @@ def ajouter_attachement(request, projet_id):
 @login_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
+    _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})
     projet = attachement.projet
     
-    # Récupérer toutes les lignes de bordereau du projet
-    lignes_bordereau = LigneBordereau.objects.filter(
-        lot__projet=projet
-    ).select_related('lot').order_by('lot__id', 'id')
+    # Récupérer les lignes du projet selon le même ordre hiérarchique que la saisie du bordereau
+    lignes_bordereau = list(_iter_lignes_bordereau_hierarchiques(projet))
     
     if request.method == 'POST':
         form = AttachementForm(request.POST, request.FILES, instance=attachement)
         if form.is_valid():
             try:
+                with transaction.atomic():
+                    attachement = form.save(commit=False)
+                    attachement.marquer_modification(request.user)
+                    attachement.save()
 
-                attachement.modifie_par = request.user
-                attachement = form.save(commit=False)
-                attachement.save()
+                    enregistrer_lignes_attachement(
+                        attachement,
+                        request.POST.get('lignes_attachement'),
+                    )
 
-                # Supprimer les anciennes lignes de cet attachement
-                LigneAttachement.objects.filter(attachement=attachement).delete()
-
-                lignes_data_json = request.POST.get('lignes_attachement')
-                if lignes_data_json:
-                    lignes_data = json.loads(lignes_data_json)
-                    
-                    # Retirer les titres de la fin (lignes orphelines)
-                    while lignes_data and lignes_data[-1].get('is_title'):
-                        lignes_data.pop()
-                    
-                    for ligne_data in lignes_data:
-                        # Convertir en Decimal pour éviter les problèmes de type
-                        quantite_realisee = Decimal(str(ligne_data.get('quantite_realisee', 0)))
-                        
-                        ligne_bordereau_id = ligne_data['id']
-                        ligne_bordereau = LigneBordereau.objects.get(id=ligne_bordereau_id)
-                        
-                        is_title = ligne_bordereau.is_title
-                        
-                        # SAUVEGARDER TOUTES LES LIGNES (titres inclus)
-                        if quantite_realisee > 0 or is_title:
-                            quantite_cumulee = quantite_realisee
-
-                            LigneAttachement.objects.create(
-                                attachement=attachement,
-                                ligne_lot=ligne_bordereau,
-                                numero=ligne_bordereau.numero,
-                                designation=ligne_bordereau.designation,
-                                unite=ligne_bordereau.unite,
-                                prix_unitaire=ligne_bordereau.prix_unitaire,
-                                quantite_initiale=ligne_bordereau.quantite,
-                                quantite_realisee=quantite_realisee if not is_title else Decimal('0'),
-                                quantite_cumulee=quantite_cumulee,
-                            )
                 messages.success(request, "Attachement modifié avec succès !")
                 return redirect('projets:liste_attachements', projet_id=projet.id)
-                
+
+            except DonneesAttachementInvalides as e:
+                messages.error(request, f"Données d'attachement invalides : {str(e)}")
             except Exception as e:
                 messages.error(request, f"Erreur lors de la modification : {str(e)}")
         else:
@@ -2459,35 +3114,35 @@ def modifier_attachement(request, attachement_id):
         form = AttachementForm(instance=attachement)
     
     lignes_data = []
-    # recuperer l'attachement qui un id avant attachement_id
     attachement_avant = attachement.get_previous_attachement()
     for ligne in lignes_bordereau:
-        ligne_att_avant = LigneAttachement.objects.filter(attachement=attachement_avant, ligne_lot=ligne).first()
-        ligne_cet_att = LigneAttachement.objects.filter(attachement=attachement, ligne_lot=ligne).first()
-        if ligne.is_title:
+        ligne_bordereau = LigneBordereau.objects.select_related('lot', 'parent').get(pk=ligne.id)
+        ligne_att_avant = LigneAttachement.objects.filter(attachement=attachement_avant, ligne_lot=ligne_bordereau).first()
+        ligne_cet_att = LigneAttachement.objects.filter(attachement=attachement, ligne_lot=ligne_bordereau).first()
+        is_title = _est_ligne_titre_bordereau(ligne)
+
+        if is_title:
             quantite_realisee_attachement_avant = None
             quantite_realisee = None
         else:
             quantite_realisee = ligne_cet_att.quantite_realisee if ligne_cet_att else None
             quantite_realisee_attachement_avant = ligne_att_avant.quantite_realisee if ligne_att_avant else None
         
-        # Ajouter la ligne aux données pour Handsontable
         ligne_dict = {
             'id': ligne.id,
-            'parent_id': ligne.parent.id if ligne.parent else None,
+            'parent_id': ligne.parent.id if getattr(ligne, 'parent', None) else None,
             'numero': ligne.numero,
-            'niveau': ligne.niveau,
+            'niveau': ligne.level() if hasattr(ligne, 'level') else ligne_bordereau.niveau,
             'designation': ligne.designation,
             'unite': ligne.unite,
-            'is_title': ligne.is_title,
-            'est_titre': ligne.est_titre
+            'is_title': is_title,
+            'est_titre': hasattr(ligne, 'has_children') and ligne.has_children()
         }
         
-        if not ligne.is_title:
-            # Convertir les Decimal en float pour JavaScript
+        if not is_title:
             ligne_dict.update({
-                'quantite_prevue': float(ligne.quantite) if ligne.quantite is not None else 0.0,
-                'prix_unitaire': float(ligne.prix_unitaire) if ligne.prix_unitaire is not None else 0.0,
+                'quantite_prevue': float(ligne_bordereau.quantite) if ligne_bordereau.quantite is not None else 0.0,
+                'prix_unitaire': float(ligne_bordereau.prix_unitaire) if ligne_bordereau.prix_unitaire is not None else 0.0,
                 'quantite_deja_realisee': float(quantite_realisee_attachement_avant) if quantite_realisee_attachement_avant is not None else 0.0,
                 'quantite_realisee': float(quantite_realisee) if quantite_realisee is not None else 0.0,
                 'montant': 0.0,
@@ -2503,30 +3158,25 @@ def modifier_attachement(request, attachement_id):
         
         lignes_data.append(ligne_dict)
 
-    # Convertir la liste de dictionnaires en JSON pour le template
     lignes_json = json.dumps(lignes_data, default=str)
             
-    # Supprimer les dernières lignes qui sont is_title
     while lignes_data and lignes_data[-1]['is_title']:
         lignes_data.pop()
     
-    # Convertir la liste de dictionnaires en JSON pour le template
     lignes_json = json.dumps(lignes_data, default=str)
     
-    # Création d'attributs dynamiques pour le template
     attachement.peut_reouvrir = (attachement.statut == 'VALIDE' and (request.user.is_superuser or request.user.is_staff))
     attachement.peut_supprimer = attachement.statut != 'VALIDE'
     attachement.est_validable = attachement.statut in ['BROUILLON', 'TRANSMIS']
     attachement.ferme = attachement.statut == 'SIGNE'
     
-    # Création de variables de contexte
     context = {
         'projet': projet,
         'attachement': attachement,
         'form': form,
         'lignes': lignes_json,
-        'total_lignes': lignes_bordereau.count(),
-        'total_attachement': float(0.0),  # Convertir pour le template
+        'total_lignes': len(lignes_bordereau),
+        'total_attachement': float(0.0),
         'is_edition': True
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
@@ -2535,68 +3185,98 @@ def modifier_attachement(request, attachement_id):
 def detail_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     
-    # Récupérer tous les lots du projet
     lots = LotProjet.objects.filter(projet=attachement.projet).order_by('id')
     lots_data = []
-    montant_total = 0
+    montant_total = Decimal('0.00')
     total_lignes = 0
     from projets.manager import LigneHierarchique
     
     for lot in lots:
-        
-        # Récupérer les lignes d'attachement pour ce lot
-        lignes = LigneAttachement.objects.filter(attachement=attachement, ligne_lot__lot=lot).order_by('id')
-        # Calculer le total du lot
-        total_lot = sum(
-            (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0) 
-            for ligne in lignes
-        )
-        if total_lot == 0:
-            continue
-        # Préparer les données des lignes avec le montant calculé
-        lignes_data = []
-        for ligne in lignes:
-            # Vérifier si c'est une ligne de détail (a des valeurs de quantité et prix)
-            is_detail = ligne.quantite_realisee is not None and ligne.prix_unitaire is not None
-            montant_ligne = (ligne.quantite_realisee or 0) * (ligne.prix_unitaire or 0) if is_detail else 0
+        lot_root = lot.to_line_tree()
+        lignes_attachement = []
 
-            lignes_data.append({
-                'id': ligne.ligne_lot.id,
-                'parent_id': ligne.ligne_lot.parent.id if ligne.ligne_lot.parent else None,
+        for ligne in lot_root.get_descendants():
+            ligne_att = LigneAttachement.objects.filter(attachement=attachement, ligne_lot_id=ligne.id).first()
+            if not ligne_att:
+                continue
+
+            montant_ligne = (ligne_att.quantite_realisee or Decimal('0')) * (ligne_att.prix_unitaire or Decimal('0'))
+            lignes_attachement.append({
+                'id': ligne.id,
+                'parent_id': ligne.parent.id if getattr(ligne, 'parent', None) else None,
                 'numero': ligne.numero,
                 'designation': ligne.designation,
                 'unite': ligne.unite,
-                'quantite': ligne.quantite_realisee if is_detail else None,
-                'prix_unitaire': ligne.prix_unitaire if is_detail else None,
-                'montant': montant_ligne
+                'quantite': float(ligne_att.quantite_realisee) if ligne_att.quantite_realisee is not None else None,
+                'prix_unitaire': float(ligne_att.prix_unitaire) if ligne_att.prix_unitaire is not None else None,
+                'montant': float(montant_ligne),
             })
-        
-        # Construire la hiérarchie
-        lines_root = LigneHierarchique({'id': 0, lot.nom: 'root'})
-        lines_root.build_tree(lignes_data, lines_root)
-        lines = lines_root.export_to_table()
+
+        if not lignes_attachement:
+            continue
+
+        root = LigneHierarchique({'id': 0, 'parent_id': None, 'designation': lot.nom})
+        _, root = LigneHierarchique.build_tree(lignes_attachement, root)
+        lignes_table = [ligne for ligne in root.export_to_table() if ligne.get('id') != 0]
+        total_lot = sum(Decimal(str(ligne['montant'])) for ligne in lignes_attachement)
 
         lots_data.append({
             'lot': lot,
-            'lignes_table': lines,  # Pour affichage en tableau avec niveaux
+            'lignes_table': lignes_table,
             'total_lot': total_lot,
         })
         
         montant_total += total_lot
-        total_lignes += len(lines)
+        total_lignes += len(lignes_table)
     
     context = {
         'attachement': attachement,
-        'lots_data': lots_data,  # Contient déjà lot, lignes_table, total_lot
+        'lots_data': lots_data,
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
     }
     return render(request, 'projets/decomptes/detail_attachement.html', context)
+
+
+@login_required
+def tracabilite_validation_attachement(request, attachement_id):
+    attachement = get_object_or_404(Attachement, id=attachement_id)
+    _verifier_acces_attachement(request, attachement)
+
+    validations = []
+    for validation in attachement.validations.prefetch_related('etapes__valide_par').select_related('validateur').order_by('ordre_validation'):
+        document_url = None
+        if validation.fichier:
+            document_url = reverse('projets:download_document', args=['ProcessValidation', validation.id])
+
+        validations.append({
+            'type': validation.get_type_validation_display(),
+            'statut': validation.get_statut_validation_display(),
+            'validateur': validation.validateur.get_full_name() or validation.validateur.username if validation.validateur else None,
+            'date_validation': validation.date_validation.strftime('%d/%m/%Y %H:%M') if validation.date_validation else None,
+            'commentaires': validation.commentaires or '',
+            'motifs_rejet': validation.motifs_rejet or '',
+            'document_nom': validation.get_file_name if validation.fichier else None,
+            'document_url': document_url,
+            'etapes': [
+                {
+                    'nom': etape.nom,
+                    'statut': 'Validée' if etape.est_validee else 'En attente',
+                    'validateur': etape.valide_par.get_full_name() or etape.valide_par.username if etape.valide_par else None,
+                    'date_validation': etape.date_validation.strftime('%d/%m/%Y %H:%M') if etape.date_validation else None,
+                    'commentaire': etape.commentaire or '',
+                }
+                for etape in validation.etapes.all()
+            ],
+        })
+
+    return JsonResponse({'attachement': attachement.numero, 'validations': validations})
     
 @login_required
 def supprimer_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
+    _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})
     projet_id = attachement.projet.id
     
     if request.method == 'POST':
@@ -2626,9 +3306,10 @@ def attachements_ajouter_decompte(request, attachement_id):
 @login_required
 def validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
-    # VÉRIFICATION ET INITIALISATION AUTOMATIQUE
+    _verifier_acces_attachement(request, attachement)
     if attachement.statut == 'TRANSMIS' and not attachement.validations.exists():
-        attachement.initialiser_processus_validation(request.user)
+        with transaction.atomic():
+            attachement.initialiser_processus_validation(request.user)
         messages.info(request, "Processus de validation initialisé automatiquement.")
     validations = attachement.validations.all().order_by('ordre_validation')
     for validation in validations:
@@ -2637,38 +3318,38 @@ def validation_attachement(request, attachement_id):
 
         if validation.type_validation == 'TECHNIQUE':
             if not etapes.exists():
-                # Si aucune étape, initier les étapes standards du processus Validation Technique
                 validation.initier_etapes_techniques_par_defaut()
                 validation.etapes_validation = validation.etapes.all().order_by('ordre')
             else:
-                validation.etapes_validation = etapes.order_by('ordre') 
+                validation.etapes_validation = etapes.order_by('ordre')
         else:
             validation.etapes_validation = None
-    
+
     if request.method == 'POST':
         validation_id = request.POST.get('validation_id')
         action_type = request.POST.get('action_type')
         commentaires = request.POST.get('commentaires', '')
         motifs = request.POST.get('motifs', '')
         fichier = request.FILES.get('fichier')
-        
-        validation = get_object_or_404(ProcessValidation, id=validation_id)
-        
+
+        validation = get_object_or_404(ProcessValidation, id=validation_id, attachement=attachement)
+
         try:
-            if action_type == 'valider':
-                validation.valider(request.user, commentaires, fichier)
-                messages.success(request, "Étape validée avec succès.")
-            elif action_type == 'rejeter':
-                validation.rejeter(request.user, motifs, fichier)
-                messages.warning(request, "Étape rejetée.")
-            elif action_type == 'correction':
-                validation.demander_correction(request.user, commentaires)
-                messages.info(request, "Correction demandée.")
+            with transaction.atomic():
+                if action_type == 'valider':
+                    validation.valider(request.user, commentaires, fichier)
+                    messages.success(request, "Étape validée avec succès.")
+                elif action_type == 'rejeter':
+                    validation.rejeter(request.user, motifs, fichier)
+                    messages.warning(request, "Étape rejetée.")
+                elif action_type == 'correction':
+                    validation.demander_correction(request.user, commentaires)
+                    messages.info(request, "Correction demandée.")
         except PermissionError as e:
             messages.error(request, str(e))
-        
+
         return redirect('projets:validation_attachement', attachement_id=attachement_id)
-    
+
     context = {
         'attachement': attachement,
         'validations': validations,
@@ -2677,23 +3358,27 @@ def validation_attachement(request, attachement_id):
     return render(request, 'projets/decomptes/validation_attachement.html', context)
 
 @login_required
+@require_POST
 def reouvrir_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
-    
+    _verifier_acces_attachement(request, attachement)
+
     try:
-        attachement.reouvrir(request.user)
+        with transaction.atomic():
+            attachement.reouvrir(request.user)
         messages.success(request, f"L'attachement {attachement.numero} a été réouvert avec succès.")
     except PermissionError as e:
         messages.error(request, str(e))
     except Exception as e:
         messages.error(request, f"Erreur lors de la réouverture : {str(e)}")
-    
+
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 
 @login_required
 def validation_technique_attachement(request, attachement_id):
     """Affiche la page de validation technique"""
     attachement = get_object_or_404(Attachement, id=attachement_id)
+    _verifier_acces_attachement(request, attachement)
     validation_technique = attachement.validations.filter(type_validation='TECHNIQUE').first()
     
     if not validation_technique:
@@ -2803,6 +3488,7 @@ def passer_etape(request, etape_id):
             etape.date_validation = timezone.now()
             etape.commentaire = commentaire if commentaire else "Étape passée"
             etape.save()
+            etape.processValidation.valider(request.user)
             
             messages.warning(request, f"⚠️ Étape '{etape.nom}' passée.")
         
@@ -2921,6 +3607,8 @@ def supprimer_etape(request, etape_id):
             if etape_restante.ordre != index:
                 etape_restante.ordre = index
                 etape_restante.save()
+
+        process_validation.valider(request.user)
         
         messages.success(request, f"🗑️ Étape '{nom_etape}' supprimée avec succès.")
         
@@ -2935,16 +3623,21 @@ def redirect_to_attachement(etape):
                    attachement_id=etape.processValidation.attachement.id)
 
 @login_required
+@require_POST
 def transmettre_validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
-    
+    _verifier_acces_attachement(request, attachement, {'BROUILLON'})
+
     try:
-        attachement.statut = 'SIGNE'
-        attachement.transmettre(request.user)
+        with transaction.atomic():
+            attachement.statut = 'SIGNE'
+            attachement.save(update_fields=['statut', 'modifie_par'])
+            attachement.marquer_modification(request.user)
+            attachement.transmettre(request.user)
         messages.success(request, f"L'attachement {attachement.numero} a été transmis pour validation.")
     except Exception as e:
         messages.error(request, f"Erreur lors de la transmission : {str(e)}")
-    
+
     return redirect('projets:modifier_attachement', attachement_id=attachement_id)
 
 def telecharger_document_validation(request, etape_id):
@@ -2962,7 +3655,7 @@ def telecharger_document_validation(request, etape_id):
         return redirect_to_attachement(etape)
 # ------------------------ Views pour Décomptes ------------------------
 @login_required
-@can_view_projet
+@modules_projet_required
 def liste_decomptes(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     
@@ -3147,7 +3840,7 @@ def liste_decomptes(request, projet_id):
     
     return render(request, 'projets/decomptes/liste_decomptes.html', context)
 
-@can_view_projet
+@modules_projet_required
 def projet_ajouter_decompte(request, projet_id):
     """Vue pour l'ajout d'un décompte (redirige vers liste_decomptes avec formulaire ouvert)"""
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3233,7 +3926,7 @@ def calcul_retard_decompte(request, decompte_id):
     })
 
 # -------------------- FICHE DE CONTROLE --------------------
-@can_view_projet
+@modules_projet_required
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('-date_etablissement')
@@ -3380,7 +4073,7 @@ def get_lignes_attachement(request, attachement_id):
 
 # ------------------------ Views pour Ordres de Service ------------------------
 @login_required
-@can_view_projet
+@modules_projet_required
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordres_service = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
@@ -3421,27 +4114,19 @@ def ordres_service(request, projet_id):
                     ordre = form.save(commit=False)
                     ordre.projet = projet
                     
-                    # Gestion des documents avec Cloudinary
+                    # Gestion agnostique du backend (R2/local)
                     fichier = request.FILES.get('fichier')
                     original_filename = request.POST.get('original_filename')
                     ordre.original_filename = original_filename
                     if fichier:
-                        if getattr(settings, 'USE_CLOUDINARY', False):
-                            public_id = f"{projet.nom}_{ordre.reference}"
-                            file_url = upload_to_cloudinary(fichier, 'ordres_services', public_id)
-                            ordre.fichier = file_url if file_url else None
-                        else:
-                            ordre.fichier = fichier
-                            ordre.original_filename = original_filename
+                        ordre.fichier = fichier
+                        ordre.original_filename = fichier.name
                     if not ordre_a_modifier: # Création 
                         ordre.statut = 'BROUILLON'
                         
                     if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
                         if ordre.fichier:
-                            if getattr(settings, 'USE_CLOUDINARY', False):
-                                delete_cloudinary_file(ordre.fichier)
-                            elif os.path.isfile(ordre.fichier.path):
-                                os.remove(ordre.fichier.path)
+                            ordre.fichier.delete(save=False)
                             ordre.fichier = None
                             ordre.original_filename = None
                             
@@ -3516,7 +4201,7 @@ def ordres_service(request, projet_id):
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
-@can_view_projet
+@modules_projet_required
 def api_jours_decoules(request, projet_id):
     """API pour calculer les jours découlés"""
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3537,7 +4222,7 @@ def api_jours_decoules(request, projet_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
-@can_view_projet
+@modules_projet_required
 def modifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3580,16 +4265,13 @@ def modifier_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
-@can_view_projet
+@modules_projet_required
 def supprimer_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
     
     if request.method == 'POST':
         reference = ordre.reference
-        # Supprimer le fichier document s'il existe
-        # if ordre.fichier:
-        #     delete_cloudinary_file(ordre)
         ordre.delete()
         messages.success(request, f"L'ordre de service {reference} a été supprimé avec succès.")
         return redirect('projets:ordres_service', projet_id=projet.id)
@@ -3601,7 +4283,7 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/supprimer_ordre_service.html', context)
 
-@can_view_projet
+@modules_projet_required
 def details_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3612,7 +4294,7 @@ def details_ordre_service(request, projet_id, ordre_id):
     }
     return render(request, 'projets/ordres_service/details_ordre_service.html', context)
 
-@can_view_projet
+@modules_projet_required
 def notifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
@@ -3673,7 +4355,7 @@ def notifier_ordre_service(request, projet_id, ordre_id):
     return redirect('projets:ordres_service', projet_id=projet.id)
     # return redirect('projets:details_ordre_service', projet_id=projet.id, ordre_id=ordre.id)
 
-@can_view_projet
+@modules_projet_required
 def annuler_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)

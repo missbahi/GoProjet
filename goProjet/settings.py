@@ -4,7 +4,6 @@ Django settings for goProjet project.
 
 import os
 from pathlib import Path
-import re
 import dj_database_url
 from dotenv import load_dotenv  # Nouveau
 
@@ -63,10 +62,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     
-    # Cloudinary - TOUJOURS ajoutées
-    'cloudinary_storage',
-    'cloudinary',
-        
     # Vos applications
     'projets.apps.ProjetsConfig',
 ]
@@ -177,6 +172,14 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# --- 11.b STOCKAGE DOCUMENTS R2 (V2) ---
+R2_ACCESS_KEY_ID = os.environ.get('R2_ACCESS_KEY_ID') or os.environ.get('AWS_ACCESS_KEY_ID')
+R2_SECRET_ACCESS_KEY = os.environ.get('R2_SECRET_ACCESS_KEY') or os.environ.get('AWS_SECRET_ACCESS_KEY')
+R2_BUCKET_NAME = os.environ.get('R2_BUCKET_NAME') or os.environ.get('AWS_STORAGE_BUCKET_NAME')
+R2_REGION = os.environ.get('R2_REGION', 'auto')
+R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL') or os.environ.get('AWS_S3_ENDPOINT_URL')
+USE_R2_DOCUMENTS = os.environ.get('USE_R2_DOCUMENTS', 'true').lower() == 'true'
+
 # --- 12. CONFIGURATION PWA ---
 PWA_CONFIG = {
     'ENABLED': os.environ.get('PWA_ENABLED', 'True').lower() == 'true',
@@ -249,66 +252,43 @@ if PWA_CONFIG['ENABLED']:
 else:
     print("ℹ️ PWA désactivée")
     
-# --- 13. CONFIGURATION CLOUDINARY ---
+# --- 13. CONFIGURATION DU STOCKAGE ---
 
-def sanitize_cloudinary_credential(value):
-    """
-    Nettoie une credential Cloudinary.
-    Supprime les espaces, signes =, guillemets au début.
-    """
-    if value is None:
-        return ""
-    
-    value = str(value)
-    
-    # Étape 1: Supprimer les espaces
-    value = value.strip()
-    
-    # Étape 2: Supprimer les guillemets
-    value = value.strip('"\'')
-    
-    # Étape 3: Supprimer tout caractère non alphanumérique au début
-    # Cela supprime =, espaces, etc.
-    value = re.sub(r'^[^a-zA-Z0-9]+', '', value)
-    
-    return value
-# Récupération des credentials Cloudinary
-CLOUDINARY_CLOUD_NAME = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_CLOUD_NAME'))
-CLOUDINARY_API_KEY = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_API_KEY'))
-CLOUDINARY_API_SECRET = sanitize_cloudinary_credential(os.environ.get('CLOUDINARY_API_SECRET'))
-# Vérification si Cloudinary est configuré
-USE_CLOUDINARY = all([CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET])
+DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+MEDIA_ROOT.mkdir(exist_ok=True)
 
-if USE_CLOUDINARY:
-    print("Mode Cloudinary activé pour le stockage des fichiers")
-    
-    # Configuration Cloudinary
-    CLOUDINARY_STORAGE = {
-        'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
-        'API_KEY': CLOUDINARY_API_KEY,
-        'API_SECRET': CLOUDINARY_API_SECRET,
-        'SECURE': True,
-        'STATIC_IMAGES': False,  # Important pour les fichiers non-images
-        'STATIC_FILE_SUPPORT': True,  # Important pour les documents
+# Priorité V2: si R2 est activé et correctement configuré,
+# on force le backend par défaut pour les FileField documents.
+R2_IS_CONFIGURED = all([
+    R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY,
+    R2_BUCKET_NAME,
+    R2_ENDPOINT_URL,
+])
+
+if USE_R2_DOCUMENTS and R2_IS_CONFIGURED:
+    AWS_ACCESS_KEY_ID = R2_ACCESS_KEY_ID
+    AWS_SECRET_ACCESS_KEY = R2_SECRET_ACCESS_KEY
+    AWS_STORAGE_BUCKET_NAME = R2_BUCKET_NAME
+    AWS_S3_REGION_NAME = R2_REGION
+    AWS_S3_ENDPOINT_URL = R2_ENDPOINT_URL
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = True
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_S3_SIGNATURE_VERSION = 's3v4'
+    AWS_S3_ADDRESSING_STYLE = 'virtual'
+
+    STORAGES = {
+        'default': {
+            'BACKEND': 'storages.backends.s3.S3Storage',
+        },
+        'staticfiles': {
+            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+        },
     }
-    print('cloudinary name :', CLOUDINARY_STORAGE['CLOUD_NAME'])
-    # Stockage par défaut Cloudinary
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    
-    # Configuration supplémentaire pour les fichiers raw (documents)
-    CLOUDINARY = {
-        'cloud_name': CLOUDINARY_CLOUD_NAME,
-        'api_key': CLOUDINARY_API_KEY,
-        'api_secret': CLOUDINARY_API_SECRET,
-        'secure': True
-    }
-    
-else:
-    print("💻 Mode local activé - Stockage des fichiers sur le disque dur")
-    DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
-    
-    # Créer le dossier media s'il n'existe pas
-    MEDIA_ROOT.mkdir(exist_ok=True)
+    print("✅ Stockage R2 activé pour les documents FileField")
+elif USE_R2_DOCUMENTS:
+    print("⚠️ USE_R2_DOCUMENTS=true mais configuration R2 incomplète: fallback stockage existant")
     
 SECURE_SSL_REDIRECT = False
 
@@ -343,7 +323,7 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # --- 15. CONFIGURATIONS DIVERSES ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# --- 16. LOGGING POUR LE DÉBOGAGE CLOUDINARY ---
+# --- 16. LOGGING ---
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -354,14 +334,14 @@ LOGGING = {
         },
     },
     'loggers': {
-        'cloudinary': {
+        'django': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
         },
-        'django': {
+        'django.request': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'ERROR',
             'propagate': False,
         },
     },
