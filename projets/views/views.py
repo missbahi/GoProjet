@@ -526,11 +526,12 @@ def modifier_utilisateur(request, user_id):
     if not request.user.is_superuser and not user.dossiers.filter(gerant=request.user).exists():
         raise PermissionDenied
 
+    can_manage_account_status = request.user.is_superuser and user.pk != request.user.pk
+    can_manage_roles = (request.user.is_superuser or est_gerant(request.user)) and user.pk != request.user.pk
+
     if request.method == 'POST':
         email = request.POST.get('email')
         password = request.POST.get('password')
-        can_manage_account_status = request.user.is_superuser and user.pk != request.user.pk
-        can_manage_roles = (request.user.is_superuser or est_gerant(request.user)) and user.pk != request.user.pk
 
         user.email = email
         if password:
@@ -577,7 +578,7 @@ def modifier_utilisateur(request, user_id):
                 ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
             ]
         ),
-        'can_manage_account_status': request.user.is_superuser and user.pk != request.user.pk,
+        'can_manage_account_status': can_manage_account_status,
         'can_manage_roles': can_manage_roles,
         'can_manage_user_dossiers': user.pk != request.user.pk,
     })

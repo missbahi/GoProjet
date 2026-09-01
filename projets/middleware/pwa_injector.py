@@ -54,7 +54,7 @@ class PWAInjectorMiddleware:
     def generate_pwa_head(self):
         """Génère les tags PWA pour le head"""
         theme_color = getattr(settings, 'PWA_APP_THEME_COLOR', '#0A0302')
-        app_name = getattr(settings, 'PWA_APP_NAME', 'goProjet')
+        app_name = getattr(settings, 'PWA_APP_NAME', 'GoProjet')
         
         # Utilisez VOS icônes (192x192 et 512x512)
         return f'''
@@ -107,7 +107,7 @@ class PWAInjectorMiddleware:
         
         // Créer un bouton flottant
         const installBtn = document.createElement('button');
-        installBtn.innerHTML = '📱 Installer goProjet';
+        installBtn.innerHTML = '📱 Installer GoProjet';
         installBtn.id = 'pwa-install-button';
         installBtn.style.cssText = `
             position: fixed;
@@ -166,7 +166,7 @@ class PWAInjectorMiddleware:
     
     // Cacher le bouton si déjà installé
     window.addEventListener('appinstalled', () => {
-        console.log('🎉 goProjet installée comme PWA!');
+        console.log('🎉 GoProjet installée comme PWA!');
         const installBtn = document.getElementById('pwa-install-button');
         if (installBtn) {
             installBtn.remove();
@@ -183,7 +183,7 @@ class PWAInjectorMiddleware:
     // Vérifier au chargement si déjà en mode PWA
     window.addEventListener('load', () => {
         if (window.matchMedia('(display-mode: standalone)').matches) {
-            console.log('📱 goProjet fonctionne en mode PWA');
+            console.log('📱 GoProjet fonctionne en mode PWA');
             document.documentElement.classList.add('pwa-mode');
         }
     });
