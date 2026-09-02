@@ -251,12 +251,86 @@ class ValidationAttachementRoleTests(TestCase):
 		self.assertContains(response, 'Accès restreint', status_code=403)
 		self.assertContains(response, 'Cette action n', status_code=403)
 
-	def test_attachement_transmis_ne_peut_pas_etre_modifie(self):
+	def test_attachement_transmis_peut_revenir_en_brouillon(self):
+		self.client.force_login(self.chef)
+		LigneAttachement.objects.create(
+			attachement=self.attachement,
+			ligne_lot=self.ligne_bordereau,
+			numero=self.ligne_bordereau.numero,
+			designation=self.ligne_bordereau.designation,
+			unite=self.ligne_bordereau.unite,
+			quantite_initiale=self.ligne_bordereau.quantite,
+			prix_unitaire=self.ligne_bordereau.prix_unitaire,
+			quantite_realisee=Decimal('1'),
+			quantite_cumulee=Decimal('1'),
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_attachement', args=[self.attachement.id]),
+			{
+				'numero': self.attachement.numero,
+				'date_etablissement': self.attachement.date_etablissement,
+				'date_debut_periode': self.attachement.date_debut_periode,
+				'date_fin_periode': self.attachement.date_fin_periode,
+				'statut': 'BROUILLON',
+				'observations': '',
+				'lignes_attachement': '[{"id": %d, "quantite_realisee": 2}]' % self.ligne_bordereau.id,
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.attachement.refresh_from_db()
+		self.assertEqual(self.attachement.statut, 'BROUILLON')
+		self.assertEqual(self.validation.statut_validation, 'EN_ATTENTE')
+
+	def test_attachement_refuse_peut_revenir_en_brouillon(self):
+		self.attachement.statut = 'REFUSE'
+		self.attachement.save(update_fields=['statut'])
+		self.validation.statut_validation = 'REJETE'
+		self.validation.motifs_rejet = 'Quantité à corriger'
+		self.validation.save(update_fields=['statut_validation', 'motifs_rejet'])
 		self.client.force_login(self.chef)
 
-		response = self.client.get(reverse('projets:modifier_attachement', args=[self.attachement.id]))
+		response = self.client.post(
+			reverse('projets:modifier_attachement', args=[self.attachement.id]),
+			{
+				'numero': self.attachement.numero,
+				'date_etablissement': self.attachement.date_etablissement,
+				'date_debut_periode': self.attachement.date_debut_periode,
+				'date_fin_periode': self.attachement.date_fin_periode,
+				'statut': 'BROUILLON',
+				'observations': '',
+				'lignes_attachement': '[]',
+			},
+		)
 
-		self.assertEqual(response.status_code, 403)
+		self.assertEqual(response.status_code, 302)
+		self.attachement.refresh_from_db()
+		self.validation.refresh_from_db()
+		self.assertEqual(self.attachement.statut, 'BROUILLON')
+		self.assertEqual(self.validation.statut_validation, 'EN_ATTENTE')
+		self.assertEqual(self.validation.motifs_rejet, '')
+
+	def test_attachement_ne_peut_pas_etre_valide_depuis_le_formulaire(self):
+		self.client.force_login(self.chef)
+
+		response = self.client.post(
+			reverse('projets:modifier_attachement', args=[self.attachement.id]),
+			{
+				'numero': self.attachement.numero,
+				'date_etablissement': self.attachement.date_etablissement,
+				'date_debut_periode': self.attachement.date_debut_periode,
+				'date_fin_periode': self.attachement.date_fin_periode,
+				'statut': 'VALIDE',
+				'observations': '',
+				'lignes_attachement': '[]',
+			},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.attachement.refresh_from_db()
+		self.assertEqual(self.attachement.statut, 'TRANSMIS')
+		self.assertContains(response, 'Le statut Validé est attribué uniquement par le processus de validation.')
 
 	def test_validation_d_un_autre_attachement_est_refusee(self):
 		autre_attachement = Attachement.objects.create(

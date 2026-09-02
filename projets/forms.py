@@ -335,6 +335,14 @@ class AttachementForm(forms.ModelForm):
         self.fields['date_fin_periode'].label = 'Date fin période'
         self.fields['fichier'].required = False
 
+    def clean_statut(self):
+        statut = self.cleaned_data['statut']
+        if statut == 'VALIDE':
+            raise forms.ValidationError(
+                "Le statut Validé est attribué uniquement par le processus de validation."
+            )
+        return statut
+
 class DecompteForm(forms.ModelForm):
     montant_revision_prix = forms.DecimalField(
         required=False,

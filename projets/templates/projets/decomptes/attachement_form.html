@@ -726,8 +726,8 @@
                             <option value="BROUILLON" {% if is_edition and attachement.statut == 'BROUILLON' %}selected{% endif %}>Brouillon</option>
                             <option value="SIGNE" {% if is_edition and attachement.statut == 'SIGNE' %}selected{% endif %}>Signé</option>
                             <option value="TRANSMIS" {% if is_edition and attachement.statut == 'TRANSMIS' %}selected{% endif %}>Transmis</option>
-                            {% if attachement.est_validable or not is_edition %}
-                            <option value="VALIDE" {% if is_edition and attachement.statut == 'VALIDE' %}selected{% endif %}>Validé</option>
+                            {% if is_edition and attachement.statut == 'REFUSE' %}
+                            <option value="REFUSE" selected>Refusé</option>
                             {% endif %}
                         </select>
                         {% if is_edition and not attachement.est_validable %}

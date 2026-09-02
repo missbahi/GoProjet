@@ -3080,18 +3080,33 @@ def ajouter_attachement(request, projet_id):
 @modules_projet_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
-    _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})
+    _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE', 'TRANSMIS', 'REFUSE'})
     projet = attachement.projet
     
     # Récupérer les lignes du projet selon le même ordre hiérarchique que la saisie du bordereau
     lignes_bordereau = list(_iter_lignes_bordereau_hierarchiques(projet))
     
     if request.method == 'POST':
+        statut_initial = attachement.statut
         form = AttachementForm(request.POST, request.FILES, instance=attachement)
         if form.is_valid():
             try:
                 with transaction.atomic():
                     attachement = form.save(commit=False)
+                    if statut_initial in {'TRANSMIS', 'REFUSE'} and attachement.statut != 'BROUILLON':
+                        attachement.statut = statut_initial
+                    retour_en_brouillon = (
+                        statut_initial in {'TRANSMIS', 'REFUSE'}
+                        and attachement.statut == 'BROUILLON'
+                    )
+                    if retour_en_brouillon:
+                        attachement.validations.update(
+                            statut_validation='EN_ATTENTE',
+                            validateur=None,
+                            date_validation=None,
+                            commentaires='',
+                            motifs_rejet='',
+                        )
                     attachement.marquer_modification(request.user)
                     attachement.save()
 
@@ -3166,7 +3181,7 @@ def modifier_attachement(request, attachement_id):
     
     attachement.peut_reouvrir = (attachement.statut == 'VALIDE' and (request.user.is_superuser or request.user.is_staff))
     attachement.peut_supprimer = attachement.statut != 'VALIDE'
-    attachement.est_validable = attachement.statut in ['BROUILLON', 'TRANSMIS']
+    attachement.est_validable = attachement.statut in ['BROUILLON', 'TRANSMIS', 'REFUSE']
     attachement.ferme = attachement.statut == 'SIGNE'
     
     context = {

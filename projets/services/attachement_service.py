@@ -49,6 +49,9 @@ def enregistrer_lignes_attachement(attachement, lignes_json):
     if len(lignes_bordereau) != len(identifiants):
         raise DonneesAttachementInvalides("Une ligne sélectionnée n'appartient pas au projet.")
 
+    # La vue appelante doit englober cette opération dans une transaction.
+    LigneAttachement.objects.filter(attachement=attachement).delete()
+
     nouvelles_lignes = []
     for ligne_id, quantite_realisee in lignes_saisies:
         ligne_bordereau = lignes_bordereau[ligne_id]
@@ -84,5 +87,4 @@ def enregistrer_lignes_attachement(attachement, lignes_json):
                 f"Ligne {ligne_id, ligne_bordereau.numero} invalide : {error.message_dict}") from error
         nouvelles_lignes.append(ligne_attachement)
 
-    LigneAttachement.objects.filter(attachement=attachement).delete()
     LigneAttachement.objects.bulk_create(nouvelles_lignes)
