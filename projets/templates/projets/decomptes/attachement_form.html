@@ -208,19 +208,21 @@
         @media (min-width: 768px) {
             .responsive-grid {
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1.5rem;
+                gap: 1rem;
             }
         }
 
         @media (min-width: 1024px) {
             .responsive-grid {
-                gap: 2rem;
+                gap: 1rem;
             }
         }
 
         /* Formulaires */
         .form-group {
             margin-bottom: 1rem;
+            margin-left: 1rem;
+            margin-right: 1rem;
         }
 
         label {
@@ -380,15 +382,16 @@
         }
 
         /* Actions footer */
-        .actions-footer {
+        .actions-total {
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            margin-top: 1.5rem;
+            margin-top: 1.rem;
+            margin-bottom: 1.5rem;
         }
 
         @media (min-width: 768px) {
-            .actions-footer {
+            .actions-total {
                 flex-direction: row;
                 justify-content: space-between;
                 align-items: center;
@@ -665,38 +668,52 @@
         <div class="content-section glass-effect">
             <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
                 {% csrf_token %}
+                <div class="actions-total" style="margin-left: 1rem; margin-top: 1rem; margin-bottom: 1rem;"><!-- Actions et Total -->
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        {% if not is_edition or attachement.est_validable %}
+                        <button type="button" id="save-btn" class="btn btn-primary">
+                            <i class="fa-solid fa-save"></i> {% if is_edition %}Modifier{% else %}Créer{% endif %} l'attachement
+                        </button>
+                        {% endif %}
+                        
+                        {% if is_edition and attachement.peut_supprimer %}
+                        <button type="button" id="delete-btn" class="btn btn-danger">
+                            <i class="fa-solid fa-trash"></i> Supprimer
+                        </button>
+                        {% endif %}
+                    </div>
                 
-                <!-- Informations de base -->
-                <div class="responsive-grid mb-6">
-                    <div class="form-group">
+                </div>
+                <div class="responsive-grid mb-3"><!-- Informations de base -->
+                    <div class="form-group"><!-- Numéro d'attachement -->
                         <label for="numero"><i class="fas fa-hashtag mr-2"></i>Numéro d'attachement *</label>
                         <input type="text" id="numero" name="numero" 
                                value="{% if is_edition %}{{ attachement.numero }}{% else %}{{ numero }}{% endif %}" 
                                required class="form-control"
                                {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group"><!-- Date d'établissement -->
                         <label for="date_etablissement"><i class="fas fa-calendar-alt mr-2"></i>Date d'établissement *</label>
                         <input type="date" id="date_etablissement" name="date_etablissement" 
                                value="{% if is_edition %}{{ attachement.date_etablissement|date:'Y-m-d' }}{% else %}{{ date_etablissement|date:'Y-m-d' }}{% endif %}" 
                                required class="form-control"
                                {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group"><!-- Date début période -->
                         <label for="date_debut_periode"><i class="fas fa-play-circle mr-2"></i>Date début période *</label>
                         <input type="date" id="date_debut_periode" name="date_debut_periode" 
                                value="{% if is_edition %}{{ attachement.date_debut_periode|date:'Y-m-d' }}{% else %}{{ date_debut_periode|date:'Y-m-d' }}{% endif %}" 
                                required class="form-control"
                                {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group"><!-- Date fin période -->
                         <label for="date_fin_periode"><i class="fas fa-stop-circle mr-2"></i>Date fin période *</label>
                         <input type="date" id="date_fin_periode" name="date_fin_periode" 
                                value="{% if is_edition %}{{ attachement.date_fin_periode|date:'Y-m-d' }}{% else %}{{ date_fin_periode|date:'Y-m-d' }}{% endif %}" 
                                required class="form-control"
                                {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group"><!-- Statut -->
                         <label for="statut"><i class="fas fa-tag mr-2"></i>Statut *</label>
                         <select id="statut" name="statut" required class="form-control"
                                 {% if is_edition and not attachement.est_validable %}disabled{% endif %}>
@@ -711,7 +728,7 @@
                         <input type="hidden" name="statut" value="{{ attachement.statut }}">
                         {% endif %}
                     </div>
-                    <div class="form-group">
+                    <div class="form-group"><!-- Fichier joint -->
                         <label for="fichier"><i class="fas fa-file-upload mr-2"></i>Fichier joint</label>
                         <input type="file" id="fichier" name="fichier" class="form-control" 
                                {% if is_edition and not attachement.est_validable %}disabled{% endif %}
@@ -737,8 +754,15 @@
                     </div>
                 </div>
 
-                <!-- Tableau Handsontable -->
-                <div class="mb-6">
+                <div class="form-group mb-3"><!-- Observations -->
+                    <label for="observations"><i class="fas fa-sticky-note mr-2"></i>Observations</label>
+                    <textarea id="observations" name="observations" rows="2" placeholder="Observations supplémentaires..." 
+                              class="form-control" {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                        {% if is_edition %}{{ attachement.observations }}{% endif %}
+                    </textarea>
+                </div>
+
+                <div class="mb-3"><!-- Tableau Handsontable -->
                     <h3 class="text-xl font-bold text-cyan-400 mb-4 flex items-center gap-2">
                         <i class="fas fa-table"></i>
                         Détail des Lignes d'Attachement
@@ -746,19 +770,9 @@
                     <div class="table-container">
                         <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
                     </div>
-                </div>
-
-                <!-- Observations -->
-                <div class="form-group mb-6">
-                    <label for="observations"><i class="fas fa-sticky-note mr-2"></i>Observations</label>
-                    <textarea id="observations" name="observations" rows="4" placeholder="Observations supplémentaires..." 
-                              class="form-control" {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
-                        {% if is_edition %}{{ attachement.observations }}{% endif %}
-                    </textarea>
-                </div>
-
-                <!-- Actions et Total -->
-                <div class="actions-footer">
+                </div>               
+                
+                <div class="actions-total"><!-- Actions et Total -->
                     <div class="flex flex-col sm:flex-row gap-3">
                         {% if not is_edition or attachement.est_validable %}
                         <button type="button" id="save-btn" class="btn btn-primary">

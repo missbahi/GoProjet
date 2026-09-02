@@ -25,6 +25,7 @@ def enregistrer_lignes_attachement(attachement, lignes_json):
 
     lignes_saisies = []
     identifiants = []
+
     for ligne_data in lignes_data:
         if not isinstance(ligne_data, dict) or 'id' not in ligne_data:
             raise DonneesAttachementInvalides("Chaque ligne d'attachement doit contenir un identifiant.")
@@ -44,16 +45,16 @@ def enregistrer_lignes_attachement(attachement, lignes_json):
     if len(identifiants) != len(set(identifiants)):
         raise DonneesAttachementInvalides("Une ligne de bordereau ne peut être présente qu'une fois.")
 
-    lignes_bordereau = LigneBordereau.objects.filter(
-        id__in=identifiants,
-        lot__projet=attachement.projet,
-    ).in_bulk()
+    lignes_bordereau = LigneBordereau.objects.filter(id__in=identifiants, lot__projet=attachement.projet,).in_bulk()
     if len(lignes_bordereau) != len(identifiants):
         raise DonneesAttachementInvalides("Une ligne sélectionnée n'appartient pas au projet.")
 
     nouvelles_lignes = []
     for ligne_id, quantite_realisee in lignes_saisies:
         ligne_bordereau = lignes_bordereau[ligne_id]
+        if not ligne_bordereau.designation or not ligne_bordereau.designation.strip():
+            continue
+
         if quantite_realisee <= 0 and not ligne_bordereau.is_title:
             continue
 
@@ -72,7 +73,15 @@ def enregistrer_lignes_attachement(attachement, lignes_json):
         try:
             ligne_attachement.full_clean()
         except ValidationError as error:
-            raise DonneesAttachementInvalides("Une ligne d'attachement est invalide.") from error
+            print(
+                "Ligne invalide:",
+                ligne_id,
+                ligne_bordereau.numero,
+                repr(ligne_bordereau.designation),
+                error.message_dict,
+            )
+            raise DonneesAttachementInvalides(
+                f"Ligne {ligne_id, ligne_bordereau.numero} invalide : {error.message_dict}") from error
         nouvelles_lignes.append(ligne_attachement)
 
     LigneAttachement.objects.filter(attachement=attachement).delete()

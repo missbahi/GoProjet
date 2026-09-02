@@ -2957,7 +2957,6 @@ def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
         raise PermissionDenied("Cette action n'est pas autorisée pour le statut actuel de l'attachement.")
 
 
-@login_required
 @modules_projet_required
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -2969,7 +2968,6 @@ def liste_attachements(request, projet_id):
     }
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 
-@login_required
 @modules_projet_required
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
@@ -3079,7 +3077,7 @@ def ajouter_attachement(request, projet_id):
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
 
-@login_required
+@modules_projet_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})
@@ -3182,7 +3180,7 @@ def modifier_attachement(request, attachement_id):
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
 
-@login_required
+@modules_projet_required
 def detail_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     
@@ -3239,8 +3237,6 @@ def detail_attachement(request, attachement_id):
     }
     return render(request, 'projets/decomptes/detail_attachement.html', context)
 
-
-@login_required
 def tracabilite_validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     _verifier_acces_attachement(request, attachement)
@@ -3274,7 +3270,7 @@ def tracabilite_validation_attachement(request, attachement_id):
 
     return JsonResponse({'attachement': attachement.numero, 'validations': validations})
     
-@login_required
+@modules_projet_required
 def supprimer_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})

@@ -330,6 +330,31 @@ class ValidationAttachementRoleTests(TestCase):
 		self.assertEqual(ligne.ligne_lot, self.ligne_bordereau)
 		self.assertEqual(ligne.quantite_realisee, 3.5)
 
+	def test_ligne_sans_designation_est_ignoree(self):
+		ligne_sans_designation = LigneBordereau.objects.create(
+			lot=self.lot,
+			numero='',
+			designation='',
+			unite='',
+			quantite=Decimal('0'),
+			prix_unitaire=Decimal('0'),
+		)
+
+		enregistrer_lignes_attachement(
+			self.attachement,
+			json.dumps([
+				{'id': ligne_sans_designation.id, 'quantite_realisee': 0},
+				{'id': self.ligne_bordereau.id, 'quantite_realisee': 3.5},
+			]),
+		)
+
+		self.assertFalse(
+			self.attachement.lignes_attachement.filter(ligne_lot=ligne_sans_designation).exists()
+		)
+		self.assertTrue(
+			self.attachement.lignes_attachement.filter(ligne_lot=self.ligne_bordereau).exists()
+		)
+
 	def test_derniere_etape_technique_validee_valide_le_processus_technique(self):
 		premiere_etape = EtapeValidation.objects.create(
 			processValidation=self.validation, nom='Contrôle terrain', ordre=1

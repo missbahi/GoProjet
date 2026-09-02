@@ -7,9 +7,7 @@ class NotificationService:
     
     @staticmethod
     def creer_notification_personnalisee(utilisateur, type_notif, titre, message, projet=None, niveau_urgence='MOYEN', action_url=None):
-        ''' Créer une notification personnalisée '''
-        print(utilisateur, type_notif, titre, message, projet, niveau_urgence, action_url)
-        
+        ''' Créer une notification personnalisée '''        
         return Notification.objects.create(
             utilisateur=utilisateur,
             projet=projet,

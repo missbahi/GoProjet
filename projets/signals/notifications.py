@@ -42,7 +42,6 @@ def gerer_notifications_projet(sender, instance: Projet, created, **kwargs):
 
 @receiver(post_save, sender=Attachement)
 def notifier_attachement_modifie(sender, instance: Attachement, created, **kwargs):
-    print('notifier_validation_attachement')
     from projets.services.notification_service import NotificationService
     users = User.objects.filter(projets__id=instance.projet_id)
     type_notif = ''
