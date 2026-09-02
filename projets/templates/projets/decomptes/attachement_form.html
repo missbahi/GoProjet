@@ -175,8 +175,12 @@
         .nav-buttons {
             display: flex;
             flex-wrap: wrap;
+            background: var(--background-card);
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
             gap: 0.75rem;
-            margin-bottom: 1.5rem;
+            padding: 1rem;
+            margin: 1rem;
         }
 
         .nav-buttons-group {
@@ -500,71 +504,8 @@
                 </div>
                 {% endif %}
             </div>
+         
         </header>
-
-        <!-- Boutons navigation -->
-        <div class="nav-buttons">
-            <div class="nav-buttons-group">
-                <button onclick="window.location.href='{% url 'projets:liste_attachements' projet.id %}'" 
-                        class="btn btn-success">
-                    <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Retour aux attachements</span>
-                </button>
-                <button onclick="window.location.href='{% url 'projets:dashboard' projet.id %}'" 
-                        class="btn btn-info">
-                    <i class="fa-solid fa-diagram-project"></i> <span class="hidden sm:inline">Retour au projet</span>
-                </button>
-                <button onclick="window.location.href='{% url 'home' %}'" 
-                        class="btn btn-warning">
-                    <i class="fa-solid fa-house"></i> <span class="hidden sm:inline">Accueil</span>
-                </button>
-            </div>
-            <!-- Boutons de validation -->
-            {% if is_edition %}
-            <div class="nav-buttons-group">
-                {% if attachement.est_validable %}
-                    <!-- Attachement en cours de validation -->
-                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
-                            class="btn btn-validation">
-                        <i class="fas fa-clipboard-check"></i> <span class="hidden sm:inline">Processus de Validation</span>
-                    </button>
-                    
-                    {% if attachement.statut == 'BROUILLON' %}
-                    <button type="button" id="transmettre-btn" class="btn btn-primary">
-                        <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Transmettre</span>
-                    </button>
-                    {% endif %}
-                    
-                {% elif attachement.peut_reouvrir %}
-                    <!-- Attachement validé mais réouvrable -->
-                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
-                            class="btn btn-success">
-                        <i class="fas fa-eye"></i> <span class="hidden sm:inline">Voir le processus</span>
-                    </button>
-                    
-                    {% if is_edition and attachement.peut_reouvrir %}
-                    <button id="reouvrir-btn" onclick="reouvrirAttachement({{ attachement.id }})" 
-                            class="btn btn-warning">
-                        <i class="fas fa-undo"></i> <span class="hidden sm:inline">Réouvrir</span>
-                    </button>
-                    {% endif %}
-                    
-                {% elif attachement.ferme %}
-                    <!-- Attachement signé (fermé) -->
-                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
-                            class="btn btn-ferme">
-                        <i class="fas fa-eye"></i> <span class="hidden sm:inline">Consulter</span>
-                    </button>
-                    
-                {% else %}
-                    <!-- Autres statuts -->
-                    <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
-                            class="btn btn-info">
-                        <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Détails</span>
-                    </button>
-                {% endif %}
-            </div>
-            {% endif %}
-        </div>
 
         <!-- Messages -->
         {% if messages %}
@@ -591,7 +532,7 @@
             </div>
         {% endif %}
 
-        <!-- Section d'information selon le statut -->
+        <div><!-- Section d'information selon le statut -->
         {% if is_edition %}
             {% if attachement.est_validable %}
             <div class="validation-section">
@@ -663,12 +604,74 @@
             </div>
             {% endif %}
         {% endif %}
+        </div>
 
         <!-- Contenu principal -->
         <div class="content-section glass-effect">
-            <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
-                {% csrf_token %}
-                <div class="actions-total" style="margin-left: 1rem; margin-top: 1rem; margin-bottom: 1rem;"><!-- Actions et Total -->
+            <!-- Boutons navigation toujours visible-->
+            <div class="nav-buttons sticky top-0 z-50 py-2">
+                <div class="nav-buttons-group">
+                    <button onclick="window.location.href='{% url 'projets:liste_attachements' projet.id %}'" 
+                            class="btn btn-success">
+                        <i class="fa-solid fa-arrow-left"></i> <span class="hidden sm:inline">Retour aux attachements</span>
+                    </button>
+                    <button onclick="window.location.href='{% url 'projets:dashboard' projet.id %}'" 
+                            class="btn btn-info">
+                        <i class="fa-solid fa-diagram-project"></i> <span class="hidden sm:inline">Retour au projet</span>
+                    </button>
+                    <button onclick="window.location.href='{% url 'home' %}'" 
+                            class="btn btn-warning">
+                        <i class="fa-solid fa-house"></i> <span class="hidden sm:inline">Accueil</span>
+                    </button>
+                </div>
+                <!-- Boutons de validation -->
+                {% if is_edition %}
+                <div class="nav-buttons-group">
+                    {% if attachement.est_validable %}
+                        <!-- Attachement en cours de validation -->
+                        <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                                class="btn btn-validation">
+                            <i class="fas fa-clipboard-check"></i> <span class="hidden sm:inline">Processus de Validation</span>
+                        </button>
+                        
+                        {% if attachement.statut == 'BROUILLON' %}
+                        <button type="button" id="transmettre-btn" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> <span class="hidden sm:inline">Transmettre</span>
+                        </button>
+                        {% endif %}
+                        
+                    {% elif attachement.peut_reouvrir %}
+                        <!-- Attachement validé mais réouvrable -->
+                        <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                                class="btn btn-success">
+                            <i class="fas fa-eye"></i> <span class="hidden sm:inline">Voir le processus</span>
+                        </button>
+                        
+                        {% if is_edition and attachement.peut_reouvrir %}
+                        <button id="reouvrir-btn" onclick="reouvrirAttachement({{ attachement.id }})" 
+                                class="btn btn-warning">
+                            <i class="fas fa-undo"></i> <span class="hidden sm:inline">Réouvrir</span>
+                        </button>
+                        {% endif %}
+                        
+                    {% elif attachement.ferme %}
+                        <!-- Attachement signé (fermé) -->
+                        <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                                class="btn btn-ferme">
+                            <i class="fas fa-eye"></i> <span class="hidden sm:inline">Consulter</span>
+                        </button>
+                        
+                    {% else %}
+                        <!-- Autres statuts -->
+                        <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
+                                class="btn btn-info">
+                            <i class="fas fa-info-circle"></i> <span class="hidden sm:inline">Détails</span>
+                        </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <!-- Section des actions et du total -->
+                <div class="nav-buttons-group"><!-- Actions et Total -->
                     <div class="flex flex-col sm:flex-row gap-3">
                         {% if not is_edition or attachement.est_validable %}
                         <button type="button" id="save-btn" class="btn btn-primary">
@@ -681,9 +684,12 @@
                             <i class="fa-solid fa-trash"></i> Supprimer
                         </button>
                         {% endif %}
-                    </div>
-                
+                    </div>           
                 </div>
+            </div>
+            <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
+                {% csrf_token %}
+                
                 <div class="responsive-grid mb-3"><!-- Informations de base -->
                     <div class="form-group"><!-- Numéro d'attachement -->
                         <label for="numero"><i class="fas fa-hashtag mr-2"></i>Numéro d'attachement *</label>
