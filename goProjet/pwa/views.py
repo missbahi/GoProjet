@@ -16,8 +16,8 @@ def manifest_view(request):
     
     # Construire le manifest depuis la configuration
     manifest = {
-        "name": getattr(settings, 'PWA_APP_NAME', 'goProjet'),
-        "short_name": getattr(settings, 'PWA_APP_NAME', 'goProjet'),
+        "name": getattr(settings, 'PWA_APP_NAME', 'GoProjet'),
+        "short_name": getattr(settings, 'PWA_APP_NAME', 'GoProjet'),
         "description": getattr(settings, 'PWA_APP_DESCRIPTION', ''),
         "start_url": getattr(settings, 'PWA_APP_START_URL', '/'),
         "display": getattr(settings, 'PWA_APP_DISPLAY', 'standalone'),
@@ -67,18 +67,18 @@ def serviceworker_view(request):
         else:
             # Service worker minimal
             content = """// Service Worker minimal
-const CACHE_NAME = 'goprojet-v1';
-self.addEventListener('install', e => {
-    console.log('[SW] Install');
-    e.waitUntil(caches.open(CACHE_NAME)
-        .then(cache => cache.add('/'))
-        .then(() => self.skipWaiting()));
-});
-self.addEventListener('fetch', e => {
-    e.respondWith(caches.match(e.request)
-        .then(res => res || fetch(e.request)));
-});"""
-        
+                const CACHE_NAME = 'goprojet-v1';
+                self.addEventListener('install', e => {
+                    console.log('[SW] Install');
+                    e.waitUntil(caches.open(CACHE_NAME)
+                        .then(cache => cache.add('/'))
+                        .then(() => self.skipWaiting()));
+                });
+                self.addEventListener('fetch', e => {
+                    e.respondWith(caches.match(e.request)
+                        .then(res => res || fetch(e.request)));
+                });"""
+                        
         # ⭐⭐ IMPORTANT : HttpResponse avec bon Content-Type ⭐⭐
         response = HttpResponse(content, content_type='application/javascript')
         response['Service-Worker-Allowed'] = '/'
