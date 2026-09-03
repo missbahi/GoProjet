@@ -210,6 +210,11 @@ class Projet(models.Model):
     
     def save(self, *args, **kwargs):
         update_flags = kwargs.pop('update_flags', True)
+        if self.date_creation and timezone.is_naive(self.date_creation):
+            self.date_creation = timezone.make_aware(
+                self.date_creation,
+                timezone.get_current_timezone(),
+            )
         super().save(*args, **kwargs)
         
         if update_flags and not getattr(self, '_updating_flags', False):

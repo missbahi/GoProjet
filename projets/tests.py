@@ -1098,12 +1098,14 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(resp.status_code, 403)
 
 	def test_ordre_service_upload_and_secure_download(self):
-		type_os = TypeOrdreService.objects.create(
+		type_os, _ = TypeOrdreService.objects.get_or_create(
 			code='AUTRE',
-			nom='Autre OS',
-			description='Test',
-			ordre_min=1,
-			ordre_max=99,
+			defaults={
+				'nom': 'Autre OS',
+				'description': 'Test',
+				'ordre_min': 1,
+				'ordre_max': 99,
+			},
 		)
 		fichier = SimpleUploadedFile(
 			'os-note.pdf', b'%PDF-os', content_type='application/pdf'

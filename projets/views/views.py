@@ -224,8 +224,22 @@ def serve_file_with_original_name(file_field, original_filename):
     try:
         import requests
         import urllib.parse
+        import mimetypes
         
         file_url = clean_url(file_field.url)
+
+        if file_url.startswith('/'):
+            response = FileResponse(
+                file_field.open('rb'),
+                content_type=mimetypes.guess_type(original_filename)[0]
+                or 'application/octet-stream',
+            )
+            encoded_filename = urllib.parse.quote(original_filename)
+            response['Content-Disposition'] = (
+                f'attachment; filename="{encoded_filename}"; '
+                f'filename*=UTF-8\'\'{encoded_filename}'
+            )
+            return response
         
         response = requests.get(file_url, stream=True)
         response.raise_for_status()
