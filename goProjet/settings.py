@@ -45,6 +45,8 @@ if DEBUG:
 else:
     # Hosts pour la production
     ALLOWED_HOSTS = [
+        'goprojet.onrender.com',
+        '.onrender.com',
         'goprojet-production.up.railway.app',
         '.railway.app',
         '.up.railway.app',
