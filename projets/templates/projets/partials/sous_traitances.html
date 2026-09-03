@@ -38,7 +38,7 @@
                             data-type="{{ sous_traitance.type_sous_traitance }}"
                             data-prestataire="{{ sous_traitance.prestataire }}"
                             data-unite="{{ sous_traitance.unite }}"
-                            data-prix-unitaire="{{ sous_traitance.prix_unitaire }}"
+                            data-prix-unitaire="{{ sous_traitance.prix_unitaire|floatformat:2 }}"
                             data-actif="{{ sous_traitance.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

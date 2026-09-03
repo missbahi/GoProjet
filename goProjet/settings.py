@@ -125,7 +125,6 @@ WSGI_APPLICATION = 'goProjet.wsgi.application'
 
 if os.environ.get('DATABASE_URL') and not DEBUG:
     # PRODUCTION : PostgreSQL Railway
-    import dj_database_url
     DATABASES = {
         'default': dj_database_url.config(
             default=os.environ.get('DATABASE_URL'),

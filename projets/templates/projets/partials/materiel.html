@@ -38,7 +38,7 @@
                             data-type="{{ engin.type_materiel }}"
                             data-immatriculation="{{ engin.immatriculation }}"
                             data-unite="{{ engin.unite }}"
-                            data-prix-unitaire="{{ engin.prix_unitaire }}"
+                            data-prix-unitaire="{{ engin.prix_unitaire|floatformat:2 }}"
                             data-actif="{{ engin.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

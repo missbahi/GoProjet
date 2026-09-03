@@ -38,7 +38,7 @@
                             data-type="{{ location.type_materiel }}"
                             data-locataire="{{ location.locataire }}"
                             data-unite="{{ location.unite }}"
-                            data-prix-unitaire="{{ location.prix_unitaire }}"
+                            data-prix-unitaire="{{ location.prix_unitaire|floatformat:2 }}"
                             data-actif="{{ location.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

@@ -38,7 +38,7 @@
                             data-type="{{ consommable.type_consommable }}"
                             data-fournisseur="{{ consommable.fournisseur }}"
                             data-unite="{{ consommable.unite }}"
-                            data-prix-unitaire="{{ consommable.prix_unitaire }}"
+                            data-prix-unitaire="{{ consommable.prix_unitaire|floatformat:2 }}"
                             data-actif="{{ consommable.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

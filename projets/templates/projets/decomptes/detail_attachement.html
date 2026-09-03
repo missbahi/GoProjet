@@ -739,14 +739,14 @@
                 Résumé de l'Attachement
             </h2>
             <div class="stats-grid">
-                <div class="stat-item">
+                <!-- <div class="stat-item">
                     <span>Total lots :</span>
                     <span class="stat-value">{{ total_lots }}</span>
                 </div>
                 <div class="stat-item">
                     <span>Total lignes :</span>
                     <span class="stat-value">{{ total_lignes }}</span>
-                </div>
+                </div> -->
                 <div class="stat-item">
                     <span>Montant total HT :</span>
                     <span class="stat-value">{{ montant_total|format_french_number }} MAD</span>
@@ -764,9 +764,9 @@
             <div class="lot-header">
                 <i class="fas fa-cube"></i>
                 <span>Lot : {{ lot_data.lot.nom }}</span>
-                <span style="margin-left: auto; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px;">
+                <!-- <span style="margin-left: auto; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px;">
                     {{ lot_data.lignes_table|length }} ligne{{ lot_data.lignes_table|length|pluralize }}
-                </span>
+                </span> -->
             </div>
             <div class="table-container">
                 <table class="data-table">

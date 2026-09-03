@@ -38,7 +38,7 @@
                             data-type="{{ fourniture.type_fourniture }}"
                             data-fournisseur="{{ fourniture.fournisseur }}"
                             data-unite="{{ fourniture.unite }}"
-                            data-prix-unitaire="{{ fourniture.prix_unitaire }}"
+                            data-prix-unitaire="{{ fourniture.prix_unitaire|floatformat:2 }}"
                             data-actif="{{ fourniture.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

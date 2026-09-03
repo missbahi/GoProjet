@@ -38,7 +38,7 @@
                             data-fonction="{{ personne.fonction }}"
                             data-telephone="{{ personne.telephone }}"
                             data-unite="{{ personne.unite }}"
-                            data-tarif="{{ personne.tarif }}"
+                            data-tarif="{{ personne.tarif|floatformat:2 }}"
                             data-actif="{{ personne.actif|yesno:'true,false' }}"
                             class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
                         <i class="fa-solid fa-pen"></i>

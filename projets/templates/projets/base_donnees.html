@@ -1599,7 +1599,9 @@
         document.getElementById('editPersonnelFonction').value = fonction || '';
         document.getElementById('editPersonnelTelephone').value = telephone || '';
         document.getElementById('editPersonnelUnite').value = unite || '';
-        document.getElementById('editPersonnelTarif').value = tarif || '';
+        document.getElementById('editPersonnelTarif').value = tarif
+            ? String(tarif).replace(',', '.')
+            : '';
         document.getElementById('editPersonnelActif').checked = actif === 'true';
         document.getElementById('editPersonnelModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
@@ -1628,6 +1630,10 @@
     }
 
     // Fonctions pour le matériel
+    function formatPrixPourChamp(prix) {
+        return prix ? String(prix).replace(',', '.') : '';
+    }
+
     function openEditMaterielModal(id, designation, type, immatriculation, unite, prixUnitaire, actif) {
         currentMaterielId = id;
         document.getElementById('editMaterielId').value = id;
@@ -1635,7 +1641,7 @@
         document.getElementById('editMaterielType').value = type || '';
         document.getElementById('editMaterielImmatriculation').value = immatriculation || '';
         document.getElementById('editMaterielUnite').value = unite || '';
-        document.getElementById('editMaterielPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editMaterielPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
         document.getElementById('editMaterielActif').checked = actif === 'true';
         document.getElementById('editMaterielModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
@@ -1671,7 +1677,7 @@
         document.getElementById('editLocationType').value = type || '';
         document.getElementById('editLocationLocataire').value = locataire || '';
         document.getElementById('editLocationUnite').value = unite || '';
-        document.getElementById('editLocationPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editLocationPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
         document.getElementById('editLocationActif').checked = actif === 'true';
         document.getElementById('editLocationModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
@@ -1707,7 +1713,7 @@
         document.getElementById('editSousTraitanceType').value = type || '';
         document.getElementById('editSousTraitancePrestataire').value = prestataire || '';
         document.getElementById('editSousTraitanceUnite').value = unite || '';
-        document.getElementById('editSousTraitancePrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editSousTraitancePrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
         document.getElementById('editSousTraitanceActif').checked = actif === 'true';
         document.getElementById('editSousTraitanceModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
@@ -1743,7 +1749,7 @@
         document.getElementById('editConsommableType').value = type || '';
         document.getElementById('editConsommableFournisseur').value = fournisseur || '';
         document.getElementById('editConsommableUnite').value = unite || '';
-        document.getElementById('editConsommablePrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editConsommablePrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
         document.getElementById('editConsommableActif').checked = actif === 'true';
         document.getElementById('editConsommableModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
@@ -1779,7 +1785,7 @@
         document.getElementById('editFournitureType').value = type || '';
         document.getElementById('editFournitureFournisseur').value = fournisseur || '';
         document.getElementById('editFournitureUnite').value = unite || '';
-        document.getElementById('editFournitureUniPrixUnitaire').value = prixUnitaire || '';
+        document.getElementById('editFournitureUniPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
         document.getElementById('editFournitureActif').checked = actif === 'true';
         document.getElementById('editFournitureModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';

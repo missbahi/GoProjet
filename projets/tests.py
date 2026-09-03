@@ -624,6 +624,14 @@ class PersonnelMaterielBaseDonneesTests(TestCase):
 		self.assertEqual(response_personnel.status_code, 200)
 		self.assertEqual(response_materiel.status_code, 200)
 
+	def test_tarif_personnel_est_transmis_au_modal_de_modification(self):
+		personnel = Personnel.objects.create(nom='Karim Alaoui', tarif=Decimal('125.50'))
+		self.client.force_login(self.superuser)
+
+		response = self.client.get(reverse('projets:partial_personnel'))
+
+		self.assertContains(response, 'data-tarif="125,50"')
+
 
 class StorageDocumentFlowsTests(TestCase):
 	@classmethod
