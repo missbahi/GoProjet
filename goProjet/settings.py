@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import dj_database_url
 from dotenv import load_dotenv  # Nouveau
+from django.core.exceptions import ImproperlyConfigured
 
 
 # --- 1. CHEMINS DE BASE ---
@@ -290,6 +291,12 @@ if USE_R2_DOCUMENTS and R2_IS_CONFIGURED:
     print("✅ Stockage R2 activé pour les documents FileField")
 elif USE_R2_DOCUMENTS:
     print("⚠️ USE_R2_DOCUMENTS=true mais configuration R2 incomplète: fallback stockage existant")
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'R2 est obligatoire en production lorsque USE_R2_DOCUMENTS=true. '
+            'Vérifiez les variables R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, '
+            'R2_BUCKET_NAME et R2_ENDPOINT_URL.'
+        )
     
 SECURE_SSL_REDIRECT = False
 

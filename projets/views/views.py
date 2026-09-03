@@ -1363,14 +1363,19 @@ def sauvegarder_lignes_bordereau(request, lot_id):
 
 def serve_avatar(request, filename):
     """Vue personnalisée pour servir les avatars avec fallback"""
-    avatar_path = os.path.join(settings.MEDIA_ROOT, 'avatars', filename)
-    
-    # Vérifier si le fichier existe
-    if os.path.exists(avatar_path):
-        with open(avatar_path, 'rb') as f:
-            return HttpResponse(f.read(), content_type='image/jpeg')
-    else:
+    import mimetypes
+
+    avatar_name = f'avatars/{os.path.basename(filename)}'
+    if not default_storage.exists(avatar_name):
         return redirect(default_storage.url('avatars/default.jpeg'))
+
+    avatar_url = clean_url(default_storage.url(avatar_name), replace_https=False)
+    if avatar_url.startswith('/'):
+        return FileResponse(
+            default_storage.open(avatar_name, 'rb'),
+            content_type=mimetypes.guess_type(avatar_name)[0] or 'image/jpeg',
+        )
+    return redirect(avatar_url)
 
 # Définition de la taille maximale (5 Mo en octets)
 @login_required

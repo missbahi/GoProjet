@@ -713,7 +713,7 @@
                 <div class="user-header">
                     <div class="avatar-container">
                         {% if user.profile.avatar %}
-                            <img src="{{ user.profile.avatar.url }}" alt="Avatar actuel" class="avatar">
+                                <img src="{{ user.profile.avatar_url }}" alt="Avatar actuel" class="avatar">
                         {% else %}
                             <div class="avatar-placeholder">
                                 <i class="fas fa-user"></i>
@@ -864,7 +864,7 @@
                     <div class="avatar-section">
                         <div class="avatar-preview" id="avatar-preview">
                             {% if user.profile.avatar %}
-                                <img src="{{ user.profile.avatar.url }}" alt="Avatar preview">
+                                <img src="{{ user.profile.avatar_url }}" alt="Avatar preview">
                             {% else %}
                                 <i class="fas fa-user"></i>
                             {% endif %}
