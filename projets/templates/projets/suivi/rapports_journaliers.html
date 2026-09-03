@@ -68,7 +68,7 @@
                             <td class="py-3 pr-4 text-amber-300 whitespace-nowrap">{{ rapport.total_depenses_annotated }} DH</td>
                             <td class="py-3 pr-4">
                                 {% if rapport.document %}
-                                <a href="{{ rapport.document.url }}" target="_blank" class="document-link inline-flex items-center gap-2 max-w-[220px] truncate" title="Ouvrir le document">
+                                <a href="{% url 'projets:download_document' 'RapportJournalier' rapport.id %}?download=false" target="_blank" class="document-link inline-flex items-center gap-2 max-w-[220px] truncate" title="Ouvrir le document">
                                     <i class="fas fa-file-pdf"></i><span class="truncate">{{ rapport.document_nom }}</span>
                                 </a>
                                 {% else %}

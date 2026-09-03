@@ -122,7 +122,7 @@
             <span class="text-xs text-gray-500 hidden sm:inline">({{ rapport.document.size|filesizeformat }})</span>
           </div>
           <div class="rapport-document-actions">
-            <a href="{{ rapport.document.url }}" target="_blank" 
+            <a href="{% url 'projets:download_document' 'RapportJournalier' rapport.id %}?download=false" target="_blank" 
                class="rapport-document-button btn-info px-3 py-1 rounded text-xs font-medium hover:scale-105 transition-transform">
               <i class="fas fa-eye"></i> Voir
             </a>

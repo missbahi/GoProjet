@@ -94,6 +94,8 @@ def get_projet_from_instance(instance):
         return instance.attachement.projet
     elif hasattr(instance,'processValidation'):
         return instance.processValidation.attachement.projet
+    elif hasattr(instance, 'situation'):
+        return instance.situation.projet
     return None
 
 def clean_url(url, replace_https=True):
