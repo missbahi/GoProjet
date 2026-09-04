@@ -1,16 +1,17 @@
-{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Modifier le projet</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    {% load static %}
 
     <link href="{% static 'projets/css/tailwind.css' %}" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 </head>
-<body lass="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-8">
+<body class="bg-gray-50 min-h-screen flex items-center justify-center px-4 py-8">
     <div class="max-w-2xl w-full shadow-xl rounded-xl overflow-hidden">
         <div class="bg-blue-600 px-6 py-4">
             <h1 class="text-2xl font-bold text-white">
@@ -87,9 +88,9 @@
                             {{ form.montant.label }}
                         </label>
                         {{ form.montant }}
-                    </div class="hidden">
+                    </div>
                     <div>
-                        <label for="form.type_projet.id_for_label" class="block text-sm font-medium mb-1">
+                        <label for="{{ form.type_projet.id_for_label }}" class="block text-sm font-medium mb-1">
                             Type de projet
                         </label>
                         {{ form.type_projet }}
@@ -119,7 +120,7 @@
 
             <div class="flex flex-col sm:flex-row justify-end gap-4 pt-4 border-t border-gray-200 mt-6">
                 
-                <button onclick="window.history.back();" 
+                <button type="button" onclick="window.history.back();" 
                     class="flex items-center justify-center gap-2 text-gray-700 hover:text-gray-900 px-5 py-2.5 border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 transition duration-200 font-medium">
                     <i class="fas fa-times-circle"></i>
                     <span>Annuler</span>
