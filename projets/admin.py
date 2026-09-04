@@ -7,7 +7,7 @@ from .models.profile import Profile
 from .models import (
     Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet,
     Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService,
-    Personnel, Materiel, Location, SousTraitance, Fourniture, Consommable
+    Personnel, Materiel, Transport, Location, SousTraitance, Fourniture, Consommable
 )
 
 class ProfileInline(admin.StackedInline):
@@ -174,6 +174,13 @@ class LocationAdmin(admin.ModelAdmin):
     list_display = ('designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif')
     list_filter = ('actif', 'type_materiel')
     search_fields = ('designation', 'locataire')
+    list_per_page = 20
+
+@admin.register(Transport)
+class TransportAdmin(admin.ModelAdmin):
+    list_display = ('designation', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('actif', 'type_transport')
+    search_fields = ('designation', 'transporteur')
     list_per_page = 20
 
 @admin.register(SousTraitance)

@@ -22,7 +22,7 @@ from projets.services.attachement_service import DonneesAttachementInvalides, en
 from ..forms import (
     ClientForm, DecompteForm, DossierForm, DocumentAdministratifForm,
     EntrepriseForm, IngenieurForm, OrdreServiceForm, ProjetForm, TacheForm,
-    AttachementForm, UtilisateurCreationForm, RapportJournalierForm,
+    AttachementForm, TransportForm, UtilisateurCreationForm, RapportJournalierForm,
     DepenseRapportJournalierFormSet, StockRapportJournalierFormSet,
     SituationMensuelleForm, DepenseSituationMensuelleFormSet,
     StockSituationMensuelleFormSet, DocumentSituationMensuelleFormSet,
@@ -1122,6 +1122,11 @@ def partial_materiel(request):
     return render(request, 'projets/partials/materiel.html', {'materiel': materiel})
 
 @chef_projet_required
+def partial_transports(request):
+    transports = Transport.objects.all()
+    return render(request, 'projets/partials/transport.html', {'transports': transports})
+
+@chef_projet_required
 def partial_locations(request):
     locations = Location.objects.all()
     return render(request, 'projets/partials/locations.html', {'locations': locations})
@@ -1835,6 +1840,52 @@ def supprimer_materiel(request, materiel_id):
     messages.success(request, "Matériel supprimé avec succès.")
     return redirect("projets:partial_materiel")
 
+# -------- Transports --------
+@chef_projet_required
+def ajouter_transport(request):
+    if request.method == 'POST':
+        form = TransportForm(request.POST)
+        if form.is_valid():
+            transport = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Le transport ' + transport.designation + ' a été ajouté avec succès'
+                })
+            return redirect('projets:partial_transports')
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'errors': form.errors})
+    else:
+        form = TransportForm()
+    return render(request, 'projets/partials/transport.html', {'form': form})
+
+@chef_projet_required
+def modifier_transport(request, transport_id):
+    transport = get_object_or_404(Transport, id=transport_id)
+
+    if request.method == 'POST':
+        form = TransportForm(request.POST, instance=transport)
+        if form.is_valid():
+            transport = form.save()
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': True, 'message': 'Transport ' + transport.designation + ' modifié avec succès'})
+        else:
+            if request.GET.get('modal') == 'true':
+                return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    return JsonResponse({'error': 'Méthode non supportée'}, status=400)
+
+@chef_projet_required
+def supprimer_transport(request, transport_id):
+    transport = get_object_or_404(Transport, id=transport_id)
+    transport.delete()
+
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"success": True, "message": "Transport " + transport.designation + " supprimé avec succès."})
+
+    messages.success(request, "Transport supprimé avec succès.")
+    return redirect("projets:partial_transports")
+
 # -------- Locations --------
 @chef_projet_required
 def ajouter_location(request):
@@ -2479,8 +2530,6 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
             fichier = request.FILES.get('document')
             with transaction.atomic():
                 if fichier:
-                    if rapport.document:
-                        rapport.document.delete(save=False)
                     rapport.document = fichier
                     rapport.original_filename = fichier.name
                 rapport.save()
@@ -2533,8 +2582,7 @@ def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
     if request.method == 'POST':
         if rapport.document:
-            # Supprime le fichier physique quel que soit le backend de stockage (local ou R2/S3)
-            rapport.document.delete(save=False)
+            rapport.document = None
             rapport.original_filename = ''
             rapport.save(update_fields=['document', 'original_filename'])
             messages.success(request, 'Document supprimé du rapport journalier.')
@@ -2612,9 +2660,6 @@ def upload_rapport_document(request, projet_id, rapport_id):
     
     try:
         # Supprimer l'ancien document s'il existe
-        if rapport.document and rapport.document.name:
-            rapport.document.delete(save=False)
-        
         # Sauvegarder le nouveau document
         rapport.document = fichier
         rapport.original_filename = fichier.name
@@ -4159,7 +4204,6 @@ def ordres_service(request, projet_id):
                         
                     if 'supprimer_document' in request.POST and request.POST['supprimer_document'] == '1':
                         if ordre.fichier:
-                            ordre.fichier.delete(save=False)
                             ordre.fichier = None
                             ordre.original_filename = None
                             

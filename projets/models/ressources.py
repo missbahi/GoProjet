@@ -52,6 +52,22 @@ class Location(models.Model):
     def __str__(self):
         return self.designation
 
+class Transport(models.Model):
+    designation = models.CharField(_("Désignation"), max_length=150)
+    type_transport = models.CharField(_("Type"), max_length=100, blank=True)
+    transporteur = models.CharField(_("Transporteur"), max_length=50, blank=True)
+    unite = models.CharField(_("Unité"), max_length=20, blank=True)
+    prix_unitaire = models.DecimalField(_("Prix unitaire (DH)"), max_digits=12, decimal_places=2, default=0)
+    actif = models.BooleanField(_("Actif"), default=True)
+
+    class Meta:
+        verbose_name = _("Transport")
+        verbose_name_plural = _("Transports")
+        ordering = ['designation']
+
+    def __str__(self):
+        return self.designation
+
 
 class SousTraitance(models.Model):
     designation = models.CharField(_("Désignation"), max_length=150)

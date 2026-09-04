@@ -114,6 +114,12 @@ base_donnees_urlpatterns = [
     path('materiel/supprimer/<int:materiel_id>/', views.supprimer_materiel, name='supprimer_materiel'),
     path('base_donnees/materiel/', views.partial_materiel, name='partial_materiel'),
 
+    # Gestion des transports
+    path('transports/ajouter/', views.ajouter_transport, name='ajouter_transport'),
+    path('transports/modifier/<int:transport_id>/', views.modifier_transport, name='modifier_transport'),
+    path('transports/supprimer/<int:transport_id>/', views.supprimer_transport, name='supprimer_transport'),
+    path('base_donnees/transports/', views.partial_transports, name='partial_transports'),
+
     # Gestion des locations
     path('locations/ajouter/', views.ajouter_location, name='ajouter_location'),
     path('locations/modifier/<int:location_id>/', views.modifier_location, name='modifier_location'),

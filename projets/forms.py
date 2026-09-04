@@ -14,7 +14,7 @@ from .models import (
     Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
     StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
     StockSituationMensuelle, DocumentSituationMensuelle, Personnel, Materiel,
-    Location, SousTraitance, Consommable, Fourniture,
+    Location, Transport, SousTraitance, Consommable, Fourniture,
 )
 
 from django.contrib.auth.models import User
@@ -245,6 +245,11 @@ class MaterielForm(forms.ModelForm):
     class Meta:
         model = Materiel
         fields = ['designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif']
+
+class TransportForm(forms.ModelForm):
+    class Meta:
+        model = Transport
+        fields = ['designation', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif']
 
 class LocationForm(forms.ModelForm):
     class Meta:

@@ -783,6 +783,28 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(rapport.original_filename, 'rapport.pdf')
 		self.assertTrue(rapport.document.name.endswith('rapport.pdf'))
 
+	def test_suppression_ne_supprime_pas_un_fichier_partage(self):
+		fichier = SimpleUploadedFile('partage.pdf', b'document partage')
+		premier = DocumentAdministratif.objects.create(
+			projet=self.projet, fichier=fichier, type_document='Rapport',
+		)
+		second_projet = Projet.objects.create(
+			nom='Projet Partage', objet='Objet', numero='STK-002',
+			maitre_ouvrage='MOA', localisation='Rabat',
+		)
+		second = DocumentAdministratif(
+			projet=second_projet, type_document='Rapport',
+		)
+		second.fichier.name = premier.fichier.name
+		second.save()
+
+		fichier_nom = premier.fichier.name
+		premier.delete()
+
+		self.assertTrue(default_storage.exists(fichier_nom))
+		second.delete()
+		self.assertFalse(default_storage.exists(fichier_nom))
+
 	def test_suppression_document_rapport(self):
 		dossier = Dossier.objects.create(
 			nom='Dossier Travaux Suppression', gerant=self.user,

@@ -196,6 +196,14 @@
                         </div>
                     </li>
                     <li>
+                        <div id="menu-transports" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
+                            <button onclick="loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')" class="w-full text-left">
+                                <i class="fas fa-truck"></i>
+                                <span class="text-sm lg:text-base"> Gestion des Transports</span>
+                            </button>
+                        </div>
+                    </li>
+                    <li>
                         <div id="menu-locations" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
                             <button onclick="loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')" class="w-full text-left">
                                 <i class="fas fa-location-dot"></i>
@@ -904,6 +912,118 @@
     </div>
 </div>
 
+<!-- Modal d'ajout transport -->
+<div id="addTransportModal" class="modal">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un transport
+            </h3>
+            <button onclick="closeAddTransportModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="addTransportForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addTransportDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="addTransportDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addTransportType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="addTransportType" name="type_transport"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addTransportTransporteur" class="block text-sm font-medium text-green-300 mb-1">Transporteur</label>
+                <input type="text" id="addTransportTransporteur" name="transporteur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addTransportUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="addTransportUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addTransportPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire</label>
+                <input type="number" id="addTransportPrixUnitaire" name="prix_unitaire" step="0.01"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="addTransportActif" class="block text-sm font-medium text-green-300 mb-1">Actif</label>
+                <input type="checkbox" id="addTransportActif" name="actif"
+                       class="h-4 w-4 text-green-500 focus:ring-green-400 border-gray-300 rounded">
+            </div>
+            <div class="flex justify-end">
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification transport -->
+ <div id="editTransportModal" class="modal">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier le transport
+            </h3>
+            <button onclick="closeEditTransportModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+        <form id="editTransportForm" method="POST" class="needs-validation">
+            {% csrf_token %}
+            <input type="hidden" id="editTransportId" name="id">
+            <div class="mb-3">
+                <label for="editTransportDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
+                <input type="text" id="editTransportDesignation" name="designation"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editTransportType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
+                <input type="text" id="editTransportType" name="type_transport"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editTransportTransporteur" class="block text-sm font-medium text-green-300 mb-1">Transporteur</label>
+                <input type="text" id="editTransportTransporteur" name="transporteur"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editTransportUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
+                <input type="text" id="editTransportUnite" name="unite"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3">
+                <label for="editTransportPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" id="editTransportPrixUnitaire" name="prix_unitaire"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editTransportActif" name="actif"
+                       class="h-4 w-4">
+                <label for="editTransportActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditTransportModal()"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modal d'ajout location -->
 <div id="addLocationModal" class="modal">
     <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
@@ -1381,6 +1501,7 @@
     let currentEntrepriseId = null;
     let currentPersonnelId = null;
     let currentMaterielId = null;
+    let currentTransportId = null;
     let currentLocationId = null;
     let currentSousTraitanceId = null;
     let currentConsommableId = null;
@@ -1669,6 +1790,41 @@
         document.getElementById('addMaterielForm').reset();
     }
 
+    // Fonctions pour le transport
+    function openEditTransportModal(id, designation, type, transporteur, prixUnitaire, actif) {
+        currentTransportId = id;
+        document.getElementById('editTransportId').value = id;
+        document.getElementById('editTransportDesignation').value = designation;
+        document.getElementById('editTransportType').value = type || '';
+        document.getElementById('editTransportTransporteur').value = transporteur || '';
+        document.getElementById('editTransportPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
+        document.getElementById('editTransportActif').checked = actif === 'true';
+        document.getElementById('editTransportModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openAddTransportModal() {
+        document.getElementById('addTransportModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeEditTransportModal() {
+        document.getElementById('editTransportModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editTransportForm').classList.remove('was-validated');
+        document.getElementById('editTransportDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#editTransportForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+    }
+
+    function closeAddTransportModal() {
+        document.getElementById('addTransportModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addTransportForm').classList.remove('was-validated');
+        document.getElementById('addTransportDesignation').classList.remove('border-red-500');
+        document.querySelectorAll('#addTransportForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
+        document.getElementById('addTransportForm').reset();
+    }
+
     // Fonctions pour les locations
     function openEditLocationModal(id, designation, type, locataire, unite, prixUnitaire, actif) {
         currentLocationId = id;
@@ -1816,20 +1972,31 @@
     function closeAllModals() {
         closeEditIngenieurModal();
         closeAddIngenieurModal();
+
         closeEditClientModal();
         closeAddClientModal();
+
         closeEditEntrepriseModal();
         closeAddEntrepriseModal();
+
         closeEditPersonnelModal();
         closeAddPersonnelModal();
+
         closeEditMaterielModal();
         closeAddMaterielModal();
+
+        closeEditTransportModal();
+        closeAddTransportModal();
+
         closeEditLocationModal();
         closeAddLocationModal();
+
         closeEditSousTraitanceModal();
         closeAddSousTraitanceModal();
+
         closeEditConsommableModal();
         closeAddConsommableModal();
+
         closeEditFournitureModal();
         closeAddFournitureModal();
     }
@@ -1852,6 +2019,9 @@
         } else if (e.target.matches('[data-add-materiel-button]')) {
             e.preventDefault();
             openAddMaterielModal();
+        } else if (e.target.matches('[data-add-transport-button]')) {
+            e.preventDefault();
+            openAddTransportModal();
         } else if (e.target.matches('[data-add-location-button]')) {
             e.preventDefault();
             openAddLocationModal();
@@ -1922,6 +2092,18 @@
             const prixUnitaire = button.getAttribute('data-prix-unitaire');
             const actif = button.getAttribute('data-actif');
             openEditMaterielModal(id, designation, type, immatriculation, unite, prixUnitaire, actif);
+        }
+
+        // Boutons d'édition Transport
+        if (e.target.matches('[data-edit-transport-button]') || e.target.closest('[data-edit-transport-button]')) {
+            const button = e.target.matches('[data-edit-transport-button]') ? e.target : e.target.closest('[data-edit-transport-button]');
+            const id = button.getAttribute('data-id');
+            const designation = button.getAttribute('data-designation');
+            const type = button.getAttribute('data-type');
+            const transporteur = button.getAttribute('data-transporteur');
+            const prixUnitaire = button.getAttribute('data-prix-unitaire');
+            const actif = button.getAttribute('data-actif');
+            openEditTransportModal(id, designation, type, transporteur, prixUnitaire, actif);
         }
         
         // Boutons d'édition Locations
@@ -2069,6 +2251,12 @@
         } else if (e.target.matches('#editMaterielForm')) {
             e.preventDefault();
             handleEditMateriel(e.target);
+        } else if (e.target.matches('#addTransportForm')) {
+            e.preventDefault();
+            handleAddTransport(e.target);
+        } else if (e.target.matches('#editTransportForm')) {
+            e.preventDefault();
+            handleEditTransport(e.target);
         } else if (e.target.matches('#addLocationForm')) {
             e.preventDefault();
             handleAddLocation(e.target);
@@ -2576,6 +2764,105 @@
                     });
             } else {
                 alert('Erreur lors de la modification.');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de la modification.');
+        });
+    }
+
+    // Transports
+    function handleAddTransport(form) {
+        const designationInput = document.getElementById('addTransportDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#addTransportForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#addTransportForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const AJOUTER_TRANSPORT_URL = "{% url 'projets:ajouter_transport' %}";
+
+        fetch(`${AJOUTER_TRANSPORT_URL}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeAddTransportModal();
+                loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de l\'ajout.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue lors de l\'ajout.');
+        });
+    }
+
+    function handleEditTransport(form) {
+        const designationInput = document.getElementById('editTransportDesignation');
+        let isValid = true;
+
+        if (!designationInput.value.trim()) {
+            designationInput.classList.add('border-red-500');
+            document.querySelector('#editTransportForm .invalid-feedback').classList.remove('hidden');
+            isValid = false;
+        } else {
+            designationInput.classList.remove('border-red-500');
+            document.querySelector('#editTransportForm .invalid-feedback').classList.add('hidden');
+        }
+
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const MODIFIER_TRANSPORT_URL = "{% url 'projets:modifier_transport' 0 %}";
+        const transportId = document.getElementById('editTransportId').value;
+        const modifierTransportUrl = MODIFIER_TRANSPORT_URL.replace('/0/', `/${transportId}/`);
+
+        fetch(`${modifierTransportUrl}?modal=true`, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                closeEditTransportModal();
+                loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')
+                    .then(() => {
+                        showSuccessMessage(data.message);
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Une erreur est survenue lors de la modification.');
+                    });
+            } else {
+                alert('Erreur: ' + JSON.stringify(data.errors));
             }
         })
         .catch(error => {
