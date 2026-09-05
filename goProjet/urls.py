@@ -18,10 +18,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.contrib.auth import views as auth_views
-from projets.views import views as projets_views
+from projets.views.auth_views import views as auth_views_custom
+from projets.views.site_views import views as site_views
 
-handler403 = 'projets.views.views.permission_denied'
-handler404 = 'projets.views.views.page_not_found'
+handler403 = 'projets.views.site_views.views.permission_denied'
+handler404 = 'projets.views.site_views.views.page_not_found'
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -30,16 +31,16 @@ urlpatterns = [
     # URLs de l'application projets
     path('', include('projets.urls')),
     
-    path('home/', projets_views.home, name='home'),
+    path('home/', site_views.home, name='home'),
     
     # URLs d'authentification personnalisées
-    path('accounts/login/', projets_views.CustomLoginView.as_view(), name='login'),
+    path('accounts/login/', auth_views_custom.CustomLoginView.as_view(), name='login'),
     path('accounts/logout/', auth_views.LogoutView.as_view(), name='logout'),
-    path('accounts/password_reset/', projets_views.CustomPasswordResetView.as_view(), name='password_reset'),
-    path('accounts/password_reset/done/', projets_views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('accounts/reset/<uidb64>/<token>/', projets_views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('accounts/reset/done/', projets_views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
-    path('accounts/access_denied/', projets_views.access_denied, name='access_denied'),
+    path('accounts/password_reset/', auth_views_custom.CustomPasswordResetView.as_view(), name='password_reset'),
+    path('accounts/password_reset/done/', auth_views_custom.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    path('accounts/reset/<uidb64>/<token>/', auth_views_custom.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('accounts/reset/done/', auth_views_custom.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    path('accounts/access_denied/', auth_views_custom.access_denied, name='access_denied'),
     
 ]
 from django.conf.urls.static import static
