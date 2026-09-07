@@ -1291,7 +1291,8 @@ class StorageDocumentFlowsTests(TestCase):
 		)
 
 		self.assertEqual(response.status_code, 200)
-		self.assertContains(response, 'Document actuel : situation-avril.pdf')
+		self.assertContains(response, 'situation-avril.pdf')
+		self.assertContains(response, 'document-file-label')
 
 	def test_creation_rapport_notifie_les_utilisateurs_concernes(self):
 		dossier = Dossier.objects.create(

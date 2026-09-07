@@ -737,7 +737,7 @@ class DocumentSituationMensuelleForm(forms.ModelForm):
     class Meta:
         model = DocumentSituationMensuelle
         fields = ['fichier']
-        widgets = {'fichier': forms.FileInput(attrs={'accept': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif'})}
+        widgets = {'fichier': forms.FileInput(attrs={'accept': '.pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif', 'class': 'document-file-input'})}
 
     def clean_fichier(self):
         fichier = self.cleaned_data['fichier']
