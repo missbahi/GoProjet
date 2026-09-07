@@ -1,10 +1,10 @@
 <tr class="situation-expense-row border-b border-gray-700/70">
     {{ depense_form.id }}
     {% if force_categorie %}<input type="hidden" name="{{ depense_form.categorie.html_name }}" id="{{ depense_form.categorie.id_for_label }}" value="{{ force_categorie }}">{% else %}{{ depense_form.categorie }}{% endif %}
-    <td class="py-2 pr-2">{{ depense_form.designation }}</td>
-    <td class="py-2 pr-2">{{ depense_form.montant_base }}</td>
-    <td class="py-2 pr-2">{{ depense_form.cession_entrante }}</td>
-    <td class="py-2 pr-2">{{ depense_form.cession_sortante }}</td>
+    <td class="py-2 pr-2{% if depense_form.designation.errors %} situation-invalid-cell{% endif %}">{{ depense_form.designation }}{% for error in depense_form.designation.errors %}<p class="situation-field-error">{{ error }}</p>{% endfor %}</td>
+    <td class="py-2 pr-2{% if depense_form.montant_base.errors %} situation-invalid-cell{% endif %}">{{ depense_form.montant_base }}{% for error in depense_form.montant_base.errors %}<p class="situation-field-error">{{ error }}</p>{% endfor %}</td>
+    <td class="py-2 pr-2{% if depense_form.cession_entrante.errors %} situation-invalid-cell{% endif %}">{{ depense_form.cession_entrante }}{% for error in depense_form.cession_entrante.errors %}<p class="situation-field-error">{{ error }}</p>{% endfor %}</td>
+    <td class="py-2 pr-2{% if depense_form.cession_sortante.errors %} situation-invalid-cell{% endif %}">{{ depense_form.cession_sortante }}{% for error in depense_form.cession_sortante.errors %}<p class="situation-field-error">{{ error }}</p>{% endfor %}</td>
     <td class="py-2 pr-2 text-right expense-total">0,00 DH</td>
     <td class="py-2 text-right"><span class="hidden">{{ depense_form.DELETE }}</span><button type="button" class="situation-delete-expense text-red-400 hover:text-red-300" title="Supprimer la dépense" aria-label="Supprimer la dépense"><i class="fas fa-trash"></i></button></td>
 </tr>

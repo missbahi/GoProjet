@@ -1118,6 +1118,35 @@ class StorageDocumentFlowsTests(TestCase):
 		)
 		self.assertEqual(situation.chiffre_affaires, Decimal('0.00'))
 
+	def test_situation_affiche_l_erreur_pres_du_champ_invalide(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Erreurs Situation', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'annee': '2026', 'mois': '5', 'periode': '2026-05',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-designation': 'Ciment', 'stocks-0-unite': 'sac',
+				'stocks-0-quantite': 'invalide', 'stocks-0-prix_unitaire': '10,00',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'stocks-0-quantite')
+		self.assertContains(response, 'situation-invalid-cell')
+		self.assertFalse(SituationMensuelle.objects.filter(projet=self.projet, mois=5).exists())
+
 	def test_formset_recettes_affiche_les_rubriques_par_defaut_sans_lignes(self):
 		dossier = Dossier.objects.create(
 			nom='Dossier Recettes par défaut', gerant=self.user,
