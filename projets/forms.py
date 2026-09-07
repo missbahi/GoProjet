@@ -848,6 +848,10 @@ RecetteSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, RecetteSituationMensuelle,
     form=RecetteSituationMensuelleForm, extra=0, can_delete=False,
 )
+RecetteSituationMensuelleInitialFormSet = forms.inlineformset_factory(
+    SituationMensuelle, RecetteSituationMensuelle,
+    form=RecetteSituationMensuelleForm, extra=3, can_delete=False,
+)
 DocumentSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, DocumentSituationMensuelle,
     form=DocumentSituationMensuelleForm, formset=DocumentSituationMensuelleBaseFormSet,

@@ -16,6 +16,7 @@ import tempfile
 
 from .decorators import est_chef_chantier, est_pointeur, projets_accessibles
 from .forms import DossierForm, UtilisateurCreationForm, DocumentSituationMensuelleFormSet
+from .views.reporting_views.views import _recettes_formset
 from .services.attachement_service import DonneesAttachementInvalides, enregistrer_lignes_attachement
 from .exporters import ExcelExporter
 from .models import (
@@ -1082,6 +1083,63 @@ class StorageDocumentFlowsTests(TestCase):
 		situation = SituationMensuelle.objects.get(projet=self.projet, mois=11)
 		self.assertEqual(situation.recettes.count(), 3)
 		self.assertEqual(situation.chiffre_affaires, Decimal('1300.00'))
+
+	def test_nouvelle_situation_cree_toujours_les_rubriques_recettes(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Rubriques Recettes Obligatoires', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'annee': '2026', 'mois': '6', 'periode': '2026-06',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		situation = SituationMensuelle.objects.get(projet=self.projet, mois=6)
+		self.assertEqual(
+			set(situation.recettes.values_list('rubrique', flat=True)),
+			{
+				RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES,
+				RecetteSituationMensuelle.Rubrique.REVISION_PRIX,
+				RecetteSituationMensuelle.Rubrique.REFACTURATION_EXTERNE,
+			},
+		)
+		self.assertEqual(situation.chiffre_affaires, Decimal('0.00'))
+
+	def test_formset_recettes_affiche_les_rubriques_par_defaut_sans_lignes(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Recettes par défaut', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=7, chiffre_affaires='0.00',
+		)
+
+		formset = _recettes_formset(situation=situation)
+
+		self.assertEqual(len(formset.forms), 3)
+		self.assertEqual(
+			[form.rubrique_label for form in formset.forms],
+			[
+				'Travaux réalisés',
+				'Révision des prix',
+				'Refacturation externe',
+			],
+		)
 
 	def test_apercu_situation_mensuelle_affiche_le_detail_imprimable(self):
 		dossier = Dossier.objects.create(

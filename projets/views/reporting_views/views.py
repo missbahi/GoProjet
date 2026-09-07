@@ -14,7 +14,8 @@ from django.utils import timezone
 from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required
 from projets.forms import (
     DepenseRapportJournalierFormSet, DepenseSituationMensuelleFormSet,
-    DocumentSituationMensuelleFormSet, RecetteSituationMensuelleFormSet, RapportJournalierForm,
+    DocumentSituationMensuelleFormSet, RecetteSituationMensuelleFormSet,
+    RecetteSituationMensuelleInitialFormSet, RapportJournalierForm,
     SituationMensuelleForm, StockRapportJournalierFormSet,
     StockSituationMensuelleFormSet,
 )
@@ -48,8 +49,11 @@ def _recettes_formset(*args, situation=None, **kwargs):
                 f'recettes-{index}-montant': montant,
             })
         args = (post_data, *args[1:])
-    if situation is None or not situation.pk:
+
+    should_show_default_recettes = situation is None or not situation.pk or not situation.recettes.exists()
+    if should_show_default_recettes:
         kwargs.setdefault('initial', RECETTE_INITIAL_DATA)
+        formset_class = RecetteSituationMensuelleInitialFormSet
     else:
         kwargs.setdefault('queryset', situation.recettes.order_by(
             Case(
@@ -59,13 +63,23 @@ def _recettes_formset(*args, situation=None, **kwargs):
                 output_field=IntegerField(),
             )
         ))
-    return RecetteSituationMensuelleFormSet(*args, instance=situation, **kwargs)
+        formset_class = RecetteSituationMensuelleFormSet
+    return formset_class(*args, instance=situation, **kwargs)
 
 
 def _synchroniser_chiffre_affaires(situation):
     total = situation.recettes.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
     situation.chiffre_affaires = total
     situation.save(update_fields=['chiffre_affaires', 'updated_at'])
+
+
+def _creer_rubriques_recettes_manquantes(situation):
+    for recette in RECETTE_INITIAL_DATA:
+        RecetteSituationMensuelle.objects.get_or_create(
+            situation=situation,
+            rubrique=recette['rubrique'],
+            defaults={'montant': Decimal('0.00')},
+        )
 
 
 @login_required
@@ -532,6 +546,7 @@ def ajouter_situation_mensuelle(request, projet_id):
                         depenses.save()
                         stocks.save()
                         recettes.save()
+                        _creer_rubriques_recettes_manquantes(situation)
                         _synchroniser_chiffre_affaires(situation)
                         documents.save()
                 except IntegrityError:
