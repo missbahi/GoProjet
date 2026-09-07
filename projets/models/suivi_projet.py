@@ -182,6 +182,29 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
         return self.stocks.aggregate(total=Sum('valeur'))['total'] or Decimal('0.00')
 
 
+class RecetteSituationMensuelle(models.Model):
+    class Rubrique(models.TextChoices):
+        TRAVAUX_REALISES = 'TRAVAUX_REALISES', _('Travaux réalisés')
+        REVISION_PRIX = 'REVISION_PRIX', _('Révision des prix')
+        REFACTURATION_EXTERNE = 'REFACTURATION_EXTERNE', _('Refacturation externe')
+
+    situation = models.ForeignKey(
+        SituationMensuelle, on_delete=models.CASCADE, related_name='recettes',
+        verbose_name=_('Situation mensuelle'),
+    )
+    rubrique = models.CharField(max_length=30, choices=Rubrique.choices)
+    montant = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+
+    class Meta:
+        ordering = ['rubrique', 'id']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['situation', 'rubrique'],
+                name='unique_recette_situation_rubrique',
+            ),
+        ]
+
+
 class DocumentSituationMensuelle(models.Model):
     situation = models.ForeignKey(
         SituationMensuelle, on_delete=models.CASCADE, related_name='documents',
@@ -228,10 +251,20 @@ class DepenseSituationMensuelle(models.Model):
     )
     categorie = models.CharField(max_length=30, choices=CategorieDepenseTravaux.choices)
     designation = models.CharField(max_length=200, verbose_name=_('Désignation'))
-    montant = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    montant_base = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), db_column='montant')
+    cession_entrante = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    cession_sortante = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))
+    montant = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), db_column='montant_total', editable=False)
 
     class Meta:
         ordering = ['categorie', 'id']
+
+    def save(self, *args, **kwargs):
+        self.montant = sum(
+            Decimal(str(valeur or '0.00'))
+            for valeur in (self.montant_base, self.cession_entrante, self.cession_sortante)
+        )
+        super().save(*args, **kwargs)
 
 
 class StockSituationMensuelle(models.Model):

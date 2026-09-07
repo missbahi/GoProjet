@@ -38,6 +38,7 @@ from .models import (
 	DepenseRapportJournalier,
 	Notification,
 	SituationMensuelle,
+	RecetteSituationMensuelle,
 	DocumentSituationMensuelle,
 	DepenseSituationMensuelle,
 	StockSituationMensuelle,
@@ -700,7 +701,7 @@ class StorageDocumentFlowsTests(TestCase):
 			projet=self.projet, annee=2026, mois=8, chiffre_affaires=500,
 		)
 		DepenseSituationMensuelle.objects.create(
-			situation=situation, categorie='FOURNITURE', designation='Acier', montant=200,
+			situation=situation, categorie='FOURNITURE', designation='Acier', montant_base=200,
 		)
 		stock = StockSituationMensuelle.objects.create(
 			situation=situation, designation='Ciment', unite='sac',
@@ -709,6 +710,22 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(situation.total_depenses, 200)
 		self.assertEqual(stock.valeur, 120)
 		self.assertEqual(situation.total_stock, 120)
+
+	def test_situation_totalise_les_cessions_des_depenses(self):
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=9, chiffre_affaires=500,
+		)
+		depense = DepenseSituationMensuelle.objects.create(
+			situation=situation,
+			categorie='FOURNITURE',
+			designation='Acier',
+			montant_base=100,
+			cession_entrante=25,
+			cession_sortante=-40,
+		)
+
+		self.assertEqual(depense.montant, Decimal('85.00'))
+		self.assertEqual(situation.total_depenses, Decimal('85.00'))
 
 	def test_modification_rapport_remplace_le_document(self):
 		dossier = Dossier.objects.create(
@@ -987,6 +1004,155 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(situation.stocks.count(), 2)
 		self.assertEqual(situation.total_depenses, 250)
 		self.assertEqual(situation.total_stock, 750)
+
+	def test_situation_accepte_les_rubriques_materiel_avec_montants_vides(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Situation Materiel', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		rubriques = [
+			'Pelles hydraulique sur chenilles', 'Pelles hydraulique sur pneus',
+			'Niveleuses', 'Compacteurs', 'Tractopelles', 'Bulldozers', 'Dumpers',
+			'Chargeuses', 'Brises roche hydrauliques', 'Godets', 'Fraiseuses',
+			'Alimentateurs', 'Finisseurs', 'Chariots téléscopiques',
+			'Chariots élévateurs', 'Chariots hydrauliques de perforation', 'Grues',
+			'Machines de marquage', 'Sonnettes à battage', 'Autobétonnières',
+			'Tracteurs', 'Répandeuses', 'Groupes électrogènes', 'Compresseurs',
+			'Petit matériel', 'Petit outillage', 'Outil de forage et tiges',
+			'Véhicules légers',
+		]
+		post_data = {
+			'annee': '2026', 'mois': '10', 'periode': '2026-10',
+			'chiffre_affaires': '0',
+			'depenses-TOTAL_FORMS': str(len(rubriques)),
+			'depenses-INITIAL_FORMS': '0',
+			'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+			'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+			'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+			'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+			'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+		}
+		for index, designation in enumerate(rubriques):
+			post_data.update({
+				f'depenses-{index}-categorie': 'MATERIEL',
+				f'depenses-{index}-designation': designation,
+				f'depenses-{index}-montant': '',
+			})
+
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			post_data,
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:situations_mensuelles', args=[self.projet.id]),
+		)
+		situation = SituationMensuelle.objects.get(projet=self.projet, mois=10)
+		self.assertEqual(situation.depenses.count(), len(rubriques))
+		self.assertEqual(situation.total_depenses, Decimal('0.00'))
+
+	def test_situation_enregistre_les_recettes_et_le_total(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Situation Recettes', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'annee': '2026', 'mois': '11', 'periode': '2026-11',
+				'recettes-TOTAL_FORMS': '3', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'recettes-0-rubrique': 'TRAVAUX_REALISES', 'recettes-0-montant': '1 200,00',
+				'recettes-1-rubrique': 'REVISION_PRIX', 'recettes-1-montant': '150,00',
+				'recettes-2-rubrique': 'REFACTURATION_EXTERNE', 'recettes-2-montant': '-50,00',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		situation = SituationMensuelle.objects.get(projet=self.projet, mois=11)
+		self.assertEqual(situation.recettes.count(), 3)
+		self.assertEqual(situation.chiffre_affaires, Decimal('1300.00'))
+
+	def test_apercu_situation_mensuelle_affiche_le_detail_imprimable(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Apercu Situation', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=12, chiffre_affaires='1250.00',
+		)
+		RecetteSituationMensuelle.objects.create(
+			situation=situation, rubrique='TRAVAUX_REALISES', montant='1250.00',
+		)
+		DepenseSituationMensuelle.objects.create(
+			situation=situation, categorie='PERSONNEL', designation='Équipe', montant_base='100.00',
+		)
+		StockSituationMensuelle.objects.create(
+			situation=situation, designation='Ciment', unite='sac', quantite=Decimal('10'), prix_unitaire=Decimal('50'),
+		)
+
+		response = self.client.get(
+			reverse('projets:apercu_situation_mensuelle', args=[self.projet.id, situation.id]),
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Aperçu de situation mensuelle")
+		self.assertContains(response, "Chiffre d'affaires")
+		self.assertContains(response, 'Charges')
+		self.assertContains(response, 'État des stocks')
+		self.assertContains(response, 'window.print()')
+
+	def test_modification_situation_supprime_une_depense_existante(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Situation Suppression Depense', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=10, chiffre_affaires='1000.00',
+		)
+		depense_a_garder = DepenseSituationMensuelle.objects.create(
+			situation=situation, categorie='PERSONNEL', designation='Personnel interne Mensuel', montant_base='100.00',
+		)
+		depense_a_supprimer = DepenseSituationMensuelle.objects.create(
+			situation=situation, categorie='PERSONNEL', designation='Frais de Personnel', montant_base='200.00',
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			{
+				'periode': '2026-10', 'annee': '2026', 'mois': '10',
+				'chiffre_affaires': '1 000,00', 'observations': '',
+				'depenses-TOTAL_FORMS': '2', 'depenses-INITIAL_FORMS': '2',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'depenses-0-id': str(depense_a_garder.id), 'depenses-0-categorie': 'PERSONNEL',
+				'depenses-0-designation': depense_a_garder.designation, 'depenses-0-montant': '100,00',
+				'depenses-1-id': str(depense_a_supprimer.id), 'depenses-1-categorie': 'PERSONNEL',
+				'depenses-1-designation': depense_a_supprimer.designation, 'depenses-1-montant': '200,00',
+				'depenses-1-DELETE': 'on',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '1', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertTrue(DepenseSituationMensuelle.objects.filter(pk=depense_a_garder.id).exists())
+		self.assertFalse(DepenseSituationMensuelle.objects.filter(pk=depense_a_supprimer.id).exists())
 
 	def test_situation_refuse_document_duplique_par_contenu(self):
 		dossier = Dossier.objects.create(

@@ -2,6 +2,7 @@ from decimal import Decimal
 from datetime import date
 import hashlib
 import os
+import re
 from django import forms
 from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
@@ -13,7 +14,7 @@ from .models import (
     Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
     Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
     StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
-    StockSituationMensuelle, DocumentSituationMensuelle, Personnel, Materiel,
+    StockSituationMensuelle, DocumentSituationMensuelle, RecetteSituationMensuelle, Personnel, Materiel,
     Location, Transport, SousTraitance, Consommable, Fourniture,
 )
 
@@ -26,7 +27,7 @@ from django.utils import timezone
 class FrenchDecimalField(forms.DecimalField):
     def to_python(self, value):
         if isinstance(value, str):
-            value = value.replace('\u00a0', '').replace(' ', '').replace(',', '.')
+            value = re.sub(r'\s+', '', value).replace(',', '.')
         return super().to_python(value)
 
 class ProfileForm(forms.ModelForm):
@@ -641,18 +642,14 @@ class StockRapportJournalierForm(forms.ModelForm):
 
 class SituationMensuelleForm(forms.ModelForm):
     periode = forms.CharField(label='Mois de la situation', required=False, widget=forms.TextInput(attrs={'type': 'month'}))
-    chiffre_affaires = FrenchDecimalField(
-        max_digits=15, decimal_places=2,
-        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'situation-field js-french-number'}),
-    )
     class Meta:
         model = SituationMensuelle
-        fields = ['annee', 'mois', 'date_debut', 'date_fin', 'chiffre_affaires', 'observations']
+        fields = ['annee', 'mois', 'date_debut', 'date_fin', 'observations']
         widgets = {
             'annee': forms.HiddenInput(),
             'mois': forms.HiddenInput(),
-            'date_debut': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
-            'date_fin': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'date_debut': forms.DateInput(format='%d/%m/%Y', attrs={'placeholder': 'JJ/MM/AAAA'}),
+            'date_fin': forms.DateInput(format='%d/%m/%Y', attrs={'placeholder': 'JJ/MM/AAAA'}),
             'observations': forms.Textarea(attrs={'rows': 2}),
         }
 
@@ -665,20 +662,22 @@ class SituationMensuelleForm(forms.ModelForm):
         ])
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'situation-field')
+        self.fields['date_debut'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
+        self.fields['date_fin'].input_formats = ['%d/%m/%Y', '%Y-%m-%d']
         if self.projet is None:
             self.projet = getattr(self.instance, 'projet', None)
         if self.instance.pk:
             self.initial['periode'] = f'{self.instance.annee:04d}-{self.instance.mois:02d}'
             if self.instance.date_debut:
-                self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
+                self.initial['date_debut'] = self.instance.date_debut.strftime('%d/%m/%Y')
             if self.instance.date_fin:
-                self.initial['date_fin'] = self.instance.date_fin.strftime('%Y-%m-%d')
+                self.initial['date_fin'] = self.instance.date_fin.strftime('%d/%m/%Y')
         else:
             today = timezone.localdate()
             self.initial['periode'] = today.strftime('%Y-%m')
-            self.initial.setdefault('date_debut', today.replace(day=1).strftime('%Y-%m-%d'))
+            self.initial.setdefault('date_debut', today.replace(day=1).strftime('%d/%m/%Y'))
             next_month = (today.replace(day=28) + timezone.timedelta(days=4)).replace(day=1)
-            self.initial.setdefault('date_fin', (next_month - timezone.timedelta(days=1)).strftime('%Y-%m-%d'))
+            self.initial.setdefault('date_fin', (next_month - timezone.timedelta(days=1)).strftime('%d/%m/%Y'))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -712,6 +711,26 @@ class SituationMensuelleForm(forms.ModelForm):
             if existantes.exists():
                 self.add_error('mois', 'Une situation existe déjà pour cette période.')
         return cleaned_data
+
+
+class RecetteSituationMensuelleForm(forms.ModelForm):
+    montant = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+
+    class Meta:
+        model = RecetteSituationMensuelle
+        fields = ['rubrique', 'montant']
+        widgets = {'rubrique': forms.HiddenInput()}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        rubrique = self.initial.get('rubrique') or self.instance.rubrique
+        self.rubrique_label = dict(RecetteSituationMensuelle.Rubrique.choices).get(rubrique, '')
+
+    def clean_montant(self):
+        return self.cleaned_data['montant'] or Decimal('0.00')
 
 
 class DocumentSituationMensuelleForm(forms.ModelForm):
@@ -752,20 +771,43 @@ class DocumentSituationMensuelleBaseFormSet(BaseInlineFormSet):
             checksums.add(checksum)
 
 class DepenseSituationMensuelleForm(forms.ModelForm):
-    montant = FrenchDecimalField(
-        max_digits=15, decimal_places=2,
+    montant_base = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
         widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
     )
+    cession_entrante = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    cession_sortante = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+
     class Meta:
         model = DepenseSituationMensuelle
-        fields = ['categorie', 'designation', 'montant']
+        fields = ['categorie', 'designation', 'montant_base', 'cession_entrante', 'cession_sortante']
         widgets = {'categorie': forms.HiddenInput()}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        montant_base_key = f'{self.prefix}-montant_base'
+        montant_legacy_key = f'{self.prefix}-montant'
+        if self.is_bound and montant_base_key not in self.data and montant_legacy_key in self.data:
+            self.data = self.data.copy()
+            self.data[montant_base_key] = self.data[montant_legacy_key]
         for name, field in self.fields.items():
             if name != 'categorie':
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_montant_base(self):
+        return self.cleaned_data['montant_base'] or Decimal('0.00')
+
+    def clean_cession_entrante(self):
+        return self.cleaned_data['cession_entrante'] or Decimal('0.00')
+
+    def clean_cession_sortante(self):
+        return self.cleaned_data['cession_sortante'] or Decimal('0.00')
 
 class StockSituationMensuelleForm(forms.ModelForm):
     quantite = FrenchDecimalField(
@@ -801,6 +843,10 @@ DepenseSituationMensuelleFormSet = forms.inlineformset_factory(
 StockSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, StockSituationMensuelle,
     form=StockSituationMensuelleForm, extra=0, can_delete=True,
+)
+RecetteSituationMensuelleFormSet = forms.inlineformset_factory(
+    SituationMensuelle, RecetteSituationMensuelle,
+    form=RecetteSituationMensuelleForm, extra=0, can_delete=False,
 )
 DocumentSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, DocumentSituationMensuelle,

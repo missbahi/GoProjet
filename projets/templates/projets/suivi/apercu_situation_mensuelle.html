@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load l10n %}
+    <title>Situation mensuelle {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }} - {{ projet.nom }}</title>
+    <style>
+        :root { --ink: #19394a; --muted: #617786; --line: #a9cad6; --head: #e7f1f5; --paper: #fdfbf5; --green: #356043; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #dce7eb; color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+        .toolbar { display: flex; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 20px auto 0; font-family: sans-serif; }
+        .toolbar a, .toolbar button { border: 1px solid #5e9eb6; border-radius: 4px; background: #fff; color: #24485a; cursor: pointer; padding: 9px 14px; font-size: 14px; }
+        .toolbar button { background: #075985; color: #fff; border-color: #075985; }
+        .paper { max-width: 1000px; margin: 16px auto 32px; padding: 42px 48px; background: var(--paper); box-shadow: 0 8px 30px rgba(35, 68, 84, .18); }
+        .document-header { display: flex; justify-content: space-between; gap: 28px; border-bottom: 2px solid #6d9fb2; padding-bottom: 18px; }
+        h1 { margin: 0 0 6px; font-size: 26px; }
+        h2 { margin: 26px 0 10px; color: #2c667e; font-size: 17px; }
+        p { margin: 4px 0; }
+        .meta { color: var(--muted); font-size: 14px; text-align: right; }
+        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; font-family: sans-serif; }
+        .summary-item { border: 1px solid var(--line); background: #f1f7f8; padding: 12px; }
+        .summary-item strong { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
+        .summary-item span { display: block; margin-top: 6px; color: var(--ink); font-size: 18px; font-weight: 700; }
+        table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; }
+        th { background: var(--head); color: #376b82; font-size: 11px; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
+        th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+        .amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        tfoot { font-weight: 700; color: var(--green); }
+        .category { color: #527889; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .note { border-left: 3px solid #7baec1; margin-top: 22px; padding: 10px 14px; background: #f1f7f8; color: #3c5663; }
+        .documents { margin: 0; padding-left: 18px; font-family: sans-serif; font-size: 13px; }
+        @media (max-width: 700px) { .paper { margin: 0; padding: 24px 18px; } .toolbar { margin: 12px 18px; } .document-header { display: block; } .meta { margin-top: 14px; text-align: left; } .summary { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 7px 5px; } }
+        @media print { @page { size: A4; margin: 14mm; } body { background: #fff; } .toolbar { display: none !important; } .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; } h2 { break-after: avoid; } table { break-inside: avoid; } }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <a href="{% url 'projets:situations_mensuelles' projet.id %}">Retour aux situations</a>
+        <button type="button" onclick="window.print()">Imprimer</button>
+    </div>
+    <main class="paper">
+        <header class="document-header">
+            <div>
+                <h1>Aperçu de situation mensuelle</h1>
+                <p><strong>{{ projet.nom }}</strong></p>
+                <p>{{ projet.numero }}{% if projet.localisation %} · {{ projet.localisation }}{% endif %}</p>
+            </div>
+            <div class="meta">
+                <p><strong>Période : {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}</strong></p>
+                <p>Du {{ situation.date_debut|date:'d/m/Y' }} au {{ situation.date_fin|date:'d/m/Y' }}</p>
+            </div>
+        </header>
+
+        <section class="summary">
+            <div class="summary-item"><strong>Produits</strong><span>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</span></div>
+            <div class="summary-item"><strong>Charges</strong><span>{{ situation.total_depenses|floatformat:'2g' }} DH</span></div>
+            <div class="summary-item"><strong>État des stocks</strong><span>{{ situation.total_stock|floatformat:'2g' }} DH</span></div>
+        </section>
+
+        <section>
+            <h2>Chiffre d'affaires</h2>
+            <table>
+                <thead><tr><th>Rubrique</th><th class="amount">Montant (DH)</th></tr></thead>
+                <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}</td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
+                <tfoot><tr><td>Total chiffre d'affaires</td><td class="amount">{{ situation.chiffre_affaires|floatformat:'2g' }} DH</td></tr></tfoot>
+            </table>
+        </section>
+
+        <section>
+            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:8px;">
+                <h2 style="margin-bottom:0;">Charges</h2>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:36%;">Désignation</th>
+                        <th class="amount" style="width:16%;">Montant (DH)</th>
+                        <th class="amount" style="width:16%;">Cession entrante</th>
+                        <th class="amount" style="width:16%;">Cession sortante</th>
+                        <th class="amount" style="width:16%;">Total (DH)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for categorie, label, depenses, total in depenses_par_categorie %}
+                        <tr class="category-row">
+                            <td colspan="5"><span class="category">{{ label }}</span></td>
+                        </tr>
+                        {% for depense in depenses %}
+                            {% if depense.montant != 0 %}
+                            <tr>
+                                <td>{{ depense.designation }}</td>
+                                <td class="amount">{{ depense.montant_base|floatformat:'2g' }}</td>
+                                <td class="amount">{{ depense.cession_entrante|floatformat:'2g' }}</td>
+                                <td class="amount">{{ depense.cession_sortante|floatformat:'2g' }}</td>
+                                <td class="amount">{{ depense.montant|floatformat:'2g' }}</td>
+                            </tr>
+                            {% endif %}
+                        {% empty %}
+                            <tr><td colspan="5">Aucune charge enregistrée pour {{ label }}.</td></tr>
+                        {% endfor %}
+                        <tr>
+                            <td><strong>Total {{ label }}</strong></td>
+                            <td class="amount"><strong>{{ total|floatformat:'2g' }}</strong></td>
+                            <td class="amount"></td>
+                            <td class="amount"></td>
+                            <td class="amount"><strong>{{ total|floatformat:'2g' }} DH</strong></td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="5">Aucune charge enregistrée.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>État des stocks</h2>
+            <table>
+                <thead><tr><th>Désignation</th><th>Unité</th><th class="amount">Quantité</th><th class="amount">Prix unitaire</th><th class="amount">Montant (DH)</th></tr></thead>
+                <tbody>{% for stock in stocks %}<tr><td>{{ stock.designation }}</td><td>{{ stock.unite }}</td><td class="amount">{{ stock.quantite|floatformat:'3g' }}</td><td class="amount">{{ stock.prix_unitaire|floatformat:'2g' }}</td><td class="amount">{{ stock.valeur|floatformat:'2g' }}</td></tr>{% empty %}<tr><td colspan="5">Aucun mouvement de stock enregistré.</td></tr>{% endfor %}</tbody>
+                <tfoot><tr><td colspan="4">Total état des stocks</td><td class="amount">{{ situation.total_stock|floatformat:'2g' }} DH</td></tr></tfoot>
+            </table>
+        </section>
+
+        {% if situation.observations %}<section class="note"><strong>Observations</strong><p>{{ situation.observations|linebreaksbr }}</p></section>{% endif %}
+        {% if documents %}<section><h2>Documents associés</h2><div class="documents">{% for document in documents %}<p>{{ document.nom }}</p>{% endfor %}</div></section>{% endif %}
+    </main>
+</body>
+</html>

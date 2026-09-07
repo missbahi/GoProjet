@@ -3,8 +3,9 @@ import os
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import OuterRef, Subquery, Sum, Value
+from django.db.models import Case, IntegerField, OuterRef, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,11 +14,60 @@ from django.utils import timezone
 from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required
 from projets.forms import (
     DepenseRapportJournalierFormSet, DepenseSituationMensuelleFormSet,
-    DocumentSituationMensuelleFormSet, RapportJournalierForm,
+    DocumentSituationMensuelleFormSet, RecetteSituationMensuelleFormSet, RapportJournalierForm,
     SituationMensuelleForm, StockRapportJournalierFormSet,
     StockSituationMensuelleFormSet,
 )
 from projets.models import *
+
+RECETTE_INITIAL_DATA = [
+    {'rubrique': RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES},
+    {'rubrique': RecetteSituationMensuelle.Rubrique.REVISION_PRIX},
+    {'rubrique': RecetteSituationMensuelle.Rubrique.REFACTURATION_EXTERNE},
+]
+
+
+def _recettes_formset(*args, situation=None, **kwargs):
+    if args and args[0] is not None and 'recettes-TOTAL_FORMS' not in args[0]:
+        post_data = args[0].copy()
+        rubriques = [
+            RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES,
+            RecetteSituationMensuelle.Rubrique.REVISION_PRIX,
+            RecetteSituationMensuelle.Rubrique.REFACTURATION_EXTERNE,
+        ]
+        montants = [post_data.get('chiffre_affaires', '0'), '0', '0']
+        post_data.update({
+            'recettes-TOTAL_FORMS': str(len(rubriques)),
+            'recettes-INITIAL_FORMS': '0',
+            'recettes-MIN_NUM_FORMS': '0',
+            'recettes-MAX_NUM_FORMS': '1000',
+        })
+        for index, (rubrique, montant) in enumerate(zip(rubriques, montants)):
+            post_data.update({
+                f'recettes-{index}-rubrique': rubrique,
+                f'recettes-{index}-montant': montant,
+            })
+        args = (post_data, *args[1:])
+    if situation is None or not situation.pk:
+        kwargs.setdefault('initial', RECETTE_INITIAL_DATA)
+    else:
+        kwargs.setdefault('queryset', situation.recettes.order_by(
+            Case(
+                When(rubrique=RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES, then=Value(1)),
+                When(rubrique=RecetteSituationMensuelle.Rubrique.REVISION_PRIX, then=Value(2)),
+                When(rubrique=RecetteSituationMensuelle.Rubrique.REFACTURATION_EXTERNE, then=Value(3)),
+                output_field=IntegerField(),
+            )
+        ))
+    return RecetteSituationMensuelleFormSet(*args, instance=situation, **kwargs)
+
+
+def _synchroniser_chiffre_affaires(situation):
+    total = situation.recettes.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+    situation.chiffre_affaires = total
+    situation.save(update_fields=['chiffre_affaires', 'updated_at'])
+
+
 @login_required
 @can_view_projet
 def rapports_journaliers(request, projet_id):
@@ -36,7 +86,7 @@ def rapports_journaliers(request, projet_id):
 def _projet_travaux_or_403(projet_id):
     projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
     if not projet.dossier_id or projet.dossier.activite != Dossier.Activite.TRAVAUX:
-        raise PermissionDenied("Ce suivi est rÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©servÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© aux dossiers de travaux.")
+        raise PermissionDenied("Ce suivi est réservé aux dossiers de travaux.")
     return projet
 
 @login_required
@@ -69,11 +119,11 @@ def ajouter_rapport_journalier(request, projet_id):
             except IntegrityError:
                 messages.error(
                     request,
-                    'Un rapport journalier existe dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  pour cette date dans ce projet.',
+                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
                 )
                 return redirect('projets:rapports_journaliers', projet_id=projet.id)
             
-            messages.success(request, 'Rapport journalier enregistrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© avec succÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¨s.')
+            messages.success(request, 'Rapport journalier enregistré avec succès.')
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
         else:
             # Afficher les erreurs
@@ -81,7 +131,7 @@ def ajouter_rapport_journalier(request, projet_id):
             if form.errors:
                 error_messages.append(f"Formulaire: {form.errors.as_text()}")
             if depenses.errors:
-                error_messages.append(f"DÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©penses: {depenses.errors.as_text()}")
+                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
             if stocks.errors:
                 error_messages.append(f"Stocks: {stocks.errors.as_text()}")
             
@@ -135,7 +185,7 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
 
 
 def _referentiel_depenses():
-    """EntrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©es du rÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©fÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©rentiel (base de donnÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©es) proposÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©es par catÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©gorie de dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©pense."""
+    """Entrées du référentiel (base de données) proposées par catégorie de dépense."""
     def options(queryset, champ_designation, champ_prix):
         return [
             {
@@ -177,7 +227,7 @@ def _grouper_depenses_par_categorie(depenses_formset):
     referentiel = _referentiel_depenses()
     return [
         (
-            value, label, groupes[value],
+            value, 'Consommable & Carburant' if value == CategorieDepenseTravaux.CONSOMMABLE else label, groupes[value],
             sum((f.instance.montant or Decimal('0.00') for f in groupes[value]), Decimal('0.00')),
             referentiel.get(value, []),
         )
@@ -215,11 +265,11 @@ def formulaire_rapport_journalier(request, projet_id):
             except IntegrityError:
                 messages.error(
                     request,
-                    'Un rapport journalier existe dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  pour cette date dans ce projet.',
+                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
                 )
                 return redirect('projets:rapports_journaliers', projet_id=projet.id)
             
-            messages.success(request, 'Rapport journalier enregistrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© avec succÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¨s.')
+            messages.success(request, 'Rapport journalier enregistré avec succès.')
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
         else:
             # Afficher les erreurs
@@ -227,7 +277,7 @@ def formulaire_rapport_journalier(request, projet_id):
             if form.errors:
                 error_messages.append(f"Formulaire: {form.errors.as_text()}")
             if depenses.errors:
-                error_messages.append(f"DÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©penses: {depenses.errors.as_text()}")
+                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
             if stocks.errors:
                 error_messages.append(f"Stocks: {stocks.errors.as_text()}")
             
@@ -283,9 +333,9 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
                 rapport.save()
                 depenses.save()
                 stocks.save()
-            messages.success(request, 'Rapport journalier modifiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©.')
+            messages.success(request, 'Rapport journalier modifié.')
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
-        messages.error(request, "Le rapport journalier n'a pas pu ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Âªtre modifiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©. VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©rifiez les informations saisies.")
+        messages.error(request, "Le rapport journalier n'a pas pu être modifié. Vérifiez les informations saisies.")
         return render(request, 'projets/suivi/modifier_rapport_journalier.html', {
             'projet': projet,
             'rapport': rapport,
@@ -319,7 +369,7 @@ def supprimer_rapport_journalier(request, projet_id, rapport_id):
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
     if request.method == 'POST':
         rapport.delete()
-        messages.success(request, 'Rapport journalier supprimÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©.')
+        messages.success(request, 'Rapport journalier supprimé.')
     return redirect('projets:rapports_journaliers', projet_id=projet_id)
 
 
@@ -333,9 +383,9 @@ def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
             rapport.document = None
             rapport.original_filename = ''
             rapport.save(update_fields=['document', 'original_filename'])
-            messages.success(request, 'Document supprimÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© du rapport journalier.')
+            messages.success(request, 'Document supprimé du rapport journalier.')
         else:
-            messages.info(request, 'Aucun document ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  supprimer.')
+            messages.info(request, 'Aucun document à supprimer.')
     return redirect('projets:modifier_rapport_journalier', projet_id=projet_id, rapport_id=rapport_id)
 
 
@@ -363,6 +413,38 @@ def situations_mensuelles(request, projet_id):
     })
 
 
+@login_required
+@chef_projet_required
+def apercu_situation_mensuelle(request, projet_id, situation_id):
+    projet = _projet_travaux_or_403(projet_id)
+    situation = get_object_or_404(
+        SituationMensuelle.objects.prefetch_related('depenses', 'stocks', 'documents', 'recettes'),
+        id=situation_id,
+        projet=projet,
+    )
+    recettes = situation.recettes.order_by(
+        Case(
+            When(rubrique=RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES, then=Value(1)),
+            When(rubrique=RecetteSituationMensuelle.Rubrique.REVISION_PRIX, then=Value(2)),
+            When(rubrique=RecetteSituationMensuelle.Rubrique.REFACTURATION_EXTERNE, then=Value(3)),
+            output_field=IntegerField(),
+        )
+    )
+    depenses_par_categorie = [
+        (value, label, sum((depense.montant or Decimal('0.00') for depense in situation.depenses.filter(categorie=value)), Decimal('0.00')), list(situation.depenses.filter(categorie=value)))
+        for value, label in CategorieDepenseTravaux.choices
+        if situation.depenses.filter(categorie=value).exists()
+    ]
+    return render(request, 'projets/suivi/apercu_situation_mensuelle.html', {
+        'projet': projet,
+        'situation': situation,
+        'recettes': recettes,
+        'depenses_par_categorie': [(value, label, depenses, total) for value, label, total, depenses in depenses_par_categorie],
+        'stocks': situation.stocks.all(),
+        'documents': situation.documents.all(),
+    })
+
+
 def _group_situation_expenses(formset):
     groups = {value: [] for value, label in CategorieDepenseTravaux.choices}
     for form in formset.forms:
@@ -386,24 +468,24 @@ def upload_rapport_document(request, projet_id, rapport_id):
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
     
     if request.method != 'POST':
-        messages.error(request, "MÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©thode non autorisÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©e")
+        messages.error(request, "Méthode non autorisée")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
     fichier = request.FILES.get('document')
     if not fichier:
-        messages.error(request, "Aucun fichier sÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©lectionnÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©")
+        messages.error(request, "Aucun fichier sélectionné")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
-    # VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©rifier la taille (max 10MB)
+    # Vérifier la taille (max 10MB)
     if fichier.size > 10 * 1024 * 1024:
-        messages.error(request, "Le fichier ne doit pas dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©passer 10MB")
+        messages.error(request, "Le fichier ne doit pas dépasser 10MB")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
-    # VÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©rifier le type de fichier
+    # Vérifier le type de fichier
     valid_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif']
     ext = os.path.splitext(fichier.name)[1].lower()
     if ext not in valid_extensions:
-        messages.error(request, f"Type de fichier non supportÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©. Utilisez: {', '.join(valid_extensions)}")
+        messages.error(request, f"Type de fichier non supporté. Utilisez: {', '.join(valid_extensions)}")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
     try:
@@ -413,7 +495,7 @@ def upload_rapport_document(request, projet_id, rapport_id):
         rapport.original_filename = fichier.name
         rapport.save()
         
-        messages.success(request, f"Document '{fichier.name}' ajoutÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â© avec succÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¨s au rapport du {rapport.date.strftime('%d/%m/%Y')}")
+        messages.success(request, f"Document '{fichier.name}' ajouté avec succès au rapport du {rapport.date.strftime('%d/%m/%Y')}")
     except Exception as e:
         messages.error(request, f"Erreur lors de l'upload: {str(e)}")
     
@@ -426,6 +508,7 @@ def ajouter_situation_mensuelle(request, projet_id):
     projet = _projet_travaux_or_403(projet_id)
     depenses = DepenseSituationMensuelleFormSet(request.POST or None)
     stocks = StockSituationMensuelleFormSet(request.POST or None)
+    recettes = _recettes_formset(request.POST or None)
     documents = DocumentSituationMensuelleFormSet(request.POST or None, request.FILES or None)
     if request.method == 'POST':
         form = SituationMensuelleForm(request.POST, request.FILES, projet=projet)
@@ -438,8 +521,9 @@ def ajouter_situation_mensuelle(request, projet_id):
                 situation.annee, situation.mois = year, month
             depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
             stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
+            recettes = _recettes_formset(request.POST, situation=situation)
             documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
-            if depenses.is_valid() and stocks.is_valid() and documents.is_valid():
+            if depenses.is_valid() and stocks.is_valid() and recettes.is_valid() and documents.is_valid():
                 try:
                     with transaction.atomic():
                         situation.save()
@@ -447,12 +531,16 @@ def ajouter_situation_mensuelle(request, projet_id):
                         stocks.instance = situation
                         depenses.save()
                         stocks.save()
+                        recettes.save()
+                        _synchroniser_chiffre_affaires(situation)
                         documents.save()
                 except IntegrityError:
-                    form.add_error('mois', 'Une situation existe dÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©jÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â  pour cette pÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©riode.')
+                    form.add_error('mois', 'Une situation existe déjà pour cette période.')
                 else:
-                    messages.success(request, 'Situation mensuelle enregistrÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©e.')
+                    messages.success(request, 'Situation mensuelle enregistrée.')
                     return redirect('projets:situations_mensuelles', projet_id=projet.id)
+            else:
+                messages.error(request, 'La situation n\'a pas été enregistrée. Corrigez les erreurs indiquées.')
     else:
         form = SituationMensuelleForm(initial={
             'annee': timezone.now().year,
@@ -460,6 +548,7 @@ def ajouter_situation_mensuelle(request, projet_id):
         })
         depenses = DepenseSituationMensuelleFormSet()
         stocks = StockSituationMensuelleFormSet()
+        recettes = _recettes_formset()
         documents = DocumentSituationMensuelleFormSet()
 
     return render(request, 'projets/suivi/ajouter_situation_mensuelle.html', {
@@ -467,6 +556,7 @@ def ajouter_situation_mensuelle(request, projet_id):
         'form': form,
         'depenses': depenses,
         'stocks': stocks,
+        'recettes': recettes,
         'documents': documents,
         'depenses_groupees': _group_situation_expenses(depenses),
     })
@@ -481,24 +571,30 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         form = SituationMensuelleForm(request.POST, request.FILES, instance=situation, projet=projet)
         depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
         stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
+        recettes = _recettes_formset(request.POST, situation=situation)
         documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
-        if form.is_valid() and depenses.is_valid() and stocks.is_valid() and documents.is_valid():
+        if form.is_valid() and depenses.is_valid() and stocks.is_valid() and recettes.is_valid() and documents.is_valid():
             situation = form.save(commit=False)
             with transaction.atomic():
                 situation.save()
                 depenses.save()
                 stocks.save()
+                recettes.save()
+                _synchroniser_chiffre_affaires(situation)
                 documents.save()
-            messages.success(request, 'Situation mensuelle modifiÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©e.')
+            messages.success(request, 'Situation mensuelle modifiée.')
             return redirect('projets:situations_mensuelles', projet_id=projet.id)
+        messages.error(request, 'La situation n\'a pas été enregistrée. Corrigez les erreurs indiquées.')
     else:
         form = SituationMensuelleForm(instance=situation)
         depenses = DepenseSituationMensuelleFormSet(instance=situation)
         stocks = StockSituationMensuelleFormSet(instance=situation)
+        recettes = _recettes_formset(situation=situation)
         documents = DocumentSituationMensuelleFormSet(instance=situation)
     return render(request, 'projets/suivi/modifier_situation_mensuelle.html', {
         'projet': projet, 'situation': situation, 'form': form,
         'depenses': depenses, 'stocks': stocks,
+        'recettes': recettes,
         'depenses_groupees': _group_situation_expenses(depenses),
         'documents': documents,
     })
@@ -511,7 +607,7 @@ def supprimer_situation_mensuelle(request, projet_id, situation_id):
     situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
     if request.method == 'POST':
         situation.delete()
-        messages.success(request, 'Situation mensuelle supprimÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©e.')
+        messages.success(request, 'Situation mensuelle supprimée.')
     return redirect('projets:situations_mensuelles', projet_id=projet.id)
 
 
@@ -523,7 +619,7 @@ def supprimer_document_situation_mensuelle(request, projet_id, situation_id):
     if request.method == 'POST':
         document = get_object_or_404(DocumentSituationMensuelle, id=request.POST.get('document_id'), situation=situation)
         document.delete()
-        messages.success(request, 'Document mensuel supprimÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â©.')
+        messages.success(request, 'Document mensuel supprimé.')
     return redirect('projets:modifier_situation_mensuelle', projet_id=projet.id, situation_id=situation.id)
 
 
