@@ -312,7 +312,9 @@ SESSION_COOKIE_SECURE = True
 
 # CSRF trusted origins - AJOUTER LES URLS HTTPS DE RAILWAY
 CSRF_TRUSTED_ORIGINS = [
-    'https://goprojet-production.up.railway.app',
+    'https://goprojet-app.up.railway.app',
+    'https://www.goprojet.ma',
+    'https://goprojet.ma',
     'https://*.railway.app', 
     'https://*.up.railway.app',
     # URLs de développement (HTTP)

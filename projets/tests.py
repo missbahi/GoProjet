@@ -1271,6 +1271,28 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertFalse(formset.is_valid())
 		self.assertIn('existe déjà', str(formset.non_form_errors()))
 
+	def test_modification_situation_affiche_le_nom_du_document_existant(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Document Situation', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=4,
+		)
+		DocumentSituationMensuelle.objects.create(
+			situation=situation,
+			fichier=SimpleUploadedFile('situation-avril.pdf', b'contenu'),
+		)
+
+		response = self.client.get(
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Document actuel : situation-avril.pdf')
+
 	def test_creation_rapport_notifie_les_utilisateurs_concernes(self):
 		dossier = Dossier.objects.create(
 			nom='Dossier Rapport Notifications', gerant=self.user,
