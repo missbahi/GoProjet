@@ -15,7 +15,7 @@
         .paper { max-width: 1000px; margin: 16px auto 32px; padding: 42px 48px; background: var(--paper); box-shadow: 0 8px 30px rgba(35, 68, 84, .18); }
         .document-header { display: flex; justify-content: space-between; gap: 28px; border-bottom: 2px solid #6d9fb2; padding-bottom: 18px; }
         h1 { margin: 0 0 6px; font-size: 26px; }
-        h2 { margin: 26px 0 10px; color: #2c667e; font-size: 17px; }
+        h2 { margin: 0; font-size: 17px; }
         p { margin: 4px 0; }
         .meta { color: var(--muted); font-size: 14px; text-align: right; }
         .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; font-family: sans-serif; }
@@ -27,7 +27,14 @@
         th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
         .amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
         tfoot { font-weight: 700; color: var(--green); }
-        .category { color: #527889; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .section-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 26px 0 10px; padding: 9px 12px; }
+        .revenue-heading { background: #dcebdc; border-left: 4px solid #4d7a57; color: #295337; }
+        .charges-heading { background: #e7f1f5; border-left: 4px solid #2c667e; color: #24485a; }
+        .charges-total { font-family: sans-serif; font-size: 14px; font-weight: 700; white-space: nowrap; }
+        .charges-table thead th { background: #2c667e; color: #fff; border-bottom: 2px solid #19394a; border-right: 1px solid #5e9eb6; padding: 14px 10px; font-size: 11px; font-weight: 700; line-height: 1.0; }
+        .charges-table thead th:last-child { border-right: 0; }
+        .category-row td { background: #eef5f7; border-top: 1px solid #8eb6c7; border-bottom-color: #8eb6c7; }
+        .category { color: #24485a; font-size: 12px; font-weight: 700; text-transform: uppercase; }
         .note { border-left: 3px solid #7baec1; margin-top: 22px; padding: 10px 14px; background: #f1f7f8; color: #3c5663; }
         .documents { margin: 0; padding-left: 18px; font-family: sans-serif; font-size: 13px; }
         @media (max-width: 700px) { .paper { margin: 0; padding: 24px 18px; } .toolbar { margin: 12px 18px; } .document-header { display: block; } .meta { margin-top: 14px; text-align: left; } .summary { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 7px 5px; } }
@@ -59,7 +66,7 @@
         </section>
 
         <section>
-            <h2>Chiffre d'affaires</h2>
+            <div class="section-heading revenue-heading"><h2>Chiffre d'affaires</h2></div>
             <table>
                 <thead><tr><th>Rubrique</th><th class="amount">Montant (DH)</th></tr></thead>
                 <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}</td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
@@ -68,10 +75,11 @@
         </section>
 
         <section>
-            <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:8px;">
-                <h2 style="margin-bottom:0;">Charges</h2>
+            <div class="section-heading charges-heading">
+                <h2>Charges</h2>
+                <span class="charges-total">Total charges : {{ situation.total_depenses|floatformat:'2g' }} DH</span>
             </div>
-            <table>
+            <table class="charges-table">
                 <thead>
                     <tr>
                         <th style="width:36%;">Désignation</th>
@@ -87,7 +95,7 @@
                             <td colspan="5"><span class="category">{{ label }}</span></td>
                         </tr>
                         {% for depense in depenses %}
-                            {% if depense.montant != 0 %}
+                            {% if depense.montant_base != 0 or depense.cession_entrante != 0 or depense.cession_sortante != 0 %}
                             <tr>
                                 <td>{{ depense.designation }}</td>
                                 <td class="amount">{{ depense.montant_base|floatformat:'2g' }}</td>

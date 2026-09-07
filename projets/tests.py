@@ -1198,6 +1198,7 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertContains(response, "Aperçu de situation mensuelle")
 		self.assertContains(response, "Chiffre d'affaires")
 		self.assertContains(response, 'Charges')
+		self.assertContains(response, 'Total charges : 100,00 DH')
 		self.assertContains(response, 'État des stocks')
 		self.assertContains(response, 'window.print()')
 
