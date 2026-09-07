@@ -48,9 +48,12 @@ else:
     ALLOWED_HOSTS = [
         'goprojet.onrender.com',
         '.onrender.com',
-        'goprojet-production.up.railway.app',
+        'goprojet.up.railway.app',
+        'goprojet-app.up.railway.app',
         '.railway.app',
         '.up.railway.app',
+        'goprojet.ma',
+        'www.goprojet.ma',
         '127.0.0.1',
         'localhost'
     ]
