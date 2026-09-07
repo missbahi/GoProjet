@@ -1200,6 +1200,8 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertContains(response, 'Charges')
 		self.assertContains(response, 'Total charges : 100,00 DH')
 		self.assertContains(response, 'État des stocks')
+		self.assertContains(response, 'Afficher le détail')
+		self.assertContains(response, 'detailToggle')
 		self.assertContains(response, 'window.print()')
 
 	def test_modification_situation_supprime_une_depense_existante(self):

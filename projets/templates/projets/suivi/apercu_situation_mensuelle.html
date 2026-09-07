@@ -12,6 +12,9 @@
         .toolbar { display: flex; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 20px auto 0; font-family: sans-serif; }
         .toolbar a, .toolbar button { border: 1px solid #5e9eb6; border-radius: 4px; background: #fff; color: #24485a; cursor: pointer; padding: 9px 14px; font-size: 14px; }
         .toolbar button { background: #075985; color: #fff; border-color: #075985; }
+        .detail-toggle { background: #e7f1f5 !important; color: #24485a !important; border-color: #5e9eb6 !important; }
+        .detail-toggle[aria-pressed="true"] { background: #2c667e !important; color: #fff !important; }
+        .is-summary .detail-row { display: none; }
         .paper { max-width: 1000px; margin: 16px auto 32px; padding: 42px 48px; background: var(--paper); box-shadow: 0 8px 30px rgba(35, 68, 84, .18); }
         .document-header { display: flex; justify-content: space-between; gap: 28px; border-bottom: 2px solid #6d9fb2; padding-bottom: 18px; }
         h1 { margin: 0 0 6px; font-size: 26px; }
@@ -38,15 +41,16 @@
         .note { border-left: 3px solid #7baec1; margin-top: 22px; padding: 10px 14px; background: #f1f7f8; color: #3c5663; }
         .documents { margin: 0; padding-left: 18px; font-family: sans-serif; font-size: 13px; }
         @media (max-width: 700px) { .paper { margin: 0; padding: 24px 18px; } .toolbar { margin: 12px 18px; } .document-header { display: block; } .meta { margin-top: 14px; text-align: left; } .summary { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 7px 5px; } }
-        @media print { @page { size: A4; margin: 14mm; } body { background: #fff; } .toolbar { display: none !important; } .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; } h2 { break-after: avoid; } table { break-inside: avoid; } }
+        @media print { @page { size: A4; margin: 14mm; } body { background: #fff; } .toolbar { display: none !important; } .is-summary .detail-row { display: table-row !important; } .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; } h2 { break-after: avoid; } table { break-inside: avoid; } }
     </style>
 </head>
 <body>
     <div class="toolbar">
         <a href="{% url 'projets:situations_mensuelles' projet.id %}">Retour aux situations</a>
+        <button type="button" class="detail-toggle" id="detailToggle" aria-pressed="false">Afficher le détail</button>
         <button type="button" onclick="window.print()">Imprimer</button>
     </div>
-    <main class="paper">
+    <main class="paper is-summary" id="situationPreview">
         <header class="document-header">
             <div>
                 <h1>Aperçu de situation mensuelle</h1>
@@ -96,7 +100,7 @@
                         </tr>
                         {% for depense in depenses %}
                             {% if depense.montant_base != 0 or depense.cession_entrante != 0 or depense.cession_sortante != 0 %}
-                            <tr>
+                            <tr class="detail-row">
                                 <td>{{ depense.designation }}</td>
                                 <td class="amount">{{ depense.montant_base|floatformat:'2g' }}</td>
                                 <td class="amount">{{ depense.cession_entrante|floatformat:'2g' }}</td>
@@ -125,7 +129,7 @@
             <h2>État des stocks</h2>
             <table>
                 <thead><tr><th>Désignation</th><th>Unité</th><th class="amount">Quantité</th><th class="amount">Prix unitaire</th><th class="amount">Montant (DH)</th></tr></thead>
-                <tbody>{% for stock in stocks %}<tr><td>{{ stock.designation }}</td><td>{{ stock.unite }}</td><td class="amount">{{ stock.quantite|floatformat:'3g' }}</td><td class="amount">{{ stock.prix_unitaire|floatformat:'2g' }}</td><td class="amount">{{ stock.valeur|floatformat:'2g' }}</td></tr>{% empty %}<tr><td colspan="5">Aucun mouvement de stock enregistré.</td></tr>{% endfor %}</tbody>
+                <tbody>{% for stock in stocks %}<tr class="detail-row"><td>{{ stock.designation }}</td><td>{{ stock.unite }}</td><td class="amount">{{ stock.quantite|floatformat:'3g' }}</td><td class="amount">{{ stock.prix_unitaire|floatformat:'2g' }}</td><td class="amount">{{ stock.valeur|floatformat:'2g' }}</td></tr>{% empty %}<tr><td colspan="5">Aucun mouvement de stock enregistré.</td></tr>{% endfor %}</tbody>
                 <tfoot><tr><td colspan="4">Total état des stocks</td><td class="amount">{{ situation.total_stock|floatformat:'2g' }} DH</td></tr></tfoot>
             </table>
         </section>
@@ -133,5 +137,17 @@
         {% if situation.observations %}<section class="note"><strong>Observations</strong><p>{{ situation.observations|linebreaksbr }}</p></section>{% endif %}
         {% if documents %}<section><h2>Documents associés</h2><div class="documents">{% for document in documents %}<p>{{ document.nom }}</p>{% endfor %}</div></section>{% endif %}
     </main>
+    <script>
+        (() => {
+            const preview = document.getElementById('situationPreview');
+            const toggle = document.getElementById('detailToggle');
+            if (!preview || !toggle) return;
+            toggle.addEventListener('click', () => {
+                const isDetailed = preview.classList.toggle('is-summary') === false;
+                toggle.textContent = isDetailed ? 'Afficher le résumé' : 'Afficher le détail';
+                toggle.setAttribute('aria-pressed', String(isDetailed));
+            });
+        })();
+    </script>
 </body>
 </html>
