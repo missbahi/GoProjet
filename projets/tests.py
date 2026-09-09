@@ -37,12 +37,14 @@ from .models import (
 	TypeOrdreService,
 	RapportJournalier,
 	DepenseRapportJournalier,
+	StockRapportJournalier,
 	Notification,
 	SituationMensuelle,
 	RecetteSituationMensuelle,
 	DocumentSituationMensuelle,
 	DepenseSituationMensuelle,
 	StockSituationMensuelle,
+	CategorieCharge,
 )
 from .signals.notifications import gerer_notifications_projet
 
@@ -801,6 +803,142 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(rapport.original_filename, 'rapport.pdf')
 		self.assertTrue(rapport.document.name.endswith('rapport.pdf'))
 
+	def test_creation_rapport_ignore_un_stock_nouvellement_supprime(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Rapport Stock Supprime', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+
+		response = self.client.post(
+			reverse('projets:ajouter_rapport_journalier', args=[self.projet.id]),
+			{
+				'date': date.today().isoformat(),
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-designation': '', 'stocks-0-unite': '',
+				'stocks-0-quantite_entree': '', 'stocks-0-quantite_sortie': '',
+				'stocks-0-stock_restant': '', 'stocks-0-DELETE': 'on',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:rapports_journaliers', args=[self.projet.id]),
+		)
+		rapport = RapportJournalier.objects.get(projet=self.projet)
+		self.assertFalse(StockRapportJournalier.objects.filter(rapport=rapport).exists())
+
+	def test_rapport_utilise_une_categorie_de_charge_configurable(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Rapport Categorie Configurable', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		categorie = CategorieCharge.objects.create(
+			code='DIVERS', nom='Divers', ordre=20,
+		)
+
+		response = self.client.post(
+			reverse('projets:ajouter_rapport_journalier', args=[self.projet.id]),
+			{
+				'date': date.today().isoformat(),
+				'depenses-TOTAL_FORMS': '1', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'depenses-0-categorie': 'DIVERS',
+				'depenses-0-categorie_charge': str(categorie.id),
+				'depenses-0-designation': 'Frais divers', 'depenses-0-quantite': '1',
+				'depenses-0-unite': 'forfait', 'depenses-0-prix_unitaire': '125.00',
+				'depenses-0-observations': '',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:rapports_journaliers', args=[self.projet.id]),
+		)
+		rapport = RapportJournalier.objects.get(projet=self.projet)
+		depense = rapport.depenses.get()
+		self.assertEqual(depense.categorie_charge_id, categorie.id)
+		self.assertEqual(depense.categorie, 'DIVERS')
+		detail = self.client.get(
+			reverse('projets:detail_rapport_journalier', args=[self.projet.id, rapport.id]),
+		)
+		self.assertContains(detail, 'Divers')
+
+	def test_modification_rapport_ignore_un_stock_nouvellement_supprime(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Modification Rapport Stock Supprime', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		rapport = RapportJournalier.objects.create(
+			projet=self.projet, date=date.today(),
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_rapport_journalier', args=[self.projet.id, rapport.id]),
+			{
+				'date': date.today().isoformat(),
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-designation': '', 'stocks-0-unite': '',
+				'stocks-0-quantite_entree': '', 'stocks-0-quantite_sortie': '',
+				'stocks-0-stock_restant': '', 'stocks-0-DELETE': 'on',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:rapports_journaliers', args=[self.projet.id]),
+		)
+		self.assertFalse(StockRapportJournalier.objects.filter(rapport=rapport).exists())
+
+	def test_modification_rapport_supprime_un_stock_valide(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Suppression Stock Valide', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		rapport = RapportJournalier.objects.create(
+			projet=self.projet, date=date.today(),
+		)
+		stock = StockRapportJournalier.objects.create(
+			rapport=rapport, designation='Ciment', unite='sac',
+			quantite_entree=10, quantite_sortie=2, stock_restant=8,
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_rapport_journalier', args=[self.projet.id, rapport.id]),
+			{
+				'date': date.today().isoformat(),
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '1',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-id': str(stock.id), 'stocks-0-designation': stock.designation,
+				'stocks-0-unite': stock.unite, 'stocks-0-quantite_entree': '10',
+				'stocks-0-quantite_sortie': '2', 'stocks-0-stock_restant': '8',
+				'stocks-0-DELETE': 'on',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:rapports_journaliers', args=[self.projet.id]),
+		)
+		self.assertFalse(StockRapportJournalier.objects.filter(pk=stock.id).exists())
+
 	def test_suppression_ne_supprime_pas_un_fichier_partage(self):
 		fichier = SimpleUploadedFile('partage.pdf', b'document partage')
 		premier = DocumentAdministratif.objects.create(
@@ -904,6 +1042,7 @@ class StorageDocumentFlowsTests(TestCase):
 		)
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'existe déjà')
+		self.assertContains(response, 'Erreurs:')
 		self.assertEqual(
 			RapportJournalier.objects.filter(projet=self.projet).count(), 1
 		)
@@ -1005,6 +1144,101 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(situation.stocks.count(), 2)
 		self.assertEqual(situation.total_depenses, 250)
 		self.assertEqual(situation.total_stock, 750)
+
+	def test_situation_utilise_une_categorie_de_charge_configurable(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Situation Categorie Configurable', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		categorie = CategorieCharge.objects.create(
+			code='FRAIS_GENERAUX', nom='Frais généraux', ordre=21,
+		)
+
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'periode': '2027-01', 'annee': '2027', 'mois': '1',
+				'depenses-TOTAL_FORMS': '1', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'depenses-0-categorie': 'FRAIS_GENERAUX',
+				'depenses-0-categorie_charge': str(categorie.id),
+				'depenses-0-designation': 'Frais administratifs',
+				'depenses-0-montant_base': '250.00',
+				'depenses-0-cession_entrante': '0.00',
+				'depenses-0-cession_sortante': '0.00',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse('projets:situations_mensuelles', args=[self.projet.id]),
+		)
+		situation = SituationMensuelle.objects.get(projet=self.projet, mois=1)
+		depense = situation.depenses.get()
+		self.assertEqual(depense.categorie_charge_id, categorie.id)
+		apercu = self.client.get(
+			reverse('projets:apercu_situation_mensuelle', args=[self.projet.id, situation.id]),
+		)
+		self.assertContains(apercu, 'Frais généraux')
+
+	def test_situation_ignore_un_stock_nouvellement_supprime(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Stock Supprime', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'periode': '2026-12', 'annee': '2026', 'mois': '12',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-designation': '', 'stocks-0-unite': '',
+				'stocks-0-quantite': '', 'stocks-0-prix_unitaire': '',
+				'stocks-0-DELETE': 'on',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertFalse(StockSituationMensuelle.objects.filter(situation__projet=self.projet).exists())
+
+	def test_ajout_situation_sans_mois_affiche_une_erreur(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Situation Periode Invalide', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+
+		response = self.client.post(
+			reverse('projets:ajouter_situation_mensuelle', args=[self.projet.id]),
+			{
+				'periode': '', 'annee': '', 'mois': '',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'Sélectionnez un mois')
 
 	def test_situation_accepte_les_rubriques_materiel_avec_montants_vides(self):
 		dossier = Dossier.objects.create(
@@ -1244,6 +1478,39 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertTrue(DepenseSituationMensuelle.objects.filter(pk=depense_a_garder.id).exists())
 		self.assertFalse(DepenseSituationMensuelle.objects.filter(pk=depense_a_supprimer.id).exists())
 
+	def test_modification_situation_ignore_un_stock_nouvellement_supprime(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Modification Stock Supprime', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=6,
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			{
+				'periode': '2026-06', 'annee': '2026', 'mois': '6',
+				'date_debut': '', 'date_fin': '', 'observations': '',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '1', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'stocks-0-designation': '', 'stocks-0-unite': '',
+				'stocks-0-quantite': '', 'stocks-0-prix_unitaire': '',
+				'stocks-0-DELETE': 'on',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertFalse(StockSituationMensuelle.objects.filter(situation=situation).exists())
+
 	def test_situation_refuse_document_duplique_par_contenu(self):
 		dossier = Dossier.objects.create(
 			nom='Dossier Situation Doublon Document', gerant=self.user,
@@ -1293,6 +1560,41 @@ class StorageDocumentFlowsTests(TestCase):
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, 'situation-avril.pdf')
 		self.assertContains(response, 'document-file-label')
+
+	def test_modification_situation_supprime_un_document(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Suppression Document Situation', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=5,
+		)
+		document = DocumentSituationMensuelle.objects.create(
+			situation=situation,
+			fichier=SimpleUploadedFile('situation-mai.pdf', b'contenu'),
+		)
+
+		response = self.client.post(
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			{
+				'periode': '2026-05', 'annee': '2026', 'mois': '5',
+				'date_debut': '', 'date_fin': '', 'observations': '',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '1', 'documents-INITIAL_FORMS': '1',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+				'documents-0-id': str(document.id), 'documents-0-DELETE': 'on',
+			},
+		)
+
+		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertFalse(DocumentSituationMensuelle.objects.filter(pk=document.id).exists())
 
 	def test_creation_rapport_notifie_les_utilisateurs_concernes(self):
 		dossier = Dossier.objects.create(

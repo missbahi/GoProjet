@@ -60,15 +60,6 @@
     <div class="flex-1 flex flex-col overflow-hidden">
       
       <main class="flex-1 overflow-y-auto  bg-[#2E2E2E] text-[#2B9C62] p-4  p-6">
-        {% if messages %}
-          <div class="mx-auto mb-4 max-w-5xl space-y-2">
-            {% for message in messages %}
-              <div role="alert" class="border px-4 py-3 text-sm {% if 'error' in message.tags %}border-red-400/60 bg-red-950/50 text-red-100{% elif 'warning' in message.tags %}border-amber-400/60 bg-amber-950/50 text-amber-100{% elif 'success' in message.tags %}border-emerald-400/60 bg-emerald-950/50 text-emerald-100{% else %}border-sky-400/60 bg-sky-950/50 text-sky-100{% endif %}">
-                {{ message }}
-              </div>
-            {% endfor %}
-          </div>
-        {% endif %}
         {% block content %}{% endblock %}
       </main>
     </div>

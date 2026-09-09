@@ -6,6 +6,11 @@
   {% else %}
     {{ depense_form.categorie }}
   {% endif %}
+  {% if force_categorie_charge %}
+    <input type="hidden" name="{{ depense_form.categorie_charge.html_name }}" id="{{ depense_form.categorie_charge.id_for_label }}" value="{{ force_categorie_charge }}">
+  {% else %}
+    {{ depense_form.categorie_charge }}
+  {% endif %}
   <td class="pr-2 py-1">
     {% if options %}
       <select class="form-control depense-ref-select">

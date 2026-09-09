@@ -15,7 +15,7 @@ from .models import (
     Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
     StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
     StockSituationMensuelle, DocumentSituationMensuelle, RecetteSituationMensuelle, Personnel, Materiel,
-    Location, Transport, SousTraitance, Consommable, Fourniture,
+    Location, Transport, SousTraitance, Consommable, Fourniture, CategorieCharge,
 )
 
 from django.contrib.auth.models import User
@@ -617,18 +617,36 @@ class RapportJournalierForm(forms.ModelForm):
         return cleaned_data
 
 class DepenseRapportJournalierForm(forms.ModelForm):
+    categorie = forms.CharField(required=False, widget=forms.HiddenInput())
+    categorie_charge = forms.ModelChoiceField(
+        queryset=CategorieCharge.objects.none(), required=False, widget=forms.HiddenInput()
+    )
+
     class Meta:
         model = DepenseRapportJournalier
-        fields = ['categorie', 'designation', 'quantite', 'unite', 'prix_unitaire', 'observations']
-        widgets = {
-            'categorie': forms.HiddenInput(),
-        }
+        fields = ['categorie', 'categorie_charge', 'designation', 'quantite', 'unite', 'prix_unitaire', 'observations']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        categories = CategorieCharge.objects.filter(actif=True)
+        if self.instance.categorie_charge_id:
+            categories = CategorieCharge.objects.filter(
+                Q(actif=True) | Q(pk=self.instance.categorie_charge_id)
+            )
+        self.fields['categorie_charge'].queryset = categories
         for name, field in self.fields.items():
-            if name != 'categorie':
+            if name not in {'categorie', 'categorie_charge'}:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        categorie_charge = cleaned_data.get('categorie_charge')
+        categorie = cleaned_data.get('categorie')
+        if categorie_charge:
+            cleaned_data['categorie'] = categorie_charge.code[:30]
+        elif categorie:
+            cleaned_data['categorie_charge'] = CategorieCharge.objects.filter(code=categorie).first()
+        return cleaned_data
 
 class StockRapportJournalierForm(forms.ModelForm):
     class Meta:
@@ -691,6 +709,10 @@ class SituationMensuelleForm(forms.ModelForm):
                 cleaned_data['mois'] = mois
             except (TypeError, ValueError):
                 self.add_error('periode', 'Sélectionnez un mois valide.')
+        if annee is None or mois is None:
+            self.add_error('periode', 'Sélectionnez un mois pour la situation.')
+        elif not 1 <= mois <= 12:
+            self.add_error('periode', 'Sélectionnez un mois valide.')
         date_debut = cleaned_data.get('date_debut')
         date_fin = cleaned_data.get('date_fin')
         if annee and mois:
@@ -771,6 +793,11 @@ class DocumentSituationMensuelleBaseFormSet(BaseInlineFormSet):
             checksums.add(checksum)
 
 class DepenseSituationMensuelleForm(forms.ModelForm):
+    categorie = forms.CharField(required=False, widget=forms.HiddenInput())
+    designation = forms.CharField(required=False)
+    categorie_charge = forms.ModelChoiceField(
+        queryset=CategorieCharge.objects.none(), required=False, widget=forms.HiddenInput()
+    )
     montant_base = FrenchDecimalField(
         max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
         widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
@@ -786,19 +813,43 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
 
     class Meta:
         model = DepenseSituationMensuelle
-        fields = ['categorie', 'designation', 'montant_base', 'cession_entrante', 'cession_sortante']
-        widgets = {'categorie': forms.HiddenInput()}
+        fields = ['categorie', 'categorie_charge', 'designation', 'montant_base', 'cession_entrante', 'cession_sortante']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        categories = CategorieCharge.objects.filter(actif=True)
+        if self.instance.categorie_charge_id:
+            categories = CategorieCharge.objects.filter(
+                Q(actif=True) | Q(pk=self.instance.categorie_charge_id)
+            )
+        self.fields['categorie_charge'].queryset = categories
         montant_base_key = f'{self.prefix}-montant_base'
         montant_legacy_key = f'{self.prefix}-montant'
         if self.is_bound and montant_base_key not in self.data and montant_legacy_key in self.data:
             self.data = self.data.copy()
             self.data[montant_base_key] = self.data[montant_legacy_key]
         for name, field in self.fields.items():
-            if name != 'categorie':
+            if name not in {'categorie', 'categorie_charge'}:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean(self):
+        cleaned_data = super().clean()
+        designation = (cleaned_data.get('designation') or '').strip()
+        montant_base = cleaned_data.get('montant_base')
+        cession_entrante = cleaned_data.get('cession_entrante')
+        cession_sortante = cleaned_data.get('cession_sortante')
+        categorie = cleaned_data.get('categorie')
+        categorie_charge = cleaned_data.get('categorie_charge')
+        if not any((designation, montant_base, cession_entrante, cession_sortante, categorie, categorie_charge)):
+            return cleaned_data
+        if not designation:
+            self.add_error('designation', 'Indiquez une désignation pour cette charge.')
+        categorie_charge = cleaned_data.get('categorie_charge')
+        if categorie_charge:
+            cleaned_data['categorie'] = categorie_charge.code[:30]
+        elif categorie:
+            cleaned_data['categorie_charge'] = CategorieCharge.objects.filter(code=categorie).first()
+        return cleaned_data
 
     def clean_montant_base(self):
         return self.cleaned_data['montant_base'] or Decimal('0.00')

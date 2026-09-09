@@ -175,7 +175,7 @@
       <h6 class="mb-2 font-semibold text-amber-300">Dépenses</h6>
       {{ depenses.management_form }}
       <div id="depenses-categories" data-total-forms-id="{{ depenses.management_form.TOTAL_FORMS.auto_id }}">
-        {% for value, label, categorie_forms, total, options in depenses_groupees %}
+        {% for value, label, categorie_forms, total, options, category_id in depenses_groupees %}
           <div class="mb-3 rounded-lg border border-gray-700 overflow-hidden" data-depense-categorie="{{ value }}">
             <button type="button"
                     class="categorie-toggle w-full flex items-center justify-between gap-2 px-3 py-2 bg-gray-800/60 hover:bg-gray-800 text-left"
@@ -225,7 +225,7 @@
             </div>
           </div>
           <template id="depense-empty-form-template-{{ value }}">
-            {% include 'projets/suivi/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value options=options %}
+            {% include 'projets/suivi/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value force_categorie_charge=category_id options=options %}
           </template>
           <script id="referentiel-data-{{ value }}" type="application/json">
           [
@@ -547,11 +547,11 @@
                 e.preventDefault();
                 const idInput = row.querySelector('input[name$="-id"]');
                 const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
-                if (idInput && idInput.value) {
-                    if (deleteCheckbox) deleteCheckbox.checked = true;
-                    row.style.display = 'none';
+                if (deleteCheckbox) {
+                  deleteCheckbox.checked = true;
+                  row.style.display = 'none';
                 } else {
-                    row.remove();
+                  row.remove();
                 }
                 updateCount(categorie);
             });
@@ -631,11 +631,11 @@
                 e.preventDefault();
                 const idInput = row.querySelector('input[name$="-id"]');
                 const deleteCheckbox = row.querySelector('input[name$="-DELETE"]');
-                if (idInput && idInput.value) {
-                    if (deleteCheckbox) deleteCheckbox.checked = true;
-                    row.style.display = 'none';
+                if (deleteCheckbox) {
+                  deleteCheckbox.checked = true;
+                  row.style.display = 'none';
                 } else {
-                    row.remove();
+                  row.remove();
                 }
                 updateStockCount();
             });

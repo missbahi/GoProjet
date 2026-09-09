@@ -89,12 +89,31 @@ class CategorieDepenseTravaux(models.TextChoices):
     CONSOMMABLE = 'CONSOMMABLE', _('Consommable')
 
 
+class CategorieCharge(models.Model):
+    code = models.SlugField(max_length=50, unique=True, verbose_name=_('Code'))
+    nom = models.CharField(max_length=100, verbose_name=_('Nom'))
+    actif = models.BooleanField(default=True, verbose_name=_('Active'))
+    ordre = models.PositiveIntegerField(default=0, verbose_name=_('Ordre'))
+
+    class Meta:
+        ordering = ['ordre', 'nom', 'id']
+        verbose_name = _('Catégorie de charge')
+        verbose_name_plural = _('Catégories de charges')
+
+    def __str__(self):
+        return self.nom
+
+
 class DepenseRapportJournalier(models.Model):
     rapport = models.ForeignKey(
         RapportJournalier, on_delete=models.CASCADE, related_name='depenses',
         verbose_name=_('Rapport journalier')
     )
-    categorie = models.CharField(max_length=30, choices=CategorieDepenseTravaux.choices)
+    categorie = models.CharField(max_length=30)
+    categorie_charge = models.ForeignKey(
+        CategorieCharge, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='depenses_rapports_journaliers', verbose_name=_('Catégorie de charge')
+    )
     designation = models.CharField(max_length=200, verbose_name=_('Désignation'))
     quantite = models.DecimalField(max_digits=12, decimal_places=3, default=Decimal('1.000'))
     unite = models.CharField(max_length=30, blank=True, verbose_name=_('Unité'))
@@ -163,6 +182,8 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
 
     def clean(self):
         super().clean()
+        if self.mois is None:
+            return
         if self.mois < 1 or self.mois > 12:
             raise ValidationError({'mois': _('Le mois doit être compris entre 1 et 12.')})
 
@@ -249,7 +270,11 @@ class DepenseSituationMensuelle(models.Model):
         SituationMensuelle, on_delete=models.CASCADE, related_name='depenses',
         verbose_name=_('Situation mensuelle')
     )
-    categorie = models.CharField(max_length=30, choices=CategorieDepenseTravaux.choices)
+    categorie = models.CharField(max_length=30)
+    categorie_charge = models.ForeignKey(
+        CategorieCharge, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='depenses_situations_mensuelles', verbose_name=_('Catégorie de charge')
+    )
     designation = models.CharField(max_length=200, verbose_name=_('Désignation'))
     montant_base = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'), db_column='montant')
     cession_entrante = models.DecimalField(max_digits=15, decimal_places=2, default=Decimal('0.00'))

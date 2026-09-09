@@ -1,11 +1,12 @@
 from decimal import Decimal
+import logging
 import os
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
-from django.db.models import Case, IntegerField, OuterRef, Subquery, Sum, Value, When
+from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -20,6 +21,22 @@ from projets.forms import (
     StockSituationMensuelleFormSet,
 )
 from projets.models import *
+
+logger = logging.getLogger(__name__)
+
+
+def _format_validation_errors(validation_form):
+    errors = validation_form.errors
+    if hasattr(errors, 'as_text'):
+        return errors.as_text()
+    details = []
+    non_form_errors = validation_form.non_form_errors()
+    if non_form_errors:
+        details.append(non_form_errors.as_text())
+    for index, form_errors in enumerate(errors):
+        if form_errors:
+            details.append(f'Formulaire {index}: {form_errors.as_text()}')
+    return '\n'.join(details)
 
 RECETTE_INITIAL_DATA = [
     {'rubrique': RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES},
@@ -143,11 +160,11 @@ def ajouter_rapport_journalier(request, projet_id):
             # Afficher les erreurs
             error_messages = []
             if form.errors:
-                error_messages.append(f"Formulaire: {form.errors.as_text()}")
+                error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
             if depenses.errors:
-                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
+                error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
             if stocks.errors:
-                error_messages.append(f"Stocks: {stocks.errors.as_text()}")
+                error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
             
             messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
             return render(request, 'projets/suivi/ajouter_rapport_journalier.html', {
@@ -185,12 +202,19 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         ).prefetch_related('depenses', 'stocks'),
         id=rapport_id, projet=projet
     )
+    depenses = list(rapport.depenses.select_related('categorie_charge'))
+    categorie_ids = {depense.categorie_charge_id for depense in depenses if depense.categorie_charge_id}
+    categories = CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=categorie_ids))
     depenses_groupees = []
-    for value, label in CategorieDepenseTravaux.choices:
-        depenses_categorie = [d for d in rapport.depenses.all() if d.categorie == value]
+    for category in categories:
+        depenses_categorie = [
+            depense for depense in depenses
+            if (depense.categorie_charge_id and depense.categorie_charge_id == category.id)
+            or (not depense.categorie_charge_id and depense.categorie == category.code)
+        ]
         if depenses_categorie:
             total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
-            depenses_groupees.append((value, label, depenses_categorie, total))
+            depenses_groupees.append((category.code, category.nom, depenses_categorie, total))
     return render(request, 'projets/suivi/detail_rapport_journalier.html', {
         'projet': projet,
         'rapport': rapport,
@@ -233,19 +257,34 @@ def _referentiel_depenses():
 
 
 def _grouper_depenses_par_categorie(depenses_formset):
-    groupes = {value: [] for value, label in CategorieDepenseTravaux.choices}
+    categories = list(CategorieCharge.objects.filter(actif=True))
+    existing_ids = {
+        form.instance.categorie_charge_id
+        for form in depenses_formset.forms
+        if form.instance.categorie_charge_id
+    }
+    if existing_ids:
+        categories = list(CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=existing_ids)))
+    groupes = {category.code: [] for category in categories}
     for depense_form in depenses_formset.forms:
-        categorie = depense_form.instance.categorie
+        categorie = (
+            depense_form.instance.categorie_charge.code
+            if depense_form.instance.categorie_charge_id
+            else depense_form.instance.categorie
+        )
         if categorie in groupes:
             groupes[categorie].append(depense_form)
     referentiel = _referentiel_depenses()
     return [
         (
-            value, 'Consommable & Carburant' if value == CategorieDepenseTravaux.CONSOMMABLE else label, groupes[value],
-            sum((f.instance.montant or Decimal('0.00') for f in groupes[value]), Decimal('0.00')),
-            referentiel.get(value, []),
+            category.code,
+            category.nom,
+            groupes[category.code],
+            sum((f.instance.montant or Decimal('0.00') for f in groupes[category.code]), Decimal('0.00')),
+            referentiel.get(category.code, []),
+            category.pk,
         )
-        for value, label in CategorieDepenseTravaux.choices
+        for category in categories
     ]
 
 
@@ -289,11 +328,11 @@ def formulaire_rapport_journalier(request, projet_id):
             # Afficher les erreurs
             error_messages = []
             if form.errors:
-                error_messages.append(f"Formulaire: {form.errors.as_text()}")
+                error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
             if depenses.errors:
-                error_messages.append(f"Dépenses: {depenses.errors.as_text()}")
+                error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
             if stocks.errors:
-                error_messages.append(f"Stocks: {stocks.errors.as_text()}")
+                error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
             
             messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
             return render(request, 'projets/suivi/_formulaire_rapport_journalier.html', {
@@ -444,11 +483,19 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
             output_field=IntegerField(),
         )
     )
-    depenses_par_categorie = [
-        (value, label, sum((depense.montant or Decimal('0.00') for depense in situation.depenses.filter(categorie=value)), Decimal('0.00')), list(situation.depenses.filter(categorie=value)))
-        for value, label in CategorieDepenseTravaux.choices
-        if situation.depenses.filter(categorie=value).exists()
-    ]
+    depenses = list(situation.depenses.select_related('categorie_charge'))
+    categorie_ids = {depense.categorie_charge_id for depense in depenses if depense.categorie_charge_id}
+    categories = CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=categorie_ids))
+    depenses_par_categorie = []
+    for category in categories:
+        category_depenses = [
+            depense for depense in depenses
+            if (depense.categorie_charge_id and depense.categorie_charge_id == category.id)
+            or (not depense.categorie_charge_id and depense.categorie == category.code)
+        ]
+        if category_depenses:
+            total = sum((depense.montant or Decimal('0.00') for depense in category_depenses), Decimal('0.00'))
+            depenses_par_categorie.append((category.code, category.nom, total, category_depenses))
     return render(request, 'projets/suivi/apercu_situation_mensuelle.html', {
         'projet': projet,
         'situation': situation,
@@ -460,18 +507,27 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
 
 
 def _group_situation_expenses(formset):
-    groups = {value: [] for value, label in CategorieDepenseTravaux.choices}
+    categories = list(CategorieCharge.objects.filter(actif=True))
+    existing_ids = {
+        form.instance.categorie_charge_id
+        for form in formset.forms
+        if form.instance.categorie_charge_id
+    }
+    if existing_ids:
+        categories = list(CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=existing_ids)))
+    groups = {category.code: [] for category in categories}
     for form in formset.forms:
-        if form.instance.categorie in groups:
-            groups[form.instance.categorie].append(form)
+        code = form.instance.categorie_charge.code if form.instance.categorie_charge_id else form.instance.categorie
+        if code in groups:
+            groups[code].append(form)
     return [
         (
-            value,
-            label,
-            groups[value],
-            sum((form.instance.montant or Decimal('0.00') for form in groups[value]), Decimal('0.00')),
+            category.code,
+            category.nom,
+            groups[category.code],
+            sum((form.instance.montant or Decimal('0.00') for form in groups[category.code]), Decimal('0.00')),
         )
-        for value, label in CategorieDepenseTravaux.choices
+        for category in categories
     ]
 
 @login_required
@@ -588,7 +644,12 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
         recettes = _recettes_formset(request.POST, situation=situation)
         documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
-        if form.is_valid() and depenses.is_valid() and stocks.is_valid() and recettes.is_valid() and documents.is_valid():
+        form_valid = form.is_valid()
+        depenses_valid = depenses.is_valid()
+        stocks_valid = stocks.is_valid()
+        recettes_valid = recettes.is_valid()
+        documents_valid = documents.is_valid()
+        if form_valid and depenses_valid and stocks_valid and recettes_valid and documents_valid:
             situation = form.save(commit=False)
             with transaction.atomic():
                 situation.save()
@@ -599,6 +660,22 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
                 documents.save()
             messages.success(request, 'Situation mensuelle modifiée.')
             return redirect('projets:situations_mensuelles', projet_id=projet.id)
+        validation_errors = []
+        for label, validation_form in (
+            ('Situation', form),
+            ('Dépenses', depenses),
+            ('Stocks', stocks),
+            ('Recettes', recettes),
+            ('Documents', documents),
+        ):
+            if validation_form.errors:
+                validation_errors.append(
+                    f'{label}: {_format_validation_errors(validation_form)}'
+                )
+        logger.warning(
+            'Modification situation mensuelle invalide (projet=%s, situation=%s): %s',
+            projet.id, situation.id, ' | '.join(validation_errors),
+        )
         messages.error(request, 'La situation n\'a pas été enregistrée. Corrigez les erreurs indiquées.')
     else:
         form = SituationMensuelleForm(instance=situation)
@@ -612,6 +689,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         'recettes': recettes,
         'depenses_groupees': _group_situation_expenses(depenses),
         'documents': documents,
+        'validation_errors': validation_errors if request.method == 'POST' else [],
     })
 
 

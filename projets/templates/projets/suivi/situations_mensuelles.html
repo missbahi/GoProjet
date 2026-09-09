@@ -1,7 +1,383 @@
 {% extends 'projets/base.html' %}
 {% load l10n %}
 {% block content %}
-<div class="max-w-6xl mx-auto p-4"><div class="flex justify-between items-center mb-5"><div><a href="{% url 'projets:dashboard' projet.id %}" class="text-sm text-gray-400">Tableau de bord</a><h1 class="text-2xl font-bold mt-2">Situations mensuelles</h1><p class="text-gray-400">{{ projet.nom }}</p></div><a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="px-4 py-2 rounded bg-green-700 text-white">Nouvelle situation</a></div>
-{% for message in messages %}<div class="p-3 mb-3 rounded bg-green-800 text-white">{{ message }}</div>{% endfor %}
-{% for situation in situations %}<article class="p-4 mb-3 rounded border border-gray-700 bg-gray-800 text-white"><div class="flex flex-wrap justify-between gap-2"><h2 class="font-semibold text-lg">{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}</h2><span class="text-gray-300">{{ situation.date_debut|date:'d/m/Y' }} → {{ situation.date_fin|date:'d/m/Y' }}</span></div><div class="flex flex-wrap gap-4 mt-2 text-sm"><span class="text-cyan-300">Produits : {{ situation.chiffre_affaires|floatformat:'2g' }} DH</span><span class="text-amber-300">Charges : {{ situation.total_depenses|floatformat:'2g' }} DH</span><span class="text-green-300">État des stocks : {{ situation.total_stock|floatformat:'2g' }} DH</span></div>{% if situation.observations %}<p class="mt-2 text-gray-300">{{ situation.observations }}</p>{% endif %}<div class="flex flex-wrap gap-2 mt-3 text-sm">{% for document in situation.documents.all %}<a href="{% url 'projets:download_document' 'DocumentSituationMensuelle' document.id %}?download=false" target="_blank" class="px-3 py-1 rounded bg-cyan-700 text-white"><i class="fas fa-file mr-1"></i>{{ document.nom }}</a>{% empty %}<span class="text-gray-500">Aucun document</span>{% endfor %}<a href="{% url 'projets:apercu_situation_mensuelle' projet.id situation.id %}" class="px-3 py-1 rounded bg-sky-700 text-white">Aperçu</a><a href="{% url 'projets:modifier_situation_mensuelle' projet.id situation.id %}" class="px-3 py-1 rounded bg-amber-700 text-white">Modifier</a><form method="post" action="{% url 'projets:supprimer_situation_mensuelle' projet.id situation.id %}">{% csrf_token %}<button class="px-3 py-1 rounded bg-red-700 text-white" type="submit">Supprimer</button></form></div></article>{% empty %}<p class="p-8 text-center text-gray-400 bg-gray-800 rounded">Aucune situation mensuelle.</p>{% endfor %}</div>
+<div class="max-w-6xl mx-auto p-6">
+    <!-- En-tête -->
+    <div class="mb-8">
+        <a href="{% url 'projets:dashboard' projet.id %}" class="inline-flex items-center text-sm text-gray-400 hover:text-cyan-400 transition-colors duration-200 font-medium">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Tableau de bord
+        </a>
+        <div class="mt-4 flex flex-wrap items-start justify-between gap-4">
+            <div>
+                <h1 class="text-3xl font-light text-white tracking-tight">Situations mensuelles</h1>
+                <p class="text-gray-400 mt-1 flex items-center text-sm">
+                    <i class="far fa-folder-open mr-2 text-amber-400"></i>
+                    {{ projet.nom }}
+                </p>
+            </div>
+            <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm transition-all duration-200 shadow-lg shadow-cyan-600/20 hover:shadow-cyan-500/30 hover:-translate-y-0.5">
+                <i class="fas fa-plus-circle"></i>
+                Nouvelle situation
+            </a>
+        </div>
+    </div>
+
+    <!-- Messages (UN SEUL EMPLACEMENT) -->
+    <div id="messageContainer" class="mb-4 space-y-2">
+        {% for message in messages %}
+        <div class="message-item p-4 rounded-lg flex items-center gap-3 backdrop-blur-sm animate-slideIn transition-all duration-300 
+            {% if message.tags == 'success' %}bg-emerald-900/30 border border-emerald-700/30 text-emerald-300{% endif %}
+            {% if message.tags == 'error' %}bg-red-900/30 border border-red-700/30 text-red-300{% endif %}
+            {% if message.tags == 'warning' %}bg-amber-900/30 border border-amber-700/30 text-amber-300{% endif %}
+            {% if message.tags == 'info' %}bg-blue-900/30 border border-blue-700/30 text-blue-300{% endif %}">
+            <i class="fas 
+                {% if message.tags == 'success' %}fa-check-circle text-emerald-400{% endif %}
+                {% if message.tags == 'error' %}fa-exclamation-circle text-red-400{% endif %}
+                {% if message.tags == 'warning' %}fa-exclamation-triangle text-amber-400{% endif %}
+                {% if message.tags == 'info' %}fa-info-circle text-blue-400{% endif %}"></i>
+            <span class="flex-1">{{ message }}</span>
+            <button type="button" class="message-close text-gray-500 hover:text-gray-300 transition-colors duration-200" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Liste des situations -->
+    <div class="space-y-4">
+        {% for situation in situations %}
+        <article class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-lg hover:shadow-cyan-900/20 transition-all duration-300 overflow-hidden hover:border-gray-600">
+            <!-- En-tête de la situation -->
+            <div class="px-5 py-4 bg-gray-900/50 border-b border-gray-700 flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 text-gray-200">
+                        <i class="far fa-calendar-alt text-cyan-400"></i>
+                        <span class="font-semibold text-lg">{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}</span>
+                    </div>
+                    <span class="text-sm text-gray-400 flex items-center gap-1.5">
+                        <i class="far fa-clock"></i>
+                        {{ situation.date_debut|date:'d/m/Y' }}
+                        <i class="fas fa-arrow-right text-gray-600 text-xs mx-0.5"></i>
+                        {{ situation.date_fin|date:'d/m/Y' }}
+                    </span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <!-- Actions : icônes uniquement -->
+                    <a href="{% url 'projets:apercu_situation_mensuelle' projet.id situation.id %}" 
+                       class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-cyan-400 hover:bg-cyan-900/30 transition-all duration-200" 
+                       title="Aperçu">
+                        <i class="fas fa-eye text-sm"></i>
+                    </a>
+                    <a href="{% url 'projets:modifier_situation_mensuelle' projet.id situation.id %}" 
+                       class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-amber-400 hover:bg-amber-900/30 transition-all duration-200" 
+                       title="Modifier">
+                        <i class="fas fa-pen text-sm"></i>
+                    </a>
+                    <form method="post" action="{% url 'projets:supprimer_situation_mensuelle' projet.id situation.id %}" class="inline m-0">
+                        {% csrf_token %}
+                        <button type="submit" 
+                                class="w-8 h-8 inline-flex items-center justify-center rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-900/30 transition-all duration-200" 
+                                title="Supprimer"
+                                onclick="return confirm('Supprimer cette situation mensuelle ?')">
+                            <i class="fas fa-trash-alt text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Contenu -->
+            <div class="px-5 py-4">
+                <!-- Métriques -->
+                <div class="flex flex-wrap gap-3 text-sm">
+                    <span class="flex items-center gap-2 text-cyan-300 font-medium bg-cyan-900/20 px-3 py-1.5 rounded-full border border-cyan-800/30">
+                        <i class="fas fa-arrow-up text-cyan-400 text-xs"></i>
+                        Produits : {{ situation.chiffre_affaires|floatformat:'2g' }} DH
+                    </span>
+                    <span class="flex items-center gap-2 text-amber-300 font-medium bg-amber-900/20 px-3 py-1.5 rounded-full border border-amber-800/30">
+                        <i class="fas fa-arrow-down text-amber-400 text-xs"></i>
+                        Charges : {{ situation.total_depenses|floatformat:'2g' }} DH
+                    </span>
+                    <span class="flex items-center gap-2 text-emerald-300 font-medium bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-800/30">
+                        <i class="fas fa-boxes text-emerald-400 text-xs"></i>
+                        Stocks : {{ situation.total_stock|floatformat:'2g' }} DH
+                    </span>
+                </div>
+
+                <!-- Observations -->
+                {% if situation.observations %}
+                <div class="mt-3 text-sm text-gray-300 bg-gray-900/50 rounded-lg px-3 py-2 border border-gray-700 flex items-start gap-2">
+                    <i class="fas fa-quote-left text-gray-600 text-xs mt-0.5"></i>
+                    {{ situation.observations }}
+                </div>
+                {% endif %}
+
+                <!-- Documents -->
+                {% if situation.documents.all %}
+                <div class="mt-3 flex flex-wrap items-center gap-2">
+                    <span class="text-xs text-gray-500 font-medium uppercase tracking-wider mr-1">Documents</span>
+                    {% for document in situation.documents.all %}
+                    <a href="{% url 'projets:download_document' 'DocumentSituationMensuelle' document.id %}?download=false" 
+                       target="_blank" 
+                       class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 text-xs font-medium transition-colors duration-200 border border-gray-700">
+                        <i class="fas fa-file-pdf text-red-400"></i>
+                        {{ document.nom }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </article>
+        {% empty %}
+        <!-- État vide -->
+        <div class="bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-700 shadow-lg p-12 text-center">
+            <div class="flex flex-col items-center">
+                <div class="w-16 h-16 rounded-full bg-gray-900/50 flex items-center justify-center mb-4 border border-gray-700">
+                    <i class="fas fa-calendar-times text-2xl text-gray-500"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-300">Aucune situation mensuelle</h3>
+                <p class="text-gray-500 text-sm mt-1">Commencez par créer une nouvelle situation.</p>
+                <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-sm transition-all duration-200 shadow-lg shadow-cyan-600/20 hover:shadow-cyan-500/30">
+                    <i class="fas fa-plus-circle"></i>
+                    Créer une situation
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    /* Animation d'entrée des messages */
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.98);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+    .animate-slideIn {
+        animation: slideIn 0.3s ease-out forwards;
+    }
+
+    /* Animation de sortie des messages */
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            max-height: 100px;
+            margin-bottom: 0.5rem;
+        }
+        to {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+            max-height: 0;
+            margin-bottom: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+    }
+    .animate-slideOut {
+        animation: slideOut 0.3s ease-in forwards;
+    }
+
+    /* Style des messages */
+    .message-item {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .message-close {
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+    }
+
+    .message-close:hover {
+        opacity: 1;
+    }
+
+    /* Hover sur les cartes */
+    .hover\:shadow-cyan-900\/20:hover {
+        box-shadow: 0 8px 30px rgba(34, 211, 238, 0.08);
+    }
+
+    /* Boutons d'action */
+    .w-8.h-8 {
+        transition: all 0.15s ease;
+    }
+    .w-8.h-8:active {
+        transform: scale(0.9);
+    }
+
+    /* Badges de métriques */
+    .rounded-full {
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #374151;
+        border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #4B5563;
+    }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+        .flex-wrap.gap-3 {
+            gap: 0.5rem;
+        }
+        .flex-wrap.gap-3 > span {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.6rem;
+        }
+        .px-5.py-4 {
+            padding: 0.6rem 0.75rem;
+        }
+        .text-lg {
+            font-size: 0.95rem;
+        }
+        .flex.items-center.gap-4 {
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .gap-1\.5 {
+            gap: 0.25rem;
+        }
+        .w-8.h-8 {
+            width: 2rem;
+            height: 2rem;
+        }
+        .w-8.h-8 i {
+            font-size: 0.7rem;
+        }
+        .message-item {
+            font-size: 0.875rem;
+            padding: 0.75rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .flex-wrap.items-start.justify-between {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .flex-wrap.items-start.justify-between a {
+            align-self: flex-start;
+        }
+        .text-3xl {
+            font-size: 1.5rem;
+        }
+        .gap-4 {
+            gap: 0.5rem;
+        }
+    }
+</style>
+
+<!-- JavaScript pour la gestion des messages -->
+<script>
+    (function() {
+        'use strict';
+
+        const messageContainer = document.getElementById('messageContainer');
+        if (!messageContainer) return;
+
+        // Durée d'affichage des messages (en millisecondes)
+        const DISPLAY_DURATION = 5000; // 5 secondes
+
+        // Fonction pour fermer un message
+        function closeMessage(messageElement) {
+            if (!messageElement || messageElement.dataset.closing === 'true') return;
+            messageElement.dataset.closing = 'true';
+            
+            // Ajouter la classe d'animation de sortie
+            messageElement.classList.add('animate-slideOut');
+            
+            // Supprimer l'élément après l'animation
+            setTimeout(function() {
+                if (messageElement.parentNode) {
+                    messageElement.remove();
+                    // Si plus de messages, supprimer le conteneur
+                    if (messageContainer.children.length === 0) {
+                        messageContainer.style.display = 'none';
+                    }
+                }
+            }, 350);
+        }
+
+        // Fermeture manuelle via le bouton X
+        messageContainer.querySelectorAll('.message-close').forEach(function(button) {
+            button.addEventListener('click', function(e) {
+                const message = this.closest('.message-item');
+                if (message) {
+                    closeMessage(message);
+                }
+            });
+        });
+
+        // Fermeture automatique après DISPLAY_DURATION
+        messageContainer.querySelectorAll('.message-item').forEach(function(message, index) {
+            // Délai progressif pour les messages multiples
+            const delay = DISPLAY_DURATION + (index * 500);
+            setTimeout(function() {
+                closeMessage(message);
+            }, delay);
+        });
+
+        // Permettre la fermeture en cliquant sur le message lui-même (optionnel)
+        messageContainer.querySelectorAll('.message-item').forEach(function(message) {
+            message.addEventListener('click', function(e) {
+                // Éviter de fermer si on clique sur le bouton X (déjà géré)
+                if (e.target.closest('.message-close')) return;
+                closeMessage(this);
+            });
+        });
+
+        // Observer les nouveaux messages ajoutés dynamiquement
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && node.classList && node.classList.contains('message-item')) {
+                        // Ajouter le comportement de fermeture aux nouveaux messages
+                        const closeBtn = node.querySelector('.message-close');
+                        if (closeBtn) {
+                            closeBtn.addEventListener('click', function(e) {
+                                const message = this.closest('.message-item');
+                                if (message) {
+                                    closeMessage(message);
+                                }
+                            });
+                        }
+                        // Fermeture automatique pour les nouveaux messages
+                        setTimeout(function() {
+                            closeMessage(node);
+                        }, DISPLAY_DURATION);
+                    }
+                });
+            });
+        });
+
+        observer.observe(messageContainer, {
+            childList: true,
+            subtree: true
+        });
+
+    })();
+</script>
 {% endblock %}

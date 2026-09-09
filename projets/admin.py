@@ -7,7 +7,8 @@ from .models.profile import Profile
 from .models import (
     Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet,
     Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService,
-    Personnel, Materiel, Transport, Location, SousTraitance, Fourniture, Consommable
+    Personnel, Materiel, Transport, Location, SousTraitance, Fourniture, Consommable,
+    CategorieCharge,
 )
 
 class ProfileInline(admin.StackedInline):
@@ -85,6 +86,13 @@ class OrdreServiceAdmin(admin.ModelAdmin):
 class TypeOrdreServiceAdmin(admin.ModelAdmin):
     list_display = ('nom', 'code', 'description')
     search_fields = ('nom', 'code', 'description')
+
+@admin.register(CategorieCharge)
+class CategorieChargeAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'code', 'actif', 'ordre')
+    list_filter = ('actif',)
+    search_fields = ('nom', 'code')
+    ordering = ('ordre', 'nom')
 
 # ------------------------ Admin Tache ------------------------
 @admin.register(Tache)

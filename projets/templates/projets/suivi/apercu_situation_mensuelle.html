@@ -10,7 +10,7 @@
         * { box-sizing: border-box; }
         body { margin: 0; background: #dce7eb; color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
         .toolbar { display: flex; justify-content: space-between; gap: 12px; max-width: 1000px; margin: 20px auto 0; font-family: sans-serif; }
-        .toolbar a, .toolbar button { border: 1px solid #5e9eb6; border-radius: 4px; background: #fff; color: #24485a; cursor: pointer; padding: 9px 14px; font-size: 14px; }
+        .toolbar a, .toolbar button { border: 1px solid #5e9eb6; border-radius: 4px; background: #fff; color: #24485a; cursor: pointer; padding: 9px 14px; font-size: 14px; text-decoration: none; }
         .toolbar button { background: #075985; color: #fff; border-color: #075985; }
         .detail-toggle { background: #e7f1f5 !important; color: #24485a !important; border-color: #5e9eb6 !important; }
         .detail-toggle[aria-pressed="true"] { background: #2c667e !important; color: #fff !important; }
@@ -36,10 +36,18 @@
         .charges-total { font-family: sans-serif; font-size: 14px; font-weight: 700; white-space: nowrap; }
         .charges-table thead th { background: #2c667e; color: #fff; border-bottom: 2px solid #19394a; border-right: 1px solid #5e9eb6; padding: 14px 10px; font-size: 11px; font-weight: 700; line-height: 1.0; }
         .charges-table thead th:last-child { border-right: 0; }
-        .category-row td { background: #eef5f7; border-top: 1px solid #8eb6c7; border-bottom-color: #8eb6c7; }
-        .category { color: #24485a; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .category-row td { background: #eef5f7; border-top: 1px solid #8eb6c7; border-bottom-color: #8eb6c7; padding: 6px 10px; }
+        .category-row .category { color: #24485a; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .category-row .category-total { color: #2c667e; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .category-row .category-total-amount { font-weight: 700; color: #2c667e; font-size: 13px; }
+        .stock-category-row td { background: #dcebdc; border-top: 1px solid #4d7a57; border-bottom-color: #4d7a57; padding: 6px 10px; }
+        .stock-category-row .category { color: #295337; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+        .stock-category-row .category-total { color: #295337; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .stock-category-row .category-total-amount { font-weight: 700; color: #295337; font-size: 13px; }
+        .stock-detail-row td { background: #f5faf5; }
         .note { border-left: 3px solid #7baec1; margin-top: 22px; padding: 10px 14px; background: #f1f7f8; color: #3c5663; }
         .documents { margin: 0; padding-left: 18px; font-family: sans-serif; font-size: 13px; }
+        
         @media (max-width: 700px) { .paper { margin: 0; padding: 24px 18px; } .toolbar { margin: 12px 18px; } .document-header { display: block; } .meta { margin-top: 14px; text-align: left; } .summary { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 7px 5px; } }
         @media print { @page { size: A4; margin: 14mm; } body { background: #fff; } .toolbar { display: none !important; } .is-summary .detail-row { display: table-row !important; } .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; } h2 { break-after: avoid; } table { break-inside: avoid; } }
     </style>
@@ -94,9 +102,15 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- 1. D'abord les catégories de dépenses -->
                     {% for categorie, label, depenses, total in depenses_par_categorie %}
                         <tr class="category-row">
-                            <td colspan="5"><span class="category">{{ label }}</span></td>
+                            <td colspan="5">
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <span class="category">{{ label }}</span>
+                                    <span class="category-total-amount">{{ total|floatformat:'2g' }} DH</span>
+                                </div>
+                            </td>
                         </tr>
                         {% for depense in depenses %}
                             {% if depense.montant_base != 0 or depense.cession_entrante != 0 or depense.cession_sortante != 0 %}
@@ -109,28 +123,42 @@
                             </tr>
                             {% endif %}
                         {% empty %}
-                            <tr><td colspan="5">Aucune charge enregistrée pour {{ label }}.</td></tr>
+                            <tr><td colspan="5" style="font-style: italic; color: #617786;">Aucune charge enregistrée pour {{ label }}.</td></tr>
                         {% endfor %}
-                        <tr>
-                            <td><strong>Total {{ label }}</strong></td>
-                            <td class="amount"><strong>{{ total|floatformat:'2g' }}</strong></td>
+                    {% endfor %}
+
+                    <!-- 2. Ensuite l'état des stocks comme une catégorie -->
+                    <tr class="stock-category-row">
+                        <td colspan="5">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <span class="category">État des stocks</span>
+                                <span class="category-total-amount">{{ situation.total_stock|floatformat:'2g' }} DH</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% for stock in stocks %}
+                        <tr class="detail-row stock-detail-row">
+                            <td>{{ stock.designation }}</td>
+                            <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
                             <td class="amount"></td>
                             <td class="amount"></td>
-                            <td class="amount"><strong>{{ total|floatformat:'2g' }} DH</strong></td>
+                            <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5">Aucune charge enregistrée.</td></tr>
+                        <tr><td colspan="5" style="font-style: italic; color: #617786;">Aucun mouvement de stock enregistré.</td></tr>
                     {% endfor %}
-                </tbody>
-            </table>
-        </section>
 
-        <section>
-            <h2>État des stocks</h2>
-            <table>
-                <thead><tr><th>Désignation</th><th>Unité</th><th class="amount">Quantité</th><th class="amount">Prix unitaire</th><th class="amount">Montant (DH)</th></tr></thead>
-                <tbody>{% for stock in stocks %}<tr class="detail-row"><td>{{ stock.designation }}</td><td>{{ stock.unite }}</td><td class="amount">{{ stock.quantite|floatformat:'3g' }}</td><td class="amount">{{ stock.prix_unitaire|floatformat:'2g' }}</td><td class="amount">{{ stock.valeur|floatformat:'2g' }}</td></tr>{% empty %}<tr><td colspan="5">Aucun mouvement de stock enregistré.</td></tr>{% endfor %}</tbody>
-                <tfoot><tr><td colspan="4">Total état des stocks</td><td class="amount">{{ situation.total_stock|floatformat:'2g' }} DH</td></tr></tfoot>
+                    <!-- 3. Grand total des charges (dépenses + stocks) -->
+                    <tfoot>
+                        <tr style="border-top: 2px solid #19394a;">
+                            <td><strong>Total général des charges</strong></td>
+                            <td class="amount"><strong>{{ total_general_charges|floatformat:'2g' }}</strong></td>
+                            <td class="amount"></td>
+                            <td class="amount"></td>
+                            <td class="amount"><strong>{{ total_general_charges|floatformat:'2g' }} DH</strong></td>
+                        </tr>
+                    </tfoot>
+                </tbody>
             </table>
         </section>
 
