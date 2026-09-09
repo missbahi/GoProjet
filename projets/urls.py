@@ -153,6 +153,8 @@ base_donnees_urlpatterns = [
     path('fournitures/modifier/<int:fourniture_id>/', data_views.modifier_fourniture, name='modifier_fourniture'),
     path('fournitures/supprimer/<int:fourniture_id>/', data_views.supprimer_fourniture, name='supprimer_fourniture'),
     path('base_donnees/fournitures/', data_views.partial_fournitures, name='partial_fournitures'),
+
+    # Gestion des categories de charges
     path('base_donnees/categories-charges/', data_views.partial_categories_charges, name='partial_categories_charges'),
     path('categories-charges/ajouter/', data_views.ajouter_categorie_charge, name='ajouter_categorie_charge'),
     path('categories-charges/<int:categorie_id>/modifier/', data_views.modifier_categorie_charge, name='modifier_categorie_charge'),

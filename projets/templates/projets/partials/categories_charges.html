@@ -16,20 +16,21 @@
   </form>
   <div class="category-charge-feedback hidden rounded border px-3 py-2 text-sm" role="alert"></div>
 
+  {% for row in category_rows %}
+  <form id="category-charge-form-{{ row.category.id }}" method="post" action="{% url 'projets:modifier_categorie_charge' row.category.id %}" class="category-charge-form hidden" data-reload-url="{% url 'projets:partial_categories_charges' %}">{% csrf_token %}</form>
+  {% endfor %}
+
   <div class="overflow-x-auto bg-gray-800 p-2">
     <table class="min-w-full bg-[#2E2E2E] text-sm">
       <thead class="border-b border-gray-700 bg-gray-700 text-left text-[#2B9C62]"><tr><th class="px-4 py-3">Ordre</th><th class="px-4 py-3">Nom</th><th class="px-4 py-3">Code</th><th class="px-4 py-3">État</th><th class="px-4 py-3 text-right">Action</th></tr></thead>
       <tbody class="divide-y divide-green-800">
         {% for row in category_rows %}
         <tr class="text-[#AECBD6]" data-category-row="{{ row.category.id }}">
-          <form method="post" action="{% url 'projets:modifier_categorie_charge' row.category.id %}" class="category-charge-form" data-reload-url="{% url 'projets:partial_categories_charges' %}">
-            {% csrf_token %}
-            <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-ordre">Ordre</label><input id="categorie-{{ row.category.id }}-ordre" name="ordre" type="number" min="0" value="{{ row.category.ordre }}" title="Ordre" class="w-20 rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
-            <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-nom">Nom</label><input id="categorie-{{ row.category.id }}-nom" name="nom" value="{{ row.category.nom }}" title="Nom" class="w-full rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
-            <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-code">Code</label><input id="categorie-{{ row.category.id }}-code" name="code" value="{{ row.category.code }}" title="Code" class="w-full rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
-            <td class="px-4 py-3"><label class="flex items-center gap-2"><input name="actif" type="checkbox" {% if row.category.actif %}checked{% endif %}> {% if row.category.actif %}<i class="fa-solid fa-circle-check text-green-400" title="Active"></i>{% else %}<i class="fa-solid fa-circle-xmark text-red-400" title="Inactive"></i>{% endif %}</label></td>
-            <td class="px-4 py-3 text-right"><button type="submit" class="text-yellow-400 transition hover:text-yellow-300" title="Enregistrer les modifications"><i class="fa-solid fa-floppy-disk"></i></button></td>
-          </form>
+          <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-ordre">Ordre</label><input form="category-charge-form-{{ row.category.id }}" id="categorie-{{ row.category.id }}-ordre" name="ordre" type="number" min="0" value="{{ row.category.ordre }}" title="Ordre" class="w-20 rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
+          <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-nom">Nom</label><input form="category-charge-form-{{ row.category.id }}" id="categorie-{{ row.category.id }}-nom" name="nom" value="{{ row.category.nom }}" title="Nom" class="w-full rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
+          <td class="px-4 py-3"><label class="sr-only" for="categorie-{{ row.category.id }}-code">Code</label><input form="category-charge-form-{{ row.category.id }}" id="categorie-{{ row.category.id }}-code" name="code" value="{{ row.category.code }}" title="Code" class="w-full rounded border border-gray-600 bg-[#2E2E2E] px-2 py-1 text-[#AECBD6]"></td>
+          <td class="px-4 py-3"><label class="flex items-center gap-2"><input form="category-charge-form-{{ row.category.id }}" name="actif" type="checkbox" {% if row.category.actif %}checked{% endif %}> {% if row.category.actif %}<i class="fa-solid fa-circle-check text-green-400" title="Active"></i>{% else %}<i class="fa-solid fa-circle-xmark text-red-400" title="Inactive"></i>{% endif %}</label></td>
+          <td class="px-4 py-3 text-right"><button form="category-charge-form-{{ row.category.id }}" type="submit" class="text-yellow-400 transition hover:text-yellow-300" title="Enregistrer les modifications"><i class="fa-solid fa-floppy-disk"></i></button></td>
         </tr>
         <tr class="bg-gray-800/70"><td colspan="5" class="px-4 py-3">
           {% if row.resource %}

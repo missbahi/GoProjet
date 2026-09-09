@@ -306,9 +306,10 @@ SECURE_SSL_REDIRECT = False
 # IMPORTANT: Railway fournit SSL, donc nous devons dire à Django qu'il est derrière un proxy
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# Cookies sécurisés - IMPORTANT: True en production
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+# Les cookies Secure sont nécessaires en production HTTPS, mais empêchent
+# le navigateur de renvoyer le cookie CSRF lors du développement en HTTP.
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
 
 # CSRF trusted origins - AJOUTER LES URLS HTTPS DE RAILWAY
 CSRF_TRUSTED_ORIGINS = [

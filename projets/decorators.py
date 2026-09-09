@@ -1,9 +1,12 @@
 # projets/decorators.py
+
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from functools import wraps
 from django.contrib import messages
 from django.db.models import Q
+from django.http import JsonResponse
+import unicodedata
 
 
 def projets_accessibles(user):
@@ -28,12 +31,27 @@ def est_gerant(user):
     if not user.is_authenticated or user.is_superuser:
         return False
     role = getattr(getattr(user, 'profile', None), 'role', None)
-    return role in {'GERANT', 'CHEF_PROJET'}
-
+    role_normalise = _normaliser_role(role)
+    return role_normalise in {'GERANT', 'CHEFPROJET', 'CHEFDEPROJET'}
 
 def est_chef_projet(user):
-    return est_gerant(user)
+    if not user.is_authenticated or user.is_superuser:
+        return False
+    role = getattr(getattr(user, 'profile', None), 'role', None)
+    role_normalise = _normaliser_role(role)
+    return role_normalise in {'CHEFPROJET', 'CHEFDEPROJET', 'GERANT'}
 
+
+def _normaliser_role(role):
+    role_sans_accents = unicodedata.normalize('NFKD', str(role or ''))
+    role_sans_accents = ''.join(
+        caractere for caractere in role_sans_accents
+        if not unicodedata.combining(caractere)
+    )
+    return ''.join(
+        caractere for caractere in role_sans_accents.upper()
+        if caractere.isalnum()
+    )
 
 def est_chef_chantier(user):
     if not user.is_authenticated or user.is_superuser or est_gerant(user):
@@ -42,13 +60,11 @@ def est_chef_chantier(user):
     role = getattr(getattr(user, 'profile', None), 'role', None)
     return role == 'CHEF_CHANTIER'
 
-
 def est_pointeur(user):
     if not user.is_authenticated or user.is_superuser or est_chef_chantier(user):
         return False
     role = getattr(getattr(user, 'profile', None), 'role', None)
     return role == 'POINTEUR'
-
 
 def gestion_utilisateurs_required(view_func):
     @wraps(view_func)
@@ -236,8 +252,18 @@ def categorie_charge_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(
+                    {'success': False, 'message': 'Votre session a expiré. Veuillez vous reconnecter.'},
+                    status=401,
+                )
             return login_required(view_func)(request, *args, **kwargs)
         if not (request.user.is_superuser or est_chef_projet(request.user)):
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse(
+                    {'success': False, 'message': 'Vous n\'êtes pas autorisé à modifier les catégories.'},
+                    status=403,
+                )
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return _wrapped_view

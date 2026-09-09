@@ -52,6 +52,7 @@ class Location(models.Model):
     def __str__(self):
         return self.designation
 
+
 class Transport(models.Model):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_transport = models.CharField(_("Type"), max_length=100, blank=True)

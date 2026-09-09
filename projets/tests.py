@@ -128,6 +128,15 @@ class RolesEtDossiersTests(TestCase):
 		self.assertEqual(categorie.nom, 'Divers modifié')
 		self.assertEqual(categorie.ordre, 2)
 
+		chef.profile.role = 'Chef de projet'
+		chef.profile.save(update_fields=['role'])
+		response = self.client.post(
+			reverse('projets:modifier_categorie_charge', args=[categorie.id]),
+			{'code': 'DIVERS_TEST', 'nom': 'Divers renommé', 'ordre': 3, 'actif': 'on'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 200)
+
 	def test_dossier_activite_est_requise_et_persistante(self):
 		form = DossierForm(data={
 			'nom': 'Dossier Services',

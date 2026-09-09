@@ -1952,7 +1952,7 @@
             resourceToggle.querySelector('.fa-chevron-down')?.classList.toggle('rotate-180');
             return;
         }
-        // Boutons d'ajout (Ingénieurs, Clients, Entreprises)
+        // Boutons d'ajout 
         if (e.target.matches('[data-add-ingenieur-button]')) {
             e.preventDefault();
             openAddIngenieurModal();
@@ -2174,21 +2174,42 @@
             e.preventDefault();
             const form = e.target;
             const feedback = document.querySelector('[data-categories-module] .category-charge-feedback');
+            const csrfToken = form.querySelector('[name="csrfmiddlewaretoken"]')?.value;
             fetch(form.action, {
                 method: 'POST',
                 body: new FormData(form),
-                headers: {'X-Requested-With': 'XMLHttpRequest'}
+                credentials: 'same-origin',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    ...(csrfToken ? {'X-CSRFToken': csrfToken} : {}),
+                }
             }).then(async response => {
-                const data = await response.json();
+                const contentType = response.headers.get('content-type') || '';
+                const responseText = await response.text();
+                let data;
+                try {
+                    data = contentType.includes('application/json') ? JSON.parse(responseText) : null;
+                } catch (parseError) {
+                    data = null;
+                }
+                if (!data) {
+                    throw new Error(response.status === 401
+                        ? 'Votre session a expiré. Veuillez vous reconnecter.'
+                        : response.status === 403
+                            ? 'La requête a été refusée par le serveur (CSRF ou permission). Actualisez la page puis réessayez.'
+                            : 'Le serveur a renvoyé une réponse inattendue.');
+                }
                 if (!response.ok || !data.success) {
                     const errors = Object.values(data.errors || {}).flat().map(error => error.message || error).join(' ');
                     throw new Error(errors || data.message || 'Impossible d’enregistrer la catégorie.');
                 }
-                if (feedback) {
-                    feedback.textContent = data.message;
-                    feedback.className = 'category-charge-feedback rounded border border-emerald-700/60 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200';
-                }
-                loadModule(form.dataset.reloadUrl, 'menu-personnel');
+                return loadModule(form.dataset.reloadUrl, 'menu-personnel').then(() => {
+                    const reloadedFeedback = document.querySelector('[data-categories-module] .category-charge-feedback');
+                    if (reloadedFeedback) {
+                        reloadedFeedback.textContent = data.message;
+                        reloadedFeedback.className = 'category-charge-feedback rounded border border-emerald-700/60 bg-emerald-950/50 px-3 py-2 text-sm text-emerald-200';
+                    }
+                });
             }).catch(error => {
                 if (feedback) {
                     feedback.textContent = error.message;
