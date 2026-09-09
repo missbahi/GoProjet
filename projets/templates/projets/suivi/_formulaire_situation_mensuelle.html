@@ -46,8 +46,19 @@
 		<p id="documentDuplicateError" class="hidden mt-2 text-sm text-red-300" role="alert"></p><p class="text-xs text-gray-500 mt-2">PDF, Word, Excel ou image, 10 Mo maximum par fichier.</p></div></section>
 <div class="flex justify-end gap-3">
 	<a href="{% url 'projets:situations_mensuelles' projet.id %}" class="px-4 py-2 rounded bg-gray-600 text-white">Annuler</a>
-	<button type="submit" class="px-5 py-2 rounded bg-emerald-700 text-white">Enregistrer</button>
+	<button type="submit" id="situationSubmitBtn" class="px-5 py-2 rounded bg-emerald-700 text-white inline-flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"><span class="situation-submit-spinner hidden"><i class="fas fa-spinner fa-spin"></i></span><span class="situation-submit-label">Enregistrer</span></button>
 </div></form>
+<script>
+(function(){
+const situationForm=document.getElementById('situationForm');const submitBtn=document.getElementById('situationSubmitBtn');
+situationForm?.addEventListener('submit',function(){
+	if(!submitBtn||submitBtn.disabled)return;
+	submitBtn.disabled=true;
+	submitBtn.querySelector('.situation-submit-spinner')?.classList.remove('hidden');
+	const label=submitBtn.querySelector('.situation-submit-label');if(label)label.textContent='Enregistrement...';
+});
+})();
+</script>
 <script>
 (function(){
 const periodInput=document.getElementById('{{ form.periode.id_for_label }}');const startDateInput=document.getElementById('{{ form.date_debut.id_for_label }}');const endDateInput=document.getElementById('{{ form.date_fin.id_for_label }}');

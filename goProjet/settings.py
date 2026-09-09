@@ -337,6 +337,10 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # --- 15. CONFIGURATIONS DIVERSES ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Les formulaires de situation mensuelle (dépenses/stocks/recettes/documents en formsets) peuvent
+# dépasser la limite par défaut de 1000 champs POST.
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000
+
 # --- 16. LOGGING ---
 LOGGING = {
     'version': 1,
