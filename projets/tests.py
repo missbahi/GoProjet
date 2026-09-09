@@ -15,7 +15,7 @@ import shutil
 import tempfile
 
 from .decorators import est_chef_chantier, est_pointeur, projets_accessibles
-from .forms import DossierForm, UtilisateurCreationForm, DocumentSituationMensuelleFormSet
+from .forms import DossierForm, SituationMensuelleForm, UtilisateurCreationForm, DocumentSituationMensuelleFormSet
 from .views.reporting_views.views import _recettes_formset
 from .services.attachement_service import DonneesAttachementInvalides, enregistrer_lignes_attachement
 from .exporters import ExcelExporter
@@ -102,6 +102,31 @@ class RolesEtDossiersTests(TestCase):
 		}, user=self.gerant)
 
 		self.assertFalse(form.is_valid())
+
+	def test_superuser_et_chef_projet_gerent_les_categories(self):
+		self.client.force_login(self.superuser)
+		response = self.client.post(
+			reverse('projets:ajouter_categorie_charge'),
+			{'code': 'DIVERS_TEST', 'nom': 'Divers test', 'ordre': 30, 'actif': 'on'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(CategorieCharge.objects.filter(code='DIVERS_TEST').exists())
+
+		chef = User.objects.create_user(username='chef-categories', password='test-password')
+		chef.profile.role = 'CHEF_PROJET'
+		chef.profile.save()
+		self.client.force_login(chef)
+		categorie = CategorieCharge.objects.get(code='DIVERS_TEST')
+		response = self.client.post(
+			reverse('projets:modifier_categorie_charge', args=[categorie.id]),
+			{'code': 'DIVERS_TEST', 'nom': 'Divers modifié', 'ordre': 2, 'actif': 'on'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 200)
+		categorie.refresh_from_db()
+		self.assertEqual(categorie.nom, 'Divers modifié')
+		self.assertEqual(categorie.ordre, 2)
 
 	def test_dossier_activite_est_requise_et_persistante(self):
 		form = DossierForm(data={
@@ -635,6 +660,42 @@ class PersonnelMaterielBaseDonneesTests(TestCase):
 		response = self.client.get(reverse('projets:partial_personnel'))
 
 		self.assertContains(response, 'data-tarif="125,50"')
+
+
+class SituationMensuelleFormTests(TestCase):
+	def _form(self, date_debut='2026-02-15', date_fin='2026-02-15'):
+		return SituationMensuelleForm(data={
+			'periode': '2026-02', 'annee': '2026', 'mois': '2',
+			'date_debut': date_debut, 'date_fin': date_fin,
+		})
+
+	def test_accepte_des_dates_egales_dans_le_mois(self):
+		self.assertTrue(self._form().is_valid())
+
+	def test_refuse_une_date_de_fin_anterieure(self):
+		form = self._form(date_debut='2026-02-20', date_fin='2026-02-19')
+
+		self.assertFalse(form.is_valid())
+		self.assertIn(
+			'La date de fin doit être postérieure ou égale à la date de début.',
+			form.errors['date_fin'],
+		)
+
+	def test_refuse_les_dates_hors_du_mois_selectionne(self):
+		cas = (
+			('date_debut', '2026-01-31', '2026-02-15'),
+			('date_fin', '2026-02-15', '2026-03-01'),
+		)
+		for champ, date_debut, date_fin in cas:
+			with self.subTest(champ=champ):
+				form = self._form(date_debut=date_debut, date_fin=date_fin)
+
+				self.assertFalse(form.is_valid())
+				libelle = 'début' if champ == 'date_debut' else 'fin'
+				self.assertIn(
+					'La date de %s doit appartenir au mois sélectionné.' % libelle,
+					form.errors[champ],
+				)
 
 
 class StorageDocumentFlowsTests(TestCase):

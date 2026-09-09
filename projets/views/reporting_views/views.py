@@ -651,15 +651,19 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         documents_valid = documents.is_valid()
         if form_valid and depenses_valid and stocks_valid and recettes_valid and documents_valid:
             situation = form.save(commit=False)
-            with transaction.atomic():
-                situation.save()
-                depenses.save()
-                stocks.save()
-                recettes.save()
-                _synchroniser_chiffre_affaires(situation)
-                documents.save()
-            messages.success(request, 'Situation mensuelle modifiée.')
-            return redirect('projets:situations_mensuelles', projet_id=projet.id)
+            try:
+                with transaction.atomic():
+                    situation.save()
+                    depenses.save()
+                    stocks.save()
+                    recettes.save()
+                    _synchroniser_chiffre_affaires(situation)
+                    documents.save()
+            except IntegrityError:
+                form.add_error('mois', 'Une situation existe déjà pour cette période.')
+            else:
+                messages.success(request, 'Situation mensuelle modifiée.')
+                return redirect('projets:situations_mensuelles', projet_id=projet.id)
         validation_errors = []
         for label, validation_form in (
             ('Situation', form),

@@ -229,3 +229,15 @@ def can_edit_projet(view_func):
         
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+
+
+def categorie_charge_required(view_func):
+    """Autorise la gestion des catégories aux superusers et chefs de projet."""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return login_required(view_func)(request, *args, **kwargs)
+        if not (request.user.is_superuser or est_chef_projet(request.user)):
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+    return _wrapped_view

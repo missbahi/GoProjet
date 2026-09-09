@@ -1,15 +1,16 @@
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
-from projets.decorators import chef_projet_required
+from projets.decorators import categorie_charge_required, chef_projet_required
 from projets.forms import (
-    ClientForm, ConsommableForm, EntrepriseForm, FournitureForm, IngenieurForm,
+    CategorieChargeForm, ClientForm, ConsommableForm, EntrepriseForm, FournitureForm, IngenieurForm,
     LocationForm, MaterielForm, PersonnelForm, SousTraitanceForm, TransportForm,
 )
 from projets.models import (
     Client, Consommable, Entreprise, Fourniture, Ingenieur, Location, Materiel,
-    Personnel, SousTraitance, Transport,
+    Personnel, SousTraitance, Transport, CategorieCharge,
 )
 
 
@@ -76,6 +77,58 @@ def partial_fournitures(request):
 @chef_projet_required
 def base_donnees(request):
     return render(request, 'projets/base_donnees.html')
+
+
+@categorie_charge_required
+def partial_categories_charges(request):
+    categories = CategorieCharge.objects.all()
+    resource_modules = {
+        'PERSONNEL': ('Personnel', 'partial_personnel', 'fa-users-gear'),
+        'MATERIEL': ('Matériel', 'partial_materiel', 'fa-truck-monster'),
+        'LOCATION': ('Locations', 'partial_locations', 'fa-location-dot'),
+        'SOUS_TRAITANCE': ('Sous-traitances', 'partial_sous_traitances', 'fa-handshake'),
+        'TRANSPORT': ('Transports', 'partial_transports', 'fa-truck'),
+        'CONSOMMABLE': ('Consommables', 'partial_consommables', 'fa-boxes-stacked'),
+        'FOURNITURE': ('Fournitures', 'partial_fournitures', 'fa-box-open'),
+    }
+    category_rows = [
+        {
+            'category': category,
+            'resource': resource_modules.get(category.code),
+            'resource_url': reverse(
+                f"projets:{resource_modules[category.code][1]}"
+            ) if category.code in resource_modules else None,
+        }
+        for category in categories
+    ]
+    return render(request, 'projets/partials/categories_charges.html', {
+        'categories': categories,
+        'category_rows': category_rows,
+        'form': CategorieChargeForm(),
+    })
+
+
+@categorie_charge_required
+def ajouter_categorie_charge(request):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
+    form = CategorieChargeForm(request.POST)
+    if form.is_valid():
+        categorie = form.save()
+        return JsonResponse({'success': True, 'message': f'Catégorie « {categorie.nom} » ajoutée.'})
+    return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+
+@categorie_charge_required
+def modifier_categorie_charge(request, categorie_id):
+    categorie = get_object_or_404(CategorieCharge, id=categorie_id)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
+    form = CategorieChargeForm(request.POST, instance=categorie)
+    if form.is_valid():
+        categorie = form.save()
+        return JsonResponse({'success': True, 'message': f'Catégorie « {categorie.nom} » modifiée.'})
+    return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
 
 
 @chef_projet_required

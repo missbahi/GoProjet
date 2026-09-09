@@ -181,57 +181,9 @@
                     </li>
                     <li>
                         <div id="menu-personnel" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')" class="w-full text-left">
-                                <i class="fas fa-users-gear"></i>
-                                <span class="text-sm lg:text-base"> Gestion du Personnel</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-materiel" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')" class="w-full text-left">
-                                <i class="fas fa-truck-monster"></i>
-                                <span class="text-sm lg:text-base"> Gestion du Matériel</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-transports" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')" class="w-full text-left">
-                                <i class="fas fa-truck"></i>
-                                <span class="text-sm lg:text-base"> Gestion des Transports</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-locations" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')" class="w-full text-left">
-                                <i class="fas fa-location-dot"></i>
-                                <span class="text-sm lg:text-base"> Gestion des Locations</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-sous-traitances" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')" class="w-full text-left">
-                                <i class="fas fa-handshake"></i>
-                                <span class="text-sm lg:text-base"> Gestion des Sous-traitances</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-consommables" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')" class="w-full text-left">
-                                <i class="fas fa-boxes-stacked"></i>
-                                <span class="text-sm lg:text-base"> Gestion des Consommables</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li>
-                        <div id="menu-fournitures" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')" class="w-full text-left">
-                                <i class="fas fa-truck"></i>
-                                <span class="text-sm lg:text-base"> Gestion des Fournitures</span>
+                            <button onclick="loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')" class="w-full text-left">
+                                <i class="fas fa-layer-group"></i>
+                                <span class="text-sm lg:text-base"> Gestion des catégories</span>
                             </button>
                         </div>
                     </li>
@@ -284,49 +236,9 @@
                     </li>
                     <li><!-- Personnel -->
                         <div id="menu-personnel-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_personnel' %}', 'menu-personnel-mobile')" class="w-full text-left">
-                                <i class="fas fa-users-gear"></i>
-                                <span class="text-sm">Personnel</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li><!-- Matériel -->
-                        <div id="menu-materiel-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_materiel' %}', 'menu-materiel-mobile')" class="w-full text-left">
-                                <i class="fas fa-truck-monster"></i>
-                                <span class="text-sm">Matériel</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li><!-- Sous-traitances -->
-                        <div id="menu-sous-traitances-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances-mobile')" class="w-full text-left">
-                                <i class="fas fa-handshake"></i>
-                                <span class="text-sm">Sous-traitances</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li><!-- Consommables -->
-                        <div id="menu-consommables-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_consommables' %}', 'menu-consommables-mobile')" class="w-full text-left">
-                                <i class="fas fa-boxes-stacked"></i>
-                                <span class="text-sm">Consommables</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li><!-- Fournitures -->
-                        <div id="menu-fournitures-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_fournitures' %}', 'menu-fournitures-mobile')" class="w-full text-left">
-                                <i class="fas fa-truck"></i>
-                                <span class="text-sm">Fournitures</span>
-                            </button>
-                        </div>
-                    </li>
-                    <li><!-- Locations -->
-                        <div id="menu-locations-mobile" class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition cursor-pointer">
-                            <button onclick="loadModuleMobile('{% url 'projets:partial_locations' %}', 'menu-locations-mobile')" class="w-full text-left">
-                                <i class="fas fa-location-dot"></i>
-                                <span class="text-sm">Locations</span>
+                            <button onclick="loadModuleMobile('{% url 'projets:partial_categories_charges' %}', 'menu-personnel-mobile')" class="w-full text-left">
+                                <i class="fas fa-layer-group"></i>
+                                <span class="text-sm">Catégories</span>
                             </button>
                         </div>
                     </li>
@@ -2003,6 +1915,43 @@
 
     // === DELEGATION D'EVENEMENTS : GESTION CENTRALISÉE ===
     document.addEventListener('click', function(e) {
+        const nestedDelete = e.target.closest('[data-category-resource] a[href*="supprimer"]');
+        if (nestedDelete) {
+            e.preventDefault();
+            fetch(nestedDelete.href, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                .then(() => loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel'));
+            return;
+        }
+        const resourceToggle = e.target.closest('[data-resource-url]');
+        if (resourceToggle) {
+            e.preventDefault();
+            const target = document.getElementById(resourceToggle.dataset.resourceTarget);
+            if (!target) return;
+            if (!target.dataset.loaded) {
+                target.dataset.loaded = 'loading';
+                target.classList.remove('hidden');
+                target.innerHTML = '<p class="py-3 text-sm text-gray-400">Chargement...</p>';
+                fetch(resourceToggle.dataset.resourceUrl, {
+                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Chargement impossible');
+                        return response.text();
+                    })
+                    .then(html => {
+                        target.innerHTML = html;
+                        target.dataset.loaded = 'true';
+                    })
+                    .catch(() => {
+                        target.dataset.loaded = '';
+                        target.innerHTML = '<p class="py-3 text-sm text-red-300">Impossible de charger le référentiel.</p>';
+                    });
+            } else if (target.dataset.loaded === 'true') {
+                target.classList.toggle('hidden');
+            }
+            resourceToggle.querySelector('.fa-chevron-down')?.classList.toggle('rotate-180');
+            return;
+        }
         // Boutons d'ajout (Ingénieurs, Clients, Entreprises)
         if (e.target.matches('[data-add-ingenieur-button]')) {
             e.preventDefault();
@@ -2221,7 +2170,32 @@
 
     // Gérer toutes les soumissions de formulaires
     document.addEventListener('submit', function(e) {
-        if (e.target.matches('#addIngenieurForm')) {
+        if (e.target.matches('.category-charge-form')) {
+            e.preventDefault();
+            const form = e.target;
+            const feedback = document.querySelector('[data-categories-module] .category-charge-feedback');
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            }).then(async response => {
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    const errors = Object.values(data.errors || {}).flat().map(error => error.message || error).join(' ');
+                    throw new Error(errors || data.message || 'Impossible d’enregistrer la catégorie.');
+                }
+                if (feedback) {
+                    feedback.textContent = data.message;
+                    feedback.className = 'category-charge-feedback rounded border border-emerald-700/60 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200';
+                }
+                loadModule(form.dataset.reloadUrl, 'menu-personnel');
+            }).catch(error => {
+                if (feedback) {
+                    feedback.textContent = error.message;
+                    feedback.className = 'category-charge-feedback rounded border border-red-700/60 bg-red-950/40 px-3 py-2 text-sm text-red-200';
+                }
+            });
+        } else if (e.target.matches('#addIngenieurForm')) {
             e.preventDefault();
             handleAddIngenieur(e.target);
         } else if (e.target.matches('#editIngenieurForm')) {
@@ -2609,7 +2583,7 @@
         .then(data => {
             if (data.success) {
                 closeAddPersonnelModal();
-                loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2657,7 +2631,7 @@
         .then(data => {
             if (data.success) {
                 closeEditPersonnelModal();
-                loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2706,7 +2680,7 @@
         .then(data => {
             if (data.success) {
                 closeAddMaterielModal();
-                loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2754,7 +2728,7 @@
         .then(data => {
             if (data.success) {
                 closeEditMaterielModal();
-                loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2803,7 +2777,7 @@
         .then(data => {
             if (data.success) {
                 closeAddTransportModal();
-                loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2853,7 +2827,7 @@
         .then(data => {
             if (data.success) {
                 closeEditTransportModal();
-                loadModule('{% url 'projets:partial_transports' %}', 'menu-transports')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2902,7 +2876,7 @@
         .then(data => {
             if (data.success) {
                 closeAddLocationModal();
-                loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2950,7 +2924,7 @@
         .then(data => {
             if (data.success) {
                 closeEditLocationModal();
-                loadModule('{% url 'projets:partial_locations' %}', 'menu-locations')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -2999,7 +2973,7 @@
         .then(data => {
             if (data.success) {
                 closeAddSousTraitanceModal();
-                loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -3047,7 +3021,7 @@
         .then(data => {
             if (data.success) {
                 closeEditSousTraitanceModal();
-                loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -3096,7 +3070,7 @@
         .then(data => {
             if (data.success) {
                 closeAddConsommableModal();
-                loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -3144,7 +3118,7 @@
         .then(data => {
             if (data.success) {
                 closeEditConsommableModal();
-                loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -3193,7 +3167,7 @@
         .then(data => {
             if (data.success) {
                 closeAddFournitureModal();
-                loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })
@@ -3241,7 +3215,7 @@
         .then(data => {
             if (data.success) {
                 closeEditFournitureModal();
-                loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures')
+                loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel')
                     .then(() => {
                         showSuccessMessage(data.message);
                     })

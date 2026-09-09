@@ -30,6 +30,17 @@ class FrenchDecimalField(forms.DecimalField):
             value = re.sub(r'\s+', '', value).replace(',', '.')
         return super().to_python(value)
 
+
+class CategorieChargeForm(forms.ModelForm):
+    class Meta:
+        model = CategorieCharge
+        fields = ['code', 'nom', 'ordre', 'actif']
+        widgets = {
+            'code': forms.TextInput(attrs={'placeholder': 'FRAIS_GENERAUX'}),
+            'nom': forms.TextInput(attrs={'placeholder': 'Frais généraux'}),
+            'ordre': forms.NumberInput(attrs={'min': '0'}),
+        }
+
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
@@ -666,8 +677,8 @@ class SituationMensuelleForm(forms.ModelForm):
         widgets = {
             'annee': forms.HiddenInput(),
             'mois': forms.HiddenInput(),
-            'date_debut': forms.DateInput(format='%d/%m/%Y', attrs={'placeholder': 'JJ/MM/AAAA'}),
-            'date_fin': forms.DateInput(format='%d/%m/%Y', attrs={'placeholder': 'JJ/MM/AAAA'}),
+            'date_debut': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'lang': 'fr'}),
+            'date_fin': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date', 'lang': 'fr'}),
             'observations': forms.Textarea(attrs={'rows': 2}),
         }
 
@@ -687,15 +698,15 @@ class SituationMensuelleForm(forms.ModelForm):
         if self.instance.pk:
             self.initial['periode'] = f'{self.instance.annee:04d}-{self.instance.mois:02d}'
             if self.instance.date_debut:
-                self.initial['date_debut'] = self.instance.date_debut.strftime('%d/%m/%Y')
+                self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
             if self.instance.date_fin:
-                self.initial['date_fin'] = self.instance.date_fin.strftime('%d/%m/%Y')
+                self.initial['date_fin'] = self.instance.date_fin.strftime('%Y-%m-%d')
         else:
             today = timezone.localdate()
             self.initial['periode'] = today.strftime('%Y-%m')
-            self.initial.setdefault('date_debut', today.replace(day=1).strftime('%d/%m/%Y'))
+            self.initial.setdefault('date_debut', today.replace(day=1).strftime('%Y-%m-%d'))
             next_month = (today.replace(day=28) + timezone.timedelta(days=4)).replace(day=1)
-            self.initial.setdefault('date_fin', (next_month - timezone.timedelta(days=1)).strftime('%d/%m/%Y'))
+            self.initial.setdefault('date_fin', (next_month - timezone.timedelta(days=1)).strftime('%Y-%m-%d'))
 
     def clean(self):
         cleaned_data = super().clean()
@@ -715,15 +726,24 @@ class SituationMensuelleForm(forms.ModelForm):
             self.add_error('periode', 'Sélectionnez un mois valide.')
         date_debut = cleaned_data.get('date_debut')
         date_fin = cleaned_data.get('date_fin')
-        if annee and mois:
+        if annee and mois and 1 <= mois <= 12:
+            premier_jour = date(int(annee), int(mois), 1)
+            next_month = premier_jour.replace(day=28) + timezone.timedelta(days=4)
+            dernier_jour = next_month.replace(day=1) - timezone.timedelta(days=1)
             if not date_debut:
-                date_debut = date(int(annee), int(mois), 1)
+                date_debut = premier_jour
                 cleaned_data['date_debut'] = date_debut
             if not date_fin:
-                next_month = date_debut.replace(day=28) + timezone.timedelta(days=4)
-                cleaned_data['date_fin'] = next_month.replace(day=1) - timezone.timedelta(days=1)
+                date_fin = dernier_jour
+                cleaned_data['date_fin'] = date_fin
+            if date_debut < premier_jour:
+                self.add_error('date_debut', 'La date de début doit appartenir au mois sélectionné.')
+            if date_debut > dernier_jour:
+                self.add_error('date_debut', 'La date de début doit appartenir au mois sélectionné.')
+            if date_fin < premier_jour or date_fin > dernier_jour:
+                self.add_error('date_fin', 'La date de fin doit appartenir au mois sélectionné.')
         if date_debut and date_fin and date_debut > date_fin:
-            self.add_error('date_fin', 'La date de fin doit être postérieure à la date de début.')
+            self.add_error('date_fin', 'La date de fin doit être postérieure ou égale à la date de début.')
         if annee and mois and self.projet:
             existantes = SituationMensuelle.objects.filter(
                 projet=self.projet, annee=annee, mois=mois
