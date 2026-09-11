@@ -430,10 +430,14 @@ def api_jours_decoules(request, projet_id):
             date_ref = datetime.strptime(date_reference, '%Y-%m-%d').date()
             jours = projet.jours_decoules_depuis_demarrage(date_ref)
         else:
+            date_ref = None
             jours = projet.jours_decoules_aujourdhui()
+
+        date_fin = projet.date_fin_previsionnelle(date_ref)
 
         return JsonResponse({
             'jours': jours,
+            'date_fin': date_fin.isoformat() if date_fin else None,
             'projet': projet.nom,
             'date_reference': date_reference,
         })

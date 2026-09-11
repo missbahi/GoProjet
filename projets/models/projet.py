@@ -1,4 +1,5 @@
 from decimal import Decimal
+import calendar
 import os
 from django.db import models
 from django.db.models import Sum
@@ -161,6 +162,10 @@ class Projet(models.Model):
         RECEPTION_DEFINITIVE = 'RD', _('Réception définitive')
         CLOTURE = 'CLO', _('Clôturé')
 
+    class UniteDelai(models.TextChoices):
+        JOURS = 'JOURS', _('Jours')
+        MOIS = 'MOIS', _('Mois')
+
     dossier = models.ForeignKey(
         'Dossier',
         on_delete=models.SET_NULL,
@@ -186,7 +191,10 @@ class Projet(models.Model):
  
     statut = models.CharField(_("Statut"), max_length=15, choices=Statut.choices, default=Statut.APPEL_OFFRE)
     date_debut = models.DateField(_("Date de début prévue"), null=True, blank=True)
-    delai = models.IntegerField(_("Délai (jours)"), null=True, blank=True, default=0)
+    delai = models.IntegerField(_("Délai"), null=True, blank=True, default=0)
+    unite_delai = models.CharField(
+        _("Unité du délai"), max_length=5, choices=UniteDelai.choices, default=UniteDelai.JOURS,
+    )
     date_creation = models.DateTimeField(_("Date d'enregistrement"), auto_now_add=True)
     avancement = models.DecimalField(_("Avancement (%)"), max_digits=5, decimal_places=2, default=0.0)
 
@@ -207,6 +215,22 @@ class Projet(models.Model):
     
     def __str__(self):
         return f"{self.nom} ({self.numero})"
+
+    def ajouter_delai(self, date_depart):
+        if not date_depart or not self.delai or self.delai <= 0:
+            return date_depart
+        if self.unite_delai == self.UniteDelai.MOIS:
+            mois_index = date_depart.month - 1 + self.delai
+            annee = date_depart.year + mois_index // 12
+            mois = mois_index % 12 + 1
+            jour = min(date_depart.day, calendar.monthrange(annee, mois)[1])
+            return date_depart.replace(year=annee, month=mois, day=jour) - timedelta(days=1)
+        return date_depart + timedelta(days=self.delai)
+
+    @property
+    def delai_formate(self):
+        unite = 'mois' if self.unite_delai == self.UniteDelai.MOIS else 'jours'
+        return f'{self.delai or 0} {unite}'
     
     def save(self, *args, **kwargs):
         update_flags = kwargs.pop('update_flags', True)
@@ -227,7 +251,7 @@ class Projet(models.Model):
     def update_status_flags(self, force_save=True):
         """Met à jour les indicateurs de statut pour la page d'accueil"""
         if self.date_debut and self.delai and self.statut in [self.Statut.EN_COURS, self.Statut.EN_ARRET]:
-            date_limite = self.date_debut + timedelta(days=self.delai)
+            date_limite = self.ajouter_delai(self.date_debut)
             self.en_retard = date.today() > date_limite and self.avancement < 100
         
         self.a_traiter = self.statut == self.Statut.APPEL_OFFRE and self.date_limite_soumission and self.date_limite_soumission >= date.today()
@@ -365,6 +389,42 @@ class Projet(models.Model):
     
     def jours_decoules_aujourdhui(self):
         return self.jours_decoules_depuis_demarrage()
+
+    def date_fin_previsionnelle(self, date_reference=None):
+        if not self.delai or self.delai <= 0:
+            return None
+
+        if date_reference is None:
+            date_reference = timezone.now().date()
+
+        osc = self.ordres_service.filter(
+            type_os__code='OSC',
+            statut='NOTIFIE',
+            date_effet__isnull=False,
+        ).order_by('ordre_sequence').first()
+        if not osc:
+            return None
+
+        ordres_notifies = self.ordres_service.filter(
+            statut='NOTIFIE',
+            date_effet__gte=osc.date_effet,
+        )
+
+        evenements = ordres_notifies.filter(
+            type_os__code__in=['OSA', 'OSR'],
+            date_effet__lte=date_reference,
+        ).select_related('type_os').order_by('date_effet', 'ordre_sequence')
+
+        jours_arret = 0
+        debut_arret = None
+        for evenement in evenements:
+            if evenement.type_os.code == 'OSA' and debut_arret is None:
+                debut_arret = evenement.date_effet
+            elif evenement.type_os.code == 'OSR' and debut_arret is not None:
+                jours_arret += max(0, (evenement.date_effet - debut_arret).days)
+                debut_arret = None
+
+        return self.ajouter_delai(osc.date_effet) + timedelta(days=jours_arret)
     
     def get_historique_periodes(self, date_reference=None):
         if date_reference is None:
@@ -430,7 +490,7 @@ class Projet(models.Model):
     @property
     def retard_jours(self):
         if self.en_retard and self.date_debut and self.delai:
-            date_limite = self.date_debut + timedelta(days=self.delai)
+            date_limite = self.ajouter_delai(self.date_debut)
             return (date.today() - date_limite).days
         return 0
     

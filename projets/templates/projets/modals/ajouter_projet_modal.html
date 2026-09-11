@@ -143,8 +143,11 @@
                             <i class="fas fa-calendar-alt text-[#2B9C62] mr-2"></i>
                             {{ form.delai.label }}
                         </label>
-                        {{ form.delai }}
-                        <div class="text-xs text-gray-400 mt-1">En jours ouvrés</div>
+                        <div class="grid grid-cols-[1fr_auto] gap-2">
+                            {{ form.delai }}
+                            {{ form.unite_delai }}
+                        </div>
+                        <div class="text-xs text-gray-400 mt-1">Les mois sont calculés de date à date.</div>
                     </div>
 
                     <!-- Date de début -->

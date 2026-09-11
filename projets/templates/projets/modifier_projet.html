@@ -81,7 +81,10 @@
                         <label for="{{ form.delai.id_for_label }}" class="block text-sm font-medium mb-1">
                             {{ form.delai.label }}
                         </label>
-                        {{ form.delai }}
+                        <div class="grid grid-cols-[1fr_auto] gap-2">
+                            {{ form.delai }}
+                            {{ form.unite_delai }}
+                        </div>
                     </div>
                     <div class="hidden"> <!-- Champ caché pour le calcul de l'avancement -->
                         <label for="{{ form.montant.id_for_label }}" class="block text-sm font-medium mb-1">

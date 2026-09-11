@@ -85,7 +85,7 @@ class ProjetForm(forms.ModelForm):
         model = Projet
         fields = [
             'dossier', 'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
-            'delai', 'avancement', 'statut', 'montant', 'montant_soumission', 'taux_tva',
+            'delai', 'unite_delai', 'avancement', 'statut', 'montant', 'montant_soumission', 'taux_tva',
             'localisation', 'entreprise', 'revisable'
         ]
         widgets = {
@@ -96,7 +96,8 @@ class ProjetForm(forms.ModelForm):
             'numero': forms.TextInput(attrs={'placeholder': 'N° marché *'}),
             'objet': forms.Textarea(attrs={ 'rows': 3, 'placeholder': 'Objet du projet *', 'style': 'min-height: auto;'}),
             'date_debut': forms.DateInput(attrs={ 'type': 'date', 'placeholder': 'Date de début *', }),
-            'delai': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Délai en jours'}),
+            'delai': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Durée', 'min': '0'}),
+            'unite_delai': forms.Select(),
             'avancement': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Avancement en %'}),
             'statut': forms.Select(attrs={'placeholder': 'Statut du projet'}),
             'montant': forms.NumberInput(attrs={'class': ' text-right', 'placeholder': 'Montant estimé (DH)'}),

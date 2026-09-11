@@ -220,6 +220,14 @@
                             {% endif %}
                         </div>
                     </div>
+                    <div class="text-center min-w-[150px]">
+                        <div class="text-xs sm:text-sm text-gray-400 mb-1">Fin prévisionnelle</div>
+                        <div id="date-fin-resultat" class="text-base sm:text-lg font-bold text-cyan-300">
+                            {% with date_fin=projet.date_fin_previsionnelle %}
+                                {% if date_fin %}{{ date_fin|date:'d/m/Y' }}{% else %}Non déterminée{% endif %}
+                            {% endwith %}
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -757,6 +765,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             const dateReferenceInput = document.getElementById('date-reference');
             const joursResultat = document.getElementById('jours-resultat');
+            const dateFinResultat = document.getElementById('date-fin-resultat');
             const projetId = {{ projet.id }};
 
             if (dateReferenceInput && joursResultat) {
@@ -770,6 +779,7 @@
                     if (!dateReference) {
                         joursResultat.textContent = '-';
                         joursResultat.className = 'text-xl sm:text-2xl font-bold text-gray-500';
+                        if (dateFinResultat) dateFinResultat.textContent = 'Non déterminée';
                         return;
                     }
 
@@ -788,11 +798,17 @@
                                 joursResultat.textContent = '-';
                                 joursResultat.className = 'text-xl sm:text-2xl font-bold text-amber-500';
                             }
+                            if (dateFinResultat) {
+                                dateFinResultat.textContent = data.date_fin
+                                    ? new Date(`${data.date_fin}T00:00:00`).toLocaleDateString('fr-FR')
+                                    : 'Non déterminée';
+                            }
                         })
                         .catch(error => {
                             console.error('Erreur:', error);
                             joursResultat.textContent = 'Erreur';
                             joursResultat.className = 'text-xl sm:text-2xl font-bold text-red-500';
+                            if (dateFinResultat) dateFinResultat.textContent = 'Erreur';
                         });
                 }
             }

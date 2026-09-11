@@ -333,7 +333,7 @@
           <div><strong class="text-[#AECBD6]">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</div>
         </div>
         <div class="space-y-2">
-          <div><strong class="text-[#AECBD6]">Délai :</strong> {{ projet.delai }} jours</div>
+          <div><strong class="text-[#AECBD6]">Délai :</strong> {{ projet.delai_formate }}</div>
           <div><strong class="text-[#AECBD6]">Date de début :</strong> {{ projet.date_debut|date:"d/m/Y" }}</div>
           {% if lots %}
             {% for lot in lots %}

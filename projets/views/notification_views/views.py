@@ -297,6 +297,8 @@ def notification_data_api(request, projet_id):
                 'statut': projet.get_statut_display(),
                 'date_debut': projet.date_debut.strftime('%Y-%m-%d') if projet.date_debut else None,
                 'delai': projet.delai if projet.delai else None,
+                'unite_delai': projet.unite_delai,
+                'delai_formate': projet.delai_formate,
             },
             'statistiques': {
                 'total_taches': taches_qs.count(),

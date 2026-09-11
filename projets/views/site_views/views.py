@@ -72,7 +72,7 @@ def home(request):
         else:
             couleur, statut_color = '#16a34a', 'Presque terminé'
         date_debut = projet.date_debut or date.today()
-        date_fin_prevue = date_debut + timedelta(days=projet.delai or 0)
+        date_fin_prevue = projet.ajouter_delai(date_debut)
         chart_data['projets'].append({
             'id': projet.id,
             'nom': projet.nom,
