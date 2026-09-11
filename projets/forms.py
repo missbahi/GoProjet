@@ -815,9 +815,7 @@ class DocumentSituationMensuelleBaseFormSet(BaseInlineFormSet):
 class DepenseSituationMensuelleForm(forms.ModelForm):
     categorie = forms.CharField(required=False, widget=forms.HiddenInput())
     designation = forms.CharField(required=False)
-    categorie_charge = forms.ModelChoiceField(
-        queryset=CategorieCharge.objects.none(), required=False, widget=forms.HiddenInput()
-    )
+    categorie_charge = forms.IntegerField(required=False, widget=forms.HiddenInput())
     montant_base = FrenchDecimalField(
         max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
         widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
@@ -835,14 +833,16 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
         model = DepenseSituationMensuelle
         fields = ['categorie', 'categorie_charge', 'designation', 'montant_base', 'cession_entrante', 'cession_sortante']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, categories_charge=None, **kwargs):
         super().__init__(*args, **kwargs)
-        categories = CategorieCharge.objects.filter(actif=True)
-        if self.instance.categorie_charge_id:
-            categories = CategorieCharge.objects.filter(
+        if categories_charge is None:
+            categories_charge = CategorieCharge.objects.filter(
                 Q(actif=True) | Q(pk=self.instance.categorie_charge_id)
             )
-        self.fields['categorie_charge'].queryset = categories
+        self.categories_charge = {
+            categorie.pk: categorie
+            for categorie in categories_charge
+        }
         montant_base_key = f'{self.prefix}-montant_base'
         montant_legacy_key = f'{self.prefix}-montant'
         if self.is_bound and montant_base_key not in self.data and montant_legacy_key in self.data:
@@ -859,7 +859,11 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
         cession_entrante = cleaned_data.get('cession_entrante')
         cession_sortante = cleaned_data.get('cession_sortante')
         categorie = cleaned_data.get('categorie')
-        categorie_charge = cleaned_data.get('categorie_charge')
+        categorie_charge_id = cleaned_data.get('categorie_charge')
+        categorie_charge = self.categories_charge.get(categorie_charge_id)
+        if categorie_charge_id and not categorie_charge:
+            self.add_error('categorie_charge', 'Sélectionnez une catégorie valide.')
+        cleaned_data['categorie_charge'] = categorie_charge
         if not any((designation, montant_base, cession_entrante, cession_sortante, categorie, categorie_charge)):
             return cleaned_data
         if not designation:
@@ -868,7 +872,14 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
         if categorie_charge:
             cleaned_data['categorie'] = categorie_charge.code[:30]
         elif categorie:
-            cleaned_data['categorie_charge'] = CategorieCharge.objects.filter(code=categorie).first()
+            cleaned_data['categorie_charge'] = next(
+                (
+                    categorie_connue
+                    for categorie_connue in self.categories_charge.values()
+                    if categorie_connue.code == categorie
+                ),
+                None,
+            )
         return cleaned_data
 
     def clean_montant_base(self):
@@ -898,6 +909,24 @@ class StockSituationMensuelleForm(forms.ModelForm):
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
 
+
+class DepenseSituationMensuelleBaseFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        categories_charge = list(CategorieCharge.objects.filter(actif=True))
+        existing_category_ids = set(
+            kwargs.get('queryset', DepenseSituationMensuelle.objects.none())
+            .exclude(categorie_charge_id=None)
+            .values_list('categorie_charge_id', flat=True)
+        )
+        missing_ids = existing_category_ids.difference(
+            categorie.pk for categorie in categories_charge
+        )
+        if missing_ids:
+            categories_charge.extend(CategorieCharge.objects.filter(pk__in=missing_ids))
+        form_kwargs = kwargs.setdefault('form_kwargs', {})
+        form_kwargs['categories_charge'] = categories_charge
+        super().__init__(*args, **kwargs)
+
 DepenseRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier, DepenseRapportJournalier,
     form=DepenseRapportJournalierForm, extra=0, can_delete=True,
@@ -909,7 +938,8 @@ StockRapportJournalierFormSet = forms.inlineformset_factory(
 )
 DepenseSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, DepenseSituationMensuelle,
-    form=DepenseSituationMensuelleForm, extra=0, can_delete=True,
+    form=DepenseSituationMensuelleForm, formset=DepenseSituationMensuelleBaseFormSet,
+    extra=0, can_delete=True,
 )
 StockSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, StockSituationMensuelle,

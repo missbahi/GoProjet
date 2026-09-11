@@ -472,7 +472,7 @@
     </div>
     {% endif %}
 
-    <section class="situation-section">
+    <section class="situation-section"><!-- Period section -->
         <div class="situation-section-header">
             <h2 class="text-lg font-semibold text-cyan-300">Période</h2>
         </div>
@@ -498,7 +498,7 @@
         </div>
     </section>
 
-    <section class="situation-section">
+    <section class="situation-section"><!-- Document list section -->
         <div class="situation-section-header">
             <div>
                 <h2 class="text-lg font-semibold text-cyan-300">Documents mensuels</h2>
@@ -543,10 +543,10 @@
         </div>
     </section>
 
-    <section id="recetteSection" class="situation-section">
+    <section id="recetteSection" class="situation-section"><!-- Recette section -->
         <div class="situation-section-header flex items-center justify-between gap-3">
             <button type="button" class="categoryToggle flex items-center gap-2 text-left" data-target="recettePanel" aria-expanded="false">
-                <i class="fas fa-chevron-down toggleIcon"></i>
+                <i class="fas fa-chevron-right toggleIcon"></i>
                 <span>
                     <strong>Chiffre d'affaires</strong>
                     <small class="hidden block text-xs text-[#527889]">
@@ -556,7 +556,7 @@
             </button>
             <strong id="recetteHeaderTotal" class="recette-total">0,00 DH</strong>
         </div>
-        <div id="recettePanel">
+        <div id="recettePanel" class="hidden">
             {{ recettes.management_form }}
             <table class="w-full text-sm">
                 <thead>
@@ -588,7 +588,7 @@
         </div>
     </section>
 
-    <section class="situation-section">
+    <section class="situation-section"><!-- Dépenses du mois -->
         <div class="situation-section-header flex items-center justify-between gap-3">
             <div>
                 <h2 class="text-lg font-semibold text-amber-300">Dépenses du mois</h2>
@@ -712,13 +712,14 @@
         </div>
     </section>
 
-    <section class="situation-section overflow-hidden rounded-lg border-[#7baec1] bg-[#d9edf3]">
+    <!-- État des stocks -->
+    <section class="situation-section overflow-hidden rounded-lg border-[#7baec1] bg-[#d9edf3]"><!-- Stock section -->
         <div class="situation-section-header flex items-center justify-between bg-[#cfe5ed] border-[#7baec1]">
             <button type="button"
                     class="categoryToggle flex items-center gap-2 text-left text-[#24485a]"
                     data-target="stockPanel"
-                    aria-expanded="true">
-                <i class="fas fa-chevron-down toggleIcon"></i>
+                    aria-expanded="false">
+                <i class="fas fa-chevron-right toggleIcon"></i>
                 <span>
                     <strong>État des stocks</strong>
                     <small class="hidden block text-xs text-[#527889]">Plusieurs mouvements possibles.</small>
@@ -726,7 +727,7 @@
             </button>
         </div>
         {{ stocks.management_form }}
-        <div id="stockPanel" class="overflow-x-auto">
+        <div id="stockPanel" class="overflow-x-auto hidden">
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left">
@@ -757,8 +758,8 @@
             {% include "projets/suivi/_stock_situation_row.html" with stock_form=stocks.empty_form %}
         </template>
     </section>
-
-    <section class="situation-section situation-results">
+    <!-- Résultats de la situation -->
+    <section class="situation-section situation-results"><!-- Results section -->
         <div class="situation-section-header border-[#a9cad6]">
             <h2 class="text-lg font-semibold text-[#24485a]">Résultats de la situation</h2>
         </div>

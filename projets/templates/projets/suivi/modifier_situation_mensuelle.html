@@ -14,14 +14,20 @@
             {{ projet.nom }}
         </p>
     </div>
+    {% for message in messages %}
+        <div role="status"
+             class="mb-4 px-3 py-2 rounded border text-sm {% if message.tags == 'success' %}bg-emerald-900/30 border-emerald-700/30 text-emerald-300{% else %}bg-red-900/30 border-red-700/30 text-red-300{% endif %}">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} mr-2"></i>{{ message }}
+        </div>
+    {% endfor %}
     <div class="p-4 rounded border border-gray-700 bg-gray-800">
         {% include 'projets/suivi/_formulaire_situation_mensuelle.html' %}
     </div>
-    <form method="post" action="{% url 'projets:supprimer_situation_mensuelle' projet.id situation.id %}" class="mt-4" onsubmit="return confirm('Supprimer cette situation et son document ?');">
+    <!-- <form method="post" action="{% url 'projets:supprimer_situation_mensuelle' projet.id situation.id %}" class="mt-4" onsubmit="return confirm('Supprimer cette situation et son document ?');">
         {% csrf_token %}
         <button class="px-4 py-2 rounded bg-red-700 text-white" type="submit">
             <i class="fas fa-trash mr-1"></i>Supprimer la situation
         </button>
-    </form>
+    </form> -->
 </div>
 {% endblock %}

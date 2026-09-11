@@ -142,9 +142,9 @@ def notifier_situation_mensuelle(sender, instance, created, **kwargs):
     type_notif = 'NOUVELLE_SITUATION_MENSUELLE' if created else 'SITUATION_MENSUELLE_MODIFIEE'
     titre = 'Nouvelle situation mensuelle' if created else 'Situation mensuelle modifiée'
     periode = f'{instance.mois:02d}/{instance.annee}'
-    for utilisateur in _utilisateurs_concernes(instance.projet):
-        Notification.objects.create(
-            utilisateur=utilisateur,
+    notifications = [
+        Notification(
+            utilisateur_id=utilisateur_id,
             projet=instance.projet,
             type_notification=type_notif,
             titre=f'{titre} - {instance.projet.nom}',
@@ -153,3 +153,6 @@ def notifier_situation_mensuelle(sender, instance, created, **kwargs):
             objet_id=instance.pk,
             objet_type='situation_mensuelle',
         )
+        for utilisateur_id in _utilisateurs_concernes(instance.projet).values_list('id', flat=True)
+    ]
+    Notification.objects.bulk_create(notifications)

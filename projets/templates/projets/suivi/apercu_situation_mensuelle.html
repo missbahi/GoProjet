@@ -76,12 +76,6 @@
             </div>
         </header>
 
-        <section class="summary">
-            <div class="summary-item"><strong>Produits</strong><span>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</span></div>
-            <div class="summary-item"><strong>Charges</strong><span>{{ situation.total_depenses|floatformat:'2g' }} DH</span></div>
-            <div class="summary-item"><strong>État des stocks</strong><span>{{ situation.total_stock|floatformat:'2g' }} DH</span></div>
-        </section>
-
         <section>
             <div class="section-heading revenue-heading"><h2>Chiffre d'affaires</h2></div>
             <table>
@@ -127,7 +121,11 @@
                             </tr>
                             {% endif %}
                         {% empty %}
-                            <tr><td colspan="5" style="font-style: italic; color: #617786;">Aucune charge enregistrée pour {{ label }}.</td></tr>
+                            <tr>
+                                <td colspan="5" style="font-style: italic; color: #617786;">
+                                    Aucune charge enregistrée pour {{ label }}.
+                                </td>
+                            </tr>
                         {% endfor %}
                     {% endfor %}
 
@@ -149,29 +147,24 @@
                             <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
                         </tr>
                     {% empty %}
-                        <tr><td colspan="5" style="font-style: italic; color: #617786;">Aucun mouvement de stock enregistré.</td></tr>
+                        <tr>
+                            <td colspan="5" style="font-style: italic; color: #617786;">
+                                Aucun mouvement de stock enregistré.
+                            </td>
+                        </tr>
                     {% endfor %}
 
-                    <!-- 3. Grand total des charges (dépenses + stocks) -->
-                    <tfoot>
-                        <tr style="border-top: 2px solid #19394a;">
-                            <td><strong>Total général des charges</strong></td>
-                            <td class="amount"><strong>{{ total_general_charges|floatformat:'2g' }}</strong></td>
-                            <td class="amount"></td>
-                            <td class="amount"></td>
-                            <td class="amount"><strong>{{ total_general_charges|floatformat:'2g' }} DH</strong></td>
-                        </tr>
-                    </tfoot>
+
                 </tbody>
             </table>
         </section>
 
         <section class="results-box">
             <h2>Résultats de la situation</h2>
-            <div class="results-row"><strong>Chiffre d'affaires (CA)</strong><strong>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</strong></div>
-            <div class="results-row"><strong>Total des dépenses (TD)</strong><strong>{{ situation.total_depenses|floatformat:'2g' }} DH</strong></div>
-            <div class="results-row"><strong>Marge = CA - TD</strong><strong>{{ marge|floatformat:'2g' }} DH</strong></div>
-            <div class="results-row"><strong>% de marge = Marge / CA</strong><strong>{% if taux_marge is not None %}{{ taux_marge|floatformat:2 }} %{% else %}-{% endif %}</strong></div>
+            <div class="results-row"><strong>Chiffre d'affaires</strong><strong>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>Total des dépenses</strong><strong>{{ situation.total_depenses|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>Marge</strong><strong>{{ marge|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>% de marge</strong><strong>{% if taux_marge is not None %}{{ taux_marge|floatformat:2 }} %{% else %}-{% endif %}</strong></div>
         </section>
 
         {% if situation.observations %}<section class="note"><strong>Observations</strong><p>{{ situation.observations|linebreaksbr }}</p></section>{% endif %}

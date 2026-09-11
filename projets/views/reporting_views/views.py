@@ -86,8 +86,13 @@ def _recettes_formset(*args, situation=None, **kwargs):
 
 def _synchroniser_chiffre_affaires(situation):
     total = situation.recettes.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+    updated_at = timezone.now()
     situation.chiffre_affaires = total
-    situation.save(update_fields=['chiffre_affaires', 'updated_at'])
+    situation.updated_at = updated_at
+    SituationMensuelle.objects.filter(pk=situation.pk).update(
+        chiffre_affaires=total,
+        updated_at=updated_at,
+    )
 
 
 def _creer_rubriques_recettes_manquantes(situation):
@@ -644,9 +649,14 @@ def ajouter_situation_mensuelle(request, projet_id):
 def modifier_situation_mensuelle(request, projet_id, situation_id):
     projet = _projet_travaux_or_403(projet_id)
     situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
+    depenses_queryset = situation.depenses.select_related('categorie_charge')
     if request.method == 'POST':
         form = SituationMensuelleForm(request.POST, request.FILES, instance=situation, projet=projet)
-        depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
+        depenses = DepenseSituationMensuelleFormSet(
+            request.POST,
+            instance=situation,
+            queryset=depenses_queryset,
+        )
         stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
         recettes = _recettes_formset(request.POST, situation=situation)
         documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
@@ -669,7 +679,11 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
                 form.add_error('mois', 'Une situation existe déjà pour cette période.')
             else:
                 messages.success(request, 'Situation mensuelle modifiée.')
-                return redirect('projets:situations_mensuelles', projet_id=projet.id)
+                return redirect(
+                    'projets:modifier_situation_mensuelle',
+                    projet_id=projet.id,
+                    situation_id=situation.id,
+                )
         validation_errors = []
         for label, validation_form in (
             ('Situation', form),
@@ -689,7 +703,10 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         messages.error(request, 'La situation n\'a pas été enregistrée. Corrigez les erreurs indiquées.')
     else:
         form = SituationMensuelleForm(instance=situation)
-        depenses = DepenseSituationMensuelleFormSet(instance=situation)
+        depenses = DepenseSituationMensuelleFormSet(
+            instance=situation,
+            queryset=depenses_queryset,
+        )
         stocks = StockSituationMensuelleFormSet(instance=situation)
         recettes = _recettes_formset(situation=situation)
         documents = DocumentSituationMensuelleFormSet(instance=situation)

@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.contrib.messages import get_messages
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
@@ -721,7 +722,17 @@ class StorageDocumentFlowsTests(TestCase):
 		super().tearDownClass()
 
 	def setUp(self):
-		self.settings_ctx = override_settings(MEDIA_ROOT=self._media_root)
+		self.settings_ctx = override_settings(
+			MEDIA_ROOT=self._media_root,
+			STORAGES={
+				'default': {
+					'BACKEND': 'django.core.files.storage.FileSystemStorage',
+				},
+				'staticfiles': {
+					'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage',
+				},
+			},
+		)
 		self.settings_ctx.enable()
 
 		self.user = User.objects.create_user(
@@ -1544,7 +1555,15 @@ class StorageDocumentFlowsTests(TestCase):
 			},
 		)
 
-		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertRedirects(
+			response,
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			fetch_redirect_response=False,
+		)
+		self.assertEqual(
+			[str(message) for message in get_messages(response.wsgi_request)],
+			['Situation mensuelle modifiée.'],
+		)
 		self.assertTrue(DepenseSituationMensuelle.objects.filter(pk=depense_a_garder.id).exists())
 		self.assertFalse(DepenseSituationMensuelle.objects.filter(pk=depense_a_supprimer.id).exists())
 
@@ -1578,8 +1597,49 @@ class StorageDocumentFlowsTests(TestCase):
 			},
 		)
 
-		self.assertRedirects(response, reverse('projets:situations_mensuelles', args=[self.projet.id]))
+		self.assertRedirects(
+			response,
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			fetch_redirect_response=False,
+		)
 		self.assertFalse(StockSituationMensuelle.objects.filter(situation=situation).exists())
+
+	def test_modification_situation_ne_notifie_qu_une_fois_par_utilisateur(self):
+		dossier = Dossier.objects.create(
+			nom='Dossier Notification Situation', gerant=self.user,
+			activite=Dossier.Activite.TRAVAUX,
+		)
+		self.projet.dossier = dossier
+		self.projet.save(update_fields=['dossier'])
+		situation = SituationMensuelle.objects.create(
+			projet=self.projet, annee=2026, mois=7,
+		)
+		Notification.objects.filter(objet_id=situation.id).delete()
+
+		response = self.client.post(
+			reverse('projets:modifier_situation_mensuelle', args=[self.projet.id, situation.id]),
+			{
+				'periode': '2026-07', 'annee': '2026', 'mois': '7',
+				'date_debut': '', 'date_fin': '', 'observations': 'Mise à jour',
+				'depenses-TOTAL_FORMS': '0', 'depenses-INITIAL_FORMS': '0',
+				'depenses-MIN_NUM_FORMS': '0', 'depenses-MAX_NUM_FORMS': '1000',
+				'stocks-TOTAL_FORMS': '0', 'stocks-INITIAL_FORMS': '0',
+				'stocks-MIN_NUM_FORMS': '0', 'stocks-MAX_NUM_FORMS': '1000',
+				'recettes-TOTAL_FORMS': '0', 'recettes-INITIAL_FORMS': '0',
+				'recettes-MIN_NUM_FORMS': '0', 'recettes-MAX_NUM_FORMS': '1000',
+				'documents-TOTAL_FORMS': '0', 'documents-INITIAL_FORMS': '0',
+				'documents-MIN_NUM_FORMS': '0', 'documents-MAX_NUM_FORMS': '1000',
+			},
+		)
+
+		self.assertEqual(response.status_code, 302)
+		self.assertEqual(
+			Notification.objects.filter(
+				objet_id=situation.id,
+				type_notification='SITUATION_MENSUELLE_MODIFIEE',
+			).count(),
+			1,
+		)
 
 	def test_situation_refuse_document_duplique_par_contenu(self):
 		dossier = Dossier.objects.create(
