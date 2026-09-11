@@ -350,6 +350,52 @@
       </div>
     </div>
 
+    <!-- Pilotage du délai contractuel -->
+    <section class="mb-4 md:mb-6 overflow-hidden rounded-lg border {% if delai_pilotage.statut == 'RETARD' %}border-red-500/60{% elif delai_pilotage.statut == 'ARRET' or delai_pilotage.statut == 'ALERTE' or delai_pilotage.statut == 'INCOMPLET' %}border-amber-500/60{% elif delai_pilotage.statut == 'NORMAL' %}border-emerald-500/50{% else %}border-cyan-500/40{% endif %} bg-[#353535]">
+      <div class="flex flex-col gap-3 border-b border-[#4B5563] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="flex items-center gap-2 text-base font-semibold text-gray-100">
+            <i class="fas fa-flag-checkered text-cyan-400"></i>
+            Pilotage du délai contractuel
+          </h2>
+          <p class="mt-1 text-xs text-gray-400">Échéance calculée depuis l’OSC, prolongée par les périodes OSA → OSR clôturées.</p>
+        </div>
+        <div class="inline-flex items-center gap-2 self-start rounded px-3 py-1.5 text-sm font-semibold {% if delai_pilotage.statut == 'RETARD' %}bg-red-950 text-red-300{% elif delai_pilotage.statut == 'ARRET' or delai_pilotage.statut == 'ALERTE' or delai_pilotage.statut == 'INCOMPLET' %}bg-amber-950 text-amber-300{% elif delai_pilotage.statut == 'NORMAL' %}bg-emerald-950 text-emerald-300{% else %}bg-cyan-950 text-cyan-300{% endif %}">
+          <i class="fas {% if delai_pilotage.statut == 'RETARD' %}fa-flag{% elif delai_pilotage.statut == 'ARRET' %}fa-pause-circle{% elif delai_pilotage.statut == 'NORMAL' %}fa-circle-check{% else %}fa-circle-info{% endif %}"></i>
+          {{ delai_pilotage.libelle }}
+        </div>
+      </div>
+
+      <div class="grid grid-cols-2 divide-x divide-y divide-[#4B5563] sm:grid-cols-4 sm:divide-y-0">
+        <div class="px-4 py-3">
+          <div class="text-xs uppercase text-gray-400">Début OSC</div>
+          <div class="mt-1 font-semibold text-gray-100">{% if delai_pilotage.osc %}{{ delai_pilotage.osc.date_effet|date:'d/m/Y' }}{% else %}Non notifié{% endif %}</div>
+        </div>
+        <div class="px-4 py-3">
+          <div class="text-xs uppercase text-gray-400">Délai initial</div>
+          <div class="mt-1 font-semibold text-gray-100">{{ projet.delai_formate }}</div>
+        </div>
+        <div class="px-4 py-3">
+          <div class="text-xs uppercase text-gray-400">Extensions</div>
+          <div class="mt-1 font-semibold text-gray-100">{{ delai_pilotage.jours_extension }} jour{{ delai_pilotage.jours_extension|pluralize }}</div>
+        </div>
+        <div class="px-4 py-3">
+          <div class="text-xs uppercase text-gray-400">Fin prévisionnelle</div>
+          <div class="mt-1 font-semibold {% if delai_pilotage.statut == 'RETARD' %}text-red-300{% elif delai_pilotage.statut == 'ALERTE' %}text-amber-300{% else %}text-cyan-300{% endif %}">
+            {% if delai_pilotage.date_fin %}{{ delai_pilotage.date_fin|date:'d/m/Y' }}{% else %}Non déterminée{% endif %}
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col gap-2 border-t border-[#4B5563] px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
+        <p class="text-gray-300">{{ delai_pilotage.message }}</p>
+        <div class="flex items-center gap-4 text-xs text-gray-400">
+          {% if delai_pilotage.jours_ecoules is not None %}<span><strong class="text-gray-200">{{ delai_pilotage.jours_ecoules }}</strong> jours effectifs</span>{% endif %}
+          <a href="{% url 'projets:ordres_service' projet.id %}" class="font-semibold text-cyan-400 hover:text-cyan-300">Voir les OS <i class="fas fa-arrow-right ml-1"></i></a>
+        </div>
+      </div>
+    </section>
+
     <!-- Modules du projet -->
     <div class="card-custom mb-4 md:mb-6">
       <h3 class="text-lg md:text-xl font-semibold text-cyan-300 mb-4 md:mb-6 flex items-center gap-2 justify-center md:justify-start">

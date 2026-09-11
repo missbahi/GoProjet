@@ -6,6 +6,7 @@ from django.db.models import Avg, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from projets.decorators import can_view_projet, chef_projet_required, projets_accessibles, superuser_required
 from projets.forms import DossierForm, ProjetForm
@@ -202,6 +203,63 @@ def dashboard_projet(request, projet_id):
     attachements = Attachement.objects.filter(projet=projet)
     documents_administratifs = DocumentAdministratif.objects.filter(projet=projet)
     ordre_services = OrdreService.objects.filter(projet=projet)
+    ordres_notifies = list(
+        ordre_services.filter(statut='NOTIFIE', date_effet__isnull=False)
+        .select_related('type_os')
+        .order_by('date_effet', 'ordre_sequence')
+    )
+    osc = min(
+        (ordre for ordre in ordres_notifies if ordre.type_os.code == 'OSC'),
+        key=lambda ordre: ordre.ordre_sequence,
+        default=None,
+    )
+    today = timezone.localdate()
+    date_fin_previsionnelle = projet.date_fin_previsionnelle(today)
+    jours_ecoules = projet.jours_decoules_depuis_demarrage(today)
+    date_fin_contractuelle = projet.ajouter_delai(osc.date_effet) if osc else None
+    jours_extension = (
+        (date_fin_previsionnelle - date_fin_contractuelle).days
+        if date_fin_previsionnelle and date_fin_contractuelle else 0
+    )
+    jours_avant_echeance = (
+        (date_fin_previsionnelle - today).days if date_fin_previsionnelle else None
+    )
+
+    if not projet.delai:
+        statut_delai = 'INCOMPLET'
+        libelle_delai = 'Délai à renseigner'
+        message_delai = 'Ajoutez le délai contractuel pour activer le suivi de l’échéance.'
+    elif not osc:
+        statut_delai = 'ATTENTE_OSC'
+        libelle_delai = 'OSC attendu'
+        message_delai = 'La date de fin sera calculée après notification de l’OS de commencement.'
+    elif jours_avant_echeance is not None and jours_avant_echeance < 0:
+        statut_delai = 'RETARD'
+        libelle_delai = f'{abs(jours_avant_echeance)} jour(s) de dépassement'
+        message_delai = 'L’échéance prévisionnelle est dépassée.'
+    elif projet.projet_en_arret:
+        statut_delai = 'ARRET'
+        libelle_delai = 'Chantier en arrêt'
+        message_delai = 'L’échéance sera recalculée après notification de l’OS de reprise.'
+    elif jours_avant_echeance is not None and jours_avant_echeance <= 30:
+        statut_delai = 'ALERTE'
+        libelle_delai = f'Échéance dans {jours_avant_echeance} jour(s)'
+        message_delai = 'La date de fin prévisionnelle approche.'
+    else:
+        statut_delai = 'NORMAL'
+        libelle_delai = 'Dans les délais'
+        message_delai = 'Aucune alerte de délai à ce jour.'
+
+    delai_pilotage = {
+        'osc': osc,
+        'date_fin': date_fin_previsionnelle,
+        'jours_ecoules': jours_ecoules,
+        'jours_extension': jours_extension,
+        'jours_avant_echeance': jours_avant_echeance,
+        'statut': statut_delai,
+        'libelle': libelle_delai,
+        'message': message_delai,
+    }
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
 
@@ -218,6 +276,7 @@ def dashboard_projet(request, projet_id):
         'attachements': attachements,
         'documents_administratifs': documents_administratifs,
         'ordre_services': ordre_services,
+        'delai_pilotage': delai_pilotage,
         'suivis_execution': suivis_execution,
         'rapports_journaliers': rapports_journaliers,
         'dernier_rapport_journalier': dernier_rapport_journalier,
