@@ -380,7 +380,7 @@
                 {% endif %}
             </h3>
             
-            <form method="POST" enctype="multipart/form-data" class="space-y-3 sm:space-y-4">
+            <form method="POST" enctype="multipart/form-data" id="ordreServiceForm" class="space-y-3 sm:space-y-4">
                 {% csrf_token %}
                 
                 {% if ordre_a_modifier %}
@@ -546,14 +546,18 @@
                 </div>
                 
                 <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-3 sm:pt-4">
-                    <button type="submit" 
-                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive">
-                        <i class="fas fa-save"></i>
-                        {% if ordre_a_modifier %}
-                            Modifier l'ordre de service
-                        {% else %}
-                            Ajouter l'ordre de service
-                        {% endif %}
+                    <button type="submit"
+                            id="ordreServiceSubmitBtn"
+                            class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center justify-center gap-2 text-sm sm:text-base btn-responsive disabled:opacity-70 disabled:cursor-not-allowed">
+                        <i class="fas fa-save ordre-service-submit-icon"></i>
+                        <i class="fas fa-spinner fa-spin ordre-service-submit-spinner hidden"></i>
+                        <span class="ordre-service-submit-label">
+                            {% if ordre_a_modifier %}
+                                Modifier l'ordre de service
+                            {% else %}
+                                Ajouter l'ordre de service
+                            {% endif %}
+                        </span>
                     </button>
                     {% if ordre_a_modifier %}
                     <a href="{% url 'projets:ordres_service' projet.id %}" 
@@ -721,7 +725,7 @@
             updateChampsConditionnels();
 
             // Validation des dates
-            const form = document.querySelector('form');
+            const form = document.getElementById('ordreServiceForm');
             form.addEventListener('submit', function(e) {
                 const datePublication = document.getElementById('date_publication').value;
                 const dateLimite = document.getElementById('date_limite').value;
@@ -738,6 +742,14 @@
                     alert('La date d\'effet ne peut pas être antérieure à la date de publication.');
                     return;
                 }
+
+                const submitBtn = document.getElementById('ordreServiceSubmitBtn');
+                if (!submitBtn || submitBtn.disabled) return;
+                submitBtn.disabled = true;
+                submitBtn.querySelector('.ordre-service-submit-icon')?.classList.add('hidden');
+                submitBtn.querySelector('.ordre-service-submit-spinner')?.classList.remove('hidden');
+                const label = submitBtn.querySelector('.ordre-service-submit-label');
+                if (label) label.textContent = 'Enregistrement...';
             });
         });
 

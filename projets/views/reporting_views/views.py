@@ -496,6 +496,10 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
         if category_depenses:
             total = sum((depense.montant or Decimal('0.00') for depense in category_depenses), Decimal('0.00'))
             depenses_par_categorie.append((category.code, category.nom, total, category_depenses))
+    chiffre_affaires = situation.chiffre_affaires or Decimal('0.00')
+    total_depenses = situation.total_depenses or Decimal('0.00')
+    marge = chiffre_affaires - total_depenses
+    taux_marge = (marge / chiffre_affaires * Decimal('100')) if chiffre_affaires else None
     return render(request, 'projets/suivi/apercu_situation_mensuelle.html', {
         'projet': projet,
         'situation': situation,
@@ -503,6 +507,8 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
         'depenses_par_categorie': [(value, label, depenses, total) for value, label, total, depenses in depenses_par_categorie],
         'stocks': situation.stocks.all(),
         'documents': situation.documents.all(),
+        'marge': marge,
+        'taux_marge': taux_marge,
     })
 
 
