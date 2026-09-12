@@ -718,7 +718,7 @@
                     <i class="fas fa-info-circle empty-icon"></i>
                     <p>Aucun processus de validation défini pour cet attachement.</p>
                     <p>Veuillez contacter l'administrateur du système pour configurer les étapes de validation.</p>
-                    <button onclick=transmitModal() 
+                    <button id="transmitTrigger" type="button" onclick="transmitModal()"
                             class="btn btn-primary mt-4">
                         <i class="fas fa-edit"></i>
                         Transmettre pour validation
@@ -886,6 +886,11 @@
             const submitButton = this.querySelector('button[type="submit"]');
             submitButton.disabled = true;
             submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmission...';
+
+            const transmitTrigger = document.getElementById('transmitTrigger');
+            transmitTrigger.disabled = true;
+            transmitTrigger.setAttribute('aria-busy', 'true');
+            transmitTrigger.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmission...';
             document.getElementById('transmitModal').style.display = 'none';
         });
     </script>
