@@ -877,35 +877,16 @@
         
         // Gérer la soumission du formulaire de transmission
         document.getElementById('transmitForm').addEventListener('submit', function(e) {
-            // recuperer l'attachement
-            const attachement = {attachement };
-            if (attachement.statut === 'TRANSMIS') {
+            if (this.dataset.submitting === 'true') {
                 e.preventDefault();
-                alert('Cet attachement a déjà été transmis pour validation.');
-                closeModal();
+                return;
             }
-            else if (attachement.statut !== 'SIGNE') {
-                e.preventDefault();
-                // seulement les attachements signes peuvent etre transmis
-                alert('Seuls les attachements signés peuvent être transmis pour validation.');
-                // demander s'il faut signer maintenant
 
-                const signNow = confirm('Voulez-vous signer maintenant cet attachement ?');
-                if (signNow) {
-                    attachement.statut = 'SIGNE';
-                    alert('L\'attachement a été signé. Vous pouvez maintenant le transmettre pour validation.');
-                    closeModal();
-                    // permettre la soumission
-                    this.submit();
-                }
-            } 
-            else {
-                // permettre la soumission
-                e.preventDefault();
-                alert('L\'attachement est transmis pour validation.');
-                closeModal();
-                this.submit();
-            }
+            this.dataset.submitting = 'true';
+            const submitButton = this.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmission...';
+            document.getElementById('transmitModal').style.display = 'none';
         });
     </script>
     <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
