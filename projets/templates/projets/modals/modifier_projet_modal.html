@@ -24,7 +24,7 @@
               method="post"  
               action="{% url 'projets:modifier_projet_modal' projet.id %}"
               modal="true"
-              class="space-y-6 max-h-[65vh] overflow-y-auto p-4 md:p-6"
+              class="space-y-4 max-h-[65vh] overflow-y-auto p-4 md:p-6"
               enctype="multipart/form-data">
             {% csrf_token %}
             
@@ -34,14 +34,14 @@
             </div>
 
             <!-- Section 1: Informations générales -->
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div class="flex items-center space-x-2">
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#2B9C62] to-transparent"></div>
                     <span class="text-[#2B9C62] font-medium text-sm px-2">INFORMATIONS GÉNÉRALES</span>
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-[#2B9C62] to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-4">
                     <!-- Dossier -->
                     <div class="space-y-2">
                         <label for="{{ form.dossier.id_for_label }}" class="block text-sm font-semibold text-gray-300">
@@ -85,14 +85,14 @@
             </div>
 
             <!-- Section 2: Détails du projet -->
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div class="flex items-center space-x-2">
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
                     <span class="text-gray-400 font-medium text-sm px-2">DÉTAILS DU PROJET</span>
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-4">
                     <!-- Maître d'ouvrage -->
                     <div class="space-y-2">
                         <label for="{{ form.maitre_ouvrage.id_for_label }}" class="block text-sm font-semibold text-gray-300">
@@ -169,14 +169,14 @@
             </div>
 
             <!-- Section 3: Statut et Entreprise -->
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <div class="flex items-center space-x-2">
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
                     <span class="text-gray-400 font-medium text-sm px-2">STATUT ET ENTREPRISE</span>
                     <div class="h-px flex-1 bg-gradient-to-r from-transparent via-gray-600 to-transparent"></div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-4">
                     <!-- Statut -->
                     <div class="space-y-2">
                         <label for="{{ form.statut.id_for_label }}" class="block text-sm font-semibold text-gray-300">
@@ -201,8 +201,9 @@
                     </div>
                 </div>
             </div>
+            
             <!-- Projet révisable -->
-            <div class="space-y-6">
+            <div class="space-y-4">
                 <label for="{{ form.revisable.id_for_label }}" class="text-sm font-semibold text-gray-300 flex items-center">
                     <i class="fas fa-chart-bar text-[#2B9C62] mr-2"></i>
                     {{ form.revisable.label }}
