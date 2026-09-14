@@ -108,8 +108,19 @@ class Attachement(models.Model):
     def total_montant_ht(self):
         return sum(ligne.montant_ligne_realise for ligne in self.lignes_attachement.all())
 
+    @classmethod
+    def get_latest_attachement(cls, projet):
+        return cls.objects.filter(projet=projet).order_by(
+            '-date_fin_periode', '-date_etablissement', '-id'
+        ).first()
+
     def get_previous_attachement(self):
-        return Attachement.objects.filter(projet=self.projet, id__lt=self.id).order_by('-id').first()
+        return Attachement.objects.filter(
+            projet=self.projet,
+            date_fin_periode__lte=self.date_debut_periode,
+        ).exclude(pk=self.pk).order_by(
+            '-date_fin_periode', '-date_etablissement', '-id'
+        ).first()
     
     @property
     def montant_ht_attachement_precedent(self):

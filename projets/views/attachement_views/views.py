@@ -57,6 +57,12 @@ def liste_attachements(request, projet_id):
 def ajouter_attachement(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lignes_bordereau = list(_iter_lignes_bordereau_hierarchiques(projet))
+    dernier_attachement = Attachement.get_latest_attachement(projet)
+    quantites_deja_realisees = dict(
+        LigneAttachement.objects.filter(attachement=dernier_attachement).values_list(
+            'ligne_lot_id', 'quantite_realisee'
+        )
+    ) if dernier_attachement else {}
 
     if request.method == 'POST':
         form = AttachementForm(request.POST, request.FILES)
@@ -93,7 +99,7 @@ def ajouter_attachement(request, projet_id):
     for ligne in lignes_bordereau:
         is_title = _est_ligne_titre_bordereau(ligne)
         ligne_bordereau = LigneBordereau.objects.select_related('lot', 'parent').get(pk=ligne.id)
-        quantite_deja_realisee = ligne_bordereau.get_quantite_deja_realisee if not is_title else None
+        quantite_deja_realisee = quantites_deja_realisees.get(ligne.id) if not is_title else None
 
         ligne_dict = {
             'id': ligne.id,
@@ -129,14 +135,13 @@ def ajouter_attachement(request, projet_id):
     nb_attachements = Attachement.objects.filter(projet=projet).count()
     next_numero = nb_attachements + 1
 
-    if next_numero == 1:
+    if dernier_attachement is None:
         osc = projet.ordres_service.filter(type_os__code='OSC', statut='NOTIFIE').first()
         if osc and osc.date_effet:
             date_debut_periode = osc.date_effet
         else:
             date_debut_periode = timezone.now().date()
     else:
-        dernier_attachement = Attachement.objects.filter(projet=projet).latest('date_etablissement')
         date_debut_periode = dernier_attachement.date_fin_periode
 
     date_fin_periode = date_debut_periode + timedelta(days=30)

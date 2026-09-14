@@ -199,6 +199,76 @@ class RolesEtDossiersTests(TestCase):
 		'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
 	},
 )
+class AttachementPrecedentTests(TestCase):
+	def setUp(self):
+		self.projet = Projet.objects.create(
+			nom='Projet Attachements',
+			objet='Sélection chronologique',
+			numero='ATT-DATES-001',
+			maitre_ouvrage='MOA',
+			localisation='Rabat',
+		)
+		self.utilisateur = User.objects.create_superuser(
+			username='admin-attachements', password='test-password'
+		)
+
+	def creer_attachement(self, numero, date_debut, date_fin):
+		return Attachement.objects.create(
+			projet=self.projet,
+			numero=numero,
+			date_etablissement=date_fin,
+			date_debut_periode=date_debut,
+			date_fin_periode=date_fin,
+		)
+
+	def test_modification_prend_la_date_fin_eligible_la_plus_proche(self):
+		plus_proche = self.creer_attachement('ATT-002', date(2026, 2, 1), date(2026, 3, 31))
+		self.creer_attachement('ATT-001', date(2026, 1, 1), date(2026, 1, 31))
+		courant = self.creer_attachement('ATT-003', date(2026, 4, 1), date(2026, 4, 30))
+		self.creer_attachement('ATT-004', date(2026, 5, 1), date(2026, 5, 31))
+
+		self.assertEqual(courant.get_previous_attachement(), plus_proche)
+
+	def test_nouvel_attachement_prend_la_plus_grande_date_fin(self):
+		plus_recent = self.creer_attachement('ATT-002', date(2026, 2, 1), date(2026, 3, 31))
+		self.creer_attachement('ATT-001', date(2026, 1, 1), date(2026, 1, 31))
+
+		self.assertEqual(Attachement.get_latest_attachement(self.projet), plus_recent)
+
+	def test_vue_ajout_charge_les_quantites_du_dernier_attachement(self):
+		lot = LotProjet.objects.create(projet=self.projet, nom='Lot test')
+		ligne = LigneBordereau.objects.create(
+			lot=lot,
+			numero='1.1',
+			designation='Ligne test',
+			unite='u',
+			quantite=Decimal('20'),
+			prix_unitaire=Decimal('100'),
+		)
+		plus_recent = self.creer_attachement('ATT-002', date(2026, 2, 1), date(2026, 3, 31))
+		plus_ancien = self.creer_attachement('ATT-001', date(2026, 1, 1), date(2026, 1, 31))
+		for attachement, quantite in ((plus_recent, Decimal('7')), (plus_ancien, Decimal('3'))):
+			LigneAttachement.objects.create(
+				attachement=attachement,
+				ligne_lot=ligne,
+				numero=ligne.numero,
+				designation=ligne.designation,
+				unite=ligne.unite,
+				quantite_initiale=ligne.quantite,
+				prix_unitaire=ligne.prix_unitaire,
+				quantite_realisee=quantite,
+			)
+		self.client.force_login(self.utilisateur)
+
+		response = self.client.get(reverse('projets:ajouter_attachement', args=[self.projet.id]))
+
+		self.assertEqual(response.status_code, 200)
+		donnees_lignes = json.loads(response.context['lignes'])
+		donnees_ligne = next(item for item in donnees_lignes if item['id'] == ligne.id)
+		self.assertEqual(donnees_ligne['quantite_deja_realisee'], 7.0)
+		self.assertEqual(response.context['date_debut_periode'], plus_recent.date_fin_periode)
+
+
 class ValidationAttachementRoleTests(TestCase):
 	def setUp(self):
 		self.projet = Projet.objects.create(
