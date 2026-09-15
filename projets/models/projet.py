@@ -752,6 +752,10 @@ class Line:
         self.designation = designation
         self.montant = montant
         self.children = []
+
+    @property
+    def is_empty_line(self):
+        return self.numero == "" and self.designation == ""
     
     def amount(self):
         if self.children:
@@ -818,8 +822,9 @@ class Line:
     def get_descendants(self):
         descendants = []
         for child in self.children:
-            descendants.append(child)
-            descendants.extend(child.get_descendants())
+            if not child.is_empty_line :
+                descendants.append(child) 
+                descendants.extend(child.get_descendants())
         return descendants
     
     def siblings(self):
