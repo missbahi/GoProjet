@@ -960,7 +960,7 @@ def calcul_retard_decompte(request, decompte_id):
 @modules_projet_required
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    attachements = Attachement.objects.filter(projet=projet).order_by('-date_etablissement')
+    attachements = Attachement.objects.filter(projet=projet).order_by('-date_fin_periode')
     attachement_courant = None
     donnees_controle = []
     total_general = {
@@ -979,7 +979,7 @@ def fiche_controle(request, projet_id):
         lots = LotProjet.objects.filter(projet=projet).order_by('id')
 
         for lot in lots:
-            lignes_bordereau = LigneBordereau.objects.filter(lot=lot).order_by('id')
+            lignes_bordereau = LigneBordereau.objects.filter(lot=lot).order_by('ordre_affichage')
             lignes_controle = []
 
             total_lot = {
