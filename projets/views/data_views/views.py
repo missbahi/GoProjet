@@ -4,14 +4,18 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from projets.decorators import categorie_charge_required, chef_projet_required
+
+from projets.models import (
+    Client, Consommable, Entreprise, Fourniture, Ingenieur, Location, Materiel, TypeMateriel,
+    Personnel, SousTraitance, Transport, CategorieCharge,
+)
 from projets.forms import (
     CategorieChargeForm, ClientForm, ConsommableForm, EntrepriseForm, FournitureForm, IngenieurForm,
     LocationForm, MaterielForm, PersonnelForm, SousTraitanceForm, TransportForm,
+    TypeMaterielForm,
 )
-from projets.models import (
-    Client, Consommable, Entreprise, Fourniture, Ingenieur, Location, Materiel,
-    Personnel, SousTraitance, Transport, CategorieCharge,
-)
+
+from projets.utils.icones import choix_icones
 
 
 @chef_projet_required
@@ -40,8 +44,12 @@ def partial_personnel(request):
 
 @chef_projet_required
 def partial_materiel(request):
-    materiel = Materiel.objects.all()
-    return render(request, 'projets/partials/materiel.html', {'materiel': materiel})
+    materiel = Materiel.objects.select_related('type_materiel').all()
+    types_materiel_actifs = TypeMateriel.objects.filter(actif=True).order_by('nom')
+    return render(request, 'projets/partials/materiel.html', {
+        'materiel': materiel,
+        'types_materiel_actifs': types_materiel_actifs,
+    })
 
 
 @chef_projet_required
@@ -76,8 +84,113 @@ def partial_fournitures(request):
 
 @chef_projet_required
 def base_donnees(request):
-    return render(request, 'projets/base_donnees.html')
+    return render(request, 'projets/base_donnees.html', {
+        'choix_icones': choix_icones(),
+        'types_materiel_actifs': TypeMateriel.objects.filter(actif=True).order_by('nom'),
+    })
 
+# ============================================================
+# Gestion des types de matériel (référentiel)
+# ============================================================
+
+@chef_projet_required
+def partial_types_materiel(request):
+    types_materiel = TypeMateriel.objects.all()
+    return render(
+        request,
+        'projets/partials/types_materiel.html',
+        {'types_materiel': types_materiel},
+    )
+
+
+@chef_projet_required
+def ajouter_type_materiel(request):
+    if request.method != 'POST':
+        form = TypeMaterielForm()
+        return render(
+            request,
+            'projets/partials/types_materiel.html',
+            {'form': form},
+        )
+
+    form = TypeMaterielForm(request.POST)
+    if form.is_valid():
+        type_materiel = form.save()
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': True,
+                'message': f"Le type de matériel « {type_materiel.nom} » a été ajouté avec succès.",
+            })
+        return redirect('projets:partial_types_materiel')
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse(
+            {'success': False, 'errors': form.errors.get_json_data()},
+            status=400,
+        )
+    return render(
+        request,
+        'projets/partials/types_materiel.html',
+        {'form': form},
+    )
+
+
+@chef_projet_required
+def modifier_type_materiel(request, type_materiel_id):
+    type_materiel = get_object_or_404(TypeMateriel, id=type_materiel_id)
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+
+    form = TypeMaterielForm(request.POST, instance=type_materiel)
+
+    if form.is_valid():
+        type_materiel = form.save()
+        if request.GET.get('modal') == 'true':
+            return JsonResponse({
+                'success': True,
+                'message': f"Type de matériel « {type_materiel.nom} » modifié avec succès.",
+            })
+        messages.success(request, f"Type de matériel « {type_materiel.nom} » modifié avec succès.")
+        return redirect('projets:partial_types_materiel')
+
+    if request.GET.get('modal') == 'true':
+        return JsonResponse(
+            {'success': False, 'errors': form.errors.get_json_data()},
+            status=400,
+        )
+
+    return render(
+        request,
+        'projets/partials/types_materiel.html',
+        {'form': form, 'type_materiel': type_materiel},
+    )
+
+
+@chef_projet_required
+def supprimer_type_materiel(request, type_materiel_id):
+    type_materiel = get_object_or_404(TypeMateriel, id=type_materiel_id)
+    nom = type_materiel.nom
+
+    # Protection : empêcher la suppression si des matériels y sont rattachés
+    if type_materiel.materiels.exists():
+        message = (
+            f"Impossible de supprimer « {nom} » : "
+            f"{type_materiel.materiels.count()} matériel(s) y sont rattachés."
+        )
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': message}, status=400)
+        messages.error(request, message)
+        return redirect('projets:partial_types_materiel')
+
+    type_materiel.delete()
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': f"Type de matériel « {nom} » supprimé avec succès.",
+        })
+    messages.success(request, f"Type de matériel « {nom} » supprimé avec succès.")
+    return redirect('projets:partial_types_materiel')
 
 @categorie_charge_required
 def partial_categories_charges(request):

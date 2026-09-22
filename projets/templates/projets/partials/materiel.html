@@ -1,10 +1,32 @@
+{% load static %}
 <h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
     <i class="fa-solid fa-truck-monster mr-3"></i> Liste du matériel
 </h2>
 
 {% if materiel %}
+<div class="mb-4 flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+    <div class="flex flex-col md:flex-row gap-2 md:items-center">
+        <div class="relative">
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+            <input type="text"
+                   id="materielSearchInput"
+                   placeholder="Rechercher une désignation..."
+                   class="pl-9 pr-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm w-full md:w-64"
+                   oninput="filterMaterielTable()">
+        </div>
+        <select id="materielTypeFilter"
+                class="px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                onchange="filterMaterielTable()">
+            <option value="">Tous les types</option>
+            {% for type in types_materiel_actifs %}
+                <option value="{{ type.id }}">{{ type.nom }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
 <div class="bg-gray-800 p-2 overflow-x-auto">
-    <table class="min-w-full bg-[#2E2E2E]">
+    <table class="min-w-full bg-[#2E2E2E]" id="materielTable">
         <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
             <tr>
                 <th class="px-4 py-3 text-left">Désignation</th>
@@ -18,12 +40,27 @@
         </thead>
         <tbody class="bg-gray-800 divide-y divide-green-800">
             {% for engin in materiel %}
-            <tr class="text-[#AECBD6]">
+            <tr class="text-[#AECBD6]"
+                data-designation="{{ engin.designation|lower }}"
+                data-type-id="{{ engin.type_materiel_id|default:'' }}">
                 <td class="px-4 py-3">{{ engin.designation }}</td>
-                <td class="px-4 py-3">{{ engin.type_materiel }}</td>
-                <td class="px-4 py-3">{{ engin.immatriculation }}</td>
-                <td class="px-4 py-3">{{ engin.unite }}</td>
-                <td class="px-4 py-3 text-right">{{ engin.prix_unitaire }}</td>
+                <td class="px-4 py-3">
+                    {% if engin.type_materiel %}
+                        <span class="inline-flex items-center gap-2">
+                            {% if engin.type_materiel.icone %}
+                                <img src="{% static engin.type_materiel.icone_path %}"
+                                     alt="{{ engin.type_materiel.nom }}"
+                                     class="h-6 w-6 object-contain">
+                            {% endif %}
+                            <span class="text-green-300">{{ engin.type_materiel.nom }}</span>
+                        </span>
+                    {% else %}
+                        <span class="text-gray-500 italic">— Non défini —</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">{{ engin.immatriculation|default:"—" }}</td>
+                <td class="px-4 py-3">{{ engin.unite|default:"—" }}</td>
+                <td class="px-4 py-3 text-right">{{ engin.prix_unitaire|floatformat:2 }}</td>
                 <td class="px-4 py-3 text-center">
                     {% if engin.actif %}
                         <i class="fa-solid fa-circle-check text-green-400"></i>
@@ -35,7 +72,9 @@
                     <button data-edit-materiel-button
                             data-id="{{ engin.id }}"
                             data-designation="{{ engin.designation }}"
-                            data-type="{{ engin.type_materiel }}"
+                            data-type-id="{{ engin.type_materiel_id|default:'' }}"
+                            data-type-nom="{{ engin.type_materiel.nom|default:'' }}"
+                            data-type-actif="{{ engin.type_materiel.actif|yesno:'true,false' }}"
                             data-immatriculation="{{ engin.immatriculation }}"
                             data-unite="{{ engin.unite }}"
                             data-prix-unitaire="{{ engin.prix_unitaire|floatformat:2 }}"
@@ -53,11 +92,40 @@
         </tbody>
     </table>
 </div>
+<p id="materielNoResult" class="hidden text-center py-4 text-gray-400 text-sm">
+    Aucun résultat pour ce filtre.
+</p>
+
+<script>
+    // Filtre local (désignation + type) — pas de rechargement serveur.
+    // La fonction est globale et idempotente : réinjectée à chaque
+    // chargement du partial via AJAX, elle reste fonctionnelle.
+    window.filterMaterielTable = function() {
+        const search = (document.getElementById('materielSearchInput')?.value || '').toLowerCase().trim();
+        const typeId = document.getElementById('materielTypeFilter')?.value || '';
+        const rows = document.querySelectorAll('#materielTable tbody tr');
+        let visibles = 0;
+
+        rows.forEach(row => {
+            const designation = row.dataset.designation || '';
+            const rowTypeId = row.dataset.typeId || '';
+            const matchSearch = !search || designation.includes(search);
+            const matchType = !typeId || rowTypeId === typeId;
+            const visible = matchSearch && matchType;
+            row.classList.toggle('hidden', !visible);
+            if (visible) visibles++;
+        });
+
+        document.getElementById('materielNoResult')?.classList.toggle('hidden', visibles > 0);
+    };
+</script>
+
 {% else %}
 <div class="p-4 bg-green-900 text-green-200 rounded-lg shadow mb-4 border border-green-700">
     Aucun matériel enregistré.
 </div>
 {% endif %}
+
 <div class="mt-6">
     <button data-add-materiel-button
             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">

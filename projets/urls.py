@@ -158,6 +158,12 @@ base_donnees_urlpatterns = [
     path('base_donnees/categories-charges/', data_views.partial_categories_charges, name='partial_categories_charges'),
     path('categories-charges/ajouter/', data_views.ajouter_categorie_charge, name='ajouter_categorie_charge'),
     path('categories-charges/<int:categorie_id>/modifier/', data_views.modifier_categorie_charge, name='modifier_categorie_charge'),
+
+        # Gestion des types de matériel
+    path('types-materiel/ajouter/', data_views.ajouter_type_materiel, name='ajouter_type_materiel'),
+    path('types-materiel/modifier/<int:type_materiel_id>/', data_views.modifier_type_materiel, name='modifier_type_materiel'),
+    path('types-materiel/supprimer/<int:type_materiel_id>/', data_views.supprimer_type_materiel, name='supprimer_type_materiel'),
+    path('base_donnees/types-materiel/', data_views.partial_types_materiel, name='partial_types_materiel'),
 ]
 
 # Gestion des taches
