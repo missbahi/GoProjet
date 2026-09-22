@@ -7,17 +7,18 @@ from django import forms
 from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
 
-from projets.models.projet import DocumentAdministratif
+from projets.utils.icones import choix_icones
 
 # from projets.models.revision import RevisionPrix
 from .models import (
-    Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
-    Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
-    StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
-    StockSituationMensuelle, DocumentSituationMensuelle, RecetteSituationMensuelle, Personnel, Materiel,
+    Client, Decompte, Dossier, Ingenieur, Profile, 
+    Projet, Entreprise, Tache, Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
+    StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle, DocumentAdministratif,
+    StockSituationMensuelle, DocumentSituationMensuelle, RecetteSituationMensuelle, 
+    Personnel, Materiel, Atelier, TypeMateriel, AffectationRessource,
     Location, Transport, SousTraitance, Consommable, Fourniture, CategorieCharge,
 )
-
+ 
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
 from django.utils.translation import gettext_lazy as _
@@ -29,7 +30,6 @@ class FrenchDecimalField(forms.DecimalField):
         if isinstance(value, str):
             value = re.sub(r'\s+', '', value).replace(',', '.')
         return super().to_python(value)
-
 
 class CategorieChargeForm(forms.ModelForm):
     class Meta:
@@ -143,7 +143,6 @@ class ProjetForm(forms.ModelForm):
             raise forms.ValidationError("Le montant de soumission ne peut pas être négatif.")
         return montant_val
 
-
 class DossierForm(forms.ModelForm):
     projets = forms.ModelMultipleChoiceField(
         label=_("Projets à rattacher"),
@@ -188,7 +187,6 @@ class DossierForm(forms.ModelForm):
                 id__in=projets_selectionnes.values_list('id', flat=True)
             ).update(dossier=dossier)
         return dossier
-
 
 class UtilisateurCreationForm(UserCreationForm):
     ROLE_CHOICES = (
@@ -254,10 +252,90 @@ class PersonnelForm(forms.ModelForm):
         model = Personnel
         fields = ['nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif']
 
+class TypeMaterielForm(forms.ModelForm):
+    icone = forms.ChoiceField(choices=(), required=False, label="Icône")
+
+    class Meta:
+        model = TypeMateriel
+        fields = ["nom", "icone", "actif"]
+        widgets = {
+            'nom': forms.TextInput(attrs={'placeholder': 'Pelles sur chenilles à godet'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        choix = choix_icones()
+        courant = self.instance.icone if self.instance and self.instance.pk else ""
+        if courant and courant not in {valeur for valeur, libelle in choix}:
+            choix.append((courant, f"{courant} (fichier introuvable)"))
+        self.fields["icone"].choices = choix
+
 class MaterielForm(forms.ModelForm):
     class Meta:
         model = Materiel
-        fields = ['designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif']
+        fields = ["designation", "type_materiel", "immatriculation",
+                  "unite", "prix_unitaire", "actif"]
+        widgets = {
+            'designation': forms.TextInput(attrs={'placeholder': 'Pelle CAT 320D'}),
+            'immatriculation': forms.TextInput(attrs={'placeholder': 'N° de série'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        type_id = self.instance.type_materiel_id if self.instance and self.instance.pk else None
+        if type_id:
+            qs = TypeMateriel.objects.filter(Q(actif=True) | Q(pk=type_id))
+        else:
+            qs = TypeMateriel.objects.filter(actif=True)
+        champ = self.fields["type_materiel"]
+        champ.queryset = qs.order_by("nom")
+        champ.required = False
+        champ.empty_label = "— Non défini —"
+        if type_id:
+            self.initial["type_materiel"] = type_id
+
+
+class AtelierForm(forms.ModelForm):
+    class Meta:
+        model = Atelier
+        fields = ['code', 'libelle', 'description', 'actif']
+        widgets = {
+            'code': forms.TextInput(attrs={'placeholder': '01'}),
+            'libelle': forms.TextInput(attrs={'placeholder': 'Terrassements généraux'}),
+            'description': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def clean_code(self):
+        return (self.cleaned_data['code'] or '').strip().zfill(2)
+
+
+class AffectationRessourceForm(forms.ModelForm):
+    class Meta:
+        model = AffectationRessource
+        fields = ['atelier', 'materiel', 'date_debut', 'date_fin', 'commentaire']
+        widgets = {
+            'date_debut': forms.DateInput(attrs={'type': 'date'}),
+            'date_fin': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['atelier'].queryset = Atelier.objects.filter(actif=True).order_by('code')
+        self.fields['materiel'].queryset = (
+            Materiel.objects.filter(actif=True)
+            .select_related('type_materiel').order_by('designation')
+        )
+        for nom in ('date_debut', 'date_fin'):
+            valeur = getattr(self.instance, nom, None)
+            if valeur:
+                self.initial[nom] = valeur.strftime('%Y-%m-%d')
+
+    def clean(self):
+        cleaned = super().clean()
+        debut, fin = cleaned.get('date_debut'), cleaned.get('date_fin')
+        if debut and fin and fin < debut:
+            self.add_error('date_fin', "La date de fin ne peut précéder la date de début.")
+        return cleaned
 
 class TransportForm(forms.ModelForm):
     class Meta:
@@ -283,7 +361,6 @@ class FournitureForm(forms.ModelForm):
     class Meta:
         model = Fourniture
         fields = ['designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
-
 
 class TacheForm(forms.ModelForm):
     class Meta:
@@ -755,7 +832,6 @@ class SituationMensuelleForm(forms.ModelForm):
                 self.add_error('mois', 'Une situation existe déjà pour cette période.')
         return cleaned_data
 
-
 class RecetteSituationMensuelleForm(forms.ModelForm):
     montant = FrenchDecimalField(
         max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
@@ -775,7 +851,6 @@ class RecetteSituationMensuelleForm(forms.ModelForm):
     def clean_montant(self):
         return self.cleaned_data['montant'] or Decimal('0.00')
 
-
 class DocumentSituationMensuelleForm(forms.ModelForm):
     class Meta:
         model = DocumentSituationMensuelle
@@ -794,7 +869,6 @@ class DocumentSituationMensuelleForm(forms.ModelForm):
         fichier.seek(0)
         self.checksum = digest.hexdigest()
         return fichier
-
 
 class DocumentSituationMensuelleBaseFormSet(BaseInlineFormSet):
     def clean(self):
@@ -937,23 +1011,28 @@ StockRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier, StockRapportJournalier,
     form=StockRapportJournalierForm, extra=0, can_delete=True,
 )
+
 DepenseSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, DepenseSituationMensuelle,
     form=DepenseSituationMensuelleForm, formset=DepenseSituationMensuelleBaseFormSet,
     extra=0, can_delete=True,
 )
+
 StockSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, StockSituationMensuelle,
     form=StockSituationMensuelleForm, extra=0, can_delete=True,
 )
+
 RecetteSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, RecetteSituationMensuelle,
     form=RecetteSituationMensuelleForm, extra=0, can_delete=False,
 )
+
 RecetteSituationMensuelleInitialFormSet = forms.inlineformset_factory(
     SituationMensuelle, RecetteSituationMensuelle,
     form=RecetteSituationMensuelleForm, extra=3, can_delete=False,
 )
+
 DocumentSituationMensuelleFormSet = forms.inlineformset_factory(
     SituationMensuelle, DocumentSituationMensuelle,
     form=DocumentSituationMensuelleForm, formset=DocumentSituationMensuelleBaseFormSet,

@@ -25,6 +25,10 @@
         .summary-item { border: 1px solid var(--line); background: #f1f7f8; padding: 12px; }
         .summary-item strong { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
         .summary-item span { display: block; margin-top: 6px; color: var(--ink); font-size: 18px; font-weight: 700; }
+
+        /* NOUVEAU : conteneur scrollable pour les tableaux */
+        .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
         table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; }
         th { background: var(--head); color: #376b82; font-size: 11px; letter-spacing: .04em; text-align: left; text-transform: uppercase; }
         th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
@@ -52,9 +56,31 @@
         .results-row { display: flex; justify-content: space-between; gap: 20px; border-top: 1px solid var(--line); padding: 9px 0; }
         .results-row:first-of-type { border-top: 0; }
         .results-row strong:last-child { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-        
-        @media (max-width: 700px) { .paper { margin: 0; padding: 24px 18px; } .toolbar { margin: 12px 18px; } .document-header { display: block; } .meta { margin-top: 14px; text-align: left; } .summary { grid-template-columns: 1fr; } table { font-size: 12px; } th, td { padding: 7px 5px; } }
-        @media print { @page { size: A4; margin: 14mm; } body { background: #fff; } .toolbar { display: none !important; } .is-summary .detail-row { display: table-row !important; } .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; } h2 { break-after: avoid; } table { break-inside: avoid; } }
+
+        @media (max-width: 700px) {
+            .paper { margin: 0; padding: 24px 12px; }
+            .toolbar { margin: 12px 12px; flex-wrap: wrap; }
+            .document-header { display: block; }
+            .meta { margin-top: 14px; text-align: left; }
+            .summary { grid-template-columns: 1fr; }
+            table { font-size: 12px; }
+            th, td { padding: 7px 6px; }
+            /* Sur mobile, on garde un tableau lisible : le scroll horizontal prend le relais */
+            .charges-table { min-width: 640px; }
+        }
+
+        @media print {
+            @page { size: A4; margin: 14mm; }
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            /* CORRECTION : on ne force plus l'affichage des detail-row.
+               L'impression respecte l'état résumé/détail choisi par l'utilisateur. */
+            .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; }
+            h2 { break-after: avoid; }
+            table { break-inside: avoid; }
+            .table-wrap { overflow: visible !important; }
+            .charges-table { min-width: 0 !important; }
+        }
     </style>
 </head>
 <body>
@@ -78,10 +104,12 @@
 
         <section>
             <div class="section-heading revenue-heading"><h2>Chiffre d'affaires</h2></div>
-            <table>
-                <thead><tr><th>Rubrique</th><th class="amount">Montant (DH)</th></tr></thead>
-                <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}</td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
-            </table>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Rubrique</th><th class="amount">Montant (DH)</th></tr></thead>
+                    <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}</td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
+                </table>
+            </div>
         </section>
 
         <section>
@@ -89,74 +117,74 @@
                 <h2>Charges</h2>
                 <span class="charges-total">Total charges : {{ situation.total_depenses|floatformat:'2g' }} DH</span>
             </div>
-            <table class="charges-table">
-                <thead>
-                    <tr>
-                        <th style="width:36%;">Désignation</th>
-                        <th class="amount" style="width:16%;">Montant (DH)</th>
-                        <th class="amount" style="width:16%;">Cession entrante</th>
-                        <th class="amount" style="width:16%;">Cession sortante</th>
-                        <th class="amount" style="width:16%;">Total (DH)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- 1. D'abord les catégories de dépenses -->
-                    {% for categorie, label, depenses, total in depenses_par_categorie %}
-                        <tr class="category-row">
+            <div class="table-wrap">
+                <table class="charges-table">
+                    <thead>
+                        <tr>
+                            <th style="width:36%;">Désignation</th>
+                            <th class="amount" style="width:16%;">Montant (DH)</th>
+                            <th class="amount" style="width:16%;">Cession entrante</th>
+                            <th class="amount" style="width:16%;">Cession sortante</th>
+                            <th class="amount" style="width:16%;">Total (DH)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 1. D'abord les catégories de dépenses -->
+                        {% for categorie, label, depenses, total in depenses_par_categorie %}
+                            <tr class="category-row">
+                                <td colspan="5">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                        <span class="category">{{ label }}</span>
+                                        <span class="category-total-amount">{{ total|floatformat:'2g' }} DH</span>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% for depense in depenses %}
+                                {% if depense.montant_base != 0 or depense.cession_entrante != 0 or depense.cession_sortante != 0 %}
+                                <tr class="detail-row">
+                                    <td>{{ depense.designation }}</td>
+                                    <td class="amount">{{ depense.montant_base|floatformat:'2g' }}</td>
+                                    <td class="amount">{{ depense.cession_entrante|floatformat:'2g' }}</td>
+                                    <td class="amount">{{ depense.cession_sortante|floatformat:'2g' }}</td>
+                                    <td class="amount">{{ depense.montant|floatformat:'2g' }}</td>
+                                </tr>
+                                {% endif %}
+                            {% empty %}
+                                <tr>
+                                    <td colspan="5" style="font-style: italic; color: #617786;">
+                                        Aucune charge enregistrée pour {{ label }}.
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+
+                        <!-- 2. Ensuite l'état des stocks comme une catégorie -->
+                        <tr class="stock-category-row">
                             <td colspan="5">
                                 <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                    <span class="category">{{ label }}</span>
-                                    <span class="category-total-amount">{{ total|floatformat:'2g' }} DH</span>
+                                    <span class="category">État des stocks</span>
+                                    <span class="category-total-amount">{{ situation.total_stock|floatformat:'2g' }} DH</span>
                                 </div>
                             </td>
                         </tr>
-                        {% for depense in depenses %}
-                            {% if depense.montant_base != 0 or depense.cession_entrante != 0 or depense.cession_sortante != 0 %}
-                            <tr class="detail-row">
-                                <td>{{ depense.designation }}</td>
-                                <td class="amount">{{ depense.montant_base|floatformat:'2g' }}</td>
-                                <td class="amount">{{ depense.cession_entrante|floatformat:'2g' }}</td>
-                                <td class="amount">{{ depense.cession_sortante|floatformat:'2g' }}</td>
-                                <td class="amount">{{ depense.montant|floatformat:'2g' }}</td>
+                        {% for stock in stocks %}
+                            <tr class="detail-row stock-detail-row">
+                                <td>{{ stock.designation }}</td>
+                                <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
+                                <td class="amount"></td>
+                                <td class="amount"></td>
+                                <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
                             </tr>
-                            {% endif %}
                         {% empty %}
                             <tr>
                                 <td colspan="5" style="font-style: italic; color: #617786;">
-                                    Aucune charge enregistrée pour {{ label }}.
+                                    Aucun mouvement de stock enregistré.
                                 </td>
                             </tr>
                         {% endfor %}
-                    {% endfor %}
-
-                    <!-- 2. Ensuite l'état des stocks comme une catégorie -->
-                    <tr class="stock-category-row">
-                        <td colspan="5">
-                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                <span class="category">État des stocks</span>
-                                <span class="category-total-amount">{{ situation.total_stock|floatformat:'2g' }} DH</span>
-                            </div>
-                        </td>
-                    </tr>
-                    {% for stock in stocks %}
-                        <tr class="detail-row stock-detail-row">
-                            <td>{{ stock.designation }}</td>
-                            <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
-                            <td class="amount"></td>
-                            <td class="amount"></td>
-                            <td class="amount">{{ stock.valeur|floatformat:'2g' }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" style="font-style: italic; color: #617786;">
-                                Aucun mouvement de stock enregistré.
-                            </td>
-                        </tr>
-                    {% endfor %}
-
-
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </section>
 
         <section class="results-box">

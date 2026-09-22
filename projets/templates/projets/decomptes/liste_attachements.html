@@ -319,13 +319,16 @@
                                 {{ attachement.date_fin_periode|date:"d/m/Y" }}
                             </td>
                             <td class="px-2 py-4 whitespace-nowrap">
-                                <span class="statut-badge 
-                                    {% if attachement.statut == 'Validé' %}bg-green-900 text-green-300
-                                    {% elif attachement.statut == 'En attente' %}bg-yellow-900 text-yellow-300
-                                    {% elif attachement.statut == 'Rejeté' %}bg-red-900 text-red-300
-                                    {% else %}bg-gray-700 text-gray-300{% endif %}">
-                                    {{ attachement.statut }}
-                                </span>
+                                <a href="{% url 'projets:validation_attachement' attachement.id %}">
+                                    <span class="statut-badge hover:text-cyan-400 bg-blue-900
+                                        {% if attachement.statut == 'Validé' %}bg-green-900 text-green-300
+                                        {% elif attachement.statut == 'En attente' %}bg-yellow-900 text-yellow-300
+                                        {% elif attachement.statut == 'Rejeté' %}bg-red-900 text-red-300
+                                        {% else %}bg-gray-700 text-gray-300{% endif %}"
+                                        title="Consulter la validation de cet attachement">
+                                        {{ attachement.statut }}
+                                    </span>
+                                </a>
                             </td>
                             <td class="px-2 py-4 whitespace-nowrap montant-cell">
                                 {{ attachement.total_montant_ht|format_quantity }}
