@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Matériels – {{ atelier.libelle }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2E2E2E;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 50;
+            width: 95%;
+            max-width: 36rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+<div class="max-w-7xl mx-auto">
+    <!-- En-tête -->
+    <div class="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+        <div>
+            <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-truck-monster"></i>
+                Matériels de l'atelier {{ atelier.code }} – {{ atelier.libelle }}
+            </h1>
+            <p class="text-sm text-gray-400">
+                Projet : <span class="text-cyan-300">{{ projet.nom }}</span>
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'projets:ateliers_projet' projet.id %}"
+               class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour aux ateliers
+            </a>
+            <button type="button" data-add-affectation-button
+                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-plus"></i> Affecter un matériel
+            </button>
+        </div>
+    </div>
+
+    <!-- Tableau des affectations -->
+    {% if affectations %}
+    <div class="bg-gray-800 p-2 overflow-x-auto rounded-lg">
+        <table class="min-w-full bg-[#2E2E2E]" id="affectationsTable">
+            <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left">Matériel</th>
+                    <th class="px-4 py-3 text-left">Type</th>
+                    <th class="px-4 py-3 text-left">Date début</th>
+                    <th class="px-4 py-3 text-left">Date fin</th>
+                    <th class="px-4 py-3 text-left">Commentaire</th>
+                    <th class="px-4 py-3 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-gray-800 divide-y divide-green-800">
+                {% for aff in affectations %}
+                <tr class="text-[#AECBD6]">
+                    <td class="px-4 py-3 font-medium text-white">{{ aff.materiel.designation }}</td>
+                    <td class="px-4 py-3">
+                        {% if aff.materiel.type_materiel %}
+                            <span class="inline-flex items-center gap-2">
+                                {% if aff.materiel.type_materiel.icone %}
+                                    <img src="{% static aff.materiel.type_materiel.icone_path %}"
+                                         alt="{{ aff.materiel.type_materiel.nom }}"
+                                         class="h-6 w-6 object-contain bg-white rounded p-0.5">
+                                {% endif %}
+                                <span class="text-green-300 text-sm">{{ aff.materiel.type_materiel.nom }}</span>
+                            </span>
+                        {% else %}
+                            <span class="text-gray-500 italic text-sm">— Non défini —</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3">{{ aff.date_debut|date:"d/m/Y" }}</td>
+                    <td class="px-4 py-3">
+                        {% if aff.date_fin %}
+                            {{ aff.date_fin|date:"d/m/Y" }}
+                        {% else %}
+                            <span class="text-cyan-300 italic">En cours</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-400">
+                        {{ aff.commentaire|default:"—"|truncatechars:60 }}
+                    </td>
+                    <td class="px-4 py-3 text-center space-x-3">
+                        <button type="button"
+                                data-edit-affectation-button
+                                data-id="{{ aff.id }}"
+                                data-materiel-id="{{ aff.materiel_id }}"
+                                data-date-debut="{{ aff.date_debut|date:'Y-m-d' }}"
+                                data-date-fin="{{ aff.date_fin|date:'Y-m-d' }}"
+                                data-commentaire="{{ aff.commentaire }}"
+                                class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <a href="{% url 'projets:supprimer_affectation' projet.id atelier.id aff.id %}"
+                           class="text-red-500 hover:text-red-400 transition" title="Retirer">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-6 bg-green-900/50 text-green-200 rounded-lg shadow border border-green-700 text-center">
+        <i class="fas fa-inbox text-3xl mb-2"></i>
+        <p class="text-base md:text-lg">Aucun matériel affecté à cet atelier.</p>
+        <p class="text-sm text-green-300 mt-2">Cliquez sur « Affecter un matériel » pour commencer.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal d'ajout d'affectation -->
+<div id="addAffectationModal" class="modal" role="dialog" aria-modal="true">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Affecter un matériel
+            </h3>
+            <button type="button" onclick="closeAddAffectationModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="addAffectationForm" method="POST"
+              action="{% url 'projets:ajouter_affectation' projet.id atelier.id %}"
+              class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addMateriel" class="block text-sm font-medium text-green-300 mb-1">Matériel</label>
+                <select id="addMateriel" name="materiel" required
+                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <option value="">— Sélectionner un matériel —</option>
+                    {% for m in materiels_disponibles %}
+                        <option value="{{ m.id }}">{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="materiel">Veuillez choisir un matériel.</div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label for="addDateDebut" class="block text-sm font-medium text-green-300 mb-1">Date de début</label>
+                    <input type="date" id="addDateDebut" name="date_debut" required
+                           class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="date_debut">Veuillez saisir une date de début.</div>
+                </div>
+                <div>
+                    <label for="addDateFin" class="block text-sm font-medium text-green-300 mb-1">Date de fin (optionnel)</label>
+                    <input type="date" id="addDateFin" name="date_fin"
+                           class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="date_fin"></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="addCommentaire" class="block text-sm font-medium text-green-300 mb-1">Commentaire</label>
+                <textarea id="addCommentaire" name="commentaire" rows="2"
+                          class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                          placeholder="Optionnel..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddAffectationModal()"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Affecter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification d'affectation -->
+<div id="editAffectationModal" class="modal" role="dialog" aria-modal="true">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier l'affectation
+            </h3>
+            <button type="button" onclick="closeEditAffectationModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="editAffectationForm" method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="editAffectationId" name="id">
+            <div class="mb-3">
+                <label for="editMateriel" class="block text-sm font-medium text-green-300 mb-1">Matériel</label>
+                <select id="editMateriel" name="materiel" required
+                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    {% for m in materiels_disponibles %}
+                        <option value="{{ m.id }}">{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}</option>
+                    {% endfor %}
+                </select>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="materiel"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label for="editDateDebut" class="block text-sm font-medium text-green-300 mb-1">Date de début</label>
+                    <input type="date" id="editDateDebut" name="date_debut" required
+                           class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="date_debut"></div>
+                </div>
+                <div>
+                    <label for="editDateFin" class="block text-sm font-medium text-green-300 mb-1">Date de fin (optionnel)</label>
+                    <input type="date" id="editDateFin" name="date_fin"
+                           class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="date_fin"></div>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label for="editCommentaire" class="block text-sm font-medium text-green-300 mb-1">Commentaire</label>
+                <textarea id="editCommentaire" name="commentaire" rows="2"
+                          class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditAffectationModal()"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
+
+<script>
+    // ============================================================
+    // Ouverture / fermeture des modals
+    // ============================================================
+    function openAddAffectationModal() {
+        document.getElementById('addAffectationModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+        // Pré-remplir la date du jour
+        const today = new Date().toISOString().split('T')[0];
+        if (!document.getElementById('addDateDebut').value) {
+            document.getElementById('addDateDebut').value = today;
+        }
+    }
+
+    function openEditAffectationModal(id, materielId, dateDebut, dateFin, commentaire) {
+        document.getElementById('editAffectationId').value = id;
+        document.getElementById('editMateriel').value = materielId;
+        document.getElementById('editDateDebut').value = dateDebut;
+        document.getElementById('editDateFin').value = dateFin || '';
+        document.getElementById('editCommentaire').value = commentaire || '';
+        document.getElementById('editAffectationModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeAddAffectationModal() {
+        document.getElementById('addAffectationModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addAffectationForm').reset();
+        hideAllErrors('addAffectationForm');
+    }
+
+    function closeEditAffectationModal() {
+        document.getElementById('editAffectationModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        hideAllErrors('editAffectationForm');
+    }
+
+    function closeAllModals() {
+        closeAddAffectationModal();
+        closeEditAffectationModal();
+    }
+
+    // ============================================================
+    // Gestion des erreurs
+    // ============================================================
+    function hideAllErrors(formId) {
+        document.querySelectorAll(`#${formId} .invalid-feedback`).forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll(`#${formId} input, #${formId} select, #${formId} textarea`).forEach(el => el.classList.remove('border-red-500'));
+    }
+
+    function showFieldError(formId, fieldName, message) {
+        const input = document.querySelector(`#${formId} [name="${fieldName}"]`);
+        const feedback = document.querySelector(`#${formId} [data-error-for="${fieldName}"]`);
+        if (input) input.classList.add('border-red-500');
+        if (feedback) {
+            if (message) feedback.textContent = message;
+            feedback.classList.remove('hidden');
+        }
+    }
+
+    function showServerErrors(formId, errors) {
+        hideAllErrors(formId);
+        if (!errors) return;
+        Object.keys(errors).forEach(field => {
+            const messages = errors[field].map(e => e.message || e).join(' ');
+            showFieldError(formId, field, messages);
+        });
+    }
+
+    // ============================================================
+    // Notifications
+    // ============================================================
+    function showSuccessMessage(message) {
+        const el = document.createElement('div');
+        el.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-green-800 text-green-200 rounded-lg shadow-lg max-w-sm';
+        el.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 3000);
+    }
+
+    function showErrorMessage(message) {
+        const el = document.createElement('div');
+        el.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-red-800 text-red-100 rounded-lg shadow-lg max-w-sm';
+        el.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${message}`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 5000);
+    }
+
+    // ============================================================
+    // CSRF
+    // ============================================================
+    function getCsrfToken() {
+        const input = document.querySelector('#addAffectationForm [name=csrfmiddlewaretoken]')
+                   || document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input) return input.value;
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+    }
+
+    // ============================================================
+    // Délégation d'événements
+    // ============================================================
+    document.addEventListener('click', function(e) {
+        // Bouton "Affecter"
+        if (e.target.matches('[data-add-affectation-button]') || e.target.closest('[data-add-affectation-button]')) {
+            e.preventDefault();
+            openAddAffectationModal();
+            return;
+        }
+
+        // Bouton "Modifier"
+        if (e.target.matches('[data-edit-affectation-button]') || e.target.closest('[data-edit-affectation-button]')) {
+            const button = e.target.matches('[data-edit-affectation-button]') ? e.target : e.target.closest('[data-edit-affectation-button]');
+            openEditAffectationModal(
+                button.getAttribute('data-id'),
+                button.getAttribute('data-materiel-id'),
+                button.getAttribute('data-date-debut'),
+                button.getAttribute('data-date-fin'),
+                button.getAttribute('data-commentaire'),
+            );
+            return;
+        }
+
+        // Suppression (lien)
+        if (e.target.matches('a[href*="/supprimer/"]') || e.target.closest('a[href*="/supprimer/"]')) {
+            const link = e.target.matches('a[href*="/supprimer/"]') ? e.target : e.target.closest('a[href*="/supprimer/"]');
+            e.preventDefault();
+            if (!confirm('Retirer ce matériel de l\'atelier ?')) return;
+
+            fetch(link.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage(data.message || 'Affectation retirée.');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showErrorMessage(data.message || 'Erreur lors de la suppression.');
+                }
+            })
+            .catch(error => {
+                console.error('Delete affectation error:', error);
+                showErrorMessage('Une erreur est survenue lors de la suppression.');
+            });
+        }
+    });
+
+    // Fermer avec Échap
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeAllModals();
+    });
+
+    // ============================================================
+    // Soumission des formulaires
+    // ============================================================
+    document.getElementById('addAffectationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleAddAffectation(e.target);
+    });
+
+    document.getElementById('editAffectationForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleEditAffectation(e.target);
+    });
+
+    function handleAddAffectation(form) {
+        const materielInput = document.getElementById('addMateriel');
+        const dateDebutInput = document.getElementById('addDateDebut');
+        hideAllErrors('addAffectationForm');
+
+        let isValid = true;
+        if (!materielInput.value) {
+            showFieldError('addAffectationForm', 'materiel', 'Veuillez choisir un matériel.');
+            isValid = false;
+        }
+        if (!dateDebutInput.value) {
+            showFieldError('addAffectationForm', 'date_debut', 'Veuillez saisir une date de début.');
+            isValid = false;
+        }
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const baseUrl = window.location.pathname.replace(/\/$/, ''); // .../materiels
+        const url = baseUrl + '/ajouter/?modal=true';
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+            },
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Server returned non-JSON:', response.status, text);
+                throw new Error(`HTTP ${response.status} - réponse inattendue`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                const err = new Error('Validation échouée');
+                err.data = data;
+                throw err;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                closeAddAffectationModal();
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showServerErrors('addAffectationForm', data.errors);
+                showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
+            }
+        })
+        .catch(error => {
+            console.error('Add affectation error:', error);
+            if (error.data && error.data.errors) {
+                showServerErrors('addAffectationForm', error.data.errors);
+                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+            } else {
+                showErrorMessage("Erreur lors de l'affectation. Voir la console.");
+            }
+        });
+    }
+
+    function handleEditAffectation(form) {
+        const materielInput = document.getElementById('editMateriel');
+        const dateDebutInput = document.getElementById('editDateDebut');
+        hideAllErrors('editAffectationForm');
+
+        let isValid = true;
+        if (!materielInput.value) {
+            showFieldError('editAffectationForm', 'materiel', 'Veuillez choisir un matériel.');
+            isValid = false;
+        }
+        if (!dateDebutInput.value) {
+            showFieldError('editAffectationForm', 'date_debut', 'Veuillez saisir une date de début.');
+            isValid = false;
+        }
+        if (!isValid) return;
+
+        const id = document.getElementById('editAffectationId').value;
+        const formData = new FormData(form);
+        const baseUrl = window.location.pathname.replace(/\/$/, ''); // .../materiels
+        const url = `${baseUrl}/${id}/modifier/?modal=true`;
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+            },
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Server returned non-JSON:', response.status, text);
+                throw new Error(`HTTP ${response.status} - réponse inattendue`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                const err = new Error('Validation échouée');
+                err.data = data;
+                throw err;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                closeEditAffectationModal();
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showServerErrors('editAffectationForm', data.errors);
+                showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
+            }
+        })
+        .catch(error => {
+            console.error('Edit affectation error:', error);
+            if (error.data && error.data.errors) {
+                showServerErrors('editAffectationForm', error.data.errors);
+                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+            } else {
+                showErrorMessage("Erreur lors de la modification. Voir la console.");
+            }
+        });
+    }
+</script>
+</body>
+</html>

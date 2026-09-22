@@ -250,10 +250,109 @@ class EntrepriseForm(forms.ModelForm):
         model = Entreprise
         fields = ['nom', 'contact', 'email', 'telephone', 'adresse']
 
-class PersonnelForm(forms.ModelForm):
+class AffectationRessourceForm(forms.ModelForm):
+    """
+    Formulaire d'affectation d'un matériel à un atelier.
+
+    Le formulaire peut être utilisé dans deux contextes :
+    - En création depuis la page « Matériels de l'atelier » : on passe
+      `atelier=...` et le champ atelier est masqué.
+    - En édition d'une affectation existante : on passe aussi `atelier=...`
+      pour figer l'atelier courant.
+    """
+
     class Meta:
-        model = Personnel
-        fields = ['nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif']
+        model = AffectationRessource
+        fields = ['atelier', 'materiel', 'date_debut', 'date_fin', 'commentaire']
+        widgets = {
+            'date_debut': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'date_fin': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        }
+
+    def __init__(self, *args, atelier=None, **kwargs):
+        self.atelier = atelier
+        super().__init__(*args, **kwargs)
+
+        # Restreindre les ateliers disponibles
+        qs_ateliers = Atelier.objects.filter(actif=True)
+        if atelier:
+            qs_ateliers = Atelier.objects.filter(Q(actif=True) | Q(pk=atelier.pk))
+        self.fields['atelier'].queryset = qs_ateliers.order_by('code')
+        self.fields['atelier'].required = False  # injecté par la vue si absent
+
+        # Restreindre les matériels disponibles : actifs + celui déjà rattaché
+        materiel_id = self.instance.materiel_id if self.instance and self.instance.pk else None
+        qs_materiels = Materiel.objects.filter(actif=True)
+        if materiel_id:
+            qs_materiels = Materiel.objects.filter(Q(actif=True) | Q(pk=materiel_id))
+        self.fields['materiel'].queryset = qs_materiels.select_related('type_materiel').order_by('designation')
+
+        # Pré-remplir les dates au format HTML5
+        for nom in ('date_debut', 'date_fin'):
+            valeur = getattr(self.instance, nom, None)
+            if valeur:
+                self.initial[nom] = valeur.strftime('%Y-%m-%d')
+
+    def clean(self):
+        cleaned = super().clean()
+
+        # 1. Injecter l'atelier courant si non fourni dans les données
+        atelier = cleaned.get('atelier') or self.atelier
+        if not atelier:
+            self.add_error('atelier', "L'atelier est obligatoire.")
+            return cleaned
+        cleaned['atelier'] = atelier
+
+        debut = cleaned.get('date_debut')
+        fin = cleaned.get('date_fin')
+        materiel = cleaned.get('materiel')
+
+        # 2. Cohérence des dates
+        if debut and fin and fin < debut:
+            self.add_error('date_fin', "La date de fin ne peut précéder la date de début.")
+            return cleaned
+
+        # 3. Détection de chevauchement
+        if materiel and debut:
+            qs = AffectationRessource.objects.filter(materiel=materiel)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+
+            # Une période A [d1, f1] chevauche une période B [d2, f2]
+            # si et seulement si : d1 <= f2 AND d2 <= f1
+            # f1 ou f2 = None signifie « jusqu'à nouvel ordre » (infini).
+            #
+            # On traduit :
+            #   - d1 <= f2  : si f2 est None, toujours vrai
+            #   - d2 <= f1  : si f1 est None, toujours vrai
+            for autre in qs:
+                d2 = autre.date_debut
+                f2 = autre.date_fin
+
+                # Condition 1 : notre début <= fin de l'autre
+                cond1 = (f2 is None) or (debut <= f2)
+                # Condition 2 : début de l'autre <= notre fin (ou notre fin infinie)
+                cond2 = (fin is None) or (d2 <= fin)
+
+                if cond1 and cond2:
+                    self.add_error(
+                        'materiel',
+                        f"Ce matériel est déjà affecté à l'atelier "
+                        f"« {autre.atelier.libelle} » du "
+                        f"{d2.strftime('%d/%m/%Y')} au "
+                        f"{f2.strftime('%d/%m/%Y') if f2 else 'nouvel ordre'}."
+                    )
+                    break
+
+        return cleaned
+
+    def save(self, commit=True):
+        affectation = super().save(commit=False)
+        if not affectation.atelier_id and self.atelier:
+            affectation.atelier = self.atelier
+        if commit:
+            affectation.save()
+        return affectation
 
 class TypeMaterielForm(forms.ModelForm):
     icone = forms.ChoiceField(choices=(), required=False, label="Icône")
@@ -330,34 +429,6 @@ class AtelierForm(forms.ModelForm):
         if commit:
             atelier.save()
         return atelier
-
-class AffectationRessourceForm(forms.ModelForm):
-    class Meta:
-        model = AffectationRessource
-        fields = ['atelier', 'materiel', 'date_debut', 'date_fin', 'commentaire']
-        widgets = {
-            'date_debut': forms.DateInput(attrs={'type': 'date'}),
-            'date_fin': forms.DateInput(attrs={'type': 'date'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields['atelier'].queryset = Atelier.objects.filter(actif=True).order_by('code')
-        self.fields['materiel'].queryset = (
-            Materiel.objects.filter(actif=True)
-            .select_related('type_materiel').order_by('designation')
-        )
-        for nom in ('date_debut', 'date_fin'):
-            valeur = getattr(self.instance, nom, None)
-            if valeur:
-                self.initial[nom] = valeur.strftime('%Y-%m-%d')
-
-    def clean(self):
-        cleaned = super().clean()
-        debut, fin = cleaned.get('date_debut'), cleaned.get('date_fin')
-        if debut and fin and fin < debut:
-            self.add_error('date_fin', "La date de fin ne peut précéder la date de début.")
-        return cleaned
 
 class TransportForm(forms.ModelForm):
     class Meta:

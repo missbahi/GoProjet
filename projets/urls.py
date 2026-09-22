@@ -169,10 +169,16 @@ base_donnees_urlpatterns = [
 
 # Gestion des ateliers rattachés à un projet
 atelier_urlpatterns = [
+    # Gestion des ateliers
     path('projet/<int:projet_id>/ateliers/', atelier_views.ateliers_projet, name='ateliers_projet'),
     path('projet/<int:projet_id>/ateliers/ajouter/', atelier_views.ajouter_atelier, name='ajouter_atelier'),
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/modifier/', atelier_views.modifier_atelier, name='modifier_atelier'),
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/supprimer/', atelier_views.supprimer_atelier, name='supprimer_atelier'),
+    # Gestion des matériels affectés à un atelier
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/', atelier_views.materiels_atelier, name='materiels_atelier'),
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/ajouter/', atelier_views.ajouter_affectation, name='ajouter_affectation'),
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/<int:affectation_id>/modifier/', atelier_views.modifier_affectation, name='modifier_affectation'),
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/<int:affectation_id>/supprimer/', atelier_views.supprimer_affectation, name='supprimer_affectation'),
 ]
 
 # Gestion des taches

@@ -7,8 +7,8 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from projets.decorators import chef_projet_required
-from projets.forms import AtelierForm
-from projets.models import Atelier, Projet
+from projets.forms import AffectationRessourceForm, AtelierForm
+from projets.models import AffectationRessource, Atelier, Materiel, Projet
 
 
 # ============================================================
@@ -132,3 +132,121 @@ def supprimer_atelier(request, projet_id, atelier_id):
         })
     messages.success(request, f"Atelier « {libelle} » supprimé avec succès.")
     return redirect('projets:ateliers_projet', projet_id=projet.id)
+
+
+# ============================================================
+# Gestion des matériels affectés à un atelier
+# ============================================================
+
+@chef_projet_required
+def materiels_atelier(request, projet_id, atelier_id):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+    projet = get_object_or_404(Projet, id=projet_id)
+    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+    affectations = (
+        AffectationRessource.objects
+        .filter(atelier=atelier)
+        .select_related('materiel', 'materiel__type_materiel')
+        .order_by('-date_debut', 'materiel__designation')
+    )
+    materiels_disponibles = (
+        Materiel.objects.filter(actif=True)
+        .select_related('type_materiel')
+        .order_by('designation')
+    )
+    return render(request, 'projets/ateliers/materiels.html', {
+        'projet': projet,
+        'atelier': atelier,
+        'affectations': affectations,
+        'materiels_disponibles': materiels_disponibles,
+    })
+
+@chef_projet_required
+def ajouter_affectation(request, projet_id, atelier_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+
+    if request.method == 'POST':
+        form = AffectationRessourceForm(request.POST, atelier=atelier)
+        if form.is_valid():
+            affectation = form.save()
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': True,
+                    'message': f"Matériel « {affectation.materiel.designation} » affecté à l'atelier.",
+                })
+            messages.success(request, f"Matériel « {affectation.materiel.designation} » affecté.")
+            return redirect('projets:materiels_atelier', projet_id=projet.id, atelier_id=atelier.id)
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse(
+                {'success': False, 'errors': form.errors.get_json_data()},
+                status=400,
+            )
+    else:
+        form = AffectationRessourceForm(atelier=atelier)
+
+    return render(request, 'projets/ateliers/materiels.html', {
+        'projet': projet,
+        'atelier': atelier,
+        'form': form,
+    })
+
+
+@chef_projet_required
+def modifier_affectation(request, projet_id, atelier_id, affectation_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+    affectation = get_object_or_404(AffectationRessource, id=affectation_id, atelier=atelier)
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+
+    form = AffectationRessourceForm(request.POST, instance=affectation, atelier=atelier)
+
+    if form.is_valid():
+        affectation = form.save()
+        if request.GET.get('modal') == 'true':
+            return JsonResponse({
+                'success': True,
+                'message': f"Affectation de « {affectation.materiel.designation} » modifiée.",
+            })
+        messages.success(request, "Affectation modifiée avec succès.")
+        return redirect('projets:materiels_atelier', projet_id=projet.id, atelier_id=atelier.id)
+
+    if request.GET.get('modal') == 'true':
+        return JsonResponse(
+            {'success': False, 'errors': form.errors.get_json_data()},
+            status=400,
+        )
+
+    materiels_disponibles = (
+        Materiel.objects.filter(actif=True)
+        .select_related('type_materiel')
+        .order_by('designation')
+    )
+    return render(request, 'projets/ateliers/materiels.html', {
+        'projet': projet,
+        'atelier': atelier,
+        'form': form,
+        'affectation': affectation,
+        'materiels_disponibles': materiels_disponibles,
+    })
+
+@chef_projet_required
+def supprimer_affectation(request, projet_id, atelier_id, affectation_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+    affectation = get_object_or_404(AffectationRessource, id=affectation_id, atelier=atelier)
+    designation = affectation.materiel.designation
+
+    affectation.delete()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': f"Affectation de « {designation} » retirée avec succès.",
+        })
+    messages.success(request, f"Affectation de « {designation} » retirée avec succès.")
+    return redirect('projets:materiels_atelier', projet_id=projet.id, atelier_id=atelier.id)
