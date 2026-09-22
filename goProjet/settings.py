@@ -171,7 +171,7 @@ STATICFILES_DIRS = [
 ]
 
 # Whitenoise pour les statiques
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' 
 
 # --- 11. FICHIERS MÉDIA ---
 MEDIA_URL = '/media/'
@@ -256,14 +256,23 @@ if PWA_CONFIG['ENABLED']:
     
 else:
     print("ℹ️ PWA désactivée")
-    
+
 # --- 13. CONFIGURATION DU STOCKAGE ---
 
-DEFAULT_FILE_STORAGE = 'django.core.files.storage.FileSystemStorage'
+# Backends par défaut (utilisés si R2 n'est pas activé)
+# En Django 4.2+, c'est STORAGES qui fait foi (DEFAULT_FILE_STORAGE
+# et STATICFILES_STORAGE sont obsolètes).
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
+
 MEDIA_ROOT.mkdir(exist_ok=True)
 
-# Priorité V2: si R2 est activé et correctement configuré,
-# on force le backend par défaut pour les FileField documents.
 R2_IS_CONFIGURED = all([
     R2_ACCESS_KEY_ID,
     R2_SECRET_ACCESS_KEY,
@@ -283,15 +292,12 @@ if USE_R2_DOCUMENTS and R2_IS_CONFIGURED:
     AWS_S3_SIGNATURE_VERSION = 's3v4'
     AWS_S3_ADDRESSING_STYLE = 'virtual'
 
-    STORAGES = {
-        'default': {
-            'BACKEND': 'storages.backends.s3.S3Storage',
-        },
-        'staticfiles': {
-            'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
-        },
+    # Seul le stockage des médias change. staticfiles reste WhiteNoise.
+    STORAGES['default'] = {
+        'BACKEND': 'storages.backends.s3.S3Storage',
     }
     print("✅ Stockage R2 activé pour les documents FileField")
+
 elif USE_R2_DOCUMENTS:
     print("⚠️ USE_R2_DOCUMENTS=true mais configuration R2 incomplète: fallback stockage existant")
     if not DEBUG:
@@ -299,8 +305,8 @@ elif USE_R2_DOCUMENTS:
             'R2 est obligatoire en production lorsque USE_R2_DOCUMENTS=true. '
             'Vérifiez les variables R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, '
             'R2_BUCKET_NAME et R2_ENDPOINT_URL.'
-        )
-    
+        )    
+
 SECURE_SSL_REDIRECT = False
 
 # IMPORTANT: Railway fournit SSL, donc nous devons dire à Django qu'il est derrière un proxy
