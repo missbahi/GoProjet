@@ -12,6 +12,7 @@ from .views.os_views import views as os_views
 from .views.lot_views import views as lot_views
 from .views.suivi_views import views as suivi_views
 from .views.attachement_views import views as attachement_views
+from .views.atelier_views import views as atelier_views
 from django.views.generic import TemplateView
 
 app_name = "projets"
@@ -166,6 +167,14 @@ base_donnees_urlpatterns = [
     path('base_donnees/types-materiel/', data_views.partial_types_materiel, name='partial_types_materiel'),
 ]
 
+# Gestion des ateliers rattachés à un projet
+atelier_urlpatterns = [
+    path('projet/<int:projet_id>/ateliers/', atelier_views.ateliers_projet, name='ateliers_projet'),
+    path('projet/<int:projet_id>/ateliers/ajouter/', atelier_views.ajouter_atelier, name='ajouter_atelier'),
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/modifier/', atelier_views.modifier_atelier, name='modifier_atelier'),
+    path('projet/<int:projet_id>/ateliers/<int:atelier_id>/supprimer/', atelier_views.supprimer_atelier, name='supprimer_atelier'),
+]
+
 # Gestion des taches
 tache_urlpatterns = [
     path('taches/', task_views.ListeTachesView.as_view(), name='liste_taches'),
@@ -264,6 +273,7 @@ urlpatterns = commun_urlpatterns
 urlpatterns += suivi_urlpatterns
 urlpatterns += projets_urlpatterns
 urlpatterns += base_donnees_urlpatterns
+urlpatterns += atelier_urlpatterns
 urlpatterns += tache_urlpatterns
 urlpatterns += attachement_urlpatterns
 urlpatterns += utilisateur_urlpatterns

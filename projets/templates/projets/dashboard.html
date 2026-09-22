@@ -406,7 +406,6 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
 
         <!-- Lot et Bordereaux -->
-        
         <div class="module-card group">
           <div class="module-icon">
             <i class="fas fa-cubes"></i>
@@ -519,6 +518,32 @@
           <p class="no-data">Aucun rapport journalier pour ce projet</p>
           <a href="{% url 'projets:rapports_journaliers' projet.id %}" class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
             <i class="fas fa-plus"></i><span>Créer le premier rapport</span>
+          </a>
+          {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Ateliers -->
+        {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
+        <div class="module-card group">
+          <div class="module-icon">
+            <i class="fas fa-people-group"></i>
+          </div>
+          <h4 class="module-title">Ateliers</h4>
+          <p class="module-description">Gérez les ateliers (équipes) du chantier et leurs matériels</p>
+          {% if projet.ateliers.exists %}
+          <p class="no-data">{{ projet.ateliers.count }} atelier{{ projet.ateliers.count|pluralize }} enregistré{{ projet.ateliers.count|pluralize }}</p>
+          <div class="module-actions">
+            <a href="{% url 'projets:ateliers_projet' projet.id %}" class="btn-primary w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+              <i class="fas fa-arrow-right"></i>
+              <span>Gérer les ateliers</span>
+            </a>
+          </div>
+          {% else %}
+          <p class="no-data">Aucun atelier enregistré pour ce projet</p>
+          <a href="{% url 'projets:ateliers_projet' projet.id %}" class="btn-success w-full px-3 py-2 md:px-4 md:py-2 rounded-lg font-medium flex items-center gap-2 justify-center text-center btn-responsive">
+            <i class="fas fa-plus"></i>
+            <span>Créer le premier atelier</span>
           </a>
           {% endif %}
         </div>

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ateliers – {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+
+        .active-menu-item {
+            background-color: #107C41;
+            color: white;
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2E2E2E;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            z-index: 50;
+            width: 95%;
+            max-width: 32rem;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+            border: none; color: white;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none; color: white;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+<div class="max-w-7xl mx-auto">
+    <!-- En-tête -->
+    <div class="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <div>
+            <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-people-group"></i>
+                Ateliers – {{ projet.nom }}
+            </h1>
+            <p class="text-sm text-gray-400">Gestion des ateliers (équipes) rattachés à ce projet</p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'projets:dashboard' projet.id %}"
+               class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour au dashboard
+            </a>
+            <button type="button" data-add-atelier-button
+                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-plus"></i> Ajouter un atelier
+            </button>
+        </div>
+    </div>
+
+    <!-- Tableau des ateliers -->
+    {% if ateliers %}
+    <div class="bg-gray-800 p-2 overflow-x-auto rounded-lg">
+        <table class="min-w-full bg-[#2E2E2E]" id="ateliersTable">
+            <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+                <tr>
+                    <th class="px-4 py-3 text-left">Code</th>
+                    <th class="px-4 py-3 text-left">Libellé</th>
+                    <th class="px-4 py-3 text-left">Description</th>
+                    <th class="px-4 py-3 text-center">Matériels</th>
+                    <th class="px-4 py-3 text-center">Actif</th>
+                    <th class="px-4 py-3 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="bg-gray-800 divide-y divide-green-800">
+                {% for atelier in ateliers %}
+                <tr class="text-[#AECBD6]">
+                    <td class="px-4 py-3 font-semibold text-cyan-300">{{ atelier.code }}</td>
+                    <td class="px-4 py-3">{{ atelier.libelle }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-400">
+                        {{ atelier.description|default:"—"|truncatechars:80 }}
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/40 rounded text-xs text-cyan-300">
+                            <i class="fas fa-truck-monster"></i>
+                            {{ atelier.affectations.count }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-center">
+                        {% if atelier.actif %}
+                            <i class="fa-solid fa-circle-check text-green-400"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-xmark text-red-400"></i>
+                        {% endif %}
+                    </td>
+                    <td class="px-4 py-3 text-center space-x-3">
+                        <button type="button"
+                                data-edit-atelier-button
+                                data-id="{{ atelier.id }}"
+                                data-code="{{ atelier.code }}"
+                                data-libelle="{{ atelier.libelle }}"
+                                data-description="{{ atelier.description }}"
+                                data-actif="{{ atelier.actif|yesno:'true,false' }}"
+                                class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <a href="{% url 'projets:supprimer_atelier' projet.id atelier.id %}"
+                           class="text-red-500 hover:text-red-400 transition" title="Supprimer">
+                            <i class="fa-solid fa-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="p-6 bg-green-900/50 text-green-200 rounded-lg shadow border border-green-700 text-center">
+        <i class="fas fa-inbox text-3xl mb-2"></i>
+        <p class="text-base md:text-lg">Aucun atelier enregistré pour ce projet.</p>
+        <p class="text-sm text-green-300 mt-2">Cliquez sur « Ajouter un atelier » pour commencer.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal d'ajout d'atelier -->
+<div id="addAtelierModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addAtelierTitle">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 id="addAtelierTitle" class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un atelier
+            </h3>
+            <button type="button" onclick="closeAddAtelierModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="addAtelierForm" method="POST"
+              action="{% url 'projets:ajouter_atelier' projet.id %}"
+              class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addAtelierCode" class="block text-sm font-medium text-green-300 mb-1">Code</label>
+                <input type="text" id="addAtelierCode" name="code"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="01" required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="code">Veuillez saisir un code.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addAtelierLibelle" class="block text-sm font-medium text-green-300 mb-1">Libellé</label>
+                <input type="text" id="addAtelierLibelle" name="libelle"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Voirie" required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="libelle">Veuillez saisir un libellé.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addAtelierDescription" class="block text-sm font-medium text-green-300 mb-1">Description</label>
+                <textarea id="addAtelierDescription" name="description" rows="2"
+                          class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addAtelierActif" name="actif" checked class="h-4 w-4">
+                <label for="addAtelierActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeAddAtelierModal()"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal de modification d'atelier -->
+<div id="editAtelierModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editAtelierTitle">
+    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 id="editAtelierTitle" class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-pen mr-2"></i>Modifier l'atelier
+            </h3>
+            <button type="button" onclick="closeEditAtelierModal()" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="editAtelierForm" method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <input type="hidden" id="editAtelierId" name="id">
+            <div class="mb-3">
+                <label for="editAtelierCode" class="block text-sm font-medium text-green-300 mb-1">Code</label>
+                <input type="text" id="editAtelierCode" name="code"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="code">Veuillez saisir un code.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editAtelierLibelle" class="block text-sm font-medium text-green-300 mb-1">Libellé</label>
+                <input type="text" id="editAtelierLibelle" name="libelle"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="libelle">Veuillez saisir un libellé.</div>
+            </div>
+            <div class="mb-3">
+                <label for="editAtelierDescription" class="block text-sm font-medium text-green-300 mb-1">Description</label>
+                <textarea id="editAtelierDescription" name="description" rows="2"
+                          class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="editAtelierActif" name="actif" class="h-4 w-4">
+                <label for="editAtelierActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" onclick="closeEditAtelierModal()"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
+
+<script>
+    // ============================================================
+    // Ouverture / fermeture des modals
+    // ============================================================
+    function openAddAtelierModal() {
+        document.getElementById('addAtelierModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function openEditAtelierModal(id, code, libelle, description, actif) {
+        document.getElementById('editAtelierId').value = id;
+        document.getElementById('editAtelierCode').value = code;
+        document.getElementById('editAtelierLibelle').value = libelle;
+        document.getElementById('editAtelierDescription').value = description || '';
+        document.getElementById('editAtelierActif').checked = actif === 'true';
+        document.getElementById('editAtelierModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    }
+
+    function closeAddAtelierModal() {
+        document.getElementById('addAtelierModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('addAtelierForm').classList.remove('was-validated');
+        document.getElementById('addAtelierForm').reset();
+        hideAllErrors('addAtelierForm');
+    }
+
+    function closeEditAtelierModal() {
+        document.getElementById('editAtelierModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editAtelierForm').classList.remove('was-validated');
+        hideAllErrors('editAtelierForm');
+    }
+
+    function closeAllModals() {
+        closeAddAtelierModal();
+        closeEditAtelierModal();
+    }
+
+    // ============================================================
+    // Gestion des erreurs de validation
+    // ============================================================
+    function hideAllErrors(formId) {
+        document.querySelectorAll(`#${formId} .invalid-feedback`).forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll(`#${formId} input, #${formId} textarea`).forEach(el => el.classList.remove('border-red-500'));
+    }
+
+    function showFieldError(formId, fieldName) {
+        const input = document.querySelector(`#${formId} [name="${fieldName}"]`);
+        const feedback = document.querySelector(`#${formId} [data-error-for="${fieldName}"]`);
+        if (input) input.classList.add('border-red-500');
+        if (feedback) feedback.classList.remove('hidden');
+    }
+
+    function showServerErrors(formId, errors) {
+        hideAllErrors(formId);
+        if (!errors) return;
+        Object.keys(errors).forEach(field => {
+            showFieldError(formId, field);
+        });
+    }
+
+    // ============================================================
+    // Message de succès
+    // ============================================================
+    function showSuccessMessage(message) {
+        const successMsg = document.createElement('div');
+        successMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-green-800 text-green-200 rounded-lg shadow-lg max-w-sm';
+        successMsg.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
+        document.body.appendChild(successMsg);
+        setTimeout(() => successMsg.remove(), 3000);
+    }
+
+    function showErrorMessage(message) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-red-800 text-red-100 rounded-lg shadow-lg max-w-sm';
+        errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${message}`;
+        document.body.appendChild(errorMsg);
+        setTimeout(() => errorMsg.remove(), 5000);
+    }
+
+    // ============================================================
+    // Délégation d'événements
+    // ============================================================
+    document.addEventListener('click', function(e) {
+        // Bouton "Ajouter"
+        if (e.target.matches('[data-add-atelier-button]') || e.target.closest('[data-add-atelier-button]')) {
+            e.preventDefault();
+            openAddAtelierModal();
+            return;
+        }
+
+        // Bouton "Modifier"
+        if (e.target.matches('[data-edit-atelier-button]') || e.target.closest('[data-edit-atelier-button]')) {
+            const button = e.target.matches('[data-edit-atelier-button]') ? e.target : e.target.closest('[data-edit-atelier-button]');
+            openEditAtelierModal(
+                button.getAttribute('data-id'),
+                button.getAttribute('data-code'),
+                button.getAttribute('data-libelle'),
+                button.getAttribute('data-description'),
+                button.getAttribute('data-actif'),
+            );
+            return;
+        }
+
+        // Suppression (lien)
+        if (e.target.matches('a[href*="/supprimer/"]') || e.target.closest('a[href*="/supprimer/"]')) {
+            const link = e.target.matches('a[href*="/supprimer/"]') ? e.target : e.target.closest('a[href*="/supprimer/"]');
+            e.preventDefault();
+            if (!confirm('Supprimer cet atelier ?')) return;
+
+            fetch(link.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showSuccessMessage(data.message || 'Atelier supprimé.');
+                    setTimeout(() => window.location.reload(), 800);
+                } else {
+                    showErrorMessage(data.message || 'Erreur lors de la suppression.');
+                }
+            })
+            .catch(error => {
+                console.error('Delete atelier error:', error);
+                showErrorMessage('Une erreur est survenue lors de la suppression.');
+            });
+        }
+    });
+
+    // Fermer avec Échap
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeAllModals();
+    });
+
+    // ============================================================
+    // Récupération du jeton CSRF
+    // ============================================================
+    function getCsrfToken() {
+        // 1. Depuis un champ de formulaire
+        const input = document.querySelector('#addAtelierForm [name=csrfmiddlewaretoken]')
+                   || document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input) return input.value;
+        // 2. Depuis le cookie csrftoken
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+    }
+
+    // ============================================================
+    // Soumission des formulaires
+    // ============================================================
+    document.getElementById('addAtelierForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleAddAtelier(e.target);
+    });
+
+    document.getElementById('editAtelierForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        handleEditAtelier(e.target);
+    });
+
+    function handleAddAtelier(form) {
+        const codeInput = document.getElementById('addAtelierCode');
+        const libelleInput = document.getElementById('addAtelierLibelle');
+        hideAllErrors('addAtelierForm');
+
+        let isValid = true;
+        if (!codeInput.value.trim()) {
+            showFieldError('addAtelierForm', 'code');
+            isValid = false;
+        }
+        if (!libelleInput.value.trim()) {
+            showFieldError('addAtelierForm', 'libelle');
+            isValid = false;
+        }
+        if (!isValid) return;
+
+        const formData = new FormData(form);
+        const baseUrl = window.location.pathname.replace(/\/$/, ''); // .../ateliers
+        const url = baseUrl + '/ajouter/?modal=true';
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+            },
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Server returned non-JSON:', response.status, text);
+                throw new Error(`HTTP ${response.status} - réponse inattendue`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                const err = new Error('Validation échouée');
+                err.data = data;
+                throw err;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                closeAddAtelierModal();
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showServerErrors('addAtelierForm', data.errors);
+                showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
+            }
+        })
+        .catch(error => {
+            console.error('Add atelier error:', error);
+            if (error.data && error.data.errors) {
+                showServerErrors('addAtelierForm', error.data.errors);
+                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+            } else {
+                showErrorMessage("Erreur lors de l'ajout. Voir la console.");
+            }
+        });
+    }
+
+    function handleEditAtelier(form) {
+        const codeInput = document.getElementById('editAtelierCode');
+        const libelleInput = document.getElementById('editAtelierLibelle');
+        hideAllErrors('editAtelierForm');
+
+        let isValid = true;
+        if (!codeInput.value.trim()) {
+            showFieldError('editAtelierForm', 'code');
+            isValid = false;
+        }
+        if (!libelleInput.value.trim()) {
+            showFieldError('editAtelierForm', 'libelle');
+            isValid = false;
+        }
+        if (!isValid) return;
+
+        const id = document.getElementById('editAtelierId').value;
+        const formData = new FormData(form);
+        const baseUrl = window.location.pathname.replace(/\/$/, '');
+        const url = `${baseUrl}/${id}/modifier/?modal=true`;
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+            },
+        })
+        .then(async response => {
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('Server returned non-JSON:', response.status, text);
+                throw new Error(`HTTP ${response.status} - réponse inattendue`);
+            }
+            const data = await response.json();
+            if (!response.ok) {
+                const err = new Error('Validation échouée');
+                err.data = data;
+                throw err;
+            }
+            return data;
+        })
+        .then(data => {
+            if (data.success) {
+                closeEditAtelierModal();
+                showSuccessMessage(data.message);
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                showServerErrors('editAtelierForm', data.errors);
+                showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
+            }
+        })
+        .catch(error => {
+            console.error('Edit atelier error:', error);
+            if (error.data && error.data.errors) {
+                showServerErrors('editAtelierForm', error.data.errors);
+                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+            } else {
+                showErrorMessage("Erreur lors de la modification. Voir la console.");
+            }
+        });
+    }
+</script>
+</body>
+</html>
