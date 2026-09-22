@@ -9,7 +9,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 from .projet import Projet
-
+from .ressources import EtatMateriel
 
 class ActiviteTravauxMixin:
     def clean(self):
@@ -28,7 +28,6 @@ def rapport_journalier_document_upload_path(instance, filename):
 def situation_mensuelle_document_upload_path(instance, filename):
     situation = instance.situation
     return f'situations_mensuelles/projet_{situation.projet_id}/{situation.annee}-{situation.mois:02d}/{filename}'
-
 
 class RapportJournalier(ActiviteTravauxMixin, models.Model):
     projet = models.ForeignKey(
@@ -78,7 +77,6 @@ class RapportJournalier(ActiviteTravauxMixin, models.Model):
             return self.total_depenses_annotated
         return self.depenses.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
 
-
 class CategorieDepenseTravaux(models.TextChoices):
     PERSONNEL = 'PERSONNEL', _('Personnel')
     MATERIEL = 'MATERIEL', _('Matériel')
@@ -87,7 +85,6 @@ class CategorieDepenseTravaux(models.TextChoices):
     FOURNITURE = 'FOURNITURE', _('Fourniture')
     TRANSPORT = 'TRANSPORT', _('Transport')
     CONSOMMABLE = 'CONSOMMABLE', _('Consommable')
-
 
 class CategorieCharge(models.Model):
     code = models.SlugField(max_length=50, unique=True, verbose_name=_('Code'))
@@ -102,7 +99,6 @@ class CategorieCharge(models.Model):
 
     def __str__(self):
         return self.nom
-
 
 class DepenseRapportJournalier(models.Model):
     rapport = models.ForeignKey(
@@ -138,7 +134,6 @@ class DepenseRapportJournalier(models.Model):
     def __str__(self):
         return f'{self.get_categorie_display()} - {self.designation}'
 
-
 class StockRapportJournalier(models.Model):
     rapport = models.ForeignKey(
         RapportJournalier, on_delete=models.CASCADE, related_name='stocks',
@@ -156,6 +151,74 @@ class StockRapportJournalier(models.Model):
     def __str__(self):
         return self.designation
 
+class ReleveMateriel(models.Model):
+    """Relevé journalier d'utilisation d'un matériel sur un chantier.
+
+    Un rapport journalier peut contenir plusieurs relevés, un par
+    (matériel, état, localisation), avec le nombre d'heures associé.
+
+    Exemple :
+        Niveleuse 004 : 03H Voirie Entrée principale (MARCHE)
+                        02.5H Voirie sud (MARCHE)
+                        02H — (ARRET)
+                        1.5H — (PANNE)
+    """
+
+    rapport = models.ForeignKey(
+        RapportJournalier,
+        on_delete=models.CASCADE,
+        related_name='releves_materiel',
+        verbose_name=_("Rapport journalier"),
+    )
+    materiel = models.ForeignKey(
+        'projets.Materiel',
+        on_delete=models.PROTECT,
+        related_name='releves',
+        verbose_name=_("Matériel"),
+    )
+    atelier = models.ForeignKey(
+        'projets.Atelier',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='releves',
+        verbose_name=_("Atelier"),
+    )
+    etat = models.CharField(
+        max_length=20,
+        choices=EtatMateriel.choices,
+        verbose_name=_("État"),
+    )
+    localisation = models.CharField(
+        max_length=150,
+        blank=True,
+        verbose_name=_("Localisation"),
+    )
+    heures = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name=_("Heures"),
+    )
+    commentaire = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_("Commentaire"),
+    )
+
+    class Meta:
+        ordering = ['materiel__designation', 'etat', 'id']
+        verbose_name = _("Relevé matériel")
+        verbose_name_plural = _("Relevés matériel")
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(heures__gte=0) & models.Q(heures__lte=24),
+                name='releve_materiel_heures_valides',
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.materiel} - {self.get_etat_display()} ({self.heures}h)"
 
 class SituationMensuelle(ActiviteTravauxMixin, models.Model):
     projet = models.ForeignKey(
@@ -202,7 +265,6 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
             return self.total_stock_annotated
         return self.stocks.aggregate(total=Sum('valeur'))['total'] or Decimal('0.00')
 
-
 class RecetteSituationMensuelle(models.Model):
     class Rubrique(models.TextChoices):
         TRAVAUX_REALISES = 'TRAVAUX_REALISES', _('Travaux réalisés')
@@ -224,7 +286,6 @@ class RecetteSituationMensuelle(models.Model):
                 name='unique_recette_situation_rubrique',
             ),
         ]
-
 
 class DocumentSituationMensuelle(models.Model):
     situation = models.ForeignKey(
@@ -264,7 +325,6 @@ class DocumentSituationMensuelle(models.Model):
     def nom(self):
         return self.original_filename or os.path.basename(self.fichier.name)
 
-
 class DepenseSituationMensuelle(models.Model):
     situation = models.ForeignKey(
         SituationMensuelle, on_delete=models.CASCADE, related_name='depenses',
@@ -290,7 +350,6 @@ class DepenseSituationMensuelle(models.Model):
             for valeur in (self.montant_base, self.cession_entrante, self.cession_sortante)
         )
         super().save(*args, **kwargs)
-
 
 class StockSituationMensuelle(models.Model):
     situation = models.ForeignKey(

@@ -10,13 +10,16 @@ from django.db.models import Q
 from projets.utils.icones import choix_icones
 
 # from projets.models.revision import RevisionPrix
+
 from .models import (
-    Client, Decompte, Dossier, Ingenieur, Profile, 
-    Projet, Entreprise, Tache, Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
-    StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle, DocumentAdministratif,
-    StockSituationMensuelle, DocumentSituationMensuelle, RecetteSituationMensuelle, 
-    Personnel, Materiel, Atelier, TypeMateriel, AffectationRessource,
-    Location, Transport, SousTraitance, Consommable, Fourniture, CategorieCharge,
+    Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
+    Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
+    StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
+    DocumentAdministratif, StockSituationMensuelle, DocumentSituationMensuelle,
+    RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
+    AffectationRessource, Location, Transport, SousTraitance, Consommable,
+    Fourniture, CategorieCharge,
+    ReleveMateriel,
 )
  
 from django.contrib.auth.models import User
@@ -294,7 +297,6 @@ class MaterielForm(forms.ModelForm):
         if type_id:
             self.initial["type_materiel"] = type_id
 
-
 class AtelierForm(forms.ModelForm):
     class Meta:
         model = Atelier
@@ -305,9 +307,29 @@ class AtelierForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 2}),
         }
 
-    def clean_code(self):
-        return (self.cleaned_data['code'] or '').strip().zfill(2)
+    def __init__(self, *args, projet=None, **kwargs):
+        self.projet = projet
+        super().__init__(*args, **kwargs)
 
+    def clean_code(self):
+        code = (self.cleaned_data['code'] or '').strip().zfill(2)
+        if self.projet:
+            qs = Atelier.objects.filter(projet=self.projet, code=code)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    f"Un atelier avec le code « {code} » existe déjà pour ce projet."
+                )
+        return code
+
+    def save(self, commit=True):
+        atelier = super().save(commit=False)
+        if self.projet:
+            atelier.projet = self.projet
+        if commit:
+            atelier.save()
+        return atelier
 
 class AffectationRessourceForm(forms.ModelForm):
     class Meta:
