@@ -170,8 +170,6 @@ STATICFILES_DIRS = [
     BASE_DIR / 'goProjet' / 'static',
 ]
 
-# Whitenoise pour les statiques
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage' 
 
 # --- 11. FICHIERS MÉDIA ---
 MEDIA_URL = '/media/'
@@ -260,8 +258,7 @@ else:
 # --- 13. CONFIGURATION DU STOCKAGE ---
 
 # Backends par défaut (utilisés si R2 n'est pas activé)
-# En Django 4.2+, c'est STORAGES qui fait foi (DEFAULT_FILE_STORAGE
-# et STATICFILES_STORAGE sont obsolètes).
+
 STORAGES = {
     'default': {
         'BACKEND': 'django.core.files.storage.FileSystemStorage',
