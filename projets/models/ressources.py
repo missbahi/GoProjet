@@ -19,9 +19,46 @@ class Personnel(models.Model):
         return f"{self.nom} ({self.fonction})" if self.fonction else self.nom
 
 
+class TypeMateriel(models.Model):
+    """Type d'engin : Pelle sur chenilles à godet, Pelle chenilles BRH, etc."""
+
+    ICONE_DIR = "images/materiels"
+
+    nom = models.CharField(_("Désignation"), max_length=255, unique=True)
+    icone = models.CharField(
+        _("Icône"),
+        max_length=120,
+        blank=True,
+        help_text=_("Nom du fichier situé dans static/images/materiels/"),
+    )
+    actif = models.BooleanField(_("Actif"), default=True)
+
+    class Meta:
+        verbose_name = _("Type de matériel")
+        verbose_name_plural = _("Types de matériel")
+        ordering = ["nom"]
+
+    def __str__(self):
+        return self.nom
+
+    @property
+    def icone_path(self):
+        """Chemin relatif utilisable avec {% static %}."""
+        if self.icone:
+            return f"{self.ICONE_DIR}/{self.icone}"
+        return f"{self.ICONE_DIR}/default.avif"
+
+
 class Materiel(models.Model):
     designation = models.CharField(_("Désignation"), max_length=150)
-    type_materiel = models.CharField(_("Type"), max_length=100, blank=True)
+    type_materiel = models.ForeignKey(
+        TypeMateriel,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="materiels",
+        verbose_name=_("Type de matériel"),
+    )
     immatriculation = models.CharField(_("Immatriculation / N° de série"), max_length=50, blank=True)
     unite = models.CharField(_("Unité"), max_length=20, blank=True)
     prix_unitaire = models.DecimalField(_("Prix unitaire (DH)"), max_digits=12, decimal_places=2, default=0)
@@ -35,10 +72,67 @@ class Materiel(models.Model):
     def __str__(self):
         return self.designation
 
-    
+
+class Atelier(models.Model):
+    """Atelier 01 Terrassements généraux, 02 Assainissement, 03 Voirie, ..."""
+
+    code = models.CharField(_("Code"), max_length=10, unique=True)
+    libelle = models.CharField(_("Libellé"), max_length=255)
+    description = models.TextField(_("Description"), blank=True)
+    actif = models.BooleanField(_("Actif"), default=True)
+    date_creation = models.DateTimeField(_("Créé le"), auto_now_add=True)
+
+    class Meta:
+        verbose_name = _("Atelier")
+        verbose_name_plural = _("Ateliers")
+        ordering = ["code"]
+
+    def __str__(self):
+        return f"Atelier {self.code} {self.libelle}"
+
+
+class AffectationRessource(models.Model):
+    """Affectation d'un matériel de la base à un atelier."""
+
+    atelier = models.ForeignKey(
+        Atelier, 
+        on_delete=models.CASCADE, 
+        related_name="affectations",
+        verbose_name=_("Atelier"),
+    )
+    materiel = models.ForeignKey(
+        Materiel,
+        on_delete=models.PROTECT, 
+        related_name="affectations",
+        verbose_name=_("Matériel"),
+    )
+    date_debut = models.DateField(_("Début"))
+    date_fin = models.DateField(_("Fin"), null=True, blank=True)
+    commentaire = models.CharField(_("Commentaire"), max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = _("Affectation de ressource")
+        verbose_name_plural = _("Affectations de ressources")
+        ordering = ["-date_debut"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["atelier", "materiel", "date_debut"],
+                name="unique_affectation_materiel_atelier_date",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(date_fin__isnull=True)
+                | models.Q(date_fin__gte=models.F("date_debut")),
+                name="affectation_dates_coherentes",
+            ),
+        ]
+ 
+    def __str__(self):
+        return f"{self.materiel} → {self.atelier}"
+
+
 class Location(models.Model):
     designation = models.CharField(_("Désignation"), max_length=150)
-    type_materiel = models.CharField(_("Type"), max_length=100, blank=True)
+    type_materiel = models.CharField(_("Type de matériel"), max_length=100, blank=True)
     locataire = models.CharField(_("Locataire"), max_length=50, blank=True)
     unite = models.CharField(_("Unité"), max_length=20, blank=True)
     prix_unitaire = models.DecimalField(_("Prix unitaire (DH)"), max_digits=12, decimal_places=2, default=0)
