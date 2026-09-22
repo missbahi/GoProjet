@@ -11,8 +11,8 @@ from projets.models import (
 )
 from projets.forms import (
     CategorieChargeForm, ClientForm, ConsommableForm, EntrepriseForm, FournitureForm, IngenieurForm,
-    LocationForm, MaterielForm, PersonnelForm, SousTraitanceForm, TransportForm,
-    TypeMaterielForm,
+    LocationForm, MaterielForm, SousTraitanceForm, TransportForm,
+    TypeMaterielForm, 
 )
 
 from projets.utils.icones import choix_icones
