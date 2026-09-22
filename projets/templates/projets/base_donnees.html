@@ -124,7 +124,7 @@
     </style>
 </head>
 <body class="bg-[#525252]">
-
+<div id="notifications-container" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-[9999] space-y-2 w-11/12 max-w-lg pointer-events-none"></div>
 <!-- Overlay pour sidebar mobile -->
 <div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
 
@@ -143,8 +143,8 @@
     </button>
 </div>
 
+<!-- Sidebar Desktop -->
 <div class="flex min-h-screen">
-    <!-- Sidebar Desktop -->
     <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-80 lg:w-96 flex-shrink-0 md:block hidden">
         <div class="p-4 border-b border-green-900">
             <div class="flex items-center space-x-3">
@@ -2132,40 +2132,71 @@
         const nestedDelete = e.target.closest('[data-category-resource] a[href*="supprimer"]');
         if (nestedDelete) {
             e.preventDefault();
-            fetch(nestedDelete.href, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                .then(() => loadModule('{% url 'projets:partial_categories_charges' %}', 'menu-personnel'));
+
+            // Confirmer la suppression
+            if (!confirm('Supprimer cet élément ?')) return;
+
+            // Envoyer la requête AJAX avec CSRF
+            fetch(nestedDelete.href, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                }
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw data;
+                }
+                return data;
+            })
+            .then(data => {
+                showSuccessMessage(data.message || 'Supprimé avec succès.');
+                // Recharger uniquement le conteneur concerné
+                const container = nestedDelete.closest('[data-category-resource]');
+                if (container) {
+                    const match = container.id.match(/category-resource-(\d+)/);
+                    if (match) reloadCategoryResource(match[1]);
+                }
+            })
+            .catch(error => {
+                console.error('Delete error:', error);
+                showErrorMessage(error.message || 'Erreur lors de la suppression.');
+            });
+
             return;
         }
+        
         const resourceToggle = e.target.closest('[data-resource-url]');
         if (resourceToggle) {
             e.preventDefault();
             const target = document.getElementById(resourceToggle.dataset.resourceTarget);
             if (!target) return;
-            if (!target.dataset.loaded) {
-                target.dataset.loaded = 'loading';
-                target.classList.remove('hidden');
-                target.innerHTML = '<p class="py-3 text-sm text-gray-400">Chargement...</p>';
-                fetch(resourceToggle.dataset.resourceUrl, {
-                    headers: {'X-Requested-With': 'XMLHttpRequest'}
+
+
+            target.dataset.loaded = 'loading';
+            target.classList.remove('hidden');
+            target.innerHTML = '<p class="py-3 text-sm text-gray-400">Chargement...</p>';
+            fetch(resourceToggle.dataset.resourceUrl, {
+                headers: {'X-Requested-With': 'XMLHttpRequest'}
+            })
+                .then(response => {
+                    if (!response.ok) throw new Error('Chargement impossible');
+                    return response.text();
                 })
-                    .then(response => {
-                        if (!response.ok) throw new Error('Chargement impossible');
-                        return response.text();
-                    })
-                    .then(html => {
-                        target.innerHTML = html;
-                        target.dataset.loaded = 'true';
-                    })
-                    .catch(() => {
-                        target.dataset.loaded = '';
-                        target.innerHTML = '<p class="py-3 text-sm text-red-300">Impossible de charger le référentiel.</p>';
-                    });
-            } else if (target.dataset.loaded === 'true') {
-                target.classList.toggle('hidden');
-            }
+                .then(html => {
+                    target.innerHTML = html;
+                    target.dataset.loaded = 'true';
+                })
+                .catch(() => {
+                    target.dataset.loaded = '';
+                    target.innerHTML = '<p class="py-3 text-sm text-red-300">Impossible de charger le référentiel.</p>';
+                });
             resourceToggle.querySelector('.fa-chevron-down')?.classList.toggle('rotate-180');
             return;
         }
+        
         // Boutons d'ajout 
         if (e.target.matches('[data-add-ingenieur-button]')) {
             e.preventDefault();
@@ -2201,7 +2232,12 @@
             e.preventDefault();
             openAddTypeMaterielModal();
         }
-        
+        // Bouton "Importer depuis un tableur"
+        if (e.target.matches('[data-import-materiel-button]') || e.target.closest('[data-import-materiel-button]')) {
+            e.preventDefault();
+            openImportMaterielModal();
+            return;
+        }
         // Boutons d'édition Ingénieurs
         if (e.target.matches('[data-edit-ingenieur-button]') || e.target.closest('[data-edit-ingenieur-button]')) {
             const button = e.target.matches('[data-edit-ingenieur-button]') ? e.target : e.target.closest('[data-edit-ingenieur-button]');
@@ -2341,57 +2377,66 @@
         if (e.target.matches('a[href*="supprimer"]') || e.target.closest('a[href*="supprimer"]')) {
             const link = e.target.matches('a[href*="supprimer"]') ? e.target : e.target.closest('a[href*="supprimer"]');
             e.preventDefault();
-            
-            const entityType = link.href.includes('ingenieur') ? 'ingénieur' : 
-                            link.href.includes('client') ? 'client' : 
+
+            const entityType = link.href.includes('type_materiel') ? 'type de matériel' :
+                            link.href.includes('ingenieur') ? 'ingénieur' :
+                            link.href.includes('client') ? 'client' :
                             link.href.includes('entreprise') ? 'entreprise' :
                             link.href.includes('personnel') ? 'membre du personnel' :
                             link.href.includes('materiel') ? 'matériel' :
                             link.href.includes('location') ? 'location' :
                             link.href.includes('sous_traitance') ? 'sous-traitance' :
-                            link.href.includes('type_materiel') ? 'type de matériel' :
                             link.href.includes('consommable') ? 'consommable' : 'fourniture';
-            
-            if (!confirm(`Supprimer cet ${entityType} ?`)) return;
-            
+
+            if (!confirm(`Supprimer ce ${entityType} ?`)) return;
+
             fetch(link.href, {
                 method: 'POST',
                 headers: {
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    'X-CSRFToken': getCsrfToken(),
                 }
             })
-            .then(response => {
-                if (response.ok) {
-                    // Recharger le module correspondant
-                    if (link.href.includes('ingenieur')) {
-                        loadModule('{% url 'projets:partial_ingenieurs' %}', 'menu-ingenieurs');
-                    } else if (link.href.includes('client')) {
-                        loadModule('{% url 'projets:partial_clients' %}', 'menu-clients');
-                    } else if (link.href.includes('entreprise')) {
-                        loadModule('{% url 'projets:partial_entreprises' %}', 'menu-entreprises');
-                    } else if (link.href.includes('personnel')) {
-                        loadModule('{% url 'projets:partial_personnel' %}', 'menu-personnel');
-                    } else if (link.href.includes('type_materiel')) {
-                        loadModule('{% url 'projets:partial_types_materiel' %}', 'menu-types-materiel');
-                    } else if (link.href.includes('materiel')) {
-                        loadModule('{% url 'projets:partial_materiel' %}', 'menu-materiel');
-                    } else if (link.href.includes('location')) {
-                        loadModule('{% url 'projets:partial_locations' %}', 'menu-locations');
-                    } else if (link.href.includes('sous_traitance')) {
-                        loadModule('{% url 'projets:partial_sous_traitances' %}', 'menu-sous-traitances');
-                    } else if (link.href.includes('consommable')) {
-                        loadModule('{% url 'projets:partial_consommables' %}', 'menu-consommables');
-                    } else if (link.href.includes('fourniture')) {
-                        loadModule('{% url 'projets:partial_fournitures' %}', 'menu-fournitures');
-                    }
-                } else {
-                    alert('Erreur lors de la suppression.');
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok || !data.success) {
+                    throw data;
+                }
+                return data;
+            })
+            .then(data => {
+                // 1. Afficher le message de succès (reste affiché, conteneur stable)
+                showSuccessMessage(data.message || 'Suppression effectuée.');
+
+                // 2. Recharger uniquement le partial concerné, pas tout le module
+                if (link.href.includes('type_materiel')) {
+                    loadModule('{% url "projets:partial_types_materiel" %}', 'menu-types-materiel');
+                } else if (link.href.includes('ingenieur')) {
+                    loadModule('{% url "projets:partial_ingenieurs" %}', 'menu-ingenieurs');
+                } else if (link.href.includes('client')) {
+                    loadModule('{% url "projets:partial_clients" %}', 'menu-clients');
+                } else if (link.href.includes('entreprise')) {
+                    loadModule('{% url "projets:partial_entreprises" %}', 'menu-entreprises');
+                } else if (link.href.includes('personnel')) {
+                    // Les ressources sont dans des sous-conteneurs de catégories
+                    reloadCategoryResource(getCategoryIdForLink(link));
+                } else if (link.href.includes('materiel')) {
+                    reloadCategoryResource(getCategoryIdForLink(link));
+                } else if (link.href.includes('location')) {
+                    reloadCategoryResource(getCategoryIdForLink(link));
+                } else if (link.href.includes('sous_traitance')) {
+                    reloadCategoryResource(getCategoryIdForLink(link));
+                } else if (link.href.includes('consommable')) {
+                    reloadCategoryResource(getCategoryIdForLink(link));
+                } else if (link.href.includes('fourniture')) {
+                    reloadCategoryResource(getCategoryIdForLink(link));
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('Une erreur est survenue lors de la suppression.');
+                console.error('Delete error:', error);
+                showErrorMessage(
+                    error.message || 'Une erreur est survenue lors de la suppression.'
+                );
             });
         }
         
@@ -2400,6 +2445,20 @@
             closeAllModals();
         }
     });
+
+    // Récupère l'ID de la catégorie à partir d'un lien dans un resource category 
+    // (par exemple, un lien dans le partial materiel.html)
+    function getCategoryIdForLink(link) {
+        // Le lien est dans le partial materiel.html, qui est dans category-resource-XXX
+        const container = link.closest('[data-category-resource]');
+        if (!container) {
+            console.warn('Conteneur data-category-resource introuvable');
+            return null;
+        }
+        // L'ID est "category-resource-123"
+        const match = container.id.match(/category-resource-(\d+)/);
+        return match ? match[1] : null;
+    }
 
     // Gérer toutes les soumissions de formulaires
     document.addEventListener('submit', function(e) {
@@ -3585,17 +3644,49 @@
     }
 
     // Fonction utilitaire pour afficher les messages de succès
-    function showSuccessMessage(message) {
-        const contentArea = document.getElementById('content-area');
-        const successMsg = document.createElement('div');
-        successMsg.className = 'p-4 mb-4 bg-green-800 text-green-200 rounded-lg mobile-text-sm';
-        successMsg.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
-        contentArea.prepend(successMsg);
-        setTimeout(() => {
-            successMsg.remove();
-        }, 3000);
-    }
+    window.showSuccessMessage = function(message) {
+        const container = document.getElementById('notifications-container');
+        if (!container) return;
+        const el = document.createElement('div');
+        el.className = 'pointer-events-auto p-4 bg-green-800/95 text-green-100 rounded-lg shadow-2xl border border-green-700 flex items-center gap-2';
+        el.innerHTML = `
+            <i class="fa-solid fa-check-circle"></i>
+            <span class="flex-1 text-sm">${message}</span>
+            <button onclick="this.parentElement.remove()" class="text-green-300 hover:text-white">
+                <i class="fa-solid fa-times"></i>
+            </button>
+        `;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 4000);
+    };
 
+    window.showErrorMessage = function(message) {
+        const container = document.getElementById('notifications-container');
+        if (!container) {
+            console.warn('notifications-container introuvable');
+            alert(message);
+            return;
+        }
+        const safeMessage = String(message).replace(/\n/g, '<br>');
+        const el = document.createElement('div');
+        el.className = 'pointer-events-auto p-4 bg-red-900/95 text-red-100 rounded-lg shadow-2xl border border-red-700';
+        el.innerHTML = `
+            <div class="flex items-start gap-3">
+                <i class="fa-solid fa-circle-exclamation text-red-400 text-xl mt-0.5"></i>
+                <div class="flex-1 text-sm leading-relaxed">
+                    <p class="font-semibold mb-1">Suppression impossible</p>
+                    <p class="whitespace-pre-line">${safeMessage}</p>
+                </div>
+                <button onclick="this.closest('div').parentElement.remove()"
+                        class="text-red-300 hover:text-white ml-2">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+        `;
+        container.appendChild(el);
+        setTimeout(() => el.remove(), 10000);
+    };
+    
     // Fermer la modal avec la touche Échap
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape') {
@@ -3607,7 +3698,243 @@
     document.getElementById('modalBackdrop').addEventListener('click', function() {
         closeAllModals();
     });
-</script>
 
+    // Recharger uniquement le conteneur d'une ressource (ex: materiel) dans une catégorie
+    window.reloadCategoryResource = function(categoryId) {
+        const container = document.getElementById(`category-resource-${categoryId}`);
+        if (!container) {
+            console.warn(`Conteneur #category-resource-${categoryId} introuvable`);
+            return Promise.resolve();
+        }
+        
+        // Récupérer l'URL depuis le bouton toggle (data-resource-url)
+        const button = document.querySelector(`[data-resource-target="category-resource-${categoryId}"]`);
+        if (!button) {
+            console.warn('Bouton toggle introuvable pour la catégorie', categoryId);
+            return Promise.resolve();
+        }
+        
+        const url = button.dataset.resourceUrl;
+        if (!url) {
+            console.warn('URL resource introuvable');
+            return Promise.resolve();
+        }
+        
+        return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(r => r.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.dataset.loaded = 'true';
+                container.classList.remove('hidden');
+            })
+            .catch(err => {
+                console.error('Erreur rechargement ressource:', err);
+            });
+    };
+</script>
+<script>
+    // Filtre local (désignation + type) — pas de rechargement serveur.
+    // La fonction est globale et idempotente : réinjectée à chaque
+    // chargement du partial via AJAX, elle reste fonctionnelle.
+    window.filterMaterielTable = function() {
+        const search = (document.getElementById('materielSearchInput')?.value || '').toLowerCase().trim();
+        const typeId = document.getElementById('materielTypeFilter')?.value || '';
+        const rows = document.querySelectorAll('#materielTable tbody tr');
+        let visibles = 0;
+
+        rows.forEach(row => {
+            const designation = row.dataset.designation || '';
+            const rowTypeId = row.dataset.typeId || '';
+            const matchSearch = !search || designation.includes(search);
+            const matchType = !typeId || rowTypeId === typeId;
+            const visible = matchSearch && matchType;
+            row.classList.toggle('hidden', !visible);
+            if (visible) visibles++;
+        });
+
+        document.getElementById('materielNoResult')?.classList.toggle('hidden', visibles > 0);
+    };
+</script>
+<script>
+    // ============================================================
+    // Import de matériel depuis un tableur
+    // ============================================================
+
+    window.openImportMaterielModal = function() {
+        document.getElementById('importMaterielText').value = '';
+        document.getElementById('importHasHeader').checked = true;
+        document.getElementById('importCreateTypes').checked = false;
+        document.getElementById('importUpdateExisting').checked = false;
+        document.getElementById('importMaterielStep1').classList.remove('hidden');
+        document.getElementById('importMaterielStep2').classList.add('hidden');
+        document.getElementById('importMaterielRapport').innerHTML = '';
+        document.getElementById('importMaterielModal').style.display = 'block';
+        document.getElementById('modalBackdrop').style.display = 'block';
+    };
+
+    window.closeImportMaterielModal = function() {
+        document.getElementById('importMaterielModal').style.display = 'none';
+        document.getElementById('modalBackdrop').style.display = 'none';
+    };
+
+    window.retourImportMateriel = function() {
+        document.getElementById('importMaterielStep1').classList.remove('hidden');
+        document.getElementById('importMaterielStep2').classList.add('hidden');
+    };
+
+    window.analyserImportMateriel = function() {
+        const texte = document.getElementById('importMaterielText').value;
+        if (!texte.trim()) {
+            alert('Collez d\'abord des données.');
+            return;
+        }
+        envoyerImportMateriel(true);
+    };
+
+    window.confirmerImportMateriel = function() {
+        if (!confirm('Confirmer l\'import ? Les données seront enregistrées.')) return;
+        envoyerImportMateriel(false);
+    };
+
+    function envoyerImportMateriel(dryRun) {
+        const texte = document.getElementById('importMaterielText').value;
+        const hasHeader = document.getElementById('importHasHeader').checked ? 'true' : 'false';
+        const createTypes = document.getElementById('importCreateTypes').checked ? 'true' : 'false';
+        const updateExisting = document.getElementById('importUpdateExisting').checked ? 'true' : 'false';
+
+        const formData = new FormData();
+        formData.append('texte', texte);
+        formData.append('has_header', hasHeader);
+        formData.append('create_types', createTypes);
+        formData.append('update_existing', updateExisting);
+        formData.append('csrfmiddlewaretoken', getCsrfToken());
+
+        const url = '/materiel/importer/?dry_run=' + (dryRun ? '1' : '0');
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+            },
+        })
+        .then(async response => {
+            const data = await response.json();
+            if (!response.ok) throw data;
+            return data;
+        })
+        .then(data => {
+            renderImportMaterielRapport(data, dryRun);
+            if (!dryRun) {
+                // Import réel : recharger la liste après
+                setTimeout(() => {
+                    closeImportMaterielModal();
+                    loadModule('{% url "projets:partial_materiel" %}', 'menu-materiel');
+                }, 1500);
+            }
+        })
+        .catch(error => {
+            console.error('Import error:', error);
+            alert('Erreur lors de l\'import : ' + (error.message || JSON.stringify(error)));
+        });
+    }
+
+    function renderImportMaterielRapport(data, dryRun) {
+        const container = document.getElementById('importMaterielRapport');
+        let html = '';
+
+        // Titre
+        const titre = dryRun ? 'Aperçu (rien n\'a été enregistré)' : 'Import effectué';
+        html += `<p class="text-cyan-300 font-semibold mb-3">${titre}</p>`;
+
+        // Warnings
+        if (data.warnings && data.warnings.length) {
+            html += '<div class="p-2 bg-yellow-900/40 border border-yellow-700 rounded text-yellow-200 text-xs space-y-1">';
+            data.warnings.forEach(w => { html += `<div><i class="fas fa-info-circle mr-1"></i> ${w}</div>`; });
+            html += '</div>';
+        }
+
+        // Créés
+        if (data.created && data.created.length) {
+            html += `<div class="p-3 bg-green-900/40 border border-green-700 rounded">`;
+            html += `<p class="text-green-300 font-semibold mb-1"><i class="fas fa-check-circle mr-1"></i> ${data.created.length} matériel(s) ${dryRun ? 'seront créés' : 'créés'} :</p>`;
+            html += '<ul class="list-disc list-inside text-green-200 text-xs space-y-0.5">';
+            data.created.forEach(item => {
+                html += `<li>${item.designation} <span class="text-green-400">(${item.type})</span></li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        // Mis à jour
+        if (data.updated && data.updated.length) {
+            html += `<div class="p-3 bg-blue-900/40 border border-blue-700 rounded">`;
+            html += `<p class="text-blue-300 font-semibold mb-1"><i class="fas fa-edit mr-1"></i> ${data.updated.length} matériel(s) ${dryRun ? 'seront mis à jour' : 'mis à jour'} :</p>`;
+            html += '<ul class="list-disc list-inside text-blue-200 text-xs space-y-0.5">';
+            data.updated.forEach(item => {
+                html += `<li>${item.designation} <span class="text-blue-400">(${item.type})</span></li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        // Ignorés
+        if (data.ignored && data.ignored.length) {
+            html += `<div class="p-3 bg-yellow-900/40 border border-yellow-700 rounded">`;
+            html += `<p class="text-yellow-300 font-semibold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> ${data.ignored.length} ligne(s) ignorée(s) :</p>`;
+            html += '<ul class="list-disc list-inside text-yellow-200 text-xs space-y-0.5">';
+            data.ignored.forEach(item => {
+                html += `<li>Ligne ${item.numero} : ${item.designation} — ${item.raison}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        // Erreurs
+        if (data.errors && data.errors.length) {
+            html += `<div class="p-3 bg-red-900/40 border border-red-700 rounded">`;
+            html += `<p class="text-red-300 font-semibold mb-1"><i class="fas fa-times-circle mr-1"></i> ${data.errors.length} ligne(s) en erreur :</p>`;
+            html += '<ul class="list-disc list-inside text-red-200 text-xs space-y-0.5">';
+            data.errors.forEach(item => {
+                html += `<li>Ligne ${item.numero} : ${item.raison}</li>`;
+            });
+            html += '</ul></div>';
+        }
+
+        // Résumé si vide
+        if (!data.created?.length && !data.updated?.length && !data.ignored?.length && !data.errors?.length) {
+            html += '<p class="text-gray-400">Aucune ligne exploitable.</p>';
+        }
+
+        container.innerHTML = html;
+        document.getElementById('importMaterielStep1').classList.add('hidden');
+        document.getElementById('importMaterielStep2').classList.remove('hidden');
+
+        // Désactiver le bouton "Confirmer" si dry_run était déjà un import réel
+        if (!dryRun) {
+            document.getElementById('importMaterielConfirmBtn').disabled = true;
+            document.getElementById('importMaterielConfirmBtn').classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+    // ============================================================
+    // Récupération du jeton CSRF
+    // ============================================================
+    window.getCsrfToken = function() {
+        // 1. Depuis un champ de formulaire (le plus fiable)
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+
+        // 2. Depuis le cookie csrftoken
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        if (match) return match[1];
+
+        // 3. Fallback : chercher dans tous les cookies
+        for (const cookie of document.cookie.split(';')) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'csrftoken') return value;
+        }
+
+        console.warn('getCsrfToken: aucun token trouvé');
+        return '';
+    };
+</script>
 </body>
 </html>

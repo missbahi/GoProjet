@@ -191,6 +191,20 @@ class DossierForm(forms.ModelForm):
             ).update(dossier=dossier)
         return dossier
 
+class PersonnelForm(forms.ModelForm):
+    class Meta:
+        model = Personnel
+        fields = ['nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif']
+        labels = {'nom': 'Nom', 'fonction': 'Fonction', 'telephone': 'Téléphone', 'unite': 'Unité', 'tarif': 'Tarif', 'actif': 'Actif'}
+        widgets = {
+            'nom': forms.TextInput(attrs={'placeholder': 'Nom *'}),
+            'fonction': forms.TextInput(attrs={'placeholder': 'Fonction *'}),
+            'telephone': forms.TextInput(attrs={'placeholder': 'Téléphone *'}),
+            'unite': forms.TextInput(attrs={'placeholder': 'Unité *'}),
+            'tarif': forms.TextInput(attrs={'placeholder': 'Tarif *'}),
+            'actif': forms.CheckboxInput(),
+        }
+
 class UtilisateurCreationForm(UserCreationForm):
     ROLE_CHOICES = (
         ('CHEF_PROJET', 'Chef de projet'),
@@ -1076,7 +1090,6 @@ class StockSituationMensuelleForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
-
 
 class DepenseSituationMensuelleBaseFormSet(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):

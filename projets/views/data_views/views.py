@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,12 +13,12 @@ from projets.models import (
 )
 from projets.forms import (
     CategorieChargeForm, ClientForm, ConsommableForm, EntrepriseForm, FournitureForm, IngenieurForm,
-    LocationForm, MaterielForm, SousTraitanceForm, TransportForm,
+    LocationForm, MaterielForm, PersonnelForm, SousTraitanceForm, TransportForm,
     TypeMaterielForm, 
 )
 
 from projets.utils.icones import choix_icones
-
+from projets.utils.import_parsers import parser_import_materiel
 
 @chef_projet_required
 def partial_ingenieurs(request):
@@ -444,13 +446,227 @@ def modifier_materiel(request, materiel_id):
 
 @chef_projet_required
 def supprimer_materiel(request, materiel_id):
+    from django.db.models import ProtectedError
+
     materiel = get_object_or_404(Materiel, id=materiel_id)
-    materiel.delete()
+    designation = materiel.designation
+
+    # Vérifier les références avant de tenter la suppression
+    affectations = materiel.affectations.select_related('atelier', 'atelier__projet')
+    nb_affectations = affectations.count()
+
+    if nb_affectations:
+        # Construire un message détaillé et utile
+        ateliers_info = []
+        for aff in affectations[:5]:  # max 5 pour ne pas surcharger
+            fin = aff.date_fin.strftime('%d/%m/%Y') if aff.date_fin else 'en cours'
+            ateliers_info.append(
+                f"• Atelier {aff.atelier.code} – {aff.atelier.libelle} "
+                f"(projet : {aff.atelier.projet.nom}, "
+                f"depuis le {aff.date_debut.strftime('%d/%m/%Y')}, {fin})"
+            )
+
+        if nb_affectations > 5:
+            ateliers_info.append(f"• … et {nb_affectations - 5} autre(s)")
+
+        message = (
+            f"Impossible de supprimer « {designation} » : ce matériel est "
+            f"actuellement affecté à {nb_affectations} atelier(s).\n\n"
+            + "\n".join(ateliers_info) +
+            "\n\nPour supprimer ce matériel, retirez-le d'abord de tous les "
+            "ateliers, ou désactivez-le (case « Actif »)."
+        )
+
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': message}, status=400)
+        messages.error(request, message)
+        return redirect('projets:partial_materiel')
+
+    try:
+        materiel.delete()
+    except ProtectedError as e:
+        message = (
+            f"Impossible de supprimer « {designation} » : "
+            f"des données y sont rattachées."
+        )
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': message}, status=400)
+        messages.error(request, message)
+        return redirect('projets:partial_materiel')
+
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True, 'message': 'Matériel ' + materiel.designation + ' supprimé avec succès.'})
-    messages.success(request, 'Matériel supprimé avec succès.')
+        return JsonResponse({
+            'success': True,
+            'message': f"Matériel « {designation} » supprimé avec succès.",
+        })
+    messages.success(request, f"Matériel « {designation} » supprimé avec succès.")
     return redirect('projets:partial_materiel')
 
+@chef_projet_required
+def importer_materiels(request):
+    """
+    Import de matériels depuis un texte collé (Excel, CSV, etc.).
+
+    Query params :
+        - dry_run=1 : analyse seulement, aucun enregistrement en base
+        - dry_run=0 (défaut) : applique réellement
+
+    POST data :
+        - texte : le texte collé
+        - has_header : 'auto' | 'true' | 'false'
+        - create_types : 'true' | 'false'
+        - update_existing : 'true' | 'false'
+    """
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Méthode non supportée.'}, status=405)
+
+    texte = request.POST.get('texte', '')
+    has_header_str = request.POST.get('has_header', 'auto')
+    create_types = request.POST.get('create_types', 'false').lower() == 'true'
+    update_existing = request.POST.get('update_existing', 'false').lower() == 'true'
+    dry_run = request.GET.get('dry_run', '1') == '1'
+
+    # Conversion has_header
+    if has_header_str == 'true':
+        has_header = True
+    elif has_header_str == 'false':
+        has_header = False
+    else:
+        has_header = None
+
+    # Parsing
+    lignes, warnings = parser_import_materiel(texte, has_header=has_header)
+
+    if not lignes:
+        return JsonResponse({
+            'success': False,
+            'message': 'Aucune ligne exploitable.',
+            'warnings': warnings,
+        }, status=400)
+
+    # Préparer les types existants
+    types_existants = {t.nom.lower().strip(): t for t in TypeMateriel.objects.all()}
+
+    created = []
+    updated = []
+    ignored = []
+    errors = []
+
+    for ligne in lignes:
+        num = ligne['numero']
+        designation = (ligne['designation'] or '').strip()
+        type_nom = (ligne['type'] or '').strip()
+
+        if not designation:
+            errors.append({
+                'numero': num,
+                'ligne': ligne['_brut'],
+                'raison': "Désignation vide.",
+            })
+            continue
+
+        if not type_nom:
+            errors.append({
+                'numero': num,
+                'ligne': ligne['_brut'],
+                'raison': "Type vide.",
+            })
+            continue
+
+        # Recherche du type
+        type_key = type_nom.lower().strip()
+        type_materiel = types_existants.get(type_key)
+
+        if not type_materiel:
+            if create_types and not dry_run:
+                # Créer le type sans icône
+                type_materiel = TypeMateriel.objects.create(nom=type_nom, actif=True)
+                types_existants[type_key] = type_materiel
+            elif create_types and dry_run:
+                # Simuler la création
+                type_materiel = None  # sera créé à l'application
+                # On continue avec un type factice pour le rapport
+                pass
+            else:
+                # Type inconnu, proposer les types les plus proches
+                suggestions = [
+                    t.nom for t in TypeMateriel.objects.all()
+                    if type_key in t.nom.lower() or t.nom.lower() in type_key
+                ][:3]
+                raison = f"Type « {type_nom} » introuvable."
+                if suggestions:
+                    raison += f" Suggestions : {', '.join(suggestions)}."
+                errors.append({
+                    'numero': num,
+                    'ligne': ligne['_brut'],
+                    'raison': raison,
+                })
+                continue
+
+        # Vérifier si un matériel avec la même désignation existe déjà
+        existant = Materiel.objects.filter(designation__iexact=designation).first()
+
+        if existant:
+            if update_existing and not dry_run:
+                existant.type_materiel = type_materiel
+                existant.immatriculation = ligne['immatriculation'] or existant.immatriculation
+                existant.unite = ligne['unite'] or existant.unite
+                if ligne['prix'] is not None:
+                    existant.prix_unitaire = ligne['prix']
+                existant.actif = ligne['actif']
+                existant.save()
+                updated.append({
+                    'numero': num,
+                    'designation': designation,
+                    'type': type_materiel.nom if type_materiel else type_nom,
+                })
+            elif update_existing and dry_run:
+                updated.append({
+                    'numero': num,
+                    'designation': designation,
+                    'type': type_nom,
+                })
+            else:
+                ignored.append({
+                    'numero': num,
+                    'designation': designation,
+                    'raison': "Un matériel avec cette désignation existe déjà.",
+                })
+            continue
+
+        # Créer le matériel
+        if dry_run:
+            created.append({
+                'numero': num,
+                'designation': designation,
+                'type': type_nom,
+            })
+        else:
+            Materiel.objects.create(
+                designation=designation,
+                type_materiel=type_materiel,
+                immatriculation=ligne['immatriculation'] or '',
+                unite=ligne['unite'] or '',
+                prix_unitaire=ligne['prix'] or Decimal('0.00'),
+                actif=ligne['actif'],
+            )
+            created.append({
+                'numero': num,
+                'designation': designation,
+                'type': type_materiel.nom if type_materiel else type_nom,
+            })
+
+    # Réponse
+    return JsonResponse({
+        'success': True,
+        'dry_run': dry_run,
+        'created': created,
+        'updated': updated,
+        'ignored': ignored,
+        'errors': errors,
+        'warnings': warnings,
+        'total_lignes': len(lignes),
+    })
 
 @chef_projet_required
 def ajouter_transport(request):
