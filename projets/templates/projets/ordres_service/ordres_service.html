@@ -79,7 +79,12 @@
         #jours-resultat {
             transition: all 0.3s ease;
         }
-        
+        /* Breakpoint xs personnalisé */
+        @media (min-width: 400px) {
+            .xs\:inline {
+                display: inline !important;
+            }
+        }
         /* Optimisations responsive */
         @media (max-width: 768px) {
             .ordre-card {
@@ -97,8 +102,9 @@
                 gap: 0.5rem;
             }
             .flex-responsive {
-                flex-direction: column;
-                align-items: stretch;
+                flex-direction: row;
+                align-items: center;
+                flex-wrap: wrap;
             }
             .hidden-mobile {
                 display: none;
@@ -120,6 +126,9 @@
             .text-xs-mobile {
                 font-size: 0.75rem;
             }
+            .ordre-card .flex-wrap.gap-2 {
+                gap: 0.375rem;
+            }
         }
         
         /* Améliorations pour très grands écrans */
@@ -127,6 +136,9 @@
             .container-xxl {
                 max-width: 1400px;
             }
+        }
+        #date-reference {
+            max-width: 150px;
         }
     </style>
 </head>
@@ -156,22 +168,22 @@
             </div>
             
             <!-- Boutons de navigation -->
-            <div class="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 mb-4 sm:mb-6">
+            <div class="flex flex-row justify-between items-center gap-2 mb-4 sm:mb-6">
                 <div class="flex flex-wrap gap-2">
-                    <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
+                    <a href="{% url 'home' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-3 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
                         <i class="fas fa-house"></i> <span class="hidden sm:inline">Accueil</span>
                     </a>
-                    <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
+                    <a href="{% url 'projets:liste_projets' %}" class="bg-[#4B5563] hover:bg-[#374151] text-white px-3 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
                         <i class="fas fa-arrow-left"></i> <span class="hidden sm:inline">Retour aux projets</span>
                     </a>
-                    <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
+                    <a href="{% url 'projets:dashboard' projet.id %}" class="bg-amber-600 hover:bg-amber-700 text-white px-3 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 text-sm sm:text-base btn-responsive">
                         <i class="fas fa-diagram-project"></i> <span class="hidden sm:inline">Tableau de bord</span>
                     </a>
                 </div>
                 
                 <!-- Bouton Ajouter OS -->
                 <button id="toggle-form-btn" 
-                    class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base btn-responsive">
+                    class="px-3 sm:px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium flex items-center justify-center gap-2 transition-colors text-sm sm:text-base btn-responsive flex-shrink-0">
                     <span id="toggle-form-text">
                         {% if not ordres_service %}Ajouter le premier OS{% else %}Ajouter un OS{% endif %}
                     </span>
@@ -193,26 +205,26 @@
                     </p>
                 </div>
                 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-end gap-3 w-full sm:w-auto">
-                    <!-- Groupe Date + Bouton -->
-                    <div class="flex items-end gap-2">
-                        <!-- Champ date -->
-                        <div class="flex flex-col flex-1">
-                            <label for="date-reference" class="text-xs sm:text-sm font-medium text-[#AECBD6] mb-1">
-                                Date de référence
-                            </label>
-                            <input type="date" 
-                                id="date-reference" 
-                                class="form-control px-2 sm:px-3 py-1 sm:py-2 rounded-lg w-full sm:w-40 {% if not projet.marche_approuve %}opacity-50 cursor-not-allowed{% endif %}"
-                                {% if not projet.marche_approuve %}disabled{% endif %}
-                                value="{{ today|date:'Y-m-d' }}">
-                        </div>
+                <!-- Ligne horizontale : Date | Jours | Fin prévisionnelle -->
+                <div class="flex flex-row items-start justify-between gap-3 sm:gap-4 w-full sm:w-auto">
+                    
+                    <!-- Date de référence -->
+                    <div class="flex flex-col">
+                        <label for="date-reference" class="text-xs sm:text-sm font-medium text-[#AECBD6] mb-1 whitespace-nowrap">
+                            Date de référence
+                        </label>
+                        <input type="date" 
+                            id="date-reference" 
+                            class="form-control px-2 sm:px-3 py-1 sm:py-2 rounded-lg w-[130px] sm:w-[150px] text-xs sm:text-sm {% if not projet.marche_approuve %}opacity-50 cursor-not-allowed{% endif %}"
+                            {% if not projet.marche_approuve %}disabled{% endif %}
+                            value="{{ today|date:'Y-m-d' }}">
                     </div>
-                    <!-- Résultat -->
-                    <div class="text-center min-w-[70px] sm:min-w-[80px]">
-                        <div class="text-xs sm:text-sm text-gray-400 mb-1">Jours</div>
+
+                    <!-- Jours -->
+                    <div class="flex flex-col items-center">
+                        <div class="text-xs sm:text-sm text-gray-400 mb-1 whitespace-nowrap">Jours</div>
                         <div id="jours-resultat" 
-                            class="text-xl sm:text-2xl font-bold {% if projet.marche_approuve %}text-[#2B9C62]{% else %}text-gray-500{% endif %}">
+                            class="text-lg sm:text-2xl font-bold leading-8 sm:leading-10 {% if projet.marche_approuve %}text-[#2B9C62]{% else %}text-gray-500{% endif %}">
                             {% if projet.marche_approuve %}
                                 {{ projet.jours_decoules_aujourdhui|default:"0" }}
                             {% else %}
@@ -220,9 +232,12 @@
                             {% endif %}
                         </div>
                     </div>
-                    <div class="text-center min-w-[150px]">
-                        <div class="text-xs sm:text-sm text-gray-400 mb-1">Fin prévisionnelle</div>
-                        <div id="date-fin-resultat" class="text-base sm:text-lg font-bold text-cyan-300">
+
+                    <!-- Fin prévisionnelle -->
+                    <div class="flex flex-col items-center">
+                        <div class="text-xs sm:text-sm text-gray-400 mb-1 whitespace-nowrap">Fin prévisionnelle</div>
+                        <div id="date-fin-resultat" 
+                            class="text-base sm:text-xl font-bold text-cyan-300 whitespace-nowrap leading-8 sm:leading-10">
                             {% with date_fin=projet.date_fin_previsionnelle %}
                                 {% if date_fin %}{{ date_fin|date:'d/m/Y' }}{% else %}Non déterminée{% endif %}
                             {% endwith %}
@@ -279,39 +294,39 @@
                             <p class="text-[#2B9C62] font-medium text-sm sm:text-base">{{ ordre.reference }}</p>
                             <p class="text-xs sm:text-sm text-gray-400 mt-1">{{ ordre.type_os.nom }}</p>
                         </div>
-                        <div class="flex flex-wrap gap-2 w-full sm:w-auto justify-start">
+                        <div class="flex flex-row flex-wrap gap-1.5 sm:gap-2 w-full sm:w-auto justify-start">
                             {% if ordre.statut == 'BROUILLON' %}
                             <form method="POST" action="{% url 'projets:notifier_ordre_service' projet.id ordre.id %}" class="inline">
                                 {% csrf_token %}
                                 <button type="submit" name="notifier_os" value="{{ ordre.id }}" 
-                                       class="btn-success px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center"
-                                       onclick="return confirm('Notifier cet ordre de service ?')">
-                                    <i class="fas fa-paper-plane"></i> <span>Notifier</span>
+                                    class="btn-success px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 btn-responsive justify-center whitespace-nowrap"
+                                    onclick="return confirm('Notifier cet ordre de service ?')">
+                                    <i class="fas fa-paper-plane"></i> <span class="hidden xs:inline">Notifier</span>
                                 </button>
                             </form>
                             {% endif %}
                             
                             <a href="{% url 'projets:details_ordre_service' projet.id ordre.id %}" 
-                               class="btn-primary px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center">
-                                <i class="fas fa-eye"></i> <span>Détails</span>
+                            class="btn-primary px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 btn-responsive justify-center whitespace-nowrap flex-1 sm:flex-none">
+                                <i class="fas fa-eye"></i> <span class="hidden xs:inline">Détails</span>
                             </a>
                             <a href="{% url 'projets:modifier_ordre_service' projet.id ordre.id %}" 
-                               class="btn-warning px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center">
-                                <i class="fas fa-edit"></i> <span>Modifier</span>
+                            class="btn-warning px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 btn-responsive justify-center whitespace-nowrap flex-1 sm:flex-none">
+                                <i class="fas fa-edit"></i> <span class="hidden xs:inline">Modifier</span>
                             </a>
                             <a href="{% url 'projets:supprimer_ordre_service' projet.id ordre.id %}" 
-                               class="btn-danger px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center"
-                               onclick="return confirm('Supprimer cet ordre de service ?')">
-                                <i class="fas fa-trash"></i> <span>Supprimer</span>
+                            class="btn-danger px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 btn-responsive justify-center whitespace-nowrap flex-1 sm:flex-none"
+                            onclick="return confirm('Supprimer cet ordre de service ?')">
+                                <i class="fas fa-trash"></i> <span class="hidden xs:inline">Supprimer</span>
                             </a>
 
                             {% if ordre.statut == 'BROUILLON' %}
-                            <form method="POST" class="inline w-full sm:w-auto">
+                            <form method="POST" class="inline flex-1 sm:flex-none">
                                 {% csrf_token %}
                                 <button type="submit" name="annuler_os" value="{{ ordre.id }}" 
-                                       class="btn-danger px-3 sm:px-4 py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2 btn-responsive w-full sm:w-auto justify-center"
-                                       onclick="return confirm('Annuler cet ordre de service ?')">
-                                    <i class="fas fa-times"></i> <span>Annuler</span>
+                                    class="btn-danger px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-medium flex items-center gap-1 btn-responsive justify-center whitespace-nowrap w-full"
+                                    onclick="return confirm('Annuler cet ordre de service ?')">
+                                    <i class="fas fa-times"></i> <span class="hidden xs:inline">Annuler</span>
                                 </button>
                             </form>
                             {% endif %}
