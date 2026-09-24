@@ -79,7 +79,16 @@
             <tbody class="bg-gray-800 divide-y divide-green-800">
                 {% for aff in affectations %}
                 <tr class="text-[#AECBD6]">
-                    <td class="px-4 py-3 font-medium text-white">{{ aff.materiel.designation }}</td>
+                    <td class="px-4 py-3">
+                        <div class="font-medium text-white">{{ aff.materiel.designation }}</div>
+                        {% if aff.materiel.immatriculation %}
+                            <div class="text-xs text-cyan-400 mt-0.5">
+                                <i class="fas fa-hashtag mr-1"></i>N° Parc {{ aff.materiel.immatriculation }}
+                            </div>
+                        {% else %}
+                            <div class="text-xs text-gray-500 mt-0.5 italic">— N° Parc non défini —</div>
+                        {% endif %}
+                    </td>
                     <td class="px-4 py-3">
                         {% if aff.materiel.type_materiel %}
                             <span class="inline-flex items-center gap-2">
@@ -110,6 +119,7 @@
                                 data-edit-affectation-button
                                 data-id="{{ aff.id }}"
                                 data-materiel-id="{{ aff.materiel_id }}"
+                                data-materiel-label="{{ aff.materiel.designation }}{% if aff.materiel.type_materiel %} ({{ aff.materiel.type_materiel.nom }}){% endif %}{% if aff.materiel.immatriculation %} — N° Parc {{ aff.materiel.immatriculation }}{% endif %}"
                                 data-date-debut="{{ aff.date_debut|date:'Y-m-d' }}"
                                 data-date-fin="{{ aff.date_fin|date:'Y-m-d' }}"
                                 data-commentaire="{{ aff.commentaire }}"
@@ -152,14 +162,26 @@
               class="needs-validation" novalidate>
             {% csrf_token %}
             <div class="mb-3">
-                <label for="addMateriel" class="block text-sm font-medium text-green-300 mb-1">Matériel</label>
-                <select id="addMateriel" name="materiel" required
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
-                    <option value="">— Sélectionner un matériel —</option>
+                <label for="addMaterielInput" class="block text-sm font-medium text-green-300 mb-1">
+                    Matériel (désignation ou N° Parc)
+                </label>
+                <input type="text"
+                    id="addMaterielInput"
+                    list="addMaterielList"
+                    autocomplete="off"
+                    placeholder="Tapez une désignation ou un N° Parc..."
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <input type="hidden" id="addMateriel" name="materiel" required>
+                <datalist id="addMaterielList">
                     {% for m in materiels_disponibles %}
-                        <option value="{{ m.id }}">{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}</option>
+                        <option data-id="{{ m.id }}"
+                                value="{% if m.immatriculation %}{{ m.immatriculation }} — {% endif %}{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}"></option>
                     {% endfor %}
-                </select>
+                </datalist>
+                <p class="text-xs text-gray-400 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Tapez quelques lettres ; le N° Parc s'affiche après la désignation.
+                </p>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="materiel">Veuillez choisir un matériel.</div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -212,13 +234,26 @@
             {% csrf_token %}
             <input type="hidden" id="editAffectationId" name="id">
             <div class="mb-3">
-                <label for="editMateriel" class="block text-sm font-medium text-green-300 mb-1">Matériel</label>
-                <select id="editMateriel" name="materiel" required
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <label for="editMaterielInput" class="block text-sm font-medium text-green-300 mb-1">
+                    Matériel (désignation ou N° Parc)
+                </label>
+                <input type="text"
+                    id="editMaterielInput"
+                    list="editMaterielList"
+                    autocomplete="off"
+                    placeholder="Tapez une désignation ou un N° Parc..."
+                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500">
+                <input type="hidden" id="editMateriel" name="materiel" required>
+                <datalist id="editMaterielList">
                     {% for m in materiels_disponibles %}
-                        <option value="{{ m.id }}">{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}</option>
+                        <option data-id="{{ m.id }}"
+                                value="{% if m.immatriculation %}{{ m.immatriculation }} — {% endif %}{{ m.designation }}{% if m.type_materiel %} ({{ m.type_materiel.nom }}){% endif %}"></option>
                     {% endfor %}
-                </select>
+                </datalist>
+                <p class="text-xs text-gray-400 mt-1">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Modifiez la désignation ou le N° Parc pour changer de matériel.
+                </p>
                 <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="materiel"></div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
@@ -270,9 +305,9 @@
         }
     }
 
-    function openEditAffectationModal(id, materielId, dateDebut, dateFin, commentaire) {
+    function openEditAffectationModal(id, materielId, materielLabel, dateDebut, dateFin, commentaire) {
         document.getElementById('editAffectationId').value = id;
-        document.getElementById('editMateriel').value = materielId;
+        setMaterielInputValue('editMaterielInput', 'editMateriel', materielLabel, materielId);
         document.getElementById('editDateDebut').value = dateDebut;
         document.getElementById('editDateFin').value = dateFin || '';
         document.getElementById('editCommentaire').value = commentaire || '';
@@ -284,12 +319,16 @@
         document.getElementById('addAffectationModal').style.display = 'none';
         document.getElementById('modalBackdrop').style.display = 'none';
         document.getElementById('addAffectationForm').reset();
+        document.getElementById('addMaterielInput').value = '';  
+        document.getElementById('addMateriel').value = '';       
         hideAllErrors('addAffectationForm');
     }
 
     function closeEditAffectationModal() {
         document.getElementById('editAffectationModal').style.display = 'none';
         document.getElementById('modalBackdrop').style.display = 'none';
+        document.getElementById('editMaterielInput').value = '';  
+        document.getElementById('editMateriel').value = '';       
         hideAllErrors('editAffectationForm');
     }
 
@@ -297,17 +336,64 @@
         closeAddAffectationModal();
         closeEditAffectationModal();
     }
+    
+    // ============================================================
+    // Synchronisation input (datalist) ↔ hidden input (ID)
+    // ============================================================
 
+    /**
+     * Associe la valeur tapée dans l'input à l'ID du matériel correspondant.
+     * Retourne l'ID ou '' si aucune correspondance exacte.
+     */
+    function syncMaterielIdFromInput(inputId, hiddenId) {
+        const input = document.getElementById(inputId);
+        const hidden = document.getElementById(hiddenId);
+        if (!input || !hidden) return '';
+
+        const valeur = input.value.trim();
+        if (!valeur) {
+            hidden.value = '';
+            return '';
+        }
+
+        // Chercher une <option> dont la value correspond exactement
+        const datalist = document.getElementById(input.getAttribute('list'));
+        if (!datalist) return '';
+
+        const option = Array.from(datalist.options).find(o => o.value === valeur);
+        hidden.value = option ? option.dataset.id : '';
+        return hidden.value;
+    }
+
+    /**
+     * Remplit l'input visible avec le label du matériel, et le hidden avec l'ID.
+     * Utile pour pré-remplir le modal d'édition.
+     */
+    function setMaterielInputValue(inputId, hiddenId, label, id) {
+        const input = document.getElementById(inputId);
+        const hidden = document.getElementById(hiddenId);
+        if (input) input.value = label || '';
+        if (hidden) hidden.value = id || '';
+    }
     // ============================================================
     // Gestion des erreurs
     // ============================================================
     function hideAllErrors(formId) {
         document.querySelectorAll(`#${formId} .invalid-feedback`).forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll(`#${formId} input, #${formId} select, #${formId} textarea`).forEach(el => el.classList.remove('border-red-500'));
+        document.querySelectorAll(`#${formId} input, #${formId} select, #${formId} textarea`)
+            .forEach(el => el.classList.remove('border-red-500'));
+        // Nettoyer aussi les inputs datalist (hors form ?)
+        document.getElementById('addMaterielInput')?.classList.remove('border-red-500');
+        document.getElementById('editMaterielInput')?.classList.remove('border-red-500');
     }
 
     function showFieldError(formId, fieldName, message) {
-        const input = document.querySelector(`#${formId} [name="${fieldName}"]`);
+        // Cas particulier : materiel → viser l'input visible
+        const selector = fieldName === 'materiel'
+            ? `#${formId === 'addAffectationForm' ? 'addMaterielInput' : 'editMaterielInput'}`
+            : `#${formId} [name="${fieldName}"]`;
+
+        const input = document.querySelector(selector);
         const feedback = document.querySelector(`#${formId} [data-error-for="${fieldName}"]`);
         if (input) input.classList.add('border-red-500');
         if (feedback) {
@@ -372,6 +458,7 @@
             openEditAffectationModal(
                 button.getAttribute('data-id'),
                 button.getAttribute('data-materiel-id'),
+                button.getAttribute('data-materiel-label'),
                 button.getAttribute('data-date-debut'),
                 button.getAttribute('data-date-fin'),
                 button.getAttribute('data-commentaire'),
@@ -427,6 +514,7 @@
     });
 
     function handleAddAffectation(form) {
+        syncMaterielIdFromInput('addMaterielInput', 'addMateriel');
         const materielInput = document.getElementById('addMateriel');
         const dateDebutInput = document.getElementById('addDateDebut');
         hideAllErrors('addAffectationForm');
@@ -491,6 +579,7 @@
     }
 
     function handleEditAffectation(form) {
+        syncMaterielIdFromInput('editMaterielInput', 'editMateriel');
         const materielInput = document.getElementById('editMateriel');
         const dateDebutInput = document.getElementById('editDateDebut');
         hideAllErrors('editAffectationForm');
