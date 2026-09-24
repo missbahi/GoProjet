@@ -3077,9 +3077,7 @@
         if (!isValid) return;
 
         const formData = new FormData(form);
-        const AJOUTER_TYPE_MATERIEL_URL = "{% url 'projets:ajouter_type_materiel' %}";
-
-        fetch(`${AJOUTER_TYPE_MATERIEL_URL}?modal=true`, {
+        fetch("{% url 'projets:ajouter_type_materiel' %}?modal=true", {
             method: 'POST',
             body: formData,
             headers: {
@@ -3091,8 +3089,9 @@
         .then(data => {
             if (data.success) {
                 closeAddTypeMaterielModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
+                // ⬇️ loadModule, pas rechargerRessourcesOuvertes
+                loadModule('{% url "projets:partial_types_materiel" %}', 'menu-types-materiel')
+                    .then(() => showSuccessMessage(data.message));
             } else {
                 alert('Erreur: ' + JSON.stringify(data.errors));
             }
@@ -3133,8 +3132,9 @@
         .then(data => {
             if (data.success) {
                 closeEditTypeMaterielModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
+                // ⬇️ CORRECTION : utiliser loadModule, pas rechargerRessourcesOuvertes
+                loadModule('{% url "projets:partial_types_materiel" %}', 'menu-types-materiel')
+                    .then(() => showSuccessMessage(data.message));
             } else {
                 alert('Erreur: ' + JSON.stringify(data.errors));
             }
@@ -3144,7 +3144,7 @@
             alert('Une erreur est survenue lors de la modification.');
         });
     }
-
+    
     // Transports
     function handleAddTransport(form) {
         const designationInput = document.getElementById('addTransportDesignation');
