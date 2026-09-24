@@ -29,6 +29,13 @@
     <table class="min-w-full bg-[#2E2E2E]" id="materielTable">
         <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
             <tr>
+                <th class="px-2 py-3 text-center w-10">
+                    <input type="checkbox"
+                        id="materielSelectAll"
+                        class="h-4 w-4 cursor-pointer"
+                        title="Tout sélectionner"
+                        onchange="toggleSelectAllMateriel(this)">
+                </th>
                 <th class="px-4 py-3 text-left">Désignation</th>
                 <th class="px-4 py-3 text-left">Type</th>
                 <th class="px-4 py-3 text-left">N° de parc</th>
@@ -42,7 +49,14 @@
             {% for engin in materiel %}
             <tr class="text-[#AECBD6]"
                 data-designation="{{ engin.designation|lower }}"
-                data-type-id="{{ engin.type_materiel_id|default:'' }}">
+                data-type-id="{{ engin.type_materiel_id|default:'' }}"
+                data-materiel-id="{{ engin.id }}">
+                <td class="px-2 py-3 text-center">
+                    <input type="checkbox"
+                        class="materiel-row-checkbox h-4 w-4 cursor-pointer"
+                        value="{{ engin.id }}"
+                        onchange="updateMaterielSelectionBar()">
+                </td>
                 <td class="px-4 py-3">{{ engin.designation }}</td>
                 <td class="px-3 py-1">
                     {% if engin.type_materiel %}
@@ -91,6 +105,26 @@
             {% endfor %}
         </tbody>
     </table>
+</div>
+<!-- Barre d'action en masse (cachée par défaut) -->
+<div id="materielBulkBar"
+     class="hidden mt-3 p-3 rounded-lg border border-red-700 bg-red-950/40 flex flex-wrap items-center justify-between gap-3">
+    <div class="text-sm text-red-200">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <span id="materielBulkCount">0</span> matériel(s) sélectionné(s)
+    </div>
+    <div class="flex flex-wrap gap-2">
+        <button type="button"
+                onclick="clearMaterielSelection()"
+                class="inline-flex items-center px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm">
+            <i class="fas fa-times mr-2"></i> Annuler la sélection
+        </button>
+        <button type="button"
+                onclick="supprimerSelectionMateriel()"
+                class="inline-flex items-center px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-500 transition text-sm shadow-lg">
+            <i class="fas fa-trash mr-2"></i> Supprimer la sélection
+        </button>
+    </div>
 </div>
 <p id="materielNoResult" class="hidden text-center py-4 text-gray-400 text-sm">
     Aucun résultat pour ce filtre.

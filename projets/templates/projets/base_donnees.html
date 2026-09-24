@@ -3724,6 +3724,104 @@
         });
 
         document.getElementById('materielNoResult')?.classList.toggle('hidden', visibles > 0);
+
+        // Réinitialiser la sélection quand le filtre change (évite les faux positifs)
+        document.querySelectorAll('#materielTable .materiel-row-checkbox').forEach(cb => {
+            const row = cb.closest('tr');
+            if (row.classList.contains('hidden')) cb.checked = false;
+        });
+        if (typeof updateMaterielSelectionBar === 'function') {
+            updateMaterielSelectionBar();
+        }
+    };
+    
+    // ============================================================
+    // Sélection multiple + suppression en masse
+    // ============================================================
+
+    window.toggleSelectAllMateriel = function(checkbox) {
+        const rows = document.querySelectorAll('#materielTable tbody tr:not(.hidden)');
+        rows.forEach(row => {
+            const cb = row.querySelector('.materiel-row-checkbox');
+            if (cb) cb.checked = checkbox.checked;
+        });
+        updateMaterielSelectionBar();
+    };
+
+    window.updateMaterielSelectionBar = function() {
+        const checkboxes = document.querySelectorAll('#materielTable .materiel-row-checkbox:checked');
+        const bar = document.getElementById('materielBulkBar');
+        const count = document.getElementById('materielBulkCount');
+        if (!bar || !count) return;
+
+        const n = checkboxes.length;
+        if (n > 0) {
+            bar.classList.remove('hidden');
+            count.textContent = n;
+        } else {
+            bar.classList.add('hidden');
+        }
+
+        // Synchroniser la case "Tout sélectionner"
+        const all = document.getElementById('materielSelectAll');
+        if (all) {
+            const total = document.querySelectorAll('#materielTable tbody tr:not(.hidden)').length;
+            all.checked = (n > 0 && n === total);
+            all.indeterminate = (n > 0 && n < total);
+        }
+    };
+
+    window.clearMaterielSelection = function() {
+        document.querySelectorAll('#materielTable .materiel-row-checkbox').forEach(cb => cb.checked = false);
+        const all = document.getElementById('materielSelectAll');
+        if (all) { all.checked = false; all.indeterminate = false; }
+        updateMaterielSelectionBar();
+    };
+
+    window.supprimerSelectionMateriel = function() {
+        const ids = Array.from(
+            document.querySelectorAll('#materielTable .materiel-row-checkbox:checked')
+        ).map(cb => cb.value);
+
+        if (ids.length === 0) return;
+
+        const msg = ids.length === 1
+            ? `Supprimer ce matériel ?`
+            : `⚠️ Supprimer ${ids.length} matériels ?\n\nCette action est irréversible.`;
+        if (!confirm(msg)) return;
+
+        // Double confirmation pour les gros volumes
+        if (ids.length > 10) {
+            if (!confirm(`Confirmer la suppression de ${ids.length} matériels ?`)) return;
+        }
+
+        fetch("{% url 'projets:supprimer_materiel_masse' %}", {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': getCsrfToken(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ids: ids })
+        })
+        .then(async r => {
+            const data = await r.json();
+            if (!r.ok || !data.success) throw data;
+            return data;
+        })
+        .then(data => {
+            showSuccessMessage(data.message || `${ids.length} matériel(s) supprimé(s).`);
+            // Recharger uniquement le conteneur ouvert (préserve l'accordéon)
+            if (typeof rechargerRessourcesOuvertes === 'function') {
+                rechargerRessourcesOuvertes();
+            } else {
+                loadModule('{% url "projets:partial_categories_charges" %}', 'menu-personnel');
+            }
+        })
+        .catch(error => {
+            console.error('Suppression en masse:', error);
+            showErrorMessage(error.message || 'Erreur lors de la suppression.');
+        });
     };
 </script>
 <script>

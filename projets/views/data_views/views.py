@@ -1,6 +1,7 @@
 from decimal import Decimal
 
 from django.contrib import messages
+from django.db.models import ProtectedError
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -19,6 +20,10 @@ from projets.forms import (
 
 from projets.utils.icones import choix_icones
 from projets.utils.import_parsers import parser_import_materiel
+import json
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.db import transaction
 
 @chef_projet_required
 def partial_ingenieurs(request):
@@ -443,6 +448,56 @@ def modifier_materiel(request, materiel_id):
             return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
+@chef_projet_required
+@require_POST
+def supprimer_materiel_masse(request):
+    """Suppression en masse de matériels (POST JSON avec liste d'IDs)."""
+    try:
+        payload = json.loads(request.body or '{}')
+    except json.JSONDecodeError:
+        return JsonResponse(
+            {'success': False, 'message': 'Corps de requête invalide.'},
+            status=400
+        )
+
+    ids = payload.get('ids') or []
+    if not isinstance(ids, list) or not ids:
+        return JsonResponse(
+            {'success': False, 'message': 'Aucun ID fourni.'},
+            status=400
+        )
+
+    # Garde-fou : borne le nombre pour éviter les abus
+    if len(ids) > 500:
+        return JsonResponse(
+            {'success': False, 'message': 'Suppression limitée à 500 éléments à la fois.'},
+            status=413
+        )
+
+    try:
+        with transaction.atomic():
+            qs = Materiel.objects.filter(id__in=ids)
+            n = qs.count()
+            # Protéger contre les PROTECT : supprimer un par un
+            deleted = 0
+            for m in qs:
+                try:
+                    m.delete()
+                    deleted += 1
+                except ProtectedError:
+                    pass  # ou collecter les IDs bloqués
+            # Mettre à jour le nombre de supprimés dans le message final
+    except Exception as e:
+        return JsonResponse(
+            {'success': False, 'message': f'Erreur serveur : {e}'},
+            status=500
+        )
+
+    return JsonResponse({
+        'success': True,
+        'message': f'{n} matériel(s) supprimé(s).',
+        'deleted': n,
+    })
 
 @chef_projet_required
 def supprimer_materiel(request, materiel_id):

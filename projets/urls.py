@@ -124,6 +124,7 @@ base_donnees_urlpatterns = [
     path('materiel/modifier/<int:materiel_id>/', data_views.modifier_materiel, name='modifier_materiel'),
     path('materiel/supprimer/<int:materiel_id>/', data_views.supprimer_materiel, name='supprimer_materiel'),
     path('base_donnees/materiel/', data_views.partial_materiel, name='partial_materiel'),
+    path('materiel/supprimer-masse/', data_views.supprimer_materiel_masse, name='supprimer_materiel_masse'),
 
     # Gestion des transports
     path('transports/ajouter/', data_views.ajouter_transport, name='ajouter_transport'),
