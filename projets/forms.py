@@ -393,8 +393,31 @@ class MaterielForm(forms.ModelForm):
                   "unite", "prix_unitaire", "actif"]
         widgets = {
             'designation': forms.TextInput(attrs={'placeholder': 'Pelle CAT 320D'}),
-            'immatriculation': forms.TextInput(attrs={'placeholder': 'N° de série'}),
+            'immatriculation': forms.TextInput(attrs={'placeholder': 'N° de parc'}),
         }
+        labels = {
+            'immatriculation': 'N° Parc',
+        }
+    
+    def clean_immatriculation(self):
+        """Vérifie l'unicité du N° Parc côté formulaire (sans contrainte BDD)."""
+        no_parc = self.cleaned_data.get('immatriculation')
+        
+        if not no_parc:
+            return no_parc  # autoriser vide
+        
+        qs = Materiel.objects.filter(immatriculation=no_parc)
+        
+        # Exclure l'instance en cours de modification
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+        
+        if qs.exists():
+            raise forms.ValidationError(
+                "Ce N° Parc existe déjà. Veuillez en choisir un autre."
+            )
+        
+        return no_parc
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

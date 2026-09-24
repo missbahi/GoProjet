@@ -603,13 +603,17 @@ def importer_materiels(request):
                 })
                 continue
 
-        # Vérifier si un matériel avec la même désignation existe déjà
-        existant = Materiel.objects.filter(designation__iexact=designation).first()
+        # === Unicité par N° Parc ===
+        no_parc = (ligne['immatriculation'] or '').strip()
+
+        existant = None
+        if no_parc:
+            existant = Materiel.objects.filter(immatriculation=no_parc).first()
 
         if existant:
             if update_existing and not dry_run:
+                existant.designation = designation
                 existant.type_materiel = type_materiel
-                existant.immatriculation = ligne['immatriculation'] or existant.immatriculation
                 existant.unite = ligne['unite'] or existant.unite
                 if ligne['prix'] is not None:
                     existant.prix_unitaire = ligne['prix']
@@ -630,7 +634,7 @@ def importer_materiels(request):
                 ignored.append({
                     'numero': num,
                     'designation': designation,
-                    'raison': "Un matériel avec cette désignation existe déjà.",
+                    'raison': f"Un matériel avec le N° Parc « {no_parc} » existe déjà.",
                 })
             continue
 
@@ -645,7 +649,7 @@ def importer_materiels(request):
             Materiel.objects.create(
                 designation=designation,
                 type_materiel=type_materiel,
-                immatriculation=ligne['immatriculation'] or '',
+                immatriculation=no_parc,
                 unite=ligne['unite'] or '',
                 prix_unitaire=ligne['prix'] or Decimal('0.00'),
                 actif=ligne['actif'],

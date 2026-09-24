@@ -31,7 +31,7 @@
             <tr>
                 <th class="px-4 py-3 text-left">Désignation</th>
                 <th class="px-4 py-3 text-left">Type</th>
-                <th class="px-4 py-3 text-left">Immatriculation / N° de série</th>
+                <th class="px-4 py-3 text-left">N° de parc</th>
                 <th class="px-4 py-3 text-left">Unité</th>
                 <th class="px-4 py-3 text-right">Prix unitaire (DH)</th>
                 <th class="px-4 py-3 text-center">Actif</th>
@@ -103,14 +103,14 @@
 </div>
 {% endif %}
 
-<div class="mt-6">
+<div class="mt-6 flex flex-wrap gap-3">
     <button data-add-materiel-button
             class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">
         <i class="fa-solid fa-plus mr-2"></i> Ajouter un matériel
     </button>
     <button type="button" data-import-materiel-button
-            class="bg-cyan-600 hover:bg-cyan-500 text-white px-3 py-2 rounded-lg text-sm md:text-base transition whitespace-nowrap">
-        <i class="fas fa-paste mr-1"></i> Importer depuis un tableur
+            class="inline-flex items-center px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-500 transition text-sm shadow-lg">
+        <i class="fas fa-paste mr-2"></i> Importer depuis un tableur
     </button>
 </div>
 
@@ -131,7 +131,7 @@
             <p class="text-sm text-gray-300 mb-3">
                 Copiez les lignes depuis Excel, LibreOffice ou Google Sheets et collez-les ci-dessous.
                 Les colonnes attendues sont :<br>
-                <strong>Désignation | Type | Immatriculation | Unité | Prix | Actif</strong>.
+                <strong>Désignation | Type | N° de parc | Unité | Prix | Actif</strong>.
             </p>
 
             <textarea id="importMaterielText" rows="10"

@@ -65,7 +65,7 @@ class Materiel(models.Model):
         related_name="materiels",
         verbose_name=_("Type de matériel"),
     )
-    immatriculation = models.CharField(_("Immatriculation / N° de série"), max_length=50, blank=True)
+    immatriculation = models.CharField(_("N° de parc"), max_length=50, blank=True)
     unite = models.CharField(_("Unité"), max_length=20, blank=True)
     prix_unitaire = models.DecimalField(_("Prix unitaire (DH)"), max_digits=12, decimal_places=2, default=0)
     actif = models.BooleanField(_("Actif"), default=True)
