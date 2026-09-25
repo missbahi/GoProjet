@@ -181,6 +181,7 @@ atelier_urlpatterns = [
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/<int:affectation_id>/modifier/', atelier_views.modifier_affectation, name='modifier_affectation'),
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/<int:affectation_id>/supprimer/', atelier_views.supprimer_affectation, name='supprimer_affectation'),
     path('materiel/importer/', data_views.importer_materiels, name='importer_materiels'),
+    path('projets/<int:projet_id>/ateliers/planning/', atelier_views.planning_ateliers, name='planning_ateliers',),
 ]
 
 # Gestion des taches

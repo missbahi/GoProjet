@@ -268,11 +268,16 @@ class AffectationRessourceForm(forms.ModelForm):
     """
     Formulaire d'affectation d'un matériel à un atelier.
 
-    Le formulaire peut être utilisé dans deux contextes :
-    - En création depuis la page « Matériels de l'atelier » : on passe
-      `atelier=...` et le champ atelier est masqué.
-    - En édition d'une affectation existante : on passe aussi `atelier=...`
-      pour figer l'atelier courant.
+    Contextes d'utilisation :
+    - Création depuis « Matériels de l'atelier » : `atelier=...` est passé,
+      le champ atelier est masqué/injecté.
+    - Édition d'une affectation existante : `atelier=...` fige l'atelier courant.
+
+    Règles métier validées :
+    1. L'atelier est obligatoire (injecté si absent des données).
+    2. La date de fin, si fournie, doit être ≥ date de début.
+    3. Un matériel ne peut pas être affecté à deux endroits sur des périodes
+       qui se chevauchent (tous ateliers confondus).
     """
 
     class Meta:
@@ -287,33 +292,40 @@ class AffectationRessourceForm(forms.ModelForm):
         self.atelier = atelier
         super().__init__(*args, **kwargs)
 
-        # Restreindre les ateliers disponibles
+        # --- Champ atelier ---
         qs_ateliers = Atelier.objects.filter(actif=True)
         if atelier:
+            # Conserver l'atelier courant même s'il est inactif
             qs_ateliers = Atelier.objects.filter(Q(actif=True) | Q(pk=atelier.pk))
         self.fields['atelier'].queryset = qs_ateliers.order_by('code')
-        self.fields['atelier'].required = False  # injecté par la vue si absent
+        self.fields['atelier'].required = False  # injecté par clean/save si absent
 
-        # Restreindre les matériels disponibles : actifs + celui déjà rattaché
+        # --- Champ materiel ---
+        # Conserver le matériel courant même s'il est inactif (édition)
         materiel_id = self.instance.materiel_id if self.instance and self.instance.pk else None
         qs_materiels = Materiel.objects.filter(actif=True)
         if materiel_id:
             qs_materiels = Materiel.objects.filter(Q(actif=True) | Q(pk=materiel_id))
-        self.fields['materiel'].queryset = qs_materiels.select_related('type_materiel').order_by('designation')
+        self.fields['materiel'].queryset = (
+            qs_materiels.select_related('type_materiel').order_by('designation')
+        )
 
-        # Pré-remplir les dates au format HTML5
+        # --- Pré-remplissage HTML5 des dates ---
         for nom in ('date_debut', 'date_fin'):
             valeur = getattr(self.instance, nom, None)
             if valeur:
                 self.initial[nom] = valeur.strftime('%Y-%m-%d')
 
+    # ------------------------------------------------------------------
+    # Validation
+    # ------------------------------------------------------------------
+
     def clean(self):
         cleaned = super().clean()
-
-        # 1. Injecter l'atelier courant si non fourni dans les données
+        # 1. Injection / validation de l'atelier
         atelier = cleaned.get('atelier') or self.atelier
         if not atelier:
-            self.add_error('atelier', "L'atelier est obligatoire.")
+            self.add_error('atelier', _("L'atelier est obligatoire."))
             return cleaned
         cleaned['atelier'] = atelier
 
@@ -323,49 +335,87 @@ class AffectationRessourceForm(forms.ModelForm):
 
         # 2. Cohérence des dates
         if debut and fin and fin < debut:
-            self.add_error('date_fin', "La date de fin ne peut précéder la date de début.")
-            return cleaned
+            self.add_error(
+                'date_fin',
+                _("La date de fin ne peut précéder la date de début.")
+            )
+            # On continue : d'autres erreurs peuvent être utiles à l'utilisateur
 
-        # 3. Détection de chevauchement
+        # 3. Détection de chevauchement (requête SQL, pas de boucle Python)
         if materiel and debut:
-            qs = AffectationRessource.objects.filter(materiel=materiel)
-            if self.instance.pk:
-                qs = qs.exclude(pk=self.instance.pk)
-
-            # Une période A [d1, f1] chevauche une période B [d2, f2]
-            # si et seulement si : d1 <= f2 AND d2 <= f1
-            # f1 ou f2 = None signifie « jusqu'à nouvel ordre » (infini).
-            #
-            # On traduit :
-            #   - d1 <= f2  : si f2 est None, toujours vrai
-            #   - d2 <= f1  : si f1 est None, toujours vrai
-            for autre in qs:
-                d2 = autre.date_debut
-                f2 = autre.date_fin
-
-                # Condition 1 : notre début <= fin de l'autre
-                cond1 = (f2 is None) or (debut <= f2)
-                # Condition 2 : début de l'autre <= notre fin (ou notre fin infinie)
-                cond2 = (fin is None) or (d2 <= fin)
-
-                if cond1 and cond2:
-                    self.add_error(
-                        'materiel',
-                        f"Ce matériel est déjà affecté à l'atelier "
-                        f"« {autre.atelier.libelle} » du "
-                        f"{d2.strftime('%d/%m/%Y')} au "
-                        f"{f2.strftime('%d/%m/%Y') if f2 else 'nouvel ordre'}."
-                    )
-                    break
+            conflit = self._trouver_conflit(materiel, debut, fin)
+            if conflit:
+                self.add_error('materiel', self._message_conflit(conflit))
 
         return cleaned
 
+    def _trouver_conflit(self, materiel, debut, fin):
+        """
+        Retourne la première AffectationRessource qui chevauche [debut, fin]
+        pour ce matériel, ou None.
+
+        Deux périodes [d1, f1] et [d2, f2] se chevauchent si :
+            d1 <= f2   ET   d2 <= f1
+        où f = None signifie « infini » (en cours).
+
+        Traduction SQL :
+            - d1 <= f2  →  filtre : date_fin__gte=debut  OU  date_fin__isnull=True
+            - d2 <= f1  →  filtre : date_debut__lte=fin  OU  (fin is None → pas de filtre)
+        """
+        qs = AffectationRessource.objects.filter(materiel=materiel)
+
+        # Exclusion de l'affectation en cours d'édition
+        if self.instance and self.instance.pk:
+            qs = qs.exclude(pk=self.instance.pk)
+
+        # Condition 1 : l'autre finit après notre début (ou est en cours)
+        qs = qs.filter(Q(date_fin__isnull=True) | Q(date_fin__gte=debut))
+
+        # Condition 2 : l'autre commence avant notre fin (ou notre fin est infinie)
+        if fin is not None:
+            qs = qs.filter(date_debut__lte=fin)
+        # sinon : pas de borne supérieure, toute affectation future compte
+
+        return qs.select_related('atelier').order_by('date_debut').first()
+
+    @staticmethod
+    def _message_conflit(conflit):
+        """Construit un message d'erreur lisible."""
+        fin_txt = (
+            conflit.date_fin.strftime('%d/%m/%Y')
+            if conflit.date_fin else _("nouvel ordre")
+        )
+        return _(
+            "Ce matériel est déjà affecté à l'atelier « %(atelier)s » "
+            "du %(debut)s au %(fin)s."
+        ) % {
+            'atelier': f"{conflit.atelier.code} – {conflit.atelier.libelle}",
+            'debut': conflit.date_debut.strftime('%d/%m/%Y'),
+            'fin': fin_txt,
+        }
+
+    # ------------------------------------------------------------------
+    # Sauvegarde
+    # ------------------------------------------------------------------
+
     def save(self, commit=True):
         affectation = super().save(commit=False)
-        if not affectation.atelier_id and self.atelier:
-            affectation.atelier = self.atelier
+
+        # Injection défensive de l'atelier
+        if not affectation.atelier_id:
+            if self.atelier:
+                affectation.atelier = self.atelier
+            else:
+                # Ne devrait jamais arriver si clean() a été appelé
+                raise ValueError(
+                    "Impossible de sauvegarder une affectation sans atelier."
+                )
+
         if commit:
             affectation.save()
+            # Nécessaire si le formulaire contient des m2m (pas le cas ici, mais bon réflexe)
+            self.save_m2m()
+
         return affectation
 
 class TypeMaterielForm(forms.ModelForm):

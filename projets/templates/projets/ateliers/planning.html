@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Planning des ateliers – {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+
+        /* Gantt */
+        .gantt-row {
+            display: flex;
+            align-items: stretch;
+            min-height: 42px;
+            border-bottom: 1px solid #374151;
+        }
+        .gantt-label {
+            width: 260px;
+            flex-shrink: 0;
+            padding: 0.5rem 0.75rem;
+            border-right: 1px solid #374151;
+            font-size: 0.8rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .gantt-track {
+            position: relative;
+            flex: 1;
+            background-image:
+                repeating-linear-gradient(
+                    to right,
+                    transparent 0,
+                    transparent calc(100% / {{ duree_totale }} - 1px),
+                    #374151 calc(100% / {{ duree_totale }} - 1px),
+                    #374151 calc(100% / {{ duree_totale }})
+                );
+        }
+        .gantt-bar {
+            position: absolute;
+            top: 6px;
+            bottom: 6px;
+            min-width: 30px;           
+            border-radius: 4px;
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+            color: white;
+            font-size: 0.7rem;
+            /* padding: 2px 6px; */
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            cursor: pointer;
+            transition: transform 0.15s;
+            z-index: 2;                 /* ← au-dessus du fond */
+        }
+
+        .gantt-bar:hover { transform: scaleY(1.05); }
+        .gantt-bar.en-cours {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .gantt-header {
+            display: flex;
+            border-bottom: 2px solid #4B5563;
+            background: #1F2937;
+        }
+        .gantt-header .gantt-label {
+            font-weight: bold;
+            color: #2B9C62;
+        }
+        .gantt-header-days {
+            display: flex;
+            flex: 1;
+        }
+        .gantt-header-day {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 0;
+            font-size: 0.7rem;
+            color: #9CA3AF;
+            border-right: 1px solid #374151;
+        }
+        .gantt-header-day.weekend {
+            background: #1F2937;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-6">
+
+<div class="max-w-7xl mx-auto">
+    <!-- En-tête -->
+    <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+        <div>
+            <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
+                <i class="fas fa-calendar-days"></i>
+                Planning des ateliers – {{ projet.nom }}
+            </h1>
+            <p class="text-sm text-gray-400">
+                Du <span class="text-cyan-300">{{ debut|date:"d/m/Y" }}</span>
+                au <span class="text-cyan-300">{{ fin|date:"d/m/Y" }}</span>
+                ({{ duree_totale }} jour{{ duree_totale|pluralize }})
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'projets:ateliers_projet' projet.id %}"
+               class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                <i class="fas fa-arrow-left"></i> Retour aux ateliers
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <form method="get" class="mb-4 bg-gray-800 p-3 rounded-lg flex flex-wrap gap-3 items-end">
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Atelier</label>
+            <select name="atelier" class="px-3 py-2 bg-gray-700 border border-green-800 rounded text-white text-sm">
+                <option value="">Tous les ateliers</option>
+                {% for a in ateliers %}
+                    <option value="{{ a.id }}" {% if atelier_selectionne == a.id|stringformat:"s" %}selected{% endif %}>
+                        {{ a.code }} – {{ a.libelle }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Début</label>
+            <input type="date" name="debut" value="{{ debut|date:'Y-m-d' }}"
+                   class="px-3 py-2 bg-gray-700 border border-green-800 rounded text-white text-sm">
+        </div>
+        <div>
+            <label class="block text-xs text-gray-400 mb-1">Fin</label>
+            <input type="date" name="fin" value="{{ fin|date:'Y-m-d' }}"
+                   class="px-3 py-2 bg-gray-700 border border-green-800 rounded text-white text-sm">
+        </div>
+        <button type="submit"
+                class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+            <i class="fas fa-filter"></i> Filtrer
+        </button>
+        <a href="{% url 'projets:planning_ateliers' projet.id %}"
+           class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg text-sm">
+            Réinitialiser
+        </a>
+    </form>
+
+    <!-- Légende -->
+    <div class="mb-4 flex flex-wrap gap-4 text-sm">
+        <span class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded" style="background: linear-gradient(135deg,#22d3ee,#0ea5e9);"></span>
+            Affectation terminée
+        </span>
+        <span class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded" style="background: linear-gradient(135deg,#10b981,#059669);"></span>
+            En cours (pas de date de fin)
+        </span>
+    </div>
+
+    <!-- Gantt -->
+    {% if lignes %}
+    <div class="bg-gray-800 rounded-lg overflow-x-auto p-2">
+        <div class="min-w-[900px]">
+            <!-- En-tête avec jours -->
+            <div class="gantt-header">
+                <div class="gantt-label">Matériel</div>
+                <div class="gantt-header-days">
+                    {% for i in "x"|rjust:duree_totale %}
+                        {# On affiche un label tous les 1 jour ; adaptez si trop dense #}
+                    {% endfor %}
+                    {% for jour in jours_periode %}
+                        <div class="gantt-header-day {% if jour.weekday >= 5 %}weekend{% endif %}"
+                             title="{{ jour|date:'d/m/Y' }}">
+                            {{ jour|date:"d" }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Lignes -->
+            {% for materiel_id, barres in lignes.items %}
+                <div class="gantt-row">
+                    <div class="gantt-label">
+                        <div class="font-semibold text-white truncate">
+                            {{ barres.0.affectation.materiel.designation }}
+                        </div>
+                        <div class="text-xs text-cyan-400">
+                            {% if barres.0.affectation.materiel.immatriculation %}
+                                N° Parc {{ barres.0.affectation.materiel.immatriculation }}
+                            {% else %}
+                                <span class="text-gray-500 italic">— N° Parc non défini —</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="gantt-track">
+                        {% for barre in barres %}
+                            <div class="gantt-bar {% if barre.en_cours %}en-cours{% endif %}"
+                                 style="left: {{ barre.offset_pct }}%; width: {{ barre.largeur_pct }}%;"
+                                 title="{{ barre.atelier_code }} – {{ barre.atelier_libelle }}&#10;Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.date_fin_reelle %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% else %}(en cours){% endif %}">
+                                {{ barre.atelier_code }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+    <div class="md:hidden mt-4 space-y-2">
+        {% for aff in affectations %}
+        <div class="p-3 rounded border border-gray-700 bg-gray-800">
+            <div class="font-medium text-white">{{ aff.materiel.designation }}</div>
+            <div class="text-xs text-cyan-400 mb-1">
+                {% if aff.materiel.immatriculation %}N° Parc {{ aff.materiel.immatriculation }}{% endif %}
+            </div>
+            <div class="text-sm text-gray-300">
+                Atelier {{ aff.atelier.code }} – {{ aff.atelier.libelle }}
+            </div>
+            <div class="text-xs text-gray-400 mt-1">
+                Du {{ aff.date_debut|date:"d/m/Y" }}
+                {% if aff.date_fin %}au {{ aff.date_fin|date:"d/m/Y" }}{% else %}<span class="text-green-400">(en cours)</span>{% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="p-6 bg-green-900/50 text-green-200 rounded-lg border border-green-700 text-center">
+        <i class="fas fa-calendar-xmark text-3xl mb-2"></i>
+        <p class="text-base md:text-lg">Aucune affectation sur cette période.</p>
+        <p class="text-sm text-green-300 mt-2">Ajustez les dates ou affectez du matériel aux ateliers.</p>
+    </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

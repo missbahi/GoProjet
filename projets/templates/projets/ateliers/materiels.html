@@ -307,10 +307,17 @@
 
     function openEditAffectationModal(id, materielId, materielLabel, dateDebut, dateFin, commentaire) {
         document.getElementById('editAffectationId').value = id;
-        setMaterielInputValue('editMaterielInput', 'editMateriel', materielLabel, materielId);
-        document.getElementById('editDateDebut').value = dateDebut;
+        
+        // Remplir l'input visible (pour l'utilisateur)
+        document.getElementById('editMaterielInput').value = materielLabel || '';
+        
+        // ⚠️ Remplir DIRECTEMENT le hidden avec l'ID (pas de sync via label)
+        document.getElementById('editMateriel').value = materielId || '';
+        
+        document.getElementById('editDateDebut').value = dateDebut || '';
         document.getElementById('editDateFin').value = dateFin || '';
         document.getElementById('editCommentaire').value = commentaire || '';
+        
         document.getElementById('editAffectationModal').style.display = 'block';
         document.getElementById('modalBackdrop').style.display = 'block';
     }
@@ -532,7 +539,7 @@
 
         const formData = new FormData(form);
         const baseUrl = window.location.pathname.replace(/\/$/, ''); // .../materiels
-        const url = baseUrl + '/ajouter/?modal=true';
+        const url = baseUrl + '/ajouter/';
 
         fetch(url, {
             method: 'POST',
@@ -579,8 +586,19 @@
     }
 
     function handleEditAffectation(form) {
-        syncMaterielIdFromInput('editMaterielInput', 'editMateriel');
         const materielInput = document.getElementById('editMateriel');
+        const materielVisible = document.getElementById('editMaterielInput');
+        
+        // Synchroniser SEULEMENT si le label affiché a changé depuis l'ouverture
+        // (sinon on garde l'ID déjà injecté par openEditAffectationModal)
+        const datalist = document.getElementById('editMaterielList');
+        const option = Array.from(datalist.options).find(o => o.value === materielVisible.value.trim());
+        if (option) {
+            materielInput.value = option.dataset.id;
+        }
+        // Si aucune option ne correspond, on garde la valeur actuelle du hidden
+        // (qui a été injectée par openEditAffectationModal)
+        
         const dateDebutInput = document.getElementById('editDateDebut');
         hideAllErrors('editAffectationForm');
 
@@ -598,8 +616,9 @@
         const id = document.getElementById('editAffectationId').value;
         const formData = new FormData(form);
         const baseUrl = window.location.pathname.replace(/\/$/, ''); // .../materiels
-        const url = `${baseUrl}/${id}/modifier/?modal=true`;
-
+        const url = `${baseUrl}/${id}/modifier/`;
+        console.log(`[DEBUG] URL de modification : ${url}`);
+        console.log(`[DEBUG] FormData:`, Array.from(formData.entries()));
         fetch(url, {
             method: 'POST',
             body: formData,
@@ -609,6 +628,8 @@
             },
         })
         .then(async response => {
+            console.log('[DEBUG] Status HTTP :', response.status);
+            console.log('[DEBUG] Content-Type :', response.headers.get('content-type'));
             const contentType = response.headers.get('content-type') || '';
             if (!contentType.includes('application/json')) {
                 const text = await response.text();
