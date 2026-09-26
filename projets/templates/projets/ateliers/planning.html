@@ -5,19 +5,71 @@
     <title>Planning des ateliers – {{ projet.nom }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     {% load static %}
-    {% load l10n %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+        /* ============================================================
+           Base
+           ============================================================ */
+        body {
+            background-color: #2E2E2E;
+            color: #AECBD6;
+            font-family: Arial, sans-serif;
+        }
 
-        /* Gantt */
+        /* ============================================================
+           Structure du Gantt
+           ============================================================ */
+        .gantt-container {
+            width: calc(260px + {{ duree_totale }} * 28px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .gantt-header {
+            display: flex;
+            border-bottom: 2px solid #4B5563;
+            background: #1F2937;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .gantt-header .gantt-label {
+            font-weight: bold;
+            color: #2B9C62;
+            font-size: 0.85rem;
+        }
+
+        .gantt-header-days {
+            display: flex;
+            flex: 1;
+        }
+
+        .gantt-header-day {
+            flex: 1;
+            text-align: center;
+            padding: 0.5rem 0;
+            font-size: 0.7rem;
+            color: #9CA3AF;
+            border-right: 1px solid #374151;
+            min-width: 0;
+        }
+
+        .gantt-header-day.weekend {
+            background: #1F2937;
+            color: #6B7280;
+        }
+
+        /* ============================================================
+           Lignes génériques
+           ============================================================ */
         .gantt-row {
             display: flex;
             align-items: stretch;
-            /* min-height: 42px; */
             border-bottom: 1px solid #374151;
         }
+
         .gantt-label {
             width: 260px;
             flex-shrink: 0;
@@ -28,18 +80,18 @@
             flex-direction: column;
             justify-content: center;
         }
+
         .gantt-track {
             position: relative;
             flex: 1;
-            /* Grille retirée : les bordures du header suffisent */
         }
+
+        /* ============================================================
+           Barres
+           ============================================================ */
         .gantt-bar {
             position: absolute;
-            top: 20px;
-            bottom: 20px;
-            min-width: 2px;
             border-radius: 4px;
-            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
             color: white;
             font-size: 0.7rem;
             overflow: hidden;
@@ -52,46 +104,167 @@
             align-items: center;
             padding: 0 4px;
         }
-        .gantt-bar:hover { transform: scaleY(1.05); }
+
+        .gantt-bar:hover {
+            transform: scaleY(1.05);
+        }
+
         .gantt-bar.en-cours {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
-        .gantt-header {
-            display: flex;
+
+        /* ============================================================
+           Hiérarchie : ligne PARENT (atelier)
+           ============================================================ */
+        .gantt-row-parent {
+            background-color: #1F2937;
             border-bottom: 2px solid #4B5563;
-            background: #1F2937;
+            min-height: 44px;
         }
-        .gantt-header .gantt-label {
-            font-weight: bold;
-            color: #2B9C62;
+
+        .gantt-row-parent:hover {
+            background-color: #263041;
         }
-        .gantt-header-days {
+
+        .gantt-label-parent {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.6rem;
+        }
+
+        /* Bouton de repli/dépli */
+        .gantt-toggle {
+            width: 22px;
+            height: 22px;
             display: flex;
-            flex: 1;
-        }
-        .gantt-header-day {
-            flex: 1;
-            text-align: center;
-            padding: 0.5rem 0;
-            font-size: 0.7rem;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+            background: #374151;
             color: #9CA3AF;
-            border-right: 1px solid #374151;
-            min-width: 0;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s, transform 0.2s;
+            flex-shrink: 0;
         }
-        .gantt-header-day.weekend {
-            background: #1F2937;
-            color: #6B7280;
+
+        .gantt-toggle:hover {
+            background: #4B5563;
+            color: white;
         }
-        /* Largeur minimale dynamique */
-        .gantt-container {
-            width: calc(260px + {{ duree_totale }} * 28px);
+
+        .gantt-toggle-icon {
+            font-size: 0.7rem;
+            transition: transform 0.2s;
+        }
+
+        .gantt-toggle[aria-expanded="false"] .gantt-toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* Barre parente : plus foncée, plus haute */
+        .gantt-bar-parent {
+            top: 6px;
+            bottom: 6px;
+            background: linear-gradient(135deg, #0e7490 0%, #155e75 100%);
+            font-weight: bold;
+            font-size: 0.75rem;
+            z-index: 3;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        .gantt-bar-parent.en-cours {
+            background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+        }
+
+        /* ============================================================
+           Hiérarchie : lignes ENFANTS (matériels)
+           ============================================================ */
+        .gantt-row-child {
+            background-color: #2E2E2E;
+            min-height: 36px;
+        }
+
+        .gantt-row-child:hover {
+            background-color: #3a3a3a;
+        }
+
+        .gantt-label-child {
+            padding-left: 2rem;
+            font-size: 0.75rem;
+            position: relative;
+        }
+
+        /* Trait vertical de hiérarchie */
+        .gantt-label-child::before {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: #4B5563;
+        }
+
+        /* Trait horizontal de hiérarchie */
+        .gantt-label-child::after {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            width: 0.75rem;
+            height: 1px;
+            background: #4B5563;
+        }
+
+        /* Barres enfants : plus fines */
+        .gantt-bar-child {
+            top: 8px;
+            bottom: 8px;
+            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
+            font-size: 0;
+            padding: 0;
+        }
+
+        .gantt-bar-child.en-cours {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+
+        /* ============================================================
+           Repli/dépli
+           ============================================================ */
+        .gantt-children {
+            overflow: hidden;
+            transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+            max-height: 5000px;
+            opacity: 1;
+        }
+
+        .gantt-children[hidden] {
+            display: none;
+        }
+
+        /* ============================================================
+           Impression : tout afficher
+           ============================================================ */
+        @media print {
+            .gantt-children[hidden] {
+                display: block !important;
+            }
+            .gantt-toggle {
+                display: none;
+            }
+            .gantt-header {
+                position: static;
+            }
         }
     </style>
 </head>
 <body class="p-4 md:p-6">
 
 <div class="max-w-7xl mx-auto">
-    <!-- En-tête -->
+    <!-- ============================================================
+         En-tête
+         ============================================================ -->
     <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-3">
         <div>
             <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
@@ -102,6 +275,10 @@
                 Du <span class="text-cyan-300">{{ debut|date:"d/m/Y" }}</span>
                 au <span class="text-cyan-300">{{ fin|date:"d/m/Y" }}</span>
                 ({{ duree_totale }} jour{{ duree_totale|pluralize }})
+                {% if nb_materiels_total %}
+                    — <span class="text-cyan-300">{{ nb_materiels_total }}</span>
+                    matériel{{ nb_materiels_total|pluralize }} affecté{{ nb_materiels_total|pluralize }}
+                {% endif %}
             </p>
         </div>
         <div class="flex gap-2 flex-wrap">
@@ -112,7 +289,9 @@
         </div>
     </div>
 
-    <!-- Filtres -->
+    <!-- ============================================================
+         Filtres
+         ============================================================ -->
     <form method="get" class="mb-4 bg-gray-800 p-3 rounded-lg flex flex-wrap gap-3 items-end">
         <div>
             <label class="block text-xs text-gray-400 mb-1">Atelier</label>
@@ -145,25 +324,44 @@
         </a>
     </form>
 
-    <!-- Légende -->
-    <div class="mb-4 flex flex-wrap gap-4 text-sm">
+    <!-- ============================================================
+         Légende + boutons globaux
+         ============================================================ -->
+    <div class="mb-4 flex flex-wrap gap-4 text-sm items-center">
+        <span class="flex items-center gap-2">
+            <span class="inline-block w-4 h-4 rounded" style="background: linear-gradient(135deg,#0e7490,#155e75);"></span>
+            Atelier (parent)
+        </span>
         <span class="flex items-center gap-2">
             <span class="inline-block w-4 h-4 rounded" style="background: linear-gradient(135deg,#22d3ee,#0ea5e9);"></span>
             Affectation terminée
         </span>
         <span class="flex items-center gap-2">
             <span class="inline-block w-4 h-4 rounded" style="background: linear-gradient(135deg,#10b981,#059669);"></span>
-            En cours (pas de date de fin)
+            En cours
         </span>
+
+        <div class="ml-auto flex gap-2">
+            <button type="button" id="gantt-expand-all"
+                    class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs flex items-center gap-1">
+                <i class="fas fa-angles-down"></i> Tout déplier
+            </button>
+            <button type="button" id="gantt-collapse-all"
+                    class="px-3 py-1 bg-gray-700 hover:bg-gray-600 text-white rounded text-xs flex items-center gap-1">
+                <i class="fas fa-angles-up"></i> Tout replier
+            </button>
+        </div>
     </div>
 
-    <!-- Gantt -->
-    {% if lignes %}
+    <!-- ============================================================
+         Gantt
+         ============================================================ -->
+    {% if lignes_hierarchiques %}
     <div class="bg-gray-800 rounded-lg overflow-x-auto p-2">
         <div class="gantt-container">
             <!-- En-tête avec jours -->
             <div class="gantt-header">
-                <div class="gantt-label">Matériel</div>
+                <div class="gantt-label">Atelier / Matériel</div>
                 <div class="gantt-header-days">
                     {% for jour in jours_periode %}
                         <div class="gantt-header-day {% if jour.weekday >= 5 %}weekend{% endif %}"
@@ -174,65 +372,127 @@
                 </div>
             </div>
 
-            <!-- Lignes -->
-            {% for materiel_id, ligne in lignes.items %}
-                <div class="gantt-row">
-                    <div class="gantt-label">
-                        <div class="font-semibold text-white truncate" title="{{ ligne.materiel.designation }}">
-                            {{ ligne.materiel.designation }}
-                        </div>
-                        {% if ligne.materiel.type_materiel %}
-                            <div class="text-xs text-gray-400 truncate">
-                                {{ ligne.materiel.type_materiel.nom }}
+            <!-- Lignes hiérarchiques -->
+            {% for ligne in lignes_hierarchiques %}
+                <!-- Ligne PARENT : Atelier -->
+                <div class="gantt-row gantt-row-parent"
+                     data-atelier-id="{{ ligne.atelier.id }}">
+                    <div class="gantt-label gantt-label-parent">
+                        <div class="flex items-center gap-2">
+                            <button type="button"
+                                    class="gantt-toggle"
+                                    data-toggle-atelier="{{ ligne.atelier.id }}"
+                                    aria-expanded="true"
+                                    aria-controls="atelier-{{ ligne.atelier.id }}-children"
+                                    title="Replier / déplier">
+                                <i class="fas fa-chevron-down gantt-toggle-icon"></i>
+                            </button>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-white truncate"
+                                     title="Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}">
+                                    Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}
+                                </div>
+                                <div class="text-xs text-gray-400">
+                                    {{ ligne.barre_parent.nb_enfants }}
+                                    matériel{{ ligne.barre_parent.nb_enfants|pluralize }}
+                                </div>
                             </div>
-                        {% endif %}
-                        <div class="text-xs text-cyan-400 truncate">
-                            {% if ligne.materiel.immatriculation %}
-                                N° Parc {{ ligne.materiel.immatriculation }}
-                            {% else %}
-                                <span class="text-gray-500 italic">— N° Parc non défini —</span>
-                            {% endif %}
                         </div>
                     </div>
                     <div class="gantt-track">
-                        {% for barre in ligne.barres %}
-                            <div class="gantt-bar {% if barre.en_cours %}en-cours{% endif %}"
-                                 style="left: {{ barre.offset_pct }}%; width: {{ barre.largeur_pct }}%;"
-                                 role="img"
-                                 aria-label="Atelier {{ barre.atelier_code }} — {{ barre.atelier_libelle }} — Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}à aujourd'hui{% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}"
-                                 title="{{ barre.atelier_code }} – {{ barre.atelier_libelle }} — Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}(en cours){% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}">
-                                {{ barre.atelier_code }}
-                            </div>
-                        {% endfor %}
+                        <div class="gantt-bar gantt-bar-parent {% if ligne.barre_parent.en_cours %}en-cours{% endif %}"
+                             style="left: {{ ligne.barre_parent.offset_pct }}%; width: {{ ligne.barre_parent.largeur_pct }}%;"
+                             role="img"
+                             aria-label="Atelier {{ ligne.atelier.code }} — {{ ligne.barre_parent.nb_enfants }} matériel(s)"
+                             title="{{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}&#10;{{ ligne.barre_parent.nb_enfants }} matériel(s)&#10;Du {{ ligne.barre_parent.date_debut|date:'d/m/Y' }} au {{ ligne.barre_parent.date_fin|date:'d/m/Y' }}">
+                            {{ ligne.atelier.code }} ({{ ligne.barre_parent.nb_enfants }})
+                        </div>
                     </div>
+                </div>
+
+                <!-- Lignes ENFANTS : Matériels -->
+                <div id="atelier-{{ ligne.atelier.id }}-children"
+                     class="gantt-children"
+                     data-children-of="{{ ligne.atelier.id }}">
+                    {% for barre in ligne.enfants %}
+                        <div class="gantt-row gantt-row-child">
+                            <div class="gantt-label gantt-label-child">
+                                <div class="font-medium text-white truncate"
+                                     title="{{ barre.materiel_designation }}">
+                                    {{ barre.materiel_designation }}
+                                </div>
+                                {% if barre.materiel_type %}
+                                    <div class="text-xs text-gray-400 truncate">
+                                        {{ barre.materiel_type }}
+                                    </div>
+                                {% endif %}
+                                <div class="text-xs text-cyan-400 truncate">
+                                    {% if barre.materiel_immatriculation %}
+                                        N° Parc {{ barre.materiel_immatriculation }}
+                                    {% else %}
+                                        <span class="text-gray-500 italic">— N° Parc non défini —</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="gantt-track">
+                                <div class="gantt-bar gantt-bar-child {% if barre.en_cours %}en-cours{% endif %}"
+                                     style="left: {{ barre.offset_pct }}%; width: {{ barre.largeur_pct }}%;"
+                                     role="img"
+                                     aria-label="{{ barre.materiel_designation }} — Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}à aujourd'hui{% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}"
+                                     title="{{ barre.materiel_designation }}&#10;Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}(en cours){% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
                 </div>
             {% endfor %}
         </div>
     </div>
 
-    <!-- Vue mobile -->
+    <!-- ============================================================
+         Vue mobile (< md)
+         ============================================================ -->
     <div class="md:hidden mt-4 space-y-2">
-        {% for aff in affectations %}
-        <div class="p-3 rounded border border-gray-700 bg-gray-800">
-            <div class="font-medium text-white">{{ aff.materiel.designation }}</div>
-            {% if aff.materiel.type_materiel %}
-                <div class="text-xs text-gray-400">{{ aff.materiel.type_materiel.nom }}</div>
-            {% endif %}
-            <div class="text-xs text-cyan-400 mb-1">
-                {% if aff.materiel.immatriculation %}N° Parc {{ aff.materiel.immatriculation }}{% endif %}
-            </div>
-            <div class="text-sm text-gray-300">
-                Atelier {{ aff.atelier.code }} – {{ aff.atelier.libelle }}
-            </div>
-            <div class="text-xs text-gray-400 mt-1">
-                Du {{ aff.date_debut|date:"d/m/Y" }}
-                {% if aff.date_fin %}au {{ aff.date_fin|date:"d/m/Y" }}{% else %}<span class="text-green-400">(en cours)</span>{% endif %}
-            </div>
-        </div>
+        {% for ligne in lignes_hierarchiques %}
+            <details class="rounded border border-gray-700 bg-gray-800" open>
+                <summary class="p-3 cursor-pointer flex items-center gap-2 select-none">
+                    <i class="fas fa-chevron-right text-cyan-400 transition-transform"></i>
+                    <span class="font-bold text-white flex-1 truncate">
+                        Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        ({{ ligne.barre_parent.nb_enfants }})
+                    </span>
+                </summary>
+                <div class="p-3 pt-0 space-y-2">
+                    {% for barre in ligne.enfants %}
+                        <div class="p-2 rounded border border-gray-700 bg-gray-900">
+                            <div class="font-medium text-white">{{ barre.materiel_designation }}</div>
+                            {% if barre.materiel_type %}
+                                <div class="text-xs text-gray-400">{{ barre.materiel_type }}</div>
+                            {% endif %}
+                            <div class="text-xs text-cyan-400">
+                                {% if barre.materiel_immatriculation %}N° Parc {{ barre.materiel_immatriculation }}{% endif %}
+                            </div>
+                            <div class="text-xs text-gray-400 mt-1">
+                                Du {{ barre.date_debut_reelle|date:"d/m/Y" }}
+                                {% if barre.en_cours %}
+                                    <span class="text-green-400">(en cours)</span>
+                                {% else %}
+                                    au {{ barre.date_fin_reelle|date:"d/m/Y" }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </details>
         {% endfor %}
     </div>
 
     {% else %}
+    <!-- ============================================================
+         État vide
+         ============================================================ -->
     <div class="p-6 bg-green-900/50 text-green-200 rounded-lg border border-green-700 text-center">
         <i class="fas fa-calendar-xmark text-3xl mb-2"></i>
         <p class="text-base md:text-lg">Aucune affectation sur cette période.</p>
@@ -240,6 +500,128 @@
     </div>
     {% endif %}
 </div>
+
+<!-- ============================================================
+     JavaScript : repli/dépli avec persistance localStorage
+     ============================================================ -->
+<script>
+(function() {
+    'use strict';
+
+    const STORAGE_KEY = 'gantt_collapsed_ateliers';
+
+    // ------------------------------------------------------------
+    // Lecture / écriture de l'état dans localStorage
+    // ------------------------------------------------------------
+    function chargerEtat() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (!raw) return [];
+            const parsed = JSON.parse(raw);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            console.warn('[Gantt] Impossible de lire localStorage', e);
+            return [];
+        }
+    }
+
+    function sauverEtat(collapsedIds) {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(collapsedIds));
+        } catch (e) {
+            console.warn('[Gantt] Impossible d\'écrire dans localStorage', e);
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Appliquer l'état à un atelier
+    // ------------------------------------------------------------
+    function appliquerEtat(atelierId, collapsed) {
+        const toggle = document.querySelector(`[data-toggle-atelier="${atelierId}"]`);
+        const children = document.getElementById(`atelier-${atelierId}-children`);
+        if (!toggle || !children) return;
+
+        if (collapsed) {
+            toggle.setAttribute('aria-expanded', 'false');
+            children.hidden = true;
+        } else {
+            toggle.setAttribute('aria-expanded', 'true');
+            children.hidden = false;
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Initialisation
+    // ------------------------------------------------------------
+    function initialiser() {
+        const collapsed = chargerEtat();
+
+        // Appliquer l'état sauvegardé + attacher les handlers
+        document.querySelectorAll('[data-toggle-atelier]').forEach(toggle => {
+            const atelierId = toggle.getAttribute('data-toggle-atelier');
+            const isCollapsed = collapsed.includes(atelierId);
+            appliquerEtat(atelierId, isCollapsed);
+
+            toggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                const children = document.getElementById(`atelier-${atelierId}-children`);
+                if (!children) return;
+
+                // Basculer
+                const nowCollapsed = !children.hidden;
+                appliquerEtat(atelierId, nowCollapsed);
+
+                // Mettre à jour localStorage
+                const current = chargerEtat();
+                const idx = current.indexOf(atelierId);
+                if (nowCollapsed) {
+                    if (idx === -1) current.push(atelierId);
+                } else {
+                    if (idx !== -1) current.splice(idx, 1);
+                }
+                sauverEtat(current);
+            });
+        });
+
+        // ------------------------------------------------------------
+        // Boutons globaux
+        // ------------------------------------------------------------
+        const btnCollapseAll = document.getElementById('gantt-collapse-all');
+        const btnExpandAll = document.getElementById('gantt-expand-all');
+
+        if (btnCollapseAll) {
+            btnCollapseAll.addEventListener('click', function() {
+                const allIds = [];
+                document.querySelectorAll('[data-toggle-atelier]').forEach(t => {
+                    const id = t.getAttribute('data-toggle-atelier');
+                    allIds.push(id);
+                    appliquerEtat(id, true);
+                });
+                sauverEtat(allIds);
+            });
+        }
+
+        if (btnExpandAll) {
+            btnExpandAll.addEventListener('click', function() {
+                document.querySelectorAll('[data-toggle-atelier]').forEach(t => {
+                    const id = t.getAttribute('data-toggle-atelier');
+                    appliquerEtat(id, false);
+                });
+                sauverEtat([]);
+            });
+        }
+    }
+
+    // ------------------------------------------------------------
+    // Lancement
+    // ------------------------------------------------------------
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialiser);
+    } else {
+        initialiser();
+    }
+})();
+</script>
 
 </body>
 </html>

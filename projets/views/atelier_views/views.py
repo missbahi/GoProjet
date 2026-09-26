@@ -23,26 +23,10 @@ from django.db.models import Value
 # Liste des ateliers d'un projet
 # ============================================================
 
-@chef_projet_required
-def ateliers_projet(request, projet_id):
-    if request.method != 'GET':
-        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
-    projet = get_object_or_404(Projet, id=projet_id)
-    ateliers = (
-        Atelier.objects
-        .filter(projet=projet)
-        .prefetch_related('affectations')
-        .order_by('code')
-    )
-    return render(request, 'projets/ateliers/liste.html', {
-        'projet': projet,
-        'ateliers': ateliers,
-    })
 
 # ============================================================
 # Ajout d'un atelier
 # ============================================================
-
 
 @chef_projet_required
 def ajouter_atelier(request, projet_id):
@@ -269,10 +253,40 @@ def supprimer_affectation(request, projet_id, atelier_id, affectation_id):
     messages.success(request, f"Affectation de « {designation} » retirée avec succès.")
     return redirect('projets:materiels_atelier', projet_id=projet.id, atelier_id=atelier.id)
 
+# ============================================================
+# Liste des ateliers d'un projet
+# ============================================================
+
+@chef_projet_required
+def ateliers_projet(request, projet_id):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+    projet = get_object_or_404(Projet, id=projet_id)
+    ateliers = (
+        Atelier.objects
+        .filter(projet=projet)
+        .prefetch_related('affectations')
+        .order_by('code')
+    )
+    return render(request, 'projets/ateliers/liste.html', {
+        'projet': projet,
+        'ateliers': ateliers,
+    })
+
+
+# ============================================================
+# Planning hiérarchique des ateliers
+# ============================================================
+
 @chef_projet_required
 def planning_ateliers(request, projet_id):
     """
     Planning des affectations de matériel aux ateliers du projet.
+
+    Structure hiérarchique :
+        - Une ligne PARENT par atelier (barre = union des affectations)
+        - Une ligne ENFANT par matériel affecté
+        - Les lignes enfants sont repliables/dépliables
 
     Query params :
         - atelier : id d'un atelier (optionnel, sinon tous)
@@ -282,7 +296,9 @@ def planning_ateliers(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ateliers = Atelier.objects.filter(projet=projet).order_by('code')
 
-    # --- Filtre atelier (validé) ---
+    # ------------------------------------------------------------
+    # 1. Filtre atelier (validé)
+    # ------------------------------------------------------------
     atelier_id = request.GET.get('atelier')
     ateliers_selectionnes = ateliers
     atelier_id_valide = None
@@ -294,7 +310,9 @@ def planning_ateliers(request, projet_id):
             atelier_id_valide = None
             ateliers_selectionnes = ateliers
 
-    # --- Période (par défaut : mois calendaire en cours) ---
+    # ------------------------------------------------------------
+    # 2. Période (par défaut : mois calendaire en cours)
+    # ------------------------------------------------------------
     today = date.today()
     debut_str = request.GET.get('debut')
     fin_str = request.GET.get('fin')
@@ -315,7 +333,14 @@ def planning_ateliers(request, projet_id):
     if fin < debut:
         fin = debut
 
-    # --- Récupération des affectations ---
+    duree_totale = (fin - debut).days + 1
+
+    # ------------------------------------------------------------
+    # 3. Récupération des affectations dans la période
+    # ------------------------------------------------------------
+    # Logique : une affectation chevauche la période si
+    #   - elle commence avant/pendant la fin de période
+    #   - ET (elle finit après/pendant le début OU elle est en cours)
     affectations = (
         AffectationRessource.objects
         .filter(
@@ -326,32 +351,27 @@ def planning_ateliers(request, projet_id):
             Q(date_fin__isnull=True) | Q(date_fin__gte=debut)
         )
         .select_related('materiel', 'materiel__type_materiel', 'atelier')
-        .order_by(
-            Coalesce('materiel__immatriculation', Value('zzzzz')),
-            'materiel__designation',
-            'date_debut',
-        )
+        .order_by('atelier__code', 'date_debut', 'materiel__designation')
     )
 
-    duree_totale = (fin - debut).days + 1
-    lignes = defaultdict(list)
+    # ------------------------------------------------------------
+    # 4. Construction des barres par atelier
+    # ------------------------------------------------------------
+    # Structure : { atelier_id: [barres...] }
+    barres_par_atelier = defaultdict(list)
 
     for aff in affectations:
         # Bornes réelles de l'affectation dans la période
         aff_debut = max(aff.date_debut, debut)
 
-        # Pour une affectation en cours, on borne à aujourd'hui (ou fin de période)
+        # Pour une affectation en cours, borner à aujourd'hui (ou fin de période)
         if aff.date_fin is None:
             aff_fin_reelle = min(today, fin)
         else:
             aff_fin_reelle = min(aff.date_fin, fin)
 
-        # Si l'affectation commence après la fin de période → ignorer
-        if aff_debut > fin:
-            continue
-
-        # Si l'affectation est complètement avant la période → ignorer
-        if aff_fin_reelle < debut:
+        # Si l'affectation est complètement hors période → ignorer
+        if aff_debut > fin or aff_fin_reelle < debut:
             continue
 
         offset = (aff_debut - debut).days
@@ -361,38 +381,106 @@ def planning_ateliers(request, projet_id):
         offset_pct = max(0.0, min(100.0, (offset / duree_totale) * 100))
         largeur_pct = max(0.0, min(100.0 - offset_pct, (largeur / duree_totale) * 100))
 
-        lignes[aff.materiel_id].append({
+        barres_par_atelier[aff.atelier_id].append({
             'affectation': aff,
-            # ✅ f-string = chaîne avec POINT (pas de virgule)
+            # ⚠️ f-string → point décimal (pas de virgule)
             'offset_pct': f"{offset_pct:.4f}",
             'largeur_pct': f"{largeur_pct:.4f}",
             'date_debut_reelle': aff.date_debut,
             'date_fin_reelle': aff.date_fin,
             'en_cours': aff.date_fin is None,
-            'atelier_code': aff.atelier.code,
-            'atelier_libelle': aff.atelier.libelle,
+            # Infos matériel (pour affichage dans la ligne enfant)
+            'materiel_id': aff.materiel_id,
+            'materiel_designation': aff.materiel.designation,
+            'materiel_immatriculation': aff.materiel.immatriculation,
+            'materiel_type': (
+                aff.materiel.type_materiel.nom
+                if aff.materiel.type_materiel else None
+            ),
         })
 
-    # --- Regroupement par matériel ---
-    lignes_finales = {}
-    for materiel_id, barres in lignes.items():
-        # Trier les barres par date de début
-        barres.sort(key=lambda b: b['affectation'].date_debut)
-        lignes_finales[materiel_id] = {
-            'materiel': barres[0]['affectation'].materiel,
-            'barres': barres,
-        }
+    # ------------------------------------------------------------
+    # 5. Construction de la hiérarchie (atelier → matériels)
+    # ------------------------------------------------------------
+    lignes_hierarchiques = []
+    nb_materiels_total = 0
 
-    jours_periode = [debut + timedelta(days=i) for i in range(duree_totale)]
+    for atelier in ateliers_selectionnes.order_by('code'):
+        barres_enfants = barres_par_atelier.get(atelier.id, [])
+        if not barres_enfants:
+            # Atelier sans affectation sur la période → ne pas afficher
+            continue
 
+        # --- Barre parente : union de toutes les barres enfants ---
+        # Date de début = la plus tôt des affectations
+        # Date de fin = la plus tardive (ou aujourd'hui si en cours)
+        min_debut = min(b['affectation'].date_debut for b in barres_enfants)
+        max_fin = max(
+            (b['affectation'].date_fin or today)
+            for b in barres_enfants
+        )
+
+        # Borner à la période affichée
+        min_debut_borne = max(min_debut, debut)
+        max_fin_borne = min(max_fin, fin)
+
+        offset_p = (min_debut_borne - debut).days
+        largeur_p = max((max_fin_borne - min_debut_borne).days + 1, 1)
+
+        offset_pct_p = max(0.0, min(100.0, (offset_p / duree_totale) * 100))
+        largeur_pct_p = max(
+            0.0,
+            min(100.0 - offset_pct_p, (largeur_p / duree_totale) * 100)
+        )
+
+        # Trier les enfants par date de début (chronologique)
+        enfants_tries = sorted(
+            barres_enfants,
+            key=lambda b: (b['affectation'].date_debut, b['materiel_designation'])
+        )
+
+        lignes_hierarchiques.append({
+            'atelier': atelier,
+            'barre_parent': {
+                'offset_pct': f"{offset_pct_p:.4f}",
+                'largeur_pct': f"{largeur_pct_p:.4f}",
+                'date_debut': min_debut,
+                'date_fin': max_fin,
+                'en_cours': any(b['en_cours'] for b in barres_enfants),
+                'nb_enfants': len(barres_enfants),
+            },
+            'enfants': enfants_tries,
+        })
+
+        nb_materiels_total += len(barres_enfants)
+
+    # ------------------------------------------------------------
+    # 6. Jours de la période (pour l'en-tête du Gantt)
+    # ------------------------------------------------------------
+    jours_periode = [
+        debut + timedelta(days=i)
+        for i in range(duree_totale)
+    ]
+
+    # ------------------------------------------------------------
+    # 7. Rendu
+    # ------------------------------------------------------------
     return render(request, 'projets/ateliers/planning.html', {
+        # Contexte projet
         'projet': projet,
         'ateliers': ateliers,
         'atelier_selectionne': atelier_id_valide,
+
+        # Période
         'debut': debut,
         'fin': fin,
         'duree_totale': duree_totale,
         'jours_periode': jours_periode,
-        'lignes': lignes_finales,
+
+        # Structure hiérarchique
+        'lignes_hierarchiques': lignes_hierarchiques,
+        'nb_materiels_total': nb_materiels_total,
+
+        # Pour la vue mobile (liste à plat)
         'affectations': affectations,
     })
