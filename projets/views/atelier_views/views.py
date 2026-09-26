@@ -15,6 +15,9 @@ from projets.forms import AffectationRessourceForm, AtelierForm
 from projets.models import AffectationRessource, Atelier, Materiel, Projet
 from projets.utils.utils import ajax_response, is_ajax
 
+from calendar import monthrange
+from django.db.models.functions import Coalesce
+from django.db.models import Value
 
 # ============================================================
 # Liste des ateliers d'un projet
@@ -269,38 +272,50 @@ def supprimer_affectation(request, projet_id, atelier_id, affectation_id):
 @chef_projet_required
 def planning_ateliers(request, projet_id):
     """
-    Vue du planning des affectations de matériel aux ateliers du projet.
+    Planning des affectations de matériel aux ateliers du projet.
 
     Query params :
         - atelier : id d'un atelier (optionnel, sinon tous)
-        - debut : date de début de la période (YYYY-MM-DD)
-        - fin : date de fin de la période (YYYY-MM-DD)
+        - debut   : date de début de la période (YYYY-MM-DD)
+        - fin     : date de fin de la période (YYYY-MM-DD)
     """
     projet = get_object_or_404(Projet, id=projet_id)
     ateliers = Atelier.objects.filter(projet=projet).order_by('code')
 
-    # Filtre atelier
+    # --- Filtre atelier (validé) ---
     atelier_id = request.GET.get('atelier')
     ateliers_selectionnes = ateliers
+    atelier_id_valide = None
     if atelier_id:
-        ateliers_selectionnes = ateliers.filter(id=atelier_id)
+        try:
+            atelier_id_valide = int(atelier_id)
+            ateliers_selectionnes = ateliers.filter(id=atelier_id_valide)
+        except (ValueError, TypeError):
+            atelier_id_valide = None
+            ateliers_selectionnes = ateliers
 
-    # Période (par défaut : le mois en cours)
+    # --- Période (par défaut : mois calendaire en cours) ---
     today = date.today()
     debut_str = request.GET.get('debut')
     fin_str = request.GET.get('fin')
 
     try:
         debut = date.fromisoformat(debut_str) if debut_str else today.replace(day=1)
-    except ValueError:
+    except (ValueError, TypeError):
         debut = today.replace(day=1)
 
+    # Fin par défaut : dernier jour du mois de début
+    dernier_jour = monthrange(debut.year, debut.month)[1]
     try:
-        fin = date.fromisoformat(fin_str) if fin_str else (debut + timedelta(days=30))
-    except ValueError:
-        fin = debut + timedelta(days=30)
+        fin = date.fromisoformat(fin_str) if fin_str else debut.replace(day=dernier_jour)
+    except (ValueError, TypeError):
+        fin = debut.replace(day=dernier_jour)
 
-    # Récupérer les affectations dans la période
+    # Sécurité : fin >= debut
+    if fin < debut:
+        fin = debut
+
+    # --- Récupération des affectations ---
     affectations = (
         AffectationRessource.objects
         .filter(
@@ -311,45 +326,73 @@ def planning_ateliers(request, projet_id):
             Q(date_fin__isnull=True) | Q(date_fin__gte=debut)
         )
         .select_related('materiel', 'materiel__type_materiel', 'atelier')
-        .order_by('atelier__code', 'materiel__immatriculation', 'date_debut')
+        .order_by(
+            Coalesce('materiel__immatriculation', Value('zzzzz')),
+            'materiel__designation',
+            'date_debut',
+        )
     )
 
-    # Construire les barres pour le Gantt
     duree_totale = (fin - debut).days + 1
-    barres = []
-    for aff in affectations:
-        aff_debut = max(aff.date_debut, debut)
-        aff_fin = min(aff.date_fin or fin, fin)
-        offset = (aff_debut - debut).days
-        largeur = (aff_fin - aff_debut).days + 1
+    lignes = defaultdict(list)
 
-        barres.append({
+    for aff in affectations:
+        # Bornes réelles de l'affectation dans la période
+        aff_debut = max(aff.date_debut, debut)
+
+        # Pour une affectation en cours, on borne à aujourd'hui (ou fin de période)
+        if aff.date_fin is None:
+            aff_fin_reelle = min(today, fin)
+        else:
+            aff_fin_reelle = min(aff.date_fin, fin)
+
+        # Si l'affectation commence après la fin de période → ignorer
+        if aff_debut > fin:
+            continue
+
+        # Si l'affectation est complètement avant la période → ignorer
+        if aff_fin_reelle < debut:
+            continue
+
+        offset = (aff_debut - debut).days
+        largeur = max((aff_fin_reelle - aff_debut).days + 1, 1)
+
+        # Pourcentages bornés
+        offset_pct = max(0.0, min(100.0, (offset / duree_totale) * 100))
+        largeur_pct = max(0.0, min(100.0 - offset_pct, (largeur / duree_totale) * 100))
+
+        lignes[aff.materiel_id].append({
             'affectation': aff,
-            'offset_pct': round((offset / duree_totale) * 100, 4),
-            'largeur_pct': round((largeur / duree_totale) * 100, 4),
+            # ✅ f-string = chaîne avec POINT (pas de virgule)
+            'offset_pct': f"{offset_pct:.4f}",
+            'largeur_pct': f"{largeur_pct:.4f}",
             'date_debut_reelle': aff.date_debut,
             'date_fin_reelle': aff.date_fin,
             'en_cours': aff.date_fin is None,
             'atelier_code': aff.atelier.code,
             'atelier_libelle': aff.atelier.libelle,
-            'label': (
-                f"{aff.materiel.immatriculation or '—'} — {aff.materiel.designation}"
-            ),
         })
 
-    # Grouper par matériel pour avoir une ligne par engin
-    lignes = defaultdict(list)
-    for barre in barres:
-        key = barre['affectation'].materiel_id
-        lignes[key].append(barre)
+    # --- Regroupement par matériel ---
+    lignes_finales = {}
+    for materiel_id, barres in lignes.items():
+        # Trier les barres par date de début
+        barres.sort(key=lambda b: b['affectation'].date_debut)
+        lignes_finales[materiel_id] = {
+            'materiel': barres[0]['affectation'].materiel,
+            'barres': barres,
+        }
+
     jours_periode = [debut + timedelta(days=i) for i in range(duree_totale)]
+
     return render(request, 'projets/ateliers/planning.html', {
-        'jours_periode': jours_periode,
         'projet': projet,
         'ateliers': ateliers,
-        'atelier_selectionne': atelier_id,
+        'atelier_selectionne': atelier_id_valide,
         'debut': debut,
         'fin': fin,
         'duree_totale': duree_totale,
-        'lignes': dict(lignes),
+        'jours_periode': jours_periode,
+        'lignes': lignes_finales,
+        'affectations': affectations,
     })
