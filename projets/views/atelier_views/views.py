@@ -19,10 +19,6 @@ from calendar import monthrange
 from django.db.models.functions import Coalesce
 from django.db.models import Value
 
-# ============================================================
-# Liste des ateliers d'un projet
-# ============================================================
-
 
 # ============================================================
 # Ajout d'un atelier
@@ -56,7 +52,7 @@ def ajouter_atelier(request, projet_id):
             status=400,
         )
 
-    return render(request, 'projets/ateliers/liste.html', {
+    return render(request, 'projets/ateliers/liste', {
         'projet': projet,
         'form': form,
         'ateliers': Atelier.objects.filter(projet=projet).prefetch_related('affectations'),
@@ -94,7 +90,7 @@ def modifier_atelier(request, projet_id, atelier_id):
             status=400,
         )
 
-    return render(request, 'projets/ateliers/liste.html', {
+    return render(request, 'projets/ateliers/liste', {
         'projet': projet,
         'form': form,
         'atelier': atelier,
@@ -153,7 +149,7 @@ def materiels_atelier(request, projet_id, atelier_id):
         .select_related('type_materiel')
         .order_by('designation')
     )
-    return render(request, 'projets/ateliers/materiels.html', {
+    return render(request, 'projets/ateliers/materiels_atelier.html', {
         'projet': projet,
         'atelier': atelier,
         'affectations': affectations,
@@ -188,7 +184,7 @@ def ajouter_affectation(request, projet_id, atelier_id):
             status=400,
         )
 
-    return render(request, 'projets/ateliers/materiels.html', {
+    return render(request, 'projets/ateliers/materiels_atelier.html', {
         'projet': projet,
         'atelier': atelier,
         'form': form,
@@ -226,7 +222,7 @@ def modifier_affectation(request, projet_id, atelier_id, affectation_id):
             status=400,
         )
 
-    return render(request, 'projets/ateliers/materiels.html', {
+    return render(request, 'projets/ateliers/materiels_atelier.html', {
         'projet': projet,
         'atelier': atelier,
         'form': form,
@@ -268,7 +264,7 @@ def ateliers_projet(request, projet_id):
         .prefetch_related('affectations')
         .order_by('code')
     )
-    return render(request, 'projets/ateliers/liste.html', {
+    return render(request, 'projets/ateliers/liste_ateliers.html', {
         'projet': projet,
         'ateliers': ateliers,
     })
