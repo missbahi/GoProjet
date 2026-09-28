@@ -3,7 +3,7 @@ Vues pour la gestion des ateliers rattachés à un projet.
 """
 
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Q, Max, Min
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from datetime import date, timedelta
@@ -14,6 +14,7 @@ from projets.decorators import chef_projet_required
 from projets.forms import AffectationRessourceForm, AtelierForm
 from projets.models import AffectationRessource, Atelier, Materiel, Projet
 from projets.utils.utils import ajax_response, is_ajax
+from dateutil.relativedelta import relativedelta
 
 from calendar import monthrange
 from django.db.models.functions import Coalesce
@@ -313,15 +314,32 @@ def planning_ateliers(request, projet_id):
     debut_str = request.GET.get('debut')
     fin_str = request.GET.get('fin')
 
+    # On passe au template des dates min et max pour la période des affectations si le filter n'est pas appliqué
+    # tester si le filtre est appliqué. Cela permet de savoir si on doit utiliser les dates min et max des affectations ou non.
+    filtre_applique = atelier_id_valide is not None
+    if not filtre_applique:
+        # 1. calcul de la date min des affectations des ateliers sélectionnés
+        affectations = AffectationRessource.objects.filter(atelier__in=ateliers_selectionnes)
+        date_min_affectations = affectations.aggregate(Min('date_debut'))['date_debut__min']
+        # 2. calcul de la date max des affectations des ateliers sélectionnés
+        date_max_affectations = affectations.aggregate(Max('date_fin'))['date_fin__max']
+        # 3. on prend le min entre min + 1 mois et date max des affectations (il faut au moins un mois de période)
+        if date_min_affectations and date_max_affectations:
+            date_max_affectations = min(date_max_affectations, (date_min_affectations + relativedelta(months=1)))   
+
+    else:
+        date_min_affectations = None
+        date_max_affectations = None
+
     try:
-        debut = date.fromisoformat(debut_str) if debut_str else today.replace(day=1)
+        debut = date.fromisoformat(debut_str) if debut_str else date_min_affectations or today.replace(day=1)
     except (ValueError, TypeError):
         debut = today.replace(day=1)
 
     # Fin par défaut : dernier jour du mois de début
     dernier_jour = monthrange(debut.year, debut.month)[1]
     try:
-        fin = date.fromisoformat(fin_str) if fin_str else debut.replace(day=dernier_jour)
+        fin = date.fromisoformat(fin_str) if fin_str else date_max_affectations or debut.replace(day=dernier_jour)
     except (ValueError, TypeError):
         fin = debut.replace(day=dernier_jour)
 
@@ -330,6 +348,11 @@ def planning_ateliers(request, projet_id):
         fin = debut
 
     duree_totale = (fin - debut).days + 1
+
+    # Ajuster la date fin pour réajuster la duree_totale pour que qu'elle soit >= à 34 jours
+    if duree_totale < 34:
+        fin = debut + timedelta(days=33)
+        duree_totale = (fin - debut).days + 1
 
     # ------------------------------------------------------------
     # 3. Récupération des affectations dans la période
@@ -355,7 +378,10 @@ def planning_ateliers(request, projet_id):
     # ------------------------------------------------------------
     # Structure : { atelier_id: [barres...] }
     barres_par_atelier = defaultdict(list)
-
+    dict_types_materiel = {}
+    type_colors = ["#03045e", "#023e8a", "#0077b6", "#0096c7", "#00b4d8", "#48cae4", "#caf0f8"]
+    other_type = "#06d6a0"
+    type_color = 0
     for aff in affectations:
         # Bornes réelles de l'affectation dans la période
         aff_debut = max(aff.date_debut, debut)
@@ -370,6 +396,16 @@ def planning_ateliers(request, projet_id):
         if aff_debut > fin or aff_fin_reelle < debut:
             continue
 
+        # On ajoute le type du matériel courant dans le dictionnaire si il n'exite pas
+        # Et on définit une couleur de la barre en fonction du type de matériel
+        type_materiel = aff.materiel.type_materiel.nom if aff.materiel.type_materiel else None
+        if type_materiel and not dict_types_materiel.get(type_materiel):
+            if type_color < len(type_colors):
+                dict_types_materiel[type_materiel] = type_colors[type_color]
+                type_color += 1
+            else:
+                dict_types_materiel[type_materiel] = other_type
+     
         offset = (aff_debut - debut).days
         largeur = max((aff_fin_reelle - aff_debut).days + 1, 1)
 
@@ -389,6 +425,9 @@ def planning_ateliers(request, projet_id):
             'materiel_id': aff.materiel_id,
             'materiel_designation': aff.materiel.designation,
             'materiel_immatriculation': aff.materiel.immatriculation,
+            'barre_color': dict_types_materiel.get(
+                aff.materiel.type_materiel.nom if aff.materiel.type_materiel else None
+            ),
             'materiel_type': (
                 aff.materiel.type_materiel.nom
                 if aff.materiel.type_materiel else None
@@ -457,16 +496,38 @@ def planning_ateliers(request, projet_id):
         debut + timedelta(days=i)
         for i in range(duree_totale)
     ]
-
+    
     # ------------------------------------------------------------
-    # 7. Rendu
+    # 7. Calcul des week-ends (pour bandes de fond + lignes)
+    # ------------------------------------------------------------
+    weekends = []
+    i = 0
+    while i < duree_totale:
+        jour = debut + timedelta(days=i)
+        if jour.weekday() == 5:  # samedi
+            # Le samedi est toujours dans le week-end
+            taille = 1
+            # Le dimanche suit-il dans la période ?
+            if i + 1 < duree_totale:
+                taille = 2
+            weekends.append({
+                'offset_pct': f"{(i / duree_totale) * 100:.4f}",
+                'largeur_pct': f"{(taille / duree_totale) * 100:.4f}",
+                'index_debut': i,
+                'index_fin': i + taille - 1,  # dernier index du week-end
+            })
+            i += taille
+        else:
+            i += 1
+    # ------------------------------------------------------------
+    # 8. Rendu
     # ------------------------------------------------------------
     return render(request, 'projets/ateliers/planning.html', {
         # Contexte projet
         'projet': projet,
         'ateliers': ateliers,
         'atelier_selectionne': atelier_id_valide,
-
+        'weekends': weekends,
         # Période
         'debut': debut,
         'fin': fin,
