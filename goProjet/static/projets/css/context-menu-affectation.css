@@ -1,0 +1,56 @@
+/* ============================================================
+   Menu contextuel du Gantt
+   ============================================================ */
+
+.context-menu {
+    position: fixed;
+    z-index: 100;
+    min-width: 200px;
+    background-color: #2E2E2E;
+    border: 1px solid #4B5563;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+    padding: 0.25rem;
+    font-size: 0.85rem;
+        /* ⬇️ Empilement vertical */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.context-menu[hidden] {
+    display: none;
+}
+.context-menu-separator {
+    height: 1px;
+    background-color: #4B5563;
+    margin: 0.25rem 0.5rem;
+}
+.context-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: #E5E7EB;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    font-size: 0.85rem;
+    transition: background-color 0.15s;
+}
+
+.context-menu-item:hover,
+.context-menu-item:focus {
+    background-color: #374151;
+    outline: none;
+}
+
+.context-menu-item i {
+    width: 1rem;
+    text-align: center;
+    color: #22D3EE;
+    flex-shrink: 0;
+}

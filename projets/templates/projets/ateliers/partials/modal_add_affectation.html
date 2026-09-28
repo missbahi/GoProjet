@@ -22,7 +22,7 @@ Inclus dans :
         </div>
 
         <form id="addAffectationForm" method="POST"
-              action="{% url 'projets:ajouter_affectation' projet.id atelier.id %}"
+              action="{% if atelier %}{% url 'projets:ajouter_affectation' atelier.id %}{% endif %}"
               class="needs-validation" novalidate>
             {% csrf_token %}
             <div class="mb-3">

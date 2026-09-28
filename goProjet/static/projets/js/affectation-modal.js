@@ -38,7 +38,7 @@
             console.warn('[Affectation] #affectation-config introuvable');
             return false;
         }
-        CONFIG.addUrl = el.dataset.addUrl || null;
+        CONFIG.addUrl = el.dataset.addUrl || el.dataset.addTemplate || null;
         CONFIG.editTemplate = el.dataset.editTemplate || null;
         CONFIG.deleteTemplate = el.dataset.deleteTemplate || null;
         return true;
@@ -67,10 +67,15 @@
     // ============================================================
     // Ouverture / fermeture des modals
     // ============================================================
-    function openAddAffectationModal() {
+    function openAddAffectationModal(atelierId, url) {
         const modal = document.getElementById('addAffectationModal');
         const backdrop = document.getElementById('modalBackdrop');
         if (!modal || !backdrop) return;
+
+        // Mettre à jour l'URL d'ajout si fournie (appel depuis le planning)
+        if (url) {
+            CONFIG.addUrl = url;
+        }
 
         modal.style.display = 'block';
         backdrop.style.display = 'block';
@@ -521,9 +526,12 @@
     // ============================================================
     window.AffectationModal = {
         openAdd: openAddAffectationModal,
+        openAddForAtelier: openAddAffectationModal,
         openEdit: openEditAffectationModal,
+        deleteById: handleDeleteAffectation,
         closeAdd: closeAddAffectationModal,
         closeEdit: closeEditAffectationModal,
         closeAll: closeAllModals,
     };
 })();
+

@@ -158,9 +158,9 @@ def materiels_atelier(request, projet_id, atelier_id):
     })
 
 @chef_projet_required
-def ajouter_affectation(request, projet_id, atelier_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+def ajouter_affectation(request, atelier_id):
+    atelier = get_object_or_404(Atelier.objects.select_related('projet'), id=atelier_id)
+    projet = atelier.projet
 
     if request.method != 'POST':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
@@ -195,10 +195,13 @@ def ajouter_affectation(request, projet_id, atelier_id):
 
 
 @chef_projet_required
-def modifier_affectation(request, projet_id, atelier_id, affectation_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
-    affectation = get_object_or_404(AffectationRessource, id=affectation_id, atelier=atelier)
+def modifier_affectation(request, affectation_id):
+    affectation = get_object_or_404(
+        AffectationRessource.objects.select_related('materiel', 'atelier', 'atelier__projet'),
+        id=affectation_id,
+    )
+    atelier = affectation.atelier
+    projet = atelier.projet
 
     if request.method != 'POST':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
@@ -234,11 +237,14 @@ def modifier_affectation(request, projet_id, atelier_id, affectation_id):
 
 
 @chef_projet_required
-def supprimer_affectation(request, projet_id, atelier_id, affectation_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
-    affectation = get_object_or_404(AffectationRessource, id=affectation_id, atelier=atelier)
+def supprimer_affectation(request, affectation_id):
+    affectation = get_object_or_404(
+        AffectationRessource.objects.select_related('atelier', 'atelier__projet'),
+        id=affectation_id,
+    )
     designation = affectation.materiel.designation
+    atelier = affectation.atelier
+    projet = atelier.projet
 
     affectation.delete()
 
@@ -425,13 +431,9 @@ def planning_ateliers(request, projet_id):
             'materiel_id': aff.materiel_id,
             'materiel_designation': aff.materiel.designation,
             'materiel_immatriculation': aff.materiel.immatriculation,
-            'barre_color': dict_types_materiel.get(
-                aff.materiel.type_materiel.nom if aff.materiel.type_materiel else None
-            ),
-            'materiel_type': (
-                aff.materiel.type_materiel.nom
-                if aff.materiel.type_materiel else None
-            ),
+            'commentaire': aff.commentaire or '',
+            'barre_color': dict_types_materiel.get(aff.materiel.type_materiel.nom if aff.materiel.type_materiel else None),
+            'materiel_type': aff.materiel.type_materiel.nom if aff.materiel.type_materiel else None,
         })
 
     # ------------------------------------------------------------
@@ -519,6 +521,7 @@ def planning_ateliers(request, projet_id):
             i += taille
         else:
             i += 1
+    
     # ------------------------------------------------------------
     # 8. Rendu
     # ------------------------------------------------------------
@@ -533,7 +536,12 @@ def planning_ateliers(request, projet_id):
         'fin': fin,
         'duree_totale': duree_totale,
         'jours_periode': jours_periode,
-
+        # Matériels disponibles pour l'affectation
+        'materiels_disponibles': (
+                Materiel.objects.filter(actif=True)
+                .select_related('type_materiel')
+                .order_by('designation')
+            ),
         # Structure hiérarchique
         'lignes_hierarchiques': lignes_hierarchiques,
         'nb_materiels_total': nb_materiels_total,

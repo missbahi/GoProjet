@@ -8,6 +8,8 @@
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'projets/css/modal-affectation.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/context-menu-affectation.css' %}">
     <style>
         /* ============================================================
         Base
@@ -16,7 +18,6 @@
             background-color: #242424;
             color: #AECBD6;
             font-family: Arial, sans-serif;
-            min-width: 1024px;
         }
 
         /* ============================================================
@@ -28,6 +29,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            min-width: 1024px;
         }
 
         /* ============================================================
@@ -88,7 +90,6 @@
             flex-direction: column;
             justify-content: center;
         }
-
         .gantt-track {
             position: relative;
             flex: 1;
@@ -190,9 +191,10 @@
 
         /* Barre parente */
         .gantt-bar-parent {
-            top: 6px;
-            bottom: 6px;
-            background: linear-gradient(135deg, #0e7490 0%, #155e75 100%);
+            top: 10px;
+            bottom: 10px;
+            /* background: linear-gradient(135deg, #0e7490 0%, #155e75 100%); */
+            background-color:rgb(3, 160, 3);
             font-weight: bold;
             font-size: 0.75rem;
             z-index: 3;
@@ -242,15 +244,18 @@
         }
 
         .gantt-bar-child {
-            top: 10px;
-            bottom: 10px;
+            top: 12px;
+            bottom: 12px;
             background-color: var(--barre-color);
-            font-size: 0;
             padding: 0;
         }
 
         .gantt-bar-child.en-cours {
             background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        }
+        .gantt-bar-child,
+        .gantt-label-child {
+            cursor: pointer;
         }
 
         /* ============================================================
@@ -282,6 +287,10 @@
             }
         }
     </style>
+    <!-- Styles pour les modals -->
+    <style>
+    
+</style>
 </head>
 <body class="p-4 md:p-6">
     <div class="max-w-7xl mx-auto bg-gray-900 border border-gray-700 rounded-lg p-4">
@@ -315,7 +324,7 @@
         <!-- ============================================================
             Filtres
             ============================================================ -->
-        <form method="get" class="mb-4 bg-gray-800 p-3 rounded-lg flex flex-wrap gap-3 items-end border border-gray-700 rounded-lg">
+        <form method="get" class="mb-4 bg-gray-800 p-3 flex flex-wrap gap-3 items-end border border-gray-700 rounded-lg">
             <div>
                 <label class="block text-xs text-gray-400 mb-1">Atelier</label>
                 <select name="atelier" class="px-3 py-2 bg-gray-700 border border-green-800 rounded text-white text-sm">
@@ -414,6 +423,7 @@
                         data-atelier-id="{{ ligne.atelier.id }}">
                         <div class="gantt-label gantt-label-parent">
                             <div class="flex items-center gap-2">
+                                <!-- Toggle button for expanding/collapsing child rows -->
                                 <button type="button"
                                         class="gantt-toggle"
                                         data-toggle-atelier="{{ ligne.atelier.id }}"
@@ -422,14 +432,12 @@
                                         title="Replier / déplier">
                                     <i class="fas fa-chevron-down gantt-toggle-icon"></i>
                                 </button>
+                                <!-- Atelier label and info -->
                                 <div class="flex-1 min-w-0">
+                                    <!-- Atelier code and label -->
                                     <div class="font-bold text-white truncate"
                                         title="Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}">
-                                        Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}
-                                    </div>
-                                    <div class="text-xs text-gray-400">
-                                        {{ ligne.barre_parent.nb_enfants }}
-                                        matériel{{ ligne.barre_parent.nb_enfants|pluralize }}
+                                        Atelier {{ ligne.atelier.code }}
                                     </div>
                                 </div>
                             </div>
@@ -440,7 +448,7 @@
                                 role="img"
                                 aria-label="Atelier {{ ligne.atelier.code }} — {{ ligne.barre_parent.nb_enfants }} matériel(s)"
                                 title="{{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}&#10;{{ ligne.barre_parent.nb_enfants }} matériel(s)&#10;Du {{ ligne.barre_parent.date_debut|date:'d/m/Y' }} au {{ ligne.barre_parent.date_fin|date:'d/m/Y' }}">
-                                {{ ligne.atelier.code }} ({{ ligne.barre_parent.nb_enfants }})
+                                {{ ligne.atelier.libelle }}
                             </div>
                         </div>
                     </div>
@@ -451,6 +459,7 @@
                         data-children-of="{{ ligne.atelier.id }}">
                         {% for barre in ligne.enfants %}
                             <div class="gantt-row gantt-row-child">
+                                <!-- Labels -->
                                 <div class="gantt-label gantt-label-child">
                                     <div class="font-medium text-white truncate"
                                         title="{{ barre.materiel_designation }}">
@@ -469,14 +478,24 @@
                                         {% endif %}
                                     </div>
                                 </div>
+                                <!-- barres -->
                                 <div class="gantt-track">
                                     <div class="gantt-bar gantt-bar-child {% if barre.en_cours %}en-cours{% endif %}"
-                                        style="
-                                            left: {{ barre.offset_pct }}%; width: {{ barre.largeur_pct }}%;
-                                            --barre-color: {{ barre.barre_color }};"
-                                        role="img"
-                                        aria-label="{{ barre.materiel_designation }} — Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}à aujourd'hui{% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}"
+                                        style="left: {{ barre.offset_pct }}%; width: {{ barre.largeur_pct }}%; --barre-color: {{ barre.barre_color }};"
+                                        role="button"
+                                        tabindex="0"
+                                        data-edit-affectation-button
+                                        data-id="{{ barre.affectation.id }}"
+                                        data-materiel-id="{{ barre.materiel_id }}"
+                                        data-materiel-label="{% if barre.materiel_immatriculation %}N° Parc {{ barre.materiel_immatriculation }} — {% endif %}{{ barre.materiel_designation }}{% if barre.materiel_type %} ({{ barre.materiel_type }}){% endif %}"
+                                        data-date-debut="{{ barre.date_debut_reelle|date:'Y-m-d' }}"
+                                        data-date-fin="{% if barre.date_fin_reelle %}{{ barre.date_fin_reelle|date:'Y-m-d' }}{% endif %}"
+                                        data-commentaire="{{ barre.commentaire }}"
+                                        aria-label="Modifier {{ barre.materiel_designation }} — Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}à aujourd'hui{% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}"
                                         title="{{ barre.materiel_designation }}&#10;Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}(en cours){% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}">
+                                        <span class="pl-1 text-xs text-white truncate">
+                                            N° {{ barre.materiel_immatriculation }} <i class="fas fa-arrow-right mx-1"></i> {{ barre.materiel_type }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -537,6 +556,50 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- Menu contextuel : Atelier (ligne parente) -->
+    <div id="gantt-context-menu-atelier" class="context-menu" hidden role="menu">
+        <button type="button" class="context-menu-item" role="menuitem"
+                data-context-action="add-affectation">
+            <i class="fas fa-plus"></i>
+            <span>Ajouter une affectation</span>
+        </button>
+        <div class="context-menu-separator" role="separator"></div>
+        <button type="button" class="context-menu-item" role="menuitem"
+                data-context-action="edit-atelier" disabled>
+            <i class="fas fa-pen"></i>
+            <span>Modifier l'atelier</span>
+        </button>
+    </div>
+
+    <!-- Menu contextuel : Affectation (barre enfant) -->
+    <div id="gantt-context-menu-affectation" class="context-menu" hidden role="menu">
+        <button type="button" class="context-menu-item" role="menuitem"
+                data-context-action="edit-affectation">
+            <i class="fas fa-pen"></i>
+            <span>Modifier</span>
+        </button>
+        <div class="context-menu-separator" role="separator"></div>
+        <button type="button" class="context-menu-item" role="menuitem"
+                data-context-action="delete-affectation">
+            <i class="fas fa-trash"></i>
+            <span>Supprimer</span>
+        </button>
+    </div>
+
+    <!-- Modals d'édition d'affectation -->
+    {% include "projets/ateliers/partials/modal_add_affectation.html" %}
+    {% include "projets/ateliers/partials/modal_edit_affectation.html" %}
+    {% include "projets/ateliers/partials/modal_backdrop.html" %}
+
+    <div id="affectation-config"
+        data-delete-template="{% url 'projets:supprimer_affectation' 0 %}"
+        data-add-template="{% url 'projets:ajouter_affectation' 0 %}"
+        data-edit-template="{% url 'projets:modifier_affectation' 0 %}">
+    </div>
+
+    <script src="{% static 'projets/js/affectation-modal.js' %}"></script>
+    <script src="{% static 'projets/js/context-menu-affectation.js' %}"></script>
 
 <!-- ============================================================
      JavaScript : repli/dépli avec persistance localStorage
