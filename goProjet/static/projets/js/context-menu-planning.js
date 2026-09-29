@@ -9,7 +9,7 @@
  *
  * Dépendances DOM :
  *   - #gantt-context-menu-atelier
- *   - #gantt-context-menu-affectation
+ *   - #gantt-context-menu-planning
  *   - #affectation-config[data-add-template][data-edit-template][data-delete-template]
  *   - window.AffectationModal
  */
@@ -157,7 +157,10 @@
                 supprimerAffectation();
                 break;
             case 'edit-atelier':
-                console.warn('[ContextMenu] Action "edit-atelier" non implémentée');
+                modifierAtelier();
+                break;
+            case 'delete-atelier':
+                supprimerAtelier();
                 break;
             default:
                 console.warn(`[ContextMenu] Action inconnue : ${action}`);
@@ -224,6 +227,39 @@
             window.AffectationModal.deleteById(cible.id);
         } else {
             console.warn('[ContextMenu] AffectationModal.deleteById indisponible');
+        }
+    }
+    // ------------------------------------------------------------
+    // modifier un atelier (cible = ligne parente)
+    // ------------------------------------------------------------
+
+    function modifierAtelier() {
+        if (cible.type !== 'atelier' || !cible.id) return;
+
+        const row = document.querySelector(`.gantt-row-parent[data-atelier-id="${cible.id}"]`);
+        if (!row) return;
+
+        // Récupérer les données de l'atelier depuis le DOM
+        // (il faut les exposer via data-* sur la ligne parente)
+        const code = row.dataset.atelierCode || '';
+        const libelle = row.dataset.atelierLibelle || '';
+        const description = row.dataset.atelierDescription || '';
+        const actif = row.dataset.atelierActif || 'true';
+
+        if (window.AtelierModal && typeof window.AtelierModal.openEdit === 'function') {
+            window.AtelierModal.openEdit(cible.id, code, libelle, description, actif);
+        }
+    }
+    // ------------------------------------------------------------
+    // Supprimer un atelier (cible = ligne parente)
+    // ------------------------------------------------------------
+    function supprimerAtelier() {
+        if (cible.type !== 'atelier' || !cible.id) return;
+
+        if (window.AtelierModal && typeof window.AtelierModal.deleteById === 'function') {
+            window.AtelierModal.deleteById(cible.id);
+        } else {
+            console.warn('[ContextMenu] AtelierModal.deleteById indisponible');
         }
     }
 

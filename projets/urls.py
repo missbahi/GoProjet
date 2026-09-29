@@ -175,6 +175,7 @@ atelier_urlpatterns = [
     path('projet/<int:projet_id>/ateliers/ajouter/', atelier_views.ajouter_atelier, name='ajouter_atelier'),
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/modifier/', atelier_views.modifier_atelier, name='modifier_atelier'),
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/supprimer/', atelier_views.supprimer_atelier, name='supprimer_atelier'),
+    
     # Gestion des matériels affectés à un atelier
     path('projet/<int:projet_id>/ateliers/<int:atelier_id>/materiels/', atelier_views.materiels_atelier, name='materiels_atelier'),
     path('projet/ateliers/<int:atelier_id>/materiels/ajouter/', atelier_views.ajouter_affectation, name='ajouter_affectation'),

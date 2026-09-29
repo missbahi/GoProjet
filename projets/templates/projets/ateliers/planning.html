@@ -8,8 +8,8 @@
     {% load static %}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'projets/css/modal-affectation.css' %}">
-    <link rel="stylesheet" href="{% static 'projets/css/context-menu-affectation.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/modal-mat-manager.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/context-menu-planning.css' %}">
     <style>
         /* ============================================================
         Base
@@ -90,11 +90,27 @@
             flex-direction: column;
             justify-content: center;
         }
+
         .gantt-track {
             position: relative;
             flex: 1;
             /* Isole le contexte d'empilement local */
             isolation: isolate;
+        }
+
+        .gantt-empty-hint {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+            padding-left: 0.75rem;
+            font-size: 0.75rem;
+            color: #6B7280;
+            font-style: italic;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            pointer-events: none;
         }
 
         .gantt-weekday-overlay {
@@ -287,10 +303,7 @@
             }
         }
     </style>
-    <!-- Styles pour les modals -->
-    <style>
-    
-</style>
+
 </head>
 <body class="p-4 md:p-6">
     <div class="max-w-7xl mx-auto bg-gray-900 border border-gray-700 rounded-lg p-4">
@@ -318,6 +331,11 @@
                 class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
                     <i class="fas fa-arrow-left"></i> Retour aux ateliers
                 </a>
+                <button type="button"
+                        data-add-atelier-button
+                        class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-plus"></i> Nouvel atelier
+                </button>
             </div>
         </div>
 
@@ -420,7 +438,11 @@
                 {% for ligne in lignes_hierarchiques %}
                     <!-- Ligne PARENT : Atelier -->
                     <div class="gantt-row gantt-row-parent"
-                        data-atelier-id="{{ ligne.atelier.id }}">
+                        data-atelier-id="{{ ligne.atelier.id }}"
+                        data-atelier-code="{{ ligne.atelier.code }}"
+                        data-atelier-libelle="{{ ligne.atelier.libelle }}"
+                        data-atelier-description="{{ ligne.atelier.description }}"
+                        data-atelier-actif="{{ ligne.atelier.actif|yesno:'true,false' }}">
                         <div class="gantt-label gantt-label-parent">
                             <div class="flex items-center gap-2">
                                 <!-- Toggle button for expanding/collapsing child rows -->
@@ -443,6 +465,7 @@
                             </div>
                         </div>
                         <div class="gantt-track">
+                            {% if ligne.barre_parent.nb_enfants > 0 %}
                             <div class="gantt-bar gantt-bar-parent {% if ligne.barre_parent.en_cours %}en-cours{% endif %}"
                                 style="left: {{ ligne.barre_parent.offset_pct }}%; width: {{ ligne.barre_parent.largeur_pct }}%;"
                                 role="img"
@@ -450,6 +473,12 @@
                                 title="{{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}&#10;{{ ligne.barre_parent.nb_enfants }} matériel(s)&#10;Du {{ ligne.barre_parent.date_debut|date:'d/m/Y' }} au {{ ligne.barre_parent.date_fin|date:'d/m/Y' }}">
                                 {{ ligne.atelier.libelle }}
                             </div>
+                            {% else %}
+                            <div class="gantt-empty-hint">
+                                <i class="fas fa-circle-info"></i>
+                                Aucune affectation sur la période
+                            </div>
+                            {% endif %}
                         </div>
                     </div>
 
@@ -566,9 +595,15 @@
         </button>
         <div class="context-menu-separator" role="separator"></div>
         <button type="button" class="context-menu-item" role="menuitem"
-                data-context-action="edit-atelier" disabled>
+                data-context-action="edit-atelier">
             <i class="fas fa-pen"></i>
             <span>Modifier l'atelier</span>
+        </button>
+        <!-- <div class="context-menu-separator" role="separator"></div> -->
+        <button type="button" class="context-menu-item context-menu-item-danger" role="menuitem"
+                data-context-action="delete-atelier">
+            <i class="fas fa-trash"></i>
+            <span>Supprimer l'atelier</span>
         </button>
     </div>
 
@@ -580,7 +615,7 @@
             <span>Modifier</span>
         </button>
         <div class="context-menu-separator" role="separator"></div>
-        <button type="button" class="context-menu-item" role="menuitem"
+        <button type="button" class="context-menu-item context-menu-item-danger" role="menuitem"
                 data-context-action="delete-affectation">
             <i class="fas fa-trash"></i>
             <span>Supprimer</span>
@@ -591,6 +626,8 @@
     {% include "projets/ateliers/partials/modal_add_affectation.html" %}
     {% include "projets/ateliers/partials/modal_edit_affectation.html" %}
     {% include "projets/ateliers/partials/modal_backdrop.html" %}
+    {% include "projets/ateliers/partials/modal_add_atelier.html" %}
+    {% include "projets/ateliers/partials/modal_edit_atelier.html" %}
 
     <div id="affectation-config"
         data-delete-template="{% url 'projets:supprimer_affectation' 0 %}"
@@ -598,8 +635,15 @@
         data-edit-template="{% url 'projets:modifier_affectation' 0 %}">
     </div>
 
+    <div id="atelier-config"
+        data-add-url="{% url 'projets:ajouter_atelier' projet.id %}"
+        data-edit-template="{% url 'projets:modifier_atelier' projet.id 0 %}"
+        data-delete-template="{% url 'projets:supprimer_atelier' projet.id 0 %}">
+    </div>
+
     <script src="{% static 'projets/js/affectation-modal.js' %}"></script>
-    <script src="{% static 'projets/js/context-menu-affectation.js' %}"></script>
+    <script src="{% static 'projets/js/context-menu-planning.js' %}"></script>
+    <script src="{% static 'projets/js/atelier-modal.js' %}"></script>
 
 <!-- ============================================================
      JavaScript : repli/dépli avec persistance localStorage

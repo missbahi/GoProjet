@@ -1,0 +1,60 @@
+{% comment %}
+Modal d'ajout d'un atelier.
+
+Contexte requis :
+    - projet : objet Projet
+
+Inclus dans :
+    - projets/ateliers/liste_ateliers.html
+    - projets/ateliers/planning.html (via context menu)
+{% endcomment %}
+
+<div id="addAtelierModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="addAtelierTitle">
+    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
+        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
+            <h3 id="addAtelierTitle" class="text-lg md:text-xl font-bold text-green-400">
+                <i class="fa-solid fa-plus mr-2"></i>Ajouter un atelier
+            </h3>
+            <button type="button" data-close-modal="add-atelier" class="text-gray-400 hover:text-white">
+                <i class="fa-solid fa-times text-xl"></i>
+            </button>
+        </div>
+
+        <form id="addAtelierForm" method="POST" class="needs-validation" novalidate>
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="addAtelierCode" class="block text-sm font-medium text-green-300 mb-1">Code</label>
+                <input type="text" id="addAtelierCode" name="code"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="01" required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="code">Veuillez saisir un code.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addAtelierLibelle" class="block text-sm font-medium text-green-300 mb-1">Libellé</label>
+                <input type="text" id="addAtelierLibelle" name="libelle"
+                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+                       placeholder="Voirie" required>
+                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden" data-error-for="libelle">Veuillez saisir un libellé.</div>
+            </div>
+            <div class="mb-3">
+                <label for="addAtelierDescription" class="block text-sm font-medium text-green-300 mb-1">Description</label>
+                <textarea id="addAtelierDescription" name="description" rows="2"
+                          class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500"></textarea>
+            </div>
+            <div class="mb-3 flex items-center gap-2">
+                <input type="checkbox" id="addAtelierActif" name="actif" checked class="h-4 w-4">
+                <label for="addAtelierActif" class="text-sm font-medium text-green-300">Actif</label>
+            </div>
+            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
+                <button type="button" data-close-modal="add-atelier"
+                        class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition">
+                    💾 Ajouter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

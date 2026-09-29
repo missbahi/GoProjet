@@ -1,0 +1,29 @@
+/* ============================================================
+   Modals pour les ateliers (ajout, édition, suppression)
+   Partagés entre liste_ateliers.html et planning.html
+   ============================================================ */
+
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #2E2E2E;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    z-index: 50;
+    width: 95%;
+    max-width: 32rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}

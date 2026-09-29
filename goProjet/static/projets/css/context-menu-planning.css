@@ -54,3 +54,16 @@
     color: #22D3EE;
     flex-shrink: 0;
 }
+.context-menu-item-danger {
+    color: #F87171; /* rouge clair */
+}
+
+.context-menu-item-danger:hover,
+.context-menu-item-danger:focus {
+    background-color: #7F1D1D; /* rouge foncé */
+    color: #FEE2E2;
+}
+
+.context-menu-item-danger i {
+    color: #F87171;
+}

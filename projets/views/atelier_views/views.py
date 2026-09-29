@@ -444,8 +444,22 @@ def planning_ateliers(request, projet_id):
 
     for atelier in ateliers_selectionnes.order_by('code'):
         barres_enfants = barres_par_atelier.get(atelier.id, [])
+            
+        # Atelier sans affectation sur la période → ne pas afficher
         if not barres_enfants:
-            # Atelier sans affectation sur la période → ne pas afficher
+            # Atelier sans affectation → ligne parente sans barre
+            lignes_hierarchiques.append({
+                'atelier': atelier,
+                'barre_parent': {
+                    'offset_pct': '0',
+                    'largeur_pct': '0',
+                    'date_debut': None,
+                    'date_fin': None,
+                    'en_cours': False,
+                    'nb_enfants': 0,
+                },
+                'enfants': [],
+            })
             continue
 
         # --- Barre parente : union de toutes les barres enfants ---
