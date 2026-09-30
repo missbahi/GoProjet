@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Aperçu impression – Planning {{ projet.nom }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ============================================================
+           Palette "papier" – blanc cassé / encre douce
+           ============================================================ */
+        :root {
+            --papier-fond: #FAFAFA;
+            --papier-fond-alt: #F2F2F3;
+            --papier-bordure: #D6CFBE;
+            --encre-forte: #2C2A26;
+            --encre-douce: #5C5648;
+            --encre-legere: #8A8272;
+            --accent-vert: #4A7C59;
+            --accent-vert-fonce: #355B40;
+            --accent-cyan: #2E6B7A;
+            --accent-en-cours: #B8860B;
+            --weekend-bande: rgba(0, 0, 0, 0.05);
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #E8E4DB;
+            font-family: "Georgia", "Times New Roman", serif;
+            color: var(--encre-forte);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Barre d'action (écran uniquement) */
+        .barre-action {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #3A3833;
+            color: #F0EDE6;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            font-family: Arial, sans-serif;
+        }
+        .barre-action h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .barre-action .boutons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .barre-action button,
+        .barre-action a {
+            font-family: Arial, sans-serif;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s;
+        }
+        .btn-imprimer {
+            background: var(--accent-vert);
+            color: white;
+        }
+        .btn-imprimer:hover { background: var(--accent-vert-fonce); }
+        .btn-retour {
+            background: transparent;
+            color: #F0EDE6;
+            border-color: #6B6558;
+        }
+        .btn-retour:hover { background: #4A463E; }
+
+        /* ============================================================
+           Feuille A4 paysage
+           ============================================================ */
+        .feuille {
+            width: 297mm;
+            min-height: 210mm;
+            margin: 1.5rem auto;
+            background: var(--papier-fond);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            padding: 12mm 10mm;
+            position: relative;
+        }
+
+        /* En-tête document */
+        .entete-doc {
+            border-bottom: 2px solid var(--encre-forte);
+            padding-bottom: 0.5rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+        }
+        .entete-doc .titre {
+            font-size: 1.15rem;
+            font-weight: bold;
+            letter-spacing: 0.02em;
+        }
+        .entete-doc .sous-titre {
+            font-size: 0.78rem;
+            color: var(--encre-douce);
+            margin-top: 0.15rem;
+        }
+        .entete-doc .meta {
+            font-size: 0.72rem;
+            color: var(--encre-legere);
+            text-align: right;
+            line-height: 1.4;
+        }
+
+        /* ============================================================
+           Tableau Gantt
+           ============================================================ */
+        .gantt-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            font-size: 0.68rem;
+        }
+
+        .gantt-table col.col-label { width: 62mm; }
+
+        .gantt-table thead th {
+            background: var(--papier-fond-alt);
+            border: 1px solid var(--papier-bordure);
+            border-bottom: 2px solid var(--encre-forte);
+            padding: 0.25rem 0.15rem;
+            font-weight: bold;
+            font-size: 0.6rem;
+            text-align: center;
+            color: var(--encre-douce);
+            line-height: 1.15;
+        }
+        .gantt-table thead th.col-label {
+            text-align: left;
+            padding-left: 0.5rem;
+            font-size: 0.7rem;
+            color: var(--encre-forte);
+        }
+        .gantt-table thead th.weekend {
+            background: #EAE4D5;
+            color: var(--encre-legere);
+        }
+
+        .gantt-table tbody td {
+            border: 1px solid var(--papier-bordure);
+            padding: 0.2rem 0.3rem;
+            vertical-align: middle;
+            height: 22px;
+            position: relative;
+        }
+        .gantt-table tbody tr.ligne-atelier td {
+            background: #EDEEEF;
+            border-top: 1.5px solid var(--encre-douce);
+            font-weight: bold;
+            height: 26px;
+        }
+        .gantt-table tbody tr.ligne-materiel td {
+            background: var(--papier-fond);
+            font-size: 0.64rem;
+        }
+        /* .gantt-table tbody tr:nth-child(even).ligne-materiel td {
+            background: var(--papier-fond-alt);
+        } */
+
+        /* Cellule label */
+        .cell-label {
+            text-align: left;
+            padding-left: 0.5rem !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .cell-label .code-atelier {
+            color: var(--accent-vert-fonce);
+            margin-right: 0.35rem;
+        }
+        .cell-label .parc {
+            color: var(--accent-cyan);
+            font-size: 0.6rem;
+            font-weight: normal;
+        }
+        .cell-label .type-materiel {
+            color: var(--encre-legere);
+            font-size: 0.6rem;
+            font-weight: normal;
+            font-style: italic;
+        }
+
+        /* Cellules jours */
+        .cell-jour {
+            padding: 0 !important;
+            position: relative;
+        }
+        .cell-jour.weekend {
+            background: var(--weekend-bande);
+        }
+
+        /* Barres positionnées en absolu */
+        /* ============================================================
+   Barres (parent et enfant) — remplies dans leur cellule
+   ============================================================ */
+        .barre-absolue {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 1px;
+            right: 1px;            /* ← COLLE AU BORD DROIT de la cellule fusionnée */
+            height: 14px;
+            line-height: 14px;
+            border-radius: 2px;
+            color: white;
+            font-size: 0.6rem;
+            padding: 0 4px;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
+            z-index: 2;
+        }
+
+        /* Barre parent (atelier) */
+        .barre-absolue.parent {
+            background: var(--accent-vert);
+            font-weight: bold;
+            font-size: 0.62rem;
+            height: 16px;
+            line-height: 16px;
+        }
+        .barre-absolue.parent.en-cours {
+            background: var(--accent-en-cours);
+        }
+
+        /* Barre enfant (matériel) */
+        .barre-absolue.enfant {
+            background: var(--barre-color, var(--accent-cyan));
+            height: 12px;
+            line-height: 12px;
+        }
+        .barre-absolue.enfant.en-cours {
+            background: var(--accent-en-cours);
+        }
+        .barre-absolue.en-cours {
+            background: var(--accent-en-cours);
+        }
+        .barre-absolue.materiel {
+            height: 10px;
+            line-height: 10px;
+            background: var(--accent-cyan);
+        }
+        .barre-absolue.materiel.en-cours {
+            background: var(--accent-en-cours);
+        }
+
+        /* Légende */
+        .legende {
+            margin-top: 0.6rem;
+            display: flex;
+            gap: 1.2rem;
+            font-size: 0.65rem;
+            color: var(--encre-douce);
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .legende .item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+        .legende .pastille {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+
+        /* Pied de page */
+        .pied-doc {
+            margin-top: 0.6rem;
+            padding-top: 0.4rem;
+            border-top: 1px solid var(--papier-bordure);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.6rem;
+            color: var(--encre-legere);
+            font-style: italic;
+        }
+        /* ============================================================
+        Cellule contenant une barre (fusionnée sur N jours)
+        ============================================================ */
+        .cell-jour-barre {
+            position: relative;
+            padding: 0 !important;
+            height: 22px;
+            border: 1px solid var(--papier-bordure);
+        }
+
+
+        /* ============================================================
+           Impression
+           ============================================================ */
+        @page {
+            size: A4 landscape;
+            margin: 8mm;
+        }
+
+        @media print {
+            html, body {
+                background: white;
+            }
+            .barre-action {
+                display: none !important;
+            }
+            .feuille {
+                width: 100%;
+                min-height: auto;
+                margin: 0;
+                box-shadow: none;
+                padding: 0;
+                background: var(--papier-fond);
+            }
+            .gantt-table {
+                page-break-inside: auto;
+            }
+            .gantt-table tr {
+                page-break-inside: avoid;
+            }
+            .gantt-table thead {
+                display: table-header-group;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre d'action (écran uniquement) -->
+    <div class="barre-action">
+        <h1>
+            <i class="fas fa-eye"></i>
+            Aperçu avant impression – Planning {{ projet.nom }}
+        </h1>
+        <div class="boutons">
+            <a href="{% url 'projets:planning_ateliers' projet.id %}{% if request.GET %}?{{ request.GET.urlencode }}{% endif %}"
+               class="btn-retour">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <button type="button" class="btn-imprimer" onclick="window.print()">
+                <i class="fas fa-print"></i> Imprimer
+            </button>
+        </div>
+    </div>
+
+    <!-- Feuille -->
+    <div class="feuille">
+
+        <!-- En-tête -->
+        <div class="entete-doc">
+            <div>
+                <div class="titre">Planning des ateliers – {{ projet.nom }}</div>
+                <div class="sous-titre">
+                    Du {{ debut|date:"d/m/Y" }} au {{ fin|date:"d/m/Y" }}
+                    ({{ duree_totale }} jour{{ duree_totale|pluralize }})
+                    {% if nb_materiels_total %}
+                        — {{ nb_materiels_total }} matériel{{ nb_materiels_total|pluralize }} affecté{{ nb_materiels_total|pluralize }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="meta">
+                Document généré le {% now "d/m/Y à H:i" %}<br>
+                {% if atelier_selectionne %}Filtre : atelier sélectionné{% else %}Tous les ateliers{% endif %}
+            </div>
+        </div>
+
+        {% if lignes_hierarchiques %}
+        <!-- Tableau Gantt -->
+        <table class="gantt-table">
+            <colgroup>
+                <col class="col-label">
+                {% for jour in jours_periode %}<col>{% endfor %}
+            </colgroup>
+            <thead>
+                <tr>
+                    <th class="col-label">Atelier / Matériel</th>
+                    {% for jour in jours_periode %}
+                        <th class="{% if jour.weekday >= 5 %}weekend{% endif %}"
+                            title="{{ jour|date:'d/m/Y' }}">
+                            {{ jour|date:"d" }}<br>
+                            <span style="font-weight:normal;font-size:0.55rem;">
+                                {{ jour|date:"D"|slice:":3" }}
+                            </span>
+                        </th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+            {% for ligne in lignes_hierarchiques %}
+
+          <!-- {# ============================================================
+                LIGNE PARENT — Atelier
+                ============================================================ #} -->
+                <tr class="ligne-atelier">
+                    <td class="cell-label">
+                        <span class="code-atelier">Atelier {{ ligne.atelier.code }}</span>
+                    </td>
+
+                    {% if ligne.barre_parent.nb_enfants > 0 %}
+                        {# Avant la barre #}
+                        {% if ligne.barre_parent.index_debut_parent > 0 %}
+                            <td colspan="{{ ligne.barre_parent.index_debut_parent }}" class="cell-jour"></td>
+                        {% endif %}
+
+                        {# Barre parent #}
+                        <td colspan="{{ ligne.barre_parent.nb_jours_parent }}" class="cell-jour-barre">
+                            <div class="barre-absolue parent {% if ligne.barre_parent.en_cours %}en-cours{% endif %}"
+                                title="Atelier {{ ligne.atelier.code }} – {{ ligne.atelier.libelle }}&#10;{{ ligne.barre_parent.nb_enfants }} matériel(s)&#10;Du {{ ligne.barre_parent.date_debut|date:'d/m/Y' }} au {{ ligne.barre_parent.date_fin|date:'d/m/Y' }}">
+                                {{ ligne.atelier.libelle }}
+                            </div>
+                        </td>
+
+                        {# Après la barre #}
+                        {% if ligne.barre_parent.nb_jours_apres_parent > 0 %}
+                            <td colspan="{{ ligne.barre_parent.nb_jours_apres_parent }}" class="cell-jour"></td>
+                        {% endif %}
+                    {% else %}
+                        <td colspan="{{ duree_totale }}" class="cell-jour"></td>
+                    {% endif %}
+                </tr>
+
+         <!-- {# ============================================================
+                LIGNES ENFANTS — Matériels
+                ============================================================ #} -->
+                {% for barre in ligne.enfants %}
+                <tr class="ligne-materiel">
+                    <td class="cell-label">
+                        {{ barre.materiel_designation }}
+                        {% if barre.materiel_immatriculation %}
+                            <span class="parc">– N° {{ barre.materiel_immatriculation }}</span>
+                        {% endif %}
+                        {% if barre.materiel_type %}
+                            <span class="type-materiel">({{ barre.materiel_type }})</span>
+                        {% endif %}
+                    </td>
+
+                    {# Avant la barre #}
+                    {% if barre.index_debut > 0 %}
+                        <td colspan="{{ barre.index_debut }}" class="cell-jour"></td>
+                    {% endif %}
+
+                    {# Barre enfant #}
+                    <td colspan="{{ barre.nb_jours_barre }}" class="cell-jour-barre">
+                        <div class="barre-absolue enfant {% if barre.en_cours %}en-cours{% endif %}"
+                            style="--barre-color: {{ barre.barre_color|default:'#2E6B7A' }};"
+                            title="{{ barre.materiel_designation }} – Du {{ barre.date_debut_reelle|date:'d/m/Y' }} {% if barre.en_cours %}(en cours){% else %}au {{ barre.date_fin_reelle|date:'d/m/Y' }}{% endif %}">
+                            {% if barre.nb_jours_barre >= 3 %}N° {{ barre.materiel_immatriculation }}{% endif %}
+                        </div>
+                    </td>
+
+                    {# Après la barre #}
+                    {% if barre.nb_jours_apres > 0 %}
+                        <td colspan="{{ barre.nb_jours_apres }}" class="cell-jour"></td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+
+            {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Légende -->
+        <div class="legende">
+            <div class="item">
+                <span class="pastille" style="background: var(--accent-vert);"></span>
+                Atelier
+            </div>
+            <div class="item">
+                <span class="pastille" style="background: var(--accent-cyan);"></span>
+                Affectation terminée
+            </div>
+            <div class="item">
+                <span class="pastille" style="background: var(--accent-en-cours);"></span>
+                En cours
+            </div>
+            <div class="item">
+                <span class="pastille" style="background: var(--weekend-bande); border:1px solid var(--papier-bordure);"></span>
+                Week-end
+            </div>
+        </div>
+
+        <div class="pied-doc">
+            <span>{{ projet.nom }} – Planning des ateliers</span>
+            <span>Page 1</span>
+        </div>
+
+        {% else %}
+        <div style="padding: 2rem; text-align: center; color: var(--encre-douce); font-style: italic;">
+            Aucune affectation sur cette période.
+        </div>
+        {% endif %}
+
+    </div>
+
+</body>
+</html>

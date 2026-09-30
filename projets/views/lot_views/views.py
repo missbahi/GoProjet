@@ -234,11 +234,11 @@ def lots_details(request, projet_id):
     can_editer = request.user.is_superuser
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
     lots_data = []
-    montant_total = 0
+    montant_total_ht = 0
     total_lignes = 0
 
     for lot in lots:
-        lignes = LigneBordereau.objects.filter(lot=lot).order_by('id')
+        lignes = LigneBordereau.objects.filter(lot=lot).order_by('ordre_affichage')
         total_lot = sum(
             (ligne.quantite or 0) * (ligne.prix_unitaire or 0)
             for ligne in lignes
@@ -259,14 +259,15 @@ def lots_details(request, projet_id):
             'total_lot': total_lot,
         })
 
-        montant_total += total_lot
+        montant_total_ht += total_lot
         total_lignes += len(lignes_table)
-
+    montant_total_ttc = sum(lot.montant_total_ttc for lot in lots)
     context = {
         'projet': projet,
         'can_editer': can_editer,
         'lots': lots_data,
-        'montant_total': montant_total,
+        'montant_total': montant_total_ht,
+        'montant_total_ttc': montant_total_ttc,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
     }

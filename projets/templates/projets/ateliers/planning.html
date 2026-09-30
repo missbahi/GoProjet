@@ -336,6 +336,12 @@
                         class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
                     <i class="fas fa-plus"></i> Nouvel atelier
                 </button>
+                <button type="button"
+                        id="btn-apercu-impression"
+                        data-url="{% url 'projets:apercu_impression_planning' projet.id %}"
+                        class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
+                    <i class="fas fa-eye"></i> Aperçu avant impression
+                </button>
             </div>
         </div>
 
@@ -645,9 +651,7 @@
     <script src="{% static 'projets/js/context-menu-planning.js' %}"></script>
     <script src="{% static 'projets/js/atelier-modal.js' %}"></script>
 
-<!-- ============================================================
-     JavaScript : repli/dépli avec persistance localStorage
-     ============================================================ -->
+<!-- Script : repli/dépli avec persistance localStorage -->
 <script>
 (function() {
     'use strict';
@@ -765,6 +769,25 @@
         initialiser();
     }
 })();
+</script>
+<!-- Script pour l'aperçu avant impression -->
+<script>
+(function() {
+    'use strict';
+    const btnApercu = document.getElementById('btn-apercu-impression');
+    console.log('Before attaching event listener to btnApercu');
+    if (btnApercu) {
+        btnApercu.addEventListener('click', function() {
+            const params = new URLSearchParams(window.location.search);
+            const url = new URL(btnApercu.dataset.url, window.location.origin);
+            console.log('URL for preview before print:', url.toString());
+            params.forEach((value, key) => url.searchParams.set(key, value));
+            window.open(url.toString(), '_blank');
+        });
+        console.log('Event listener attached to btnApercu');
+    }
+})();
+</script>
 </script>
 
 </body>
