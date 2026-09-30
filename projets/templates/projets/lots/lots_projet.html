@@ -86,6 +86,29 @@
         .hidden {
             display: none;
         }
+        .btn-pdf {
+            background: linear-gradient(135deg, #B23A3A 0%, #8E2E2E 100%);
+            border-radius: 12px;
+            padding: 0.75rem;
+            color: white;
+        }
+        .btn-pdf:hover { 
+            transform: translateY(-1px);
+            background: linear-gradient(135deg, #8E2E2E 0%, #B23A3A 100%); 
+        }
+
+        .btn-excel {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            padding: 0.75rem;
+            border: none;
+            color: white;
+        }
+        .btn-excel:hover { 
+            border-color: #22d3ee; 
+            background: linear-gradient(135deg, #059669 0%, #047857 100%); 
+            transform: translateY(-1px);
+        }
 
         /* Styles responsives */
         @media (max-width: 768px) {
@@ -186,10 +209,18 @@
                 </a>
             </div>
             
-            <!-- Groupe à droite <a href="{% url 'projets:lots_details' projet.id %}" -->
             <div class="flex gap-2 sm:gap-3">
-                <a href="{% url 'projets:lots_details' projet.id %}" class="btn-primary px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2">
-                    <i class="fas fa-info"></i> Détails lots
+                <button type="button"
+                        id="btn-apercu-bordereau"
+                        data-url="{% url 'projets:apercu_impression_bordereau' projet.id %}"
+                        class="btn-primary px-3 py-2 md:px-4 md:py-2 rounded-lg text-xs md:text-sm font-medium flex items-center justify-center gap-2">
+                    <i class="fas fa-eye"></i>
+                    Aperçu Bordereau
+                </button>
+                <a href="{% url 'projets:export_bordereau_excel' projet.id %}"
+                    class="btn-excel">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
                 </a>
             </div>
         </div>
@@ -460,5 +491,22 @@
             }
         });
     </script>
+    <!-- Script pour l'aperçu du bordereau -->
+    <script>
+        (function() {
+            'use strict';
+            const btn = document.getElementById('btn-apercu-bordereau');
+            if (!btn) return;
+
+            btn.addEventListener('click', function() {
+                const dataUrl = btn.dataset.url;
+                if (!dataUrl || dataUrl === 'undefined') {
+                    console.error('[Aperçu bordereau] data-url manquant :', dataUrl);
+                    return;
+                }
+                window.open(dataUrl, '_blank', 'noopener');
+            });
+        })();
+        </script>
 </body>
 </html>

@@ -84,12 +84,15 @@ projets_urlpatterns = [
     path('modifier_projet_modal/<int:projet_id>/', project_views.modifier_projet_modal, name='modifier_projet_modal'),
     # Gestion des lots et du bordereau des prix
     path('projet/<int:projet_id>/lots/', lot_views.lots_projet, name='lots_projet'),
-    path('projet/<int:projet_id>/lots/details/', lot_views.lots_details, name='lots_details'),
+
     path('projet/<int:projet_id>/lot/<int:lot_id>/modifier/', lot_views.modifier_lot, name='modifier_lot'),
     path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', lot_views.supprimer_lot, name='supprimer_lot'),
-    path('api/projet/lots/<int:projet_id>/export-excel/', lot_views.export_excel, name='export_excel'),
+    path('api/projet/lots/<int:projet_id>/export-excel/', lot_views.export_bordereau_excel, name='export_bordereau_excel'),
+
     path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', lot_views.saisie_bordereau, name='saisie_bordereau'),
     path('api/lot/<int:lot_id>/save/', lot_views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
+    # Aperçu avant impression du bordereau des prix
+    path('projets/<int:projet_id>/lots/apercu/', lot_views.apercu_impression_bordereau, name='apercu_impression_bordereau'),
 ]
 
 # Gestion de la base de données

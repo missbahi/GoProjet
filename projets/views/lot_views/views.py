@@ -43,15 +43,6 @@ def saisie_bordereau(request, projet_id, lot_id):
     })
 
 
-@chef_projet_required
-def export_excel(request, projet_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    lots = LotProjet.objects.filter(projet=projet).order_by('id')
-
-    exporter = ExcelExporter(projet, lots)
-    return exporter.export()
-
-
 def _iter_lignes_bordereau_hierarchiques(projet):
     """Retourne les lignes d'un projet dans le même ordre hiérarchique que la saisie du bordereau."""
     for lot in LotProjet.objects.filter(projet=projet).order_by('id'):
@@ -226,23 +217,17 @@ def lots_projet(request, projet_id):
 
     return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})
 
-
-@login_required
-@chef_projet_required
-def lots_details(request, projet_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-    can_editer = request.user.is_superuser
+def _preparer_contexte_bordereau(projet):
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
     lots_data = []
     montant_total_ht = 0
+    montant_total_tva = 0
+    montant_total_ttc = 0
     total_lignes = 0
 
     for lot in lots:
         lignes = LigneBordereau.objects.filter(lot=lot).order_by('ordre_affichage')
-        total_lot = sum(
-            (ligne.quantite or 0) * (ligne.prix_unitaire or 0)
-            for ligne in lignes
-        )
+        total_lot = sum((l.quantite or 0) * (l.prix_unitaire or 0) for l in lignes)
         if total_lot == 0:
             continue
 
@@ -257,18 +242,199 @@ def lots_details(request, projet_id):
             'description': lot.description,
             'lignes_table': lignes_table,
             'total_lot': total_lot,
+            'taux_tva': lot.taux_tva,
         })
-
         montant_total_ht += total_lot
+        montant_total_tva += total_lot * (lot.taux_tva / 100)
         total_lignes += len(lignes_table)
-    montant_total_ttc = sum(lot.montant_total_ttc for lot in lots)
-    context = {
+
+    montant_total_ttc = montant_total_ht + montant_total_tva
+    return {
         'projet': projet,
-        'can_editer': can_editer,
         'lots': lots_data,
-        'montant_total': montant_total_ht,
+        'montant_total_ht': montant_total_ht,
+        'montant_total_tva': montant_total_tva,
         'montant_total_ttc': montant_total_ttc,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
     }
-    return render(request, 'projets/lots/lots_details.html', context)
+
+@login_required
+@chef_projet_required
+def apercu_impression_bordereau(request, projet_id):
+    """
+    Aperçu avant impression du bordereau des prix.
+    Réutilise la logique de lots_details mais avec un template dédié.
+    """
+    projet = get_object_or_404(Projet, id=projet_id)
+    return render(request, 'projets/lots/apercu_impression_bordereau.html',
+                  _preparer_contexte_bordereau(projet))
+
+import openpyxl
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+from django.http import HttpResponse
+
+
+@login_required
+@chef_projet_required
+def export_bordereau_excel(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    contexte = _preparer_contexte_bordereau(projet)   # même contexte que l'aperçu
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Bordereau"
+
+    # ---- Styles ----
+    font_titre = Font(name='Calibri', size=14, bold=True, color='1F2023')
+    font_entete = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+    font_parent = Font(name='Calibri', size=10, bold=True, color='355B40')
+    font_normal = Font(name='Calibri', size=10, color='1F2023')
+    font_total = Font(name='Calibri', size=10, bold=True, color='FFFFFF')
+
+    fill_entete = PatternFill('solid', fgColor='3A3D42')
+    fill_lot = PatternFill('solid', fgColor='6D6E6F')
+    fill_parent = PatternFill('solid', fgColor='EAEBEC')
+    fill_total = PatternFill('solid', fgColor='355B40')
+
+    align_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    align_right = Alignment(horizontal='right', vertical='center')
+    align_center = Alignment(horizontal='center', vertical='center')
+    align_indent_1 = Alignment(horizontal='left', vertical='center', indent=2, wrap_text=True)
+    align_indent_2 = Alignment(horizontal='left', vertical='center', indent=4, wrap_text=True)
+    align_indent_3 = Alignment(horizontal='left', vertical='center', indent=6, wrap_text=True)
+
+    thin = Side(style='thin', color='D4D6D8')
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    # ---- Titre ----
+    ws.merge_cells('A1:F1')
+    ws['A1'] = f"Bordereau des prix unitaires – {projet.nom}"
+    ws['A1'].font = font_titre
+    ws['A1'].alignment = Alignment(horizontal='center', vertical='center')
+    ws.row_dimensions[1].height = 24
+
+    ws.merge_cells('A2:F2')
+    ws['A2'] = f"Chantier : {projet.nom}"
+    ws['A2'].alignment = Alignment(horizontal='center')
+    ws['A2'].font = Font(size=10, italic=True, color='54585C')
+
+    # ---- Colonnes ----
+    headers = ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)']
+    for col, header in enumerate(headers, start=1):
+        cell = ws.cell(row=4, column=col, value=header)
+        cell.font = font_entete
+        cell.fill = fill_entete
+        cell.alignment = align_center if col in (1, 3) else (align_right if col >= 4 else align_left)
+        cell.border = border
+
+    row = 5
+    for lot in contexte['lots']:
+        # Bandeau du lot
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+        cell = ws.cell(row=row, column=1, value=f"LOT : {lot['nom']}")
+        cell.font = font_total
+        cell.fill = fill_lot
+        cell.alignment = align_left
+        for c in range(1, 7):
+            ws.cell(row=row, column=c).border = border
+        row += 1
+
+        # Lignes du lot
+        # print(f"Processing lot: {lot['nom']}", "Total lignes:", len(lot['lignes_table']))
+        for ligne in lot['lignes_table']:
+            # if not (hasattr(ligne, 'montant') and ligne.montant and ligne.montant > 0 and ligne.id != 0):
+            #     continue
+            ligne_id = ligne.get('id', 0)
+            montant = ligne.get('montant') or 0
+
+            # Ignorer la racine (id=0) et les lignes sans montant
+            if ligne_id == 0:
+                continue
+            try:
+                if float(montant) <= 0:
+                    continue
+            except (TypeError, ValueError):
+                continue
+
+            level = ligne.get('level', 0)
+            indent = min(level, 3)
+            align_des = [align_left, align_indent_1, align_indent_2, align_indent_3][indent]
+            is_parent = ligne.get('is_parent', False)
+
+            ws.cell(row=row, column=1, value=ligne.get('numero') or '').alignment = align_left
+            ws.cell(row=row, column=2, value=ligne.get('designation') or '').alignment = align_des
+            ws.cell(row=row, column=3, value=ligne.get('unite') or '').alignment = align_center
+            ws.cell(row=row, column=4, value=float(ligne.get('quantite') or 0)).alignment = align_right
+            ws.cell(row=row, column=5, value=float(ligne.get('prix_unitaire') or 0)).alignment = align_right
+            ws.cell(row=row, column=6, value=float(montant)).alignment = align_right
+
+            ws.cell(row=row, column=4).number_format = '#,##0.000'
+            ws.cell(row=row, column=5).number_format = '#,##0.00'
+            ws.cell(row=row, column=6).number_format = '#,##0.00'
+
+            for c in range(1, 7):
+                cell = ws.cell(row=row, column=c)
+                cell.border = border
+                cell.font = font_parent if is_parent else font_normal
+                if is_parent:
+                    cell.fill = fill_parent
+
+            row += 1
+        # Total du lot
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+        ws.cell(row=row, column=1, value=f"Total du lot {lot['nom']} HT :").font = font_total
+        ws.cell(row=row, column=1).fill = fill_total
+        ws.cell(row=row, column=1).alignment = align_right
+        ws.cell(row=row, column=6, value=float(lot['total_lot'])).font = font_total
+        ws.cell(row=row, column=6).fill = fill_total
+        ws.cell(row=row, column=6).alignment = align_right
+        ws.cell(row=row, column=6).number_format = '#,##0.00 "MAD"'
+        for c in range(1, 7):
+            ws.cell(row=row, column=c).border = border
+        row += 2   # une ligne vide entre les lots
+
+    # ---- Récapitulatif général ----
+    ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=6)
+    ws.cell(row=row, column=1, value="RÉCAPITULATIF GÉNÉRAL").font = font_total
+    ws.cell(row=row, column=1).fill = fill_total
+    for c in range(1, 7):
+        ws.cell(row=row, column=c).border = border
+    row += 1
+
+    recaps = [
+        ("TOTAL GÉNÉRAL HT :", float(contexte['montant_total_ht'])),
+        ("TOTAL GÉNÉRAL TVA :", float(contexte.get('montant_total_tva', 0))),
+        ("TOTAL GÉNÉRAL TTC :", float(contexte['montant_total_ttc'])),
+    ]
+    for label, valeur in recaps:
+        ws.merge_cells(start_row=row, start_column=1, end_row=row, end_column=5)
+        ws.cell(row=row, column=1, value=label).font = font_total
+        ws.cell(row=row, column=1).fill = fill_total
+        ws.cell(row=row, column=1).alignment = align_right
+        ws.cell(row=row, column=6, value=valeur).font = font_total
+        ws.cell(row=row, column=6).fill = fill_total
+        ws.cell(row=row, column=6).alignment = align_right
+        ws.cell(row=row, column=6).number_format = '#,##0.00 "MAD"'
+        for c in range(1, 7):
+            ws.cell(row=row, column=c).border = border
+        row += 1
+
+    # ---- Largeurs de colonnes ----
+    ws.column_dimensions['A'].width = 10
+    ws.column_dimensions['B'].width = 55
+    ws.column_dimensions['C'].width = 8
+    ws.column_dimensions['D'].width = 12
+    ws.column_dimensions['E'].width = 14
+    ws.column_dimensions['F'].width = 18
+
+    # ---- Freeze panes sur l'en-tête ----
+    ws.freeze_panes = 'A5'
+
+    # ---- Réponse ----
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    filename = f"Bordereau_{projet.nom}.xlsx".replace(' ', '_')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    wb.save(response)
+    return response
+

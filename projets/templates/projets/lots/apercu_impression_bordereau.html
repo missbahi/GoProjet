@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu impression – Bordereau {{ projet.nom }}</title>
+    {% load formatters %}
+    <style>
+        /* ============================================================
+           Palette neutre (gris froid) — cohérente avec l'aperçu planning
+           ============================================================ */
+        :root {
+            --papier-fond: #FAFAFA;
+            --papier-fond-alt: #F2F2F3;
+            --papier-bordure: #D4D6D8;
+            --encre-forte: #1F2023;
+            --encre-douce: #54585C;
+            --encre-legere: #8A8E92;
+            --fond-gris-fonce: #6d6e6f;
+            --bordure-gris-clair: #D4D6D8;
+            --accent-vert: #4A7C59;
+            --accent-vert-fonce: #355B40;
+            --accent-cyan: #2E6B7A;
+
+        }
+
+        * { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #E5E6E8;
+            font-family: "Georgia", "Times New Roman", serif;
+            color: var(--fond-gris-fonce);
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* ============================================================
+           Barre d'action (écran uniquement)
+           ============================================================ */
+        .barre-action {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #3A3833;
+            color: #F0EDE6;
+            padding: 0.75rem 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            font-family: Arial, sans-serif;
+        }
+        .barre-action h1 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .barre-action .boutons { display: flex; gap: 0.5rem; }
+        .barre-action button,
+        .barre-action a {
+            font-family: Arial, sans-serif;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 6px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s;
+        }
+        .btn-imprimer { background: var(--accent-vert); color: white; }
+        .btn-imprimer:hover { background: var(--accent-vert-fonce); }
+        .btn-retour {
+            background: transparent;
+            color: #F0EDE6;
+            border-color: #6B6558;
+        }
+        .btn-retour:hover { background: #4A463E; }
+
+        /* ============================================================
+           Feuille A4 portrait
+           ============================================================ */
+        .feuille {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 1.5rem auto;
+            background: var(--papier-fond);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            padding: 15mm 12mm;
+            position: relative;
+        }
+
+        /* En-tête document */
+        .entete-doc {
+            border-bottom: 2px solid var(--fond-gris-fonce);
+            padding-bottom: 0.6rem;
+            margin-bottom: 1rem;
+        }
+        .entete-doc .titre {
+            font-size: 1.35rem;
+            font-weight: bold;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        .entete-doc .chantier {
+            font-size: 0.95rem;
+            text-align: center;
+            color: var(--encre-douce);
+            margin-bottom: 0.4rem;
+        }
+        .entete-doc .meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.72rem;
+            color: var(--encre-legere);
+            font-style: italic;
+            margin-top: 0.5rem;
+            padding-top: 0.4rem;
+            border-top: 1px solid var(--papier-bordure);
+        }
+
+        /* ============================================================
+           Résumé
+           ============================================================ */
+        .resume {
+            background: var(--papier-fond-alt);
+            border: 1px solid var(--papier-bordure);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            margin-bottom: 1rem;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .resume .item {
+            display: flex;
+            gap: 0.4rem;
+            align-items: baseline;
+        }
+        .resume .item .label {
+            color: var(--encre-douce);
+        }
+        .resume .item .valeur {
+            font-weight: bold;
+            font-family: "Consolas", monospace;
+            color: var(--accent-vert-fonce);
+        }
+
+        /* ============================================================
+           Tableau par lot
+           ============================================================ */
+        .lot-bloc {
+            margin-bottom: 1.25rem;
+            page-break-inside: auto;
+        }
+        .lot-titre {
+            background: var(--fond-gris-fonce);
+            color: white;
+            padding: 0.4rem 0.75rem;
+            font-size: 0.85rem;
+            font-weight: bold;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .lot-titre .lot-nb {
+            font-size: 0.7rem;
+            font-weight: normal;
+            opacity: 0.85;
+            text-transform: none;
+            font-style: italic;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.72rem;
+            table-layout: fixed;
+        }
+        table.data-table thead th {
+            background: var(--papier-fond-alt);
+            border: 1px solid var(--papier-bordure);
+            border-bottom: 2px solid var(--fond-gris-fonce);
+            padding: 0.3rem 0.4rem;
+            font-size: 0.68rem;
+            font-weight: bold;
+            text-align: left;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--encre-forte);
+        }
+        table.data-table thead th.right { text-align: right; }
+        table.data-table thead th.center { text-align: center; }
+        table.data-table tbody td.col-num-cell,
+        table.data-table thead th.col-num-head {
+            text-align: left;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        table.data-table tbody td {
+            border: 1px solid var(--papier-bordure);
+            padding: 0.3rem 0.4rem;
+            vertical-align: top;
+            word-wrap: break-word;
+        }
+        table.data-table tbody tr:nth-child(even) td {
+            background: var(--papier-fond-alt);
+        }
+        table.data-table tbody tr.ligne-parent td {
+            background: #EAEBEC;
+            font-weight: bold;
+            border-top: 1.5px solid var(--encre-douce);
+        }
+
+        /* Colonnes */
+        col.col-num { width: 8%; }
+        col.col-desig { width: auto; }
+        col.col-unite { width: 8%; }
+        col.col-qte { width: 12%; }
+        col.col-pu { width: 15%; }
+        col.col-mt { width: 17%; }
+
+        .cell-right { text-align: right; }
+        .cell-center { text-align: center; }
+        .cell-mono {
+            font-family: "Consolas", "Monaco", monospace;
+            font-size: 0.7rem;
+        }
+
+        /* Indentation hiérarchique */
+        .lvl-0 { padding-left: 0.4rem !important; }
+        .lvl-1 { padding-left: 1rem !important; }
+        .lvl-2 { padding-left: 1.6rem !important; }
+        .lvl-3 { padding-left: 2.2rem !important; }
+        .lvl-4 { padding-left: 2.8rem !important; }
+
+        .designation-parent {
+            color: var(--accent-vert-fonce);
+            font-weight: bold;
+        }
+
+        /* Pied de lot */
+        table.data-table tfoot td {
+            background: var(--fond-gris-fonce);
+            color: white;
+            font-weight: bold;
+            font-size: 0.75rem;
+            padding: 0.4rem 0.5rem;
+            border: 1px solid var(--bordure-gris-clair);
+        }
+        table.data-table tbody td.total-label {
+            text-align: right;
+            font-weight: bold;
+            color: var(--encre-forte);
+            /* font-family: "Consolas", "Monaco", monospace;; */
+            font-size: 0.75rem;
+        }
+        table.data-table tfoot td.total-value {
+            text-align: right;
+            font-family: "Consolas", monospace;
+            color: #D4F0DA;
+        }
+        table.data-table tbody td.total-value {
+            text-align: right;
+            font-family: "Consolas", monospace;
+            font-weight: bold;
+            color: var(--encre-forte);
+        }
+        /* ============================================================
+           Pied de page
+           ============================================================ */
+        .pied-doc {
+            margin-top: 1rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--papier-bordure);
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            color: var(--encre-legere);
+            font-style: italic;
+        }
+
+        /* ============================================================
+           Impression
+           ============================================================ */
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+
+        @media print {
+            html, body {
+                background: white;
+            }
+            .barre-action {
+                display: none !important;
+            }
+            .feuille {
+                width: 100%;
+                min-height: auto;
+                margin: 0;
+                box-shadow: none;
+                padding: 0;
+                background: var(--papier-fond);
+            }
+            .lot-bloc {
+                page-break-inside: avoid;
+            }
+            table.data-table thead {
+                display: table-header-group;
+            }
+            table.data-table tr {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre d'action (écran uniquement) -->
+    <div class="barre-action">
+        <h1>Aperçu avant impression – Bordereau {{ projet.nom }}</h1>
+        <div class="boutons">
+            <a href="{% url 'projets:lots_projet' projet.id %}" class="btn-retour">
+                ← Retour
+            </a>
+            <button type="button" class="btn-imprimer" onclick="window.print()">
+                Imprimer
+            </button>
+        </div>
+    </div>
+
+    <!-- Feuille -->
+    <div class="feuille">
+
+        <!-- En-tête -->
+        <div class="entete-doc">
+            <div class="titre">Bordereau des prix unitaires</div>
+            <div class="chantier">
+                <strong>Chantier :</strong> {{ projet.nom }}
+                {% if projet.numero %} — Réf. {{ projet.numero }}{% endif %}
+            </div>
+            <div class="meta">
+                <span>Document généré le {% now "d/m/Y à H:i" %}</span>
+                <span>{{ total_lots }} lot{{ total_lots|pluralize }} — {{ total_lignes }} ligne{{ total_lignes|pluralize }}</span>
+            </div>
+        </div>
+
+        <!-- Résumé -->
+        <div class="resume">
+            <div class="item">
+                <span class="label">Montant total HT :</span>
+                <span class="valeur">{{ montant_total_ht|format_french_number }} MAD</span>
+            </div>
+            <div class="item">
+                <span class="label">Montant total TTC :</span>
+                <span class="valeur">{{ montant_total_ttc|format_french_number }} MAD</span>
+            </div>
+        </div>
+
+        {% if lots %}
+            {% for lot in lots %}
+            <div class="lot-bloc">
+                <div class="lot-titre">
+                    <span>Lot : {{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</span>
+                    <span class="lot-nb">{{ lot.lignes_table|length }} ligne{{ lot.lignes_table|length|pluralize }}</span>
+                </div>
+
+                <table class="data-table">
+                    <colgroup>
+                        <col class="col-num">
+                        <col class="col-desig">
+                        <col class="col-unite">
+                        <col class="col-qte">
+                        <col class="col-pu">
+                        <col class="col-mt">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Désignation</th>
+                            <th class="center">Unité</th>
+                            <th class="right">Quantité</th>
+                            <th class="right">PU (DH)</th>
+                            <th class="right">Montant (DH)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in lot.lignes_table %}
+                            {% if ligne.montant > 0 and ligne.id != 0 %}
+                            <tr class="{% if ligne.is_parent %}ligne-parent{% endif %}">
+                                <td  class="col-num-cell">{{ ligne.numero|default:"" }}</td>
+                                <td class="lvl-{{ ligne.level }} {% if ligne.is_parent %}designation-parent{% endif %}">
+                                    {{ ligne.designation }}
+                                </td>
+                                <td class="cell-center">{{ ligne.unite|default:"" }}</td>
+                                <td class="cell-right cell-mono">
+                                    {% if ligne.quantite and ligne.quantite != 0 %}
+                                        {{ ligne.quantite|format_quantity }}
+                                    {% endif %}
+                                </td>
+                                <td class="cell-right cell-mono">
+                                    {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
+                                        {{ ligne.prix_unitaire|format_french_number }}
+                                    {% endif %}
+                                </td>
+                                <td class="cell-right cell-mono">
+                                    {% if ligne.montant %}
+                                        {{ ligne.montant|format_french_number }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% endfor %}
+                        <tr>
+                            {% if lot.total_lot_ttc and lot.total_lot_ttc != lot.total_lot %}
+                            <td colspan="5" class="total-label">
+                                Total du lot {{ lot.nom }} HT :
+                            </td>
+                            <td colspan="1" class="total-value">
+                                {{ lot.total_lot|format_french_number }}
+                            </td>
+                            {% endif %}
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        
+                        <!-- {% if lot.total_lot_ttc and lot.total_lot_ttc != lot.total_lot %}
+                        <tr>
+                            <td colspan="5" class="total-label">Total du lot {{ lot.nom }} TTC :</td>
+                            <td class="total-value">{{ lot.total_lot_ttc|format_french_number }}</td>
+                        </tr>
+                        {% endif %} -->
+                    </tfoot>
+                </table>
+            </div>
+            {% endfor %}
+
+            <!-- Récapitulatif général -->
+            <div class="lot-bloc" style="page-break-before: auto;">
+                <div class="lot-titre" style="background: var(--accent-vert-fonce);">
+                    <span>Récapitulatif général</span>
+                </div>
+                <table class="data-table">
+                    <colgroup>
+                        <col class="col-num" style="width: 8%;">
+                        <col class="col-desig">
+                        <col class="col-mt" style="width: 20%;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Désignation du lot</th>
+                            <th class="right">Montant HT (DH)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lot in lots %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</td>
+                            <td class="cell-right cell-mono">{{ lot.total_lot|format_french_number }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL HT :</td>
+                            <td class="total-value">{{ montant_total_ht|format_french_number }} MAD</td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TVA :</td>
+                            <td class="total-value" style="border-top: 1px solid rgba(255,255,255,0.35);">
+                                {{ montant_total_tva|format_french_number }} MAD
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TTC :</td>
+                            <td class="total-value">{{ montant_total_ttc|format_french_number }} MAD</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+        {% else %}
+            <div style="padding: 2rem; text-align: center; color: var(--encre-douce); font-style: italic;">
+                Aucune ligne de bordereau à afficher.
+            </div>
+        {% endif %}
+
+        <!-- Pied -->
+        <div class="pied-doc">
+            <span>{{ projet.nom }} — Bordereau des prix unitaires</span>
+            <span>Document généré automatiquement</span>
+        </div>
+
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+        const titreOriginal = document.title;
+        window.addEventListener('beforeprint', () => {
+            document.title = 'Bordereau_{{ projet.nom|slugify }}';
+        });
+        window.addEventListener('afterprint', () => {
+            document.title = titreOriginal;
+        });
+    })();
+    </script>
+
+</body>
+</html>
