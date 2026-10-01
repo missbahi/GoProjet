@@ -1,71 +1,117 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full bg-gray-900">
-  
+<html lang="fr" class="h-full">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  {% block extra_css %}{% endblock %}
-  <title>{% block title %}GoProjet - Gestion des Projets{% endblock %}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            gray: {
-              900: '#111827',
-              800: '#1F2937',
-              700: '#374151',
-              600: '#4B5563',
-            },
-            primary: {
-              600: '#2563eb',
-              700: '#1d4ed8',
+    <title>{% block title %}GoProjet - Gestion des Projets{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            900: '#111827',
+                            800: '#1F2937',
+                            700: '#374151',
+                            600: '#4B5563',
+                        },
+                        primary: {
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
             }
-          }
         }
-      } 
-    }
-  </script>
-  {% block extra_head %}{% endblock %}
-  <style>
-    #taches-container.updating {
-        opacity: 0.5;
-        pointer-events: none;
-    }
-    /* Transition fluide pour le filtrage */
-    #taches-container {
-        transition: opacity 0.3s ease;
-    }
+    </script>
 
-    /* Style pour les options de filtre */
-    select:focus {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 1px #3b82f6;
-    }
+    {% block extra_head %}{% endblock %}
 
-    /* Bouton réinitialiser */
-    button:hover {
-        transition: background-color 0.2s ease;
-    }
-</style>
+    <style>
+        /* Transitions et états globaux */
+        #taches-container {
+            transition: opacity 0.3s ease;
+        }
+        #taches-container.updating {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        select:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 1px #3b82f6;
+        }
+        button {
+            transition: background-color 0.2s ease;
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full">
-  <div href="home" class="flex h-full">
-    
-    <div class="flex-1 flex flex-col overflow-hidden">
-      
-      <main class="flex-1 overflow-y-auto  bg-[#2E2E2E] text-[#2B9C62] p-4  p-6">
-        {% block content %}{% endblock %}
-      </main>
+<body class="h-full bg-gray-900 text-gray-200">
+
+    <div class="flex flex-col min-h-full">
+
+        {% block nav %}
+            {% include "projets/partials/_navbar.html" %}
+        {% endblock %}
+
+        <main class="flex-1 overflow-y-auto bg-[#2E2E2E] text-[#2B9C62] p-6">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% block footer %}
+            {% include "projets/partials/_footer.html" %}
+        {% endblock %}
+
     </div>
-  </div>
-  
-  {% block extra_js %}{% endblock %}
-  
+
+    <!-- Conteneur pour les modals HTMX -->
+    <div id="modals-container"></div>
+
+    <!-- JS commun (menu utilisateur, fallbacks) -->
+    <script>
+        (function() {
+            const btn = document.getElementById('userMenuBtn');
+            const dropdown = document.getElementById('userMenuDropdown');
+            if (!btn || !dropdown) return;
+
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdown.classList.toggle('hidden');
+            });
+
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('#userMenuBtn') &&
+                    !event.target.closest('#userMenuDropdown')) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        })();
+
+        function handleNavbarAvatarError(img) {
+            img.onerror = null;
+            const username = "{{ user.username|default:'User' }}";
+            img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=10B981&color=fff&size=64`;
+        }
+
+        function handleDevLogoError(img) {
+            img.onerror = null;
+            const parent = img.parentNode;
+            const fallback = document.createElement('div');
+            fallback.className = 'bg-gradient-to-r from-purple-600 to-purple-500 text-white font-bold rounded-lg px-3 py-2 flex items-center justify-center';
+            fallback.innerHTML = '<span>GoProjet</span>';
+            parent.replaceChild(fallback, img);
+        }
+    </script>
+
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

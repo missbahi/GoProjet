@@ -208,7 +208,7 @@
                     <i class="fas fa-diagram-project"></i> Tableau de bord
                 </a>
             </div>
-            
+            {% if lots %}
             <div class="flex gap-2 sm:gap-3">
                 <button type="button"
                         id="btn-apercu-bordereau"
@@ -223,6 +223,7 @@
                     Excel
                 </a>
             </div>
+            {% endif %}
         </div>
 
         <!-- Messages -->

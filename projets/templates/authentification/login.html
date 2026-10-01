@@ -1,89 +1,96 @@
 {% extends "projets/base.html" %}
 {% load static %}
+
+{% block title %}Connexion – GoProjet{% endblock %}
+
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4">
+<div class="min-h-screen flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
-        <!-- CARD DE CONNEXION -->
         <div class="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
-            <!-- LOGO -->
+
             <div class="flex justify-center mb-6">
                 <div class="bg-white rounded-lg shadow-lg p-3">
                     <img src="{% static 'images/logo-goprojet.svg' %}" alt="Logo GoProjet" class="h-12 w-auto">
                 </div>
             </div>
 
-            <!-- TITRE -->
             <div class="text-center mb-8">
                 <h1 class="text-3xl font-bold text-green-400 mb-2">
-                    <i class="fa-solid fa-lock mr-2"></i>
+                    <i class="fas fa-lock mr-2"></i>
                     Connexion
                 </h1>
                 <p class="text-gray-400">Accédez à votre espace GoProjet</p>
             </div>
 
-            <!-- FORMULAIRE -->
-            <form method="post" class="space-y-6">
+            <form method="post" class="space-y-6" autocomplete="on">
                 {% csrf_token %}
-                
-                <!-- Gestion des erreurs -->
+
                 {% if form.errors %}
-                <div class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg flex items-center">
-                    <i class="fa-solid fa-triangle-exclamation mr-2"></i>
-                    Identifiant ou mot de passe incorrect.
+                <div class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg flex items-start gap-2">
+                    <i class="fas fa-triangle-exclamation mt-1"></i>
+                    <div>
+                        {% for error in form.non_field_errors %}
+                            <p>{{ error }}</p>
+                        {% empty %}
+                            <p>Identifiant ou mot de passe incorrect.</p>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endif %}
 
-                <!-- Champ Nom d'utilisateur -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">
-                        <i class="fa-solid fa-user mr-2 text-blue-400"></i>
+                    <label for="id_username" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-user mr-2 text-blue-400"></i>
                         Nom d'utilisateur
                     </label>
-                    <input type="text" 
-                           name="username" 
-                           required 
+                    <input type="text"
+                           id="id_username"
+                           name="username"
+                           value="{{ form.username.value|default:'' }}"
+                           required
+                           autofocus
+                           autocomplete="username"
                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                            placeholder="Votre nom d'utilisateur">
                 </div>
 
-                <!-- Champ Mot de passe -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">
-                        <i class="fa-solid fa-key mr-2 text-yellow-400"></i>
+                    <label for="id_password" class="block text-sm font-medium text-gray-300 mb-2">
+                        <i class="fas fa-key mr-2 text-yellow-400"></i>
                         Mot de passe
                     </label>
-                    <input type="password" 
-                           name="password" 
-                           required 
+                    <input type="password"
+                           id="id_password"
+                           name="password"
+                           required
+                           autocomplete="current-password"
                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
                            placeholder="Votre mot de passe">
                 </div>
 
-                <!-- Bouton de connexion -->
-                <button type="submit" 
+                <button type="submit"
                         class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:from-green-500 hover:to-green-400 transition duration-300 transform hover:scale-105">
-                    <i class="fa-solid fa-right-to-bracket mr-2"></i>
+                    <i class="fas fa-right-to-bracket mr-2"></i>
                     Se connecter
                 </button>
             </form>
 
-            <!-- LIEN MOT DE PASSE OUBLIÉ -->
             <div class="mt-6 pt-6 border-t border-gray-700 text-center">
                 <a href="{% url 'password_reset' %}" class="text-green-400 hover:text-green-300 transition text-sm">
-                    <i class="fa-solid fa-key mr-1"></i>
+                    <i class="fas fa-key mr-1"></i>
                     Mot de passe oublié ?
                 </a>
             </div>
         </div>
 
-        <!-- LIEN RETOUR -->
         <div class="text-center mt-6">
-            <a href="{% url 'projets:landing' %}" 
+            <a href="{% url 'projets:landing' %}"
                class="inline-flex items-center text-green-400 hover:text-green-300 transition">
-                <i class="fa-solid fa-arrow-left mr-2"></i>
+                <i class="fas fa-arrow-left mr-2"></i>
                 Retour à la page d'accueil
             </a>
         </div>
     </div>
 </div>
 {% endblock %}
+
