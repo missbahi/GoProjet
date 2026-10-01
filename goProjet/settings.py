@@ -343,7 +343,7 @@ else:
 ANYMAIL = {
     "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
 }
-DEFAULT_FROM_EMAIL = "GoProjet <onboarding@resend.dev>"
+DEFAULT_FROM_EMAIL = "GoProjet <noreply@notifications.goprojet.ma>"
 
 # --- 15. CONFIGURATIONS DIVERSES ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
