@@ -68,7 +68,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_extensions',
-    
+    'anymail',
     # Vos applications
     'projets.apps.ProjetsConfig',
 ]
@@ -335,8 +335,12 @@ CSRF_TRUSTED_ORIGINS = [
 CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 
-# --- 14. EMAIL (CONSOLE EN LOCAL) ---
+# --- 14. EMAIL (CONSOLE EN LOCAL) & RESEND ---
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+ANYMAIL = {
+    "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
+}
+DEFAULT_FROM_EMAIL = "GoProjet <onboarding@resend.dev>"
 
 # --- 15. CONFIGURATIONS DIVERSES ---
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
