@@ -17,11 +17,11 @@
             --encre-douce: #54585C;
             --encre-legere: #8A8E92;
             --fond-gris-fonce: #6d6e6f;
+            --fond-entete-table: #4B5054;
             --bordure-gris-clair: #D4D6D8;
             --accent-vert: #4A7C59;
             --accent-vert-fonce: #355B40;
             --accent-cyan: #2E6B7A;
-
         }
 
         * { box-sizing: border-box; }
@@ -98,7 +98,23 @@
             position: relative;
         }
 
-        /* En-tête document */
+        /* ============================================================
+           Wrapper de page (Solution A : tfoot répété sur chaque page)
+           ============================================================ */
+        .page-wrapper {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .page-wrapper > tbody > tr > td,
+        .page-wrapper > tfoot > tr > td {
+            border: none;
+            padding: 0;
+            vertical-align: top;
+        }
+
+        /* ============================================================
+           En-tête document
+           ============================================================ */
         .entete-doc {
             border-bottom: 2px solid var(--fond-gris-fonce);
             padding-bottom: 0.6rem;
@@ -191,20 +207,26 @@
             font-size: 0.72rem;
             table-layout: fixed;
         }
+
+        /* ============================================================
+           En-tête de tableau accentuée
+           ============================================================ */
         table.data-table thead th {
-            background: var(--papier-fond-alt);
-            border: 1px solid var(--papier-bordure);
-            border-bottom: 2px solid var(--fond-gris-fonce);
-            padding: 0.3rem 0.4rem;
-            font-size: 0.68rem;
+            background: var(--fond-entete-table);
+            color: white;
+            border: 1px solid var(--fond-entete-table);
+            border-bottom: 2px solid var(--encre-forte);
+            padding: 0.6rem 0.5rem;
+            font-size: 0.72rem;
             font-weight: bold;
             text-align: left;
             text-transform: uppercase;
-            letter-spacing: 0.03em;
-            color: var(--encre-forte);
+            letter-spacing: 0.05em;
+            line-height: 1.2;
         }
         table.data-table thead th.right { text-align: right; }
         table.data-table thead th.center { text-align: center; }
+
         table.data-table tbody td.col-num-cell,
         table.data-table thead th.col-num-head {
             text-align: left;
@@ -233,7 +255,7 @@
         col.col-unite { width: 8%; }
         col.col-qte { width: 12%; }
         col.col-pu { width: 15%; }
-        col.col-mt { width: 17%; }
+        col.col-mt { width: 20%; }
 
         .cell-right { text-align: right; }
         .cell-center { text-align: center; }
@@ -267,7 +289,6 @@
             text-align: right;
             font-weight: bold;
             color: var(--encre-forte);
-            /* font-family: "Consolas", "Monaco", monospace;; */
             font-size: 0.75rem;
         }
         table.data-table tfoot td.total-value {
@@ -281,8 +302,9 @@
             font-weight: bold;
             color: var(--encre-forte);
         }
+
         /* ============================================================
-           Pied de page
+           Pied de page (écran — non imprimé, remplacé par tfoot)
            ============================================================ */
         .pied-doc {
             margin-top: 1rem;
@@ -296,11 +318,64 @@
         }
 
         /* ============================================================
+           Pied de page imprimé (répété sur chaque page via tfoot)
+           ============================================================ */
+        .pied-doc-print {
+            border-top: 1px solid var(--papier-bordure);
+            padding-top: 0.4rem;
+            margin-top: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.65rem;
+            color: var(--encre-legere);
+            font-style: italic;
+            font-family: Arial, sans-serif;
+        }
+        .pied-doc-print .pied-gauche {
+            flex: 1;
+            text-align: left;
+        }
+        .pied-doc-print .pied-centre {
+            flex: 1;
+            text-align: center;
+            font-style: normal;
+            color: var(--encre-douce);
+            font-weight: 600;
+        }
+        .pied-doc-print .pied-droite {
+            flex: 1;
+            text-align: right;
+        }
+
+        /* ============================================================
            Impression
            ============================================================ */
         @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 10mm 10mm 15mm 10mm;
+
+            @bottom-left {
+                content: "{{ projet.nom }}";
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #8A8E92;
+                font-style: italic;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " / " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #54585C;
+                font-weight: 600;
+            }
+            @bottom-right {
+                content: "Bordereau des prix unitaires";
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #8A8E92;
+                font-style: italic;
+            }
         }
 
         @media print {
@@ -318,14 +393,22 @@
                 padding: 0;
                 background: var(--papier-fond);
             }
-            .lot-bloc {
-                page-break-inside: avoid;
+
+            /* Solution A : tfoot répété sur chaque page */
+            .page-wrapper > tfoot {
+                display: table-footer-group;
             }
+
             table.data-table thead {
                 display: table-header-group;
             }
             table.data-table tr {
                 page-break-inside: avoid;
+            }
+
+            /* Masquer le pied écran à l'impression (remplacé par pied-doc-print) */
+            .pied-doc {
+                display: none;
             }
         }
     </style>
@@ -348,166 +431,202 @@
     <!-- Feuille -->
     <div class="feuille">
 
-        <!-- En-tête -->
-        <div class="entete-doc">
-            <div class="titre">Bordereau des prix unitaires</div>
-            <div class="chantier">
-                <strong>Chantier :</strong> {{ projet.nom }}
-                {% if projet.numero %} — Réf. {{ projet.numero }}{% endif %}
-            </div>
-            <div class="meta">
-                <span>Document généré le {% now "d/m/Y à H:i" %}</span>
-                <span>{{ total_lots }} lot{{ total_lots|pluralize }} — {{ total_lignes }} ligne{{ total_lignes|pluralize }}</span>
-            </div>
-        </div>
+        <!-- ============================================================
+             Wrapper : tbody = contenu, tfoot = pied répété à chaque page
+             ============================================================ -->
+        <table class="page-wrapper">
+            <tbody>
+                <tr>
+                    <td>
+                        <!-- En-tête -->
+                        <div class="entete-doc">
+                            <div class="titre">Bordereau des prix unitaires</div>
+                            <div class="chantier">
+                                <strong>Chantier :</strong> {{ projet.nom }}
+                                {% if projet.numero %} — Réf. {{ projet.numero }}{% endif %}
+                            </div>
+                            <!-- <div class="meta">
+                                <span>Document généré le {% now "d/m/Y à H:i" %}</span>
+                                <span>{{ total_lots }} lot{{ total_lots|pluralize }} — {{ total_lignes }} ligne{{ total_lignes|pluralize }}</span>
+                            </div> -->
+                        </div>
 
-        <!-- Résumé -->
-        <div class="resume">
-            <div class="item">
-                <span class="label">Montant total HT :</span>
-                <span class="valeur">{{ montant_total_ht|format_french_number }} MAD</span>
-            </div>
-            <div class="item">
-                <span class="label">Montant total TTC :</span>
-                <span class="valeur">{{ montant_total_ttc|format_french_number }} MAD</span>
-            </div>
-        </div>
+                        <!-- Résumé -->
+                        <!-- <div class="resume">
+                            <div class="item">
+                                <span class="label">Montant total HT :</span>
+                                <span class="valeur">{{ montant_total_ht|format_french_number }} MAD</span>
+                            </div>
+                            <div class="item">
+                                <span class="label">Montant total TTC :</span>
+                                <span class="valeur">{{ montant_total_ttc|format_french_number }} MAD</span>
+                            </div>
+                        </div> -->
 
-        {% if lots %}
-            {% for lot in lots %}
-            <div class="lot-bloc">
-                <div class="lot-titre">
-                    <span>Lot : {{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</span>
-                    <span class="lot-nb">{{ lot.lignes_table|length }} ligne{{ lot.lignes_table|length|pluralize }}</span>
-                </div>
+                        {% if lots %}
+                            {% for lot in lots %}
+                            <div class="lot-bloc">
+                                {% if total_lots > 1 %}
+                                <div class="lot-titre">
+                                    <span>Lot : {{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</span>
+                                    <!-- <span class="lot-nb">{{ lot.lignes_table|length }} ligne{{ lot.lignes_table|length|pluralize }}</span> -->
+                                </div>
+                                {% endif %}
+                                <table class="data-table">
+                                    <colgroup>
+                                        <col class="col-num">
+                                        <col class="col-desig">
+                                        <col class="col-unite">
+                                        <col class="col-qte">
+                                        <col class="col-pu">
+                                        <col class="col-mt">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th>N°</th>
+                                            <th>Désignation</th>
+                                            <th class="center">Unité</th>
+                                            <th class="center">Quantité</th>
+                                            <th class="center">PU (DH)</th>
+                                            <th class="center">Montant (DH)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for ligne in lot.lignes_table %}
+                                            {% if ligne.montant > 0 and ligne.id != 0 %}
+                                                {% if ligne.is_parent %}
+                                                    <tr class="ligne-parent">
+                                                        <td class="col-num-cell">{{ ligne.numero|default:"" }}</td>
+                                                        <td colspan="4" class="lvl-{{ ligne.level }} designation-parent">
+                                                            {{ ligne.designation }}
+                                                        </td>
+                                                        <td colspan="1" class="cell-right cell-mono">
+                                                            {% if ligne.montant %}
+                                                                {{ ligne.montant|format_french_number }}
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% else %}
+                                                    <tr>
+                                                        <td class="col-num-cell">{{ ligne.numero|default:"" }}</td>
+                                                        <td class="lvl-{{ ligne.level }}">
+                                                            {{ ligne.designation }}
+                                                        </td>
+                                                        <td class="cell-center">{{ ligne.unite|default:"" }}</td>
+                                                        <td class="cell-right cell-mono">
+                                                            {% if ligne.quantite and ligne.quantite != 0 %}
+                                                                {{ ligne.quantite|format_quantity }}
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="cell-right cell-mono">
+                                                            {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
+                                                                {{ ligne.prix_unitaire|format_french_number }}
+                                                            {% endif %}
+                                                        </td>
+                                                        <td class="cell-right cell-mono">
+                                                            {% if ligne.montant %}
+                                                                {{ ligne.montant|format_french_number }}
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                        <!-- Total Lot du lot -->
+                                        <tr>
+                                            {% if lot.total_lot and total_lots > 1 %}
+                                            <td colspan="5" class="total-label">
+                                                Total du lot {{ lot.nom }} HT :
+                                            </td>
+                                            <td colspan="1" class="total-value">
+                                                {{ lot.total_lot|format_french_number }}
+                                            </td>
+                                            {% endif %}
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            {% endfor %}
 
-                <table class="data-table">
-                    <colgroup>
-                        <col class="col-num">
-                        <col class="col-desig">
-                        <col class="col-unite">
-                        <col class="col-qte">
-                        <col class="col-pu">
-                        <col class="col-mt">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>N°</th>
-                            <th>Désignation</th>
-                            <th class="center">Unité</th>
-                            <th class="right">Quantité</th>
-                            <th class="right">PU (DH)</th>
-                            <th class="right">Montant (DH)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for ligne in lot.lignes_table %}
-                            {% if ligne.montant > 0 and ligne.id != 0 %}
-                            <tr class="{% if ligne.is_parent %}ligne-parent{% endif %}">
-                                <td  class="col-num-cell">{{ ligne.numero|default:"" }}</td>
-                                <td class="lvl-{{ ligne.level }} {% if ligne.is_parent %}designation-parent{% endif %}">
-                                    {{ ligne.designation }}
-                                </td>
-                                <td class="cell-center">{{ ligne.unite|default:"" }}</td>
-                                <td class="cell-right cell-mono">
-                                    {% if ligne.quantite and ligne.quantite != 0 %}
-                                        {{ ligne.quantite|format_quantity }}
+                            <!-- Récapitulatif général -->
+                            <div class="lot-bloc" style="page-break-before: auto;">
+                                <div class="lot-titre" style="background: var(--accent-vert-fonce);">
+                                    <span>Récapitulatif général</span>
+                                </div>
+                                <table class="data-table">
+                                    <colgroup>
+                                        <col class="col-num" style="width: 10%;">
+                                        <col class="col-desig">
+                                        <col class="col-mt" style="width: 25%;">
+                                    </colgroup>
+                                    {% if lots and total_lots > 1 %}
+                                    <thead>
+                                        <tr>
+                                            <th>N°</th>
+                                            <th>Désignation du lot</th>
+                                            <th class="center">Montant HT (DH)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for lot in lots %}
+                                        <tr>
+                                            <td>{{ forloop.counter }}</td>
+                                            <td>{{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</td>
+                                            <td class="cell-right cell-mono">{{ lot.total_lot|format_french_number }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
                                     {% endif %}
-                                </td>
-                                <td class="cell-right cell-mono">
-                                    {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
-                                        {{ ligne.prix_unitaire|format_french_number }}
-                                    {% endif %}
-                                </td>
-                                <td class="cell-right cell-mono">
-                                    {% if ligne.montant %}
-                                        {{ ligne.montant|format_french_number }}
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endif %}
-                        {% endfor %}
-                        <tr>
-                            {% if lot.total_lot_ttc and lot.total_lot_ttc != lot.total_lot %}
-                            <td colspan="5" class="total-label">
-                                Total du lot {{ lot.nom }} HT :
-                            </td>
-                            <td colspan="1" class="total-value">
-                                {{ lot.total_lot|format_french_number }}
-                            </td>
-                            {% endif %}
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        
-                        <!-- {% if lot.total_lot_ttc and lot.total_lot_ttc != lot.total_lot %}
-                        <tr>
-                            <td colspan="5" class="total-label">Total du lot {{ lot.nom }} TTC :</td>
-                            <td class="total-value">{{ lot.total_lot_ttc|format_french_number }}</td>
-                        </tr>
-                        {% endif %} -->
-                    </tfoot>
-                </table>
-            </div>
-            {% endfor %}
+                                    <tfoot>
+                                        <tr>
+                                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL HT :</td>
+                                            <td class="total-value">{{ montant_total_ht|format_french_number }} MAD</td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TVA :</td>
+                                            <td class="total-value" style="border-top: 1px solid rgba(255,255,255,0.35);">
+                                                {{ montant_total_tva|format_french_number }} MAD
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TTC :</td>
+                                            <td class="total-value">{{ montant_total_ttc|format_french_number }} MAD</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
 
-            <!-- Récapitulatif général -->
-            <div class="lot-bloc" style="page-break-before: auto;">
-                <div class="lot-titre" style="background: var(--accent-vert-fonce);">
-                    <span>Récapitulatif général</span>
-                </div>
-                <table class="data-table">
-                    <colgroup>
-                        <col class="col-num" style="width: 8%;">
-                        <col class="col-desig">
-                        <col class="col-mt" style="width: 20%;">
-                    </colgroup>
-                    <thead>
-                        <tr>
-                            <th>N°</th>
-                            <th>Désignation du lot</th>
-                            <th class="right">Montant HT (DH)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for lot in lots %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td>{{ lot.nom }}{% if lot.description %} — {{ lot.description }}{% endif %}</td>
-                            <td class="cell-right cell-mono">{{ lot.total_lot|format_french_number }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL HT :</td>
-                            <td class="total-value">{{ montant_total_ht|format_french_number }} MAD</td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TVA :</td>
-                            <td class="total-value" style="border-top: 1px solid rgba(255,255,255,0.35);">
-                                {{ montant_total_tva|format_french_number }} MAD
-                            </td>
-                        </tr>
-                        <tr>
-                            <td colspan="2" class="total-label">TOTAL GÉNÉRAL TTC :</td>
-                            <td class="total-value">{{ montant_total_ttc|format_french_number }} MAD</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
+                        {% else %}
+                            <div style="padding: 2rem; text-align: center; color: var(--encre-douce); font-style: italic;">
+                                Aucune ligne de bordereau à afficher.
+                            </div>
+                        {% endif %}
 
-        {% else %}
-            <div style="padding: 2rem; text-align: center; color: var(--encre-douce); font-style: italic;">
-                Aucune ligne de bordereau à afficher.
-            </div>
-        {% endif %}
+                        <!-- Pied (écran uniquement — masqué à l'impression) -->
+                        <!-- <div class="pied-doc">
+                            <span>{{ projet.nom }} — Bordereau des prix unitaires</span>
+                            <span>Document généré le {{ now|date:"d/m/Y" }}</span>
+                        </div> -->
 
-        <!-- Pied -->
-        <div class="pied-doc">
-            <span>{{ projet.nom }} — Bordereau des prix unitaires</span>
-            <span>Document généré automatiquement</span>
-        </div>
+                    </td>
+                </tr>
+            </tbody>
+
+            <!-- ============================================================
+                 Pied de page répété sur chaque page imprimée
+                 ============================================================ -->
+            <!-- <tfoot>
+                <tr>
+                    <td>
+                        <div class="pied-doc-print">
+                            <span class="pied-gauche">{{ projet.nom }}</span>
+                            <span class="pied-centre">Page <span class="page-num"></span> / <span class="page-total"></span></span>
+                            <span class="pied-droite">{{ projet.nom }} — Bordereau des prix unitaires</span>
+                        </div>
+                    </td>
+                </tr>
+            </tfoot> -->
+        </table>
 
     </div>
 

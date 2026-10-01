@@ -245,7 +245,7 @@ def _preparer_contexte_bordereau(projet):
             'taux_tva': lot.taux_tva,
         })
         montant_total_ht += total_lot
-        montant_total_tva += total_lot * (lot.taux_tva / 100)
+        montant_total_tva += total_lot * (lot.taux_tva_applicable / 100)
         total_lignes += len(lignes_table)
 
     montant_total_ttc = montant_total_ht + montant_total_tva
