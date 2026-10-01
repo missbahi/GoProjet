@@ -67,11 +67,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_extensions',
     'anymail',
     # Vos applications
     'projets.apps.ProjetsConfig',
 ]
+if DEBUG: INSTALLED_APPS.append('django_extensions')
 
 # --- 5. MIDDLEWARE ---
 MIDDLEWARE = [
@@ -336,7 +336,10 @@ CSRF_USE_SESSIONS = False
 CSRF_COOKIE_HTTPONLY = False
 
 # --- 14. EMAIL (CONSOLE EN LOCAL) & RESEND ---
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+if DEBUG:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+else:
+    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
 ANYMAIL = {
     "RESEND_API_KEY": os.environ.get("RESEND_API_KEY"),
 }
@@ -355,14 +358,14 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'console': {
-            'level': 'DEBUG',
+            'level': 'INFO' if not DEBUG else 'DEBUG',
             'class': 'logging.StreamHandler',
         },
     },
     'loggers': {
         'django': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING' if not DEBUG else 'INFO',
             'propagate': False,
         },
         'django.request': {
@@ -370,6 +373,10 @@ LOGGING = {
             'level': 'ERROR',
             'propagate': False,
         },
+        'anymail': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
     },
 }
-
