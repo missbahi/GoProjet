@@ -3,10 +3,14 @@
 
 {% block title %}Connexion – GoProjet{% endblock %}
 
+{% block nav %}{% endblock %}
+{% block footer %}{% endblock %}
+{% block main_class %}{% endblock %}
+
 {% block content %}
 <div class="min-h-screen flex items-center justify-center py-12 px-4">
     <div class="w-full max-w-md">
-        <div class="bg-gray-800 rounded-2xl shadow-2xl border border-gray-700 p-8">
+        <div class="app-card p-8">
 
             <div class="flex justify-center mb-6">
                 <div class="bg-white rounded-lg shadow-lg p-3">
@@ -15,18 +19,18 @@
             </div>
 
             <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-green-400 mb-2">
+                <h1 class="text-3xl font-bold mb-2" style="color: var(--accent-green);">
                     <i class="fas fa-lock mr-2"></i>
                     Connexion
                 </h1>
-                <p class="text-gray-400">Accédez à votre espace GoProjet</p>
+                <p style="color: var(--text-secondary);">Accédez à votre espace GoProjet</p>
             </div>
 
             <form method="post" class="space-y-6" autocomplete="on">
                 {% csrf_token %}
 
                 {% if form.errors %}
-                <div class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg flex items-start gap-2">
+                <div class="app-alert app-alert-error px-4 py-3 rounded-lg flex items-start gap-2">
                     <i class="fas fa-triangle-exclamation mt-1"></i>
                     <div>
                         {% for error in form.non_field_errors %}
@@ -39,8 +43,8 @@
                 {% endif %}
 
                 <div>
-                    <label for="id_username" class="block text-sm font-medium text-gray-300 mb-2">
-                        <i class="fas fa-user mr-2 text-blue-400"></i>
+                    <label for="id_username" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                        <i class="fas fa-user mr-2" style="color: var(--accent-info);"></i>
                         Nom d'utilisateur
                     </label>
                     <input type="text"
@@ -50,13 +54,13 @@
                            required
                            autofocus
                            autocomplete="username"
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                           class="app-input"
                            placeholder="Votre nom d'utilisateur">
                 </div>
 
                 <div>
-                    <label for="id_password" class="block text-sm font-medium text-gray-300 mb-2">
-                        <i class="fas fa-key mr-2 text-yellow-400"></i>
+                    <label for="id_password" class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                        <i class="fas fa-key mr-2" style="color: var(--accent-warning);"></i>
                         Mot de passe
                     </label>
                     <input type="password"
@@ -64,19 +68,20 @@
                            name="password"
                            required
                            autocomplete="current-password"
-                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
+                           class="app-input"
                            placeholder="Votre mot de passe">
                 </div>
 
                 <button type="submit"
-                        class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white font-semibold py-3 px-4 rounded-lg shadow-lg hover:from-green-500 hover:to-green-400 transition duration-300 transform hover:scale-105">
+                        class="w-full text-white font-semibold py-3 px-4 rounded-lg shadow-lg transition"
+                        style="background-color: var(--accent-green);">
                     <i class="fas fa-right-to-bracket mr-2"></i>
                     Se connecter
                 </button>
             </form>
 
-            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
-                <a href="{% url 'password_reset' %}" class="text-green-400 hover:text-green-300 transition text-sm">
+            <div class="mt-6 pt-6 text-center" style="border-top: 1px solid var(--border-default);">
+                <a href="{% url 'password_reset' %}" class="text-sm" style="color: var(--accent-green);">
                     <i class="fas fa-key mr-1"></i>
                     Mot de passe oublié ?
                 </a>
@@ -85,7 +90,8 @@
 
         <div class="text-center mt-6">
             <a href="{% url 'projets:landing' %}"
-               class="inline-flex items-center text-green-400 hover:text-green-300 transition">
+               class="inline-flex items-center"
+               style="color: var(--accent-green);">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Retour à la page d'accueil
             </a>
@@ -93,4 +99,3 @@
     </div>
 </div>
 {% endblock %}
-

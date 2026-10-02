@@ -1,0 +1,448 @@
+/* ============================================================
+   Liste des projets — styles dédiés (thème-aware)
+   ============================================================ */
+
+/* ---- Toggle vue (tableau / cartes) ---- */
+.vue-toggle {
+    display: inline-flex;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.vue-btn {
+    padding: 0.5rem 0.9rem;
+    background: transparent;
+    color: var(--text-secondary);
+    border: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: all 0.15s ease;
+}
+
+.vue-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.vue-btn.active {
+    background: var(--accent-primary);
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* ---- Conteneur principal ---- */
+.liste-projets-conteneur {
+    min-height: 400px;
+}
+
+/* ---- Vue cartes ---- */
+.projet-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.projet-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-primary), var(--accent-success));
+}
+
+.projet-card:hover {
+    border-color: var(--accent-primary);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.projet-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.projet-card-titre {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+    flex: 1;
+}
+
+/* ---- Badges de statut ---- */
+.projet-card-badge {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+}
+
+.badge-cours {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.4);
+}
+.badge-retard {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+}
+.badge-recep {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+    border: 1px solid rgba(16, 185, 129, 0.4);
+}
+.badge-defaut {
+    background: rgba(107, 114, 128, 0.2);
+    color: var(--text-secondary);
+    border: 1px solid rgba(107, 114, 128, 0.4);
+}
+
+/* Variantes pour thème clair */
+[data-theme="light"] .badge-cours {
+    background: rgba(59, 130, 246, 0.15);
+    color: #1e40af;
+}
+[data-theme="light"] .badge-retard {
+    background: rgba(245, 158, 11, 0.15);
+    color: #92400e;
+}
+[data-theme="light"] .badge-recep {
+    background: rgba(16, 185, 129, 0.15);
+    color: #065f46;
+}
+[data-theme="light"] .badge-defaut {
+    background: rgba(107, 114, 128, 0.15);
+    color: #374151;
+}
+
+/* ---- Meta ---- */
+.projet-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+.projet-card-meta i { margin-right: 0.25rem; }
+
+/* ---- Détails ---- */
+.projet-card-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+}
+.detail-ligne {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.detail-ligne i {
+    color: var(--text-muted);
+    width: 14px;
+    text-align: center;
+}
+
+/* ---- Avancement ---- */
+.projet-card-avancement {
+    margin-top: auto;
+}
+.progress-track {
+    height: 6px;
+    background: var(--bg-elevated);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+.fill-rouge { background: #ef4444; }
+.fill-orange { background: #f97316; }
+.fill-jaune { background: #eab308; }
+.fill-vert-clair { background: #86efac; }
+.fill-vert { background: #10b981; }
+
+/* ---- Actions ---- */
+.projet-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-default);
+}
+
+.projet-card-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: var(--accent-primary);
+    color: #0f172a;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    transition: background 0.15s;
+}
+.projet-card-btn:hover {
+    opacity: 0.9;
+}
+
+.projet-card-btn-icon {
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.projet-card-btn-icon:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+/* ---- Tableau : sortable ---- */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+    padding: 8px 12px;
+}
+.sortable:hover {
+    background: var(--bg-hover);
+}
+.sortable.active {
+    background: var(--bg-hover);
+    color: var(--accent-primary);
+    font-weight: 600;
+    border-left: 3px solid var(--accent-primary);
+}
+
+/* ---- Responsive ---- */
+.table-min-width {
+    min-width: 1100px;
+}
+/* ============================================================
+   Modal projet — design avec contraste et hover marqués
+   ============================================================ */
+
+/* ---- Conteneur du modal ---- */
+.modal-projet > div {
+    animation: modalEnter 0.3s ease-out;
+}
+
+/* ---- Champs de formulaire ---- */
+.modal-projet input,
+.modal-projet select,
+.modal-projet textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    /* Thème sombre par défaut */
+    background-color: #1F2937;
+    border: 1.5px solid #4B5563;
+    color: #FFFFFF;
+}
+
+.modal-projet input::placeholder,
+.modal-projet textarea::placeholder {
+    color: #6B7280;
+}
+
+/* Hover : bordure verte + fond légèrement éclairci */
+.modal-projet input:hover,
+.modal-projet select:hover,
+.modal-projet textarea:hover {
+    border-color: var(--accent-green);
+    background-color: #263041;
+}
+
+/* Focus : bordure verte vive + halo */
+.modal-projet input:focus,
+.modal-projet select:focus,
+.modal-projet textarea:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    background-color: #1F2937;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.25);
+}
+
+/* Champs en erreur */
+.modal-projet input.app-input-error,
+.modal-projet select.app-input-error,
+.modal-projet textarea.app-input-error {
+    border-color: var(--accent-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Selects : flèche visible */
+.modal-projet select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+}
+
+/* Case à cocher / switch : style conservé */
+.modal-projet input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+}
+
+/* ============================================================
+   THÈME CLAIR — Surcharges
+   ============================================================ */
+[data-theme="light"] .modal-projet input,
+[data-theme="light"] .modal-projet select,
+[data-theme="light"] .modal-projet textarea {
+    background-color: #FFFFFF;
+    border-color: #D4D6D8;
+    color: #1F2023;
+}
+
+[data-theme="light"] .modal-projet input::placeholder,
+[data-theme="light"] .modal-projet textarea::placeholder {
+    color: #8A8E92;
+}
+
+[data-theme="light"] .modal-projet input:hover,
+[data-theme="light"] .modal-projet select:hover,
+[data-theme="light"] .modal-projet textarea:hover {
+    border-color: var(--accent-green);
+    background-color: #F5F6F8;
+}
+
+[data-theme="light"] .modal-projet input:focus,
+[data-theme="light"] .modal-projet select:focus,
+[data-theme="light"] .modal-projet textarea:focus {
+    border-color: var(--accent-green);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.2);
+}
+
+[data-theme="light"] .modal-projet select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2354585C' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   Scrollbar du formulaire
+   ============================================================ */
+.modal-projet-form::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-projet-form::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+}
+.modal-projet-form::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+.modal-projet-form::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-green);
+}
+
+/* ============================================================
+   Animation d'entrée
+   ============================================================ */
+@keyframes modalEnter {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* ---- Boutons du modal ---- */
+.modal-btn-cancel {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    transition: all 0.15s ease;
+}
+.modal-btn-cancel:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-strong);
+}
+
+.btn-save-projet {
+    background-color: var(--accent-green);
+    color: white;
+    border: 1px solid var(--accent-green-dark);
+    transition: all 0.15s ease;
+}
+.btn-save-projet:hover {
+    background-color: var(--accent-green-dark);
+    box-shadow: 0 4px 12px rgba(43, 156, 98, 0.3);
+    transform: translateY(-1px);
+}
+.btn-save-projet:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+/* ---- Switch "révisable" ---- */
+.modal-switch-track {
+    width: 3rem;
+    height: 1.5rem;
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 9999px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.modal-switch-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: white;
+    border: 1px solid var(--border-default);
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+
+.modal-switch input:checked ~ .modal-switch-track {
+    background-color: var(--accent-green);
+    border-color: var(--accent-green-dark);
+}
+
+.modal-switch input:checked ~ .modal-switch-track::after {
+    transform: translateX(1.5rem);
+}
+
+.modal-switch:hover .modal-switch-track {
+    border-color: var(--accent-green);
+}
+
+.modal-switch input:focus ~ .modal-switch-track {
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.25);
+}

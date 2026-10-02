@@ -1,0 +1,341 @@
+/* ============================================================
+   THÈME — Variables sémantiques (sombre par défaut)
+   ============================================================
+   Usage : ne jamais écrire de couleur en dur dans les templates.
+   Toujours utiliser var(--...).
+   ============================================================ */
+
+:root,
+[data-theme="dark"] {
+    /* ---- Fonds ---- */
+    --bg-page:          #1F2937;   /* fond général du body */
+    --bg-main:          #2E2E2E;   /* fond du <main> */
+    --bg-surface:       #3B3B3B;   /* cartes, panneaux */
+    --bg-elevated:      #374151;   /* menus, dropdowns */
+    --bg-hover:         #4B5563;   /* hover sur items */
+
+    /* ---- Textes ---- */
+    --text-primary:     #AECBD6;   /* texte principal */
+    --text-secondary:   #9CA3AF;   /* texte secondaire */
+    --text-muted:       #6B7280;   /* texte discret */
+    --text-inverse:     #FFFFFF;   /* texte sur fond sombre */
+    --text-heading:     #22d3ee;   /* titres cyan */
+
+    /* ---- Bordures ---- */
+    --border-default:   #4B5563;
+    --border-subtle:    #374151;
+    --border-strong:    #6B7280;
+
+    /* ---- Accents (identiques dans les deux thèmes) ---- */
+    --accent-primary:   #22d3ee;   /* cyan principal */
+    --accent-success:   #10b981;   /* vert succès */
+    --accent-green:     #2B9C62;   /* vert charte GoProjet */
+    --accent-green-dark:#107C41;
+    --accent-warning:   #f59e0b;
+    --accent-danger:    #ef4444;
+    --accent-info:      #3b82f6;
+
+    /* ---- Ombres ---- */
+    --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.4);
+
+    /* ---- Composants spécifiques ---- */
+    --navbar-bg:        #1F2937;
+    --footer-bg:        #1F2937;
+    --modal-overlay:    rgba(0, 0, 0, 0.4);
+    --modal-bg:         #2E2E2E;
+
+    /* ---- Tables ---- */
+    --table-header-bg:  #374151;
+    --table-row-hover:  #3B3B3B;
+    --table-border:     #4B5563;
+
+    /* ---- Formulaires ---- */
+    --input-bg:         rgba(30, 30, 30, 0.8);
+    --input-border:     rgba(75, 85, 99, 0.5);
+    --input-text:       #FFFFFF;
+    --input-placeholder:#6B7280;
+    --input-focus:      #2B9C62;
+
+    /* ---- Scrollbar ---- */
+    --scrollbar-track:  #1F2937;
+    --scrollbar-thumb:  #4B5563;
+}
+
+/* ============================================================
+   THÈME CLAIR
+   ============================================================ */
+[data-theme="light"] {
+    /* ---- Fonds ---- */
+    --bg-page:          #F5F6F8;
+    --bg-main:          #FFFFFF;
+    --bg-surface:       #FFFFFF;
+    --bg-elevated:      #F2F3F5;
+    --bg-hover:         #E8EAED;
+
+    /* ---- Textes ---- */
+    --text-primary:     #1F2023;
+    --text-secondary:   #54585C;
+    --text-muted:       #8A8E92;
+    --text-inverse:     #FFFFFF;
+    --text-heading:     #0e7490;
+
+    /* ---- Bordures ---- */
+    --border-default:   #D4D6D8;
+    --border-subtle:    #E5E7EA;
+    --border-strong:    #8A8E92;
+
+    /* ---- Accents (identiques) ---- */
+    --accent-primary:   #0ea5e9;
+    --accent-success:   #059669;
+    --accent-green:     #2B9C62;
+    --accent-green-dark:#107C41;
+    --accent-warning:   #d97706;
+    --accent-danger:    #dc2626;
+    --accent-info:      #0284c7;
+
+    /* ---- Ombres plus douces ---- */
+    --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
+    --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.12);
+
+    /* ---- Composants ---- */
+    --navbar-bg:        #FFFFFF;
+    --footer-bg:        #F2F3F5;
+    --modal-overlay:    rgba(0, 0, 0, 0.4);
+    --modal-bg:         #FFFFFF;
+
+    /* ---- Tables ---- */
+    --table-header-bg:  #F2F3F5;
+    --table-row-hover:  #F5F6F8;
+    --table-border:     #E5E7EA;
+
+    /* ---- Formulaires ---- */
+    --input-bg:         #FFFFFF;
+    --input-border:     #D4D6D8;
+    --input-text:       #1F2023;
+    --input-placeholder:#8A8E92;
+    --input-focus:      #2B9C62;
+
+    /* ---- Scrollbar ---- */
+    --scrollbar-track:  #E5E7EA;
+    --scrollbar-thumb:  #8A8E92;
+}
+
+/* ============================================================
+   Base — applique les variables aux éléments globaux
+   ============================================================ */
+body {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scrollbar globale */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-green);
+}
+main.app-main {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+/* ============================================================
+   Composants communs
+   ============================================================ */
+.app-navbar {
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid var(--border-default);
+    color: var(--text-primary);
+}
+
+.app-navbar-item {
+    transition: background-color 0.15s ease;
+}
+.app-navbar-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.app-navbar-username {
+    color: var(--accent-green);
+}
+
+.app-footer {
+    background-color: var(--footer-bg);
+    border-top: 1px solid var(--border-default);
+    color: var(--text-muted);
+}
+/* ============================================================
+   Messages flash
+   ============================================================ */
+.message-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: var(--accent-success);
+    color: var(--accent-success);
+}
+
+.message-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+.message-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    border-color: var(--accent-warning);
+    color: var(--accent-warning);
+}
+
+.message-info,
+.message-debug {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: var(--accent-info);
+    color: var(--accent-info);
+}
+
+/* Fallback si pas de tag reconnu */
+.message-item:not([class*="message-"]) {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: var(--accent-info);
+    color: var(--accent-info);
+}
+
+/* Theme clair : adapter la transparence */
+[data-theme="light"] .message-success {
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #065f46;
+}
+[data-theme="light"] .message-error {
+    background-color: rgba(239, 68, 68, 0.12);
+    color: #991b1b;
+}
+[data-theme="light"] .message-warning {
+    background-color: rgba(245, 158, 11, 0.12);
+    color: #92400e;
+}
+[data-theme="light"] .message-info,
+[data-theme="light"] .message-debug {
+    background-color: rgba(59, 130, 246, 0.12);
+    color: #1e40af;
+}
+/* ============================================================
+   Composants réutilisables
+   ============================================================ */
+.app-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    color: var(--text-primary);
+}
+
+.app-input {
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.app-input::placeholder {
+    color: var(--input-placeholder);
+}
+
+.app-input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+
+.app-input-error {
+    border-color: var(--accent-danger) !important;
+}
+
+.app-btn-primary {
+    background-color: var(--accent-green);
+    transition: background-color 0.15s;
+}
+.app-btn-primary:hover {
+    background-color: var(--accent-green-dark);
+}
+
+.app-btn-secondary {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    transition: background-color 0.15s;
+}
+.app-btn-secondary:hover {
+    background-color: var(--bg-hover);
+}
+
+.app-alert {
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 0.5rem;
+}
+
+.app-alert-error {
+    background-color: rgba(239, 68, 68, 0.15);
+    border-color: var(--accent-danger);
+    color: var(--accent-danger);
+}
+
+.app-alert-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    border-color: var(--accent-success);
+    color: var(--accent-success);
+}
+
+.app-alert-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    border-color: var(--accent-warning);
+    color: var(--accent-warning);
+}
+
+.app-alert-info {
+    background-color: rgba(59, 130, 246, 0.15);
+    border-color: var(--accent-info);
+    color: var(--accent-info);
+}
+.app-btn-pagination {
+    padding: 0.25rem 0.75rem;
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0.375rem;
+    transition: all 0.15s ease;
+    cursor: pointer;
+}
+.app-btn-pagination:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-primary);
+}
+
+.app-pagination-current {
+    padding: 0.25rem 0.75rem;
+    background-color: var(--accent-primary);
+    color: #0f172a;
+    border-radius: 0.375rem;
+    font-weight: 600;
+}
+.modal-close-btn {
+    color: var(--text-muted);
+}
+.modal-close-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}

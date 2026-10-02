@@ -54,14 +54,24 @@ def modifier_dossier(request, dossier_id):
         'dossier': dossier,
     })
 
+from django.core.paginator import Paginator
 
 @login_required
 def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
     sort_order = request.GET.get('order', 'asc')
+    vue = request.GET.get('vue') or request.COOKIES.get('projets_vue', 'tableau')
+    if vue not in ('tableau', 'cartes'):
+        vue = 'tableau'
+
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
-    projets = projets_accessibles(request.user).order_by('nom')
+
+    projets = (
+        projets_accessibles(request.user)
+        .select_related('dossier', 'entreprise')
+        .prefetch_related('attachements')
+    )
 
     if search_term and len(search_term) >= 3:
         query = (
@@ -73,6 +83,7 @@ def liste_projets(request):
         )
         projets = projets.filter(query)
 
+    # Tri (avancement retiré : ne fonctionne pas sur une @property)
     if sort_field:
         sort_mapping = {
             'nom': 'nom',
@@ -82,24 +93,40 @@ def liste_projets(request):
             'montant_total': 'montant',
             'localisation': 'localisation',
             'statut': 'statut',
-            'avancement': 'avancement_workflow',
         }
         if sort_field in sort_mapping:
             order_field = sort_mapping[sort_field]
             if sort_order == 'desc':
                 order_field = f'-{order_field}'
             projets = projets.order_by(order_field)
+        else:
+            projets = projets.order_by('nom')
+    else:
+        projets = projets.order_by('nom')
+
+    # Pagination : 25 par page
+    paginator = Paginator(projets, 25)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         'can_handler': can_handler,
-        'projets': projets,
+        'page_obj': page_obj,
+        'projets': page_obj,  # rétrocompatibilité
+        'vue': vue,
+        'search_term': search_term,
         'notification_urgency_levels': Notification.NIVEAU_URGENCE,
         'notification_types': Notification.TYPE_NOTIFICATION,
-        'search_term': search_term,
     }
+
     if request.headers.get('HX-Request'):
-        return render(request, 'projets/partials/liste_projets_partial.html', context)
-    return render(request, 'projets/liste_projets.html', context)
+        response = render(request, 'projets/partials/_liste_projets_partial.html', context)
+    else:
+        response = render(request, 'projets/liste_projets.html', context)
+
+    if 'vue' in request.GET:
+        response.set_cookie('projets_vue', vue, max_age=365 * 24 * 3600, samesite='Lax', secure=True)
+    return response
 
 
 @chef_projet_required

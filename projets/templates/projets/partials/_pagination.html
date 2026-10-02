@@ -1,0 +1,57 @@
+{% if page_obj.has_other_pages %}
+<div class="flex flex-wrap items-center justify-between gap-3 mt-4 px-2 no-print">
+    <div class="text-sm" style="color: var(--text-secondary);">
+        Page {{ page_obj.number }} sur {{ page_obj.paginator.num_pages }}
+        — {{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }}
+    </div>
+
+    <div class="flex flex-wrap gap-1">
+        {# Précédent #}
+        {% if page_obj.has_previous %}
+            <button type="button"
+                    hx-get="?page={{ page_obj.previous_page_number }}{% if vue %}&vue={{ vue }}{% endif %}{% if search_term %}&search={{ search_term }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}"
+                    hx-target="#liste_projets"
+                    hx-swap="innerHTML"
+                    class="app-btn-pagination">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        {% endif %}
+
+        {# Pages #}
+        {% for num in page_obj.paginator.page_range %}
+            {% if num == page_obj.number %}
+                <span class="app-pagination-current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <button type="button"
+                        hx-get="?page={{ num }}{% if vue %}&vue={{ vue }}{% endif %}{% if search_term %}&search={{ search_term }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}"
+                        hx-target="#liste_projets"
+                        hx-swap="innerHTML"
+                        class="app-btn-pagination">
+                    {{ num }}
+                </button>
+            {% elif num == 1 or num == page_obj.paginator.num_pages %}
+                <button type="button"
+                        hx-get="?page={{ num }}{% if vue %}&vue={{ vue }}{% endif %}{% if search_term %}&search={{ search_term }}{% endif %}"
+                        hx-target="#liste_projets"
+                        hx-swap="innerHTML"
+                        class="app-btn-pagination">
+                    {{ num }}
+                </button>
+            {% elif num == page_obj.number|add:'-4' or num == page_obj.number|add:'4' %}
+                <span class="px-2 py-1" style="color: var(--text-muted);">…</span>
+            {% endif %}
+        {% endfor %}
+
+        {# Suivant #}
+        {% if page_obj.has_next %}
+            <button type="button"
+                    hx-get="?page={{ page_obj.next_page_number }}{% if vue %}&vue={{ vue }}{% endif %}{% if search_term %}&search={{ search_term }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}{% if request.GET.order %}&order={{ request.GET.order }}{% endif %}"
+                    hx-target="#liste_projets"
+                    hx-swap="innerHTML"
+                    class="app-btn-pagination">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

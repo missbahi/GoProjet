@@ -1,0 +1,91 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+    {% for projet in page_obj %}
+    <div class="projet-card">
+        <!-- En-tête -->
+        <div class="projet-card-header">
+            <h3 class="projet-card-titre" title="{{ projet.nom }}">
+                {{ projet.nom|truncatechars:40 }}
+            </h3>
+            <span class="projet-card-badge
+                {% if projet.statut == 'COURS' %}badge-cours
+                {% elif projet.en_retard %}badge-retard
+                {% elif projet.statut == 'RECEP' or projet.statut == 'RECEP_DEF' %}badge-recep
+                {% else %}badge-defaut{% endif %}">
+                {{ projet.get_statut_display }}
+            </span>
+        </div>
+
+        <!-- Numéro & dossier -->
+        <div class="projet-card-meta">
+            <span><i class="fas fa-hashtag"></i> {{ projet.numero }}</span>
+            {% if projet.dossier %}
+                <span><i class="fas fa-folder"></i> {{ projet.dossier.nom }}</span>
+            {% endif %}
+        </div>
+
+        <!-- Détails -->
+        <div class="projet-card-details">
+            <div class="detail-ligne">
+                <i class="fas fa-building"></i>
+                <span title="{{ projet.maitre_ouvrage }}">{{ projet.maitre_ouvrage|truncatechars:35 }}</span>
+            </div>
+            <div class="detail-ligne">
+                <i class="fas fa-map-marker-alt"></i>
+                <span title="{{ projet.localisation }}">{{ projet.localisation|truncatechars:35 }}</span>
+            </div>
+            <div class="detail-ligne">
+                <i class="fas fa-coins"></i>
+                <span>{{ projet.montant_total_formate }} MAD</span>
+            </div>
+        </div>
+
+        <!-- Avancement -->
+        <div class="projet-card-avancement">
+            <div class="flex justify-between items-center mb-1">
+                <span class="text-xs" style="color: var(--text-secondary);">Avancement</span>
+                <span class="text-sm font-bold" style="color: var(--accent-primary);">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+            </div>
+            <div class="progress-track">
+                <div class="progress-fill
+                    {% if projet.avancement_workflow < 20 %}fill-rouge
+                    {% elif projet.avancement_workflow < 40 %}fill-orange
+                    {% elif projet.avancement_workflow < 60 %}fill-jaune
+                    {% elif projet.avancement_workflow < 80 %}fill-vert-clair
+                    {% else %}fill-vert{% endif %}"
+                    style="width: {{ projet.avancement_workflow }}%">
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="projet-card-actions no-print">
+            <a href="{% url 'projets:dashboard' projet.id %}"
+               class="projet-card-btn" title="Ouvrir le dashboard">
+                <i class="fas fa-arrow-right"></i> Ouvrir
+            </a>
+            <button type="button" class="projet-card-btn-icon btn-create-notification"
+                    data-projet-id="{{ projet.id }}"
+                    data-projet-nom="{{ projet.nom }}"
+                    title="Créer une notification">
+                <i class="fas fa-bell"></i>
+            </button>
+            {% if can_handler %}
+            <button type="button"
+                    onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')"
+                    class="projet-card-btn-icon" title="Modifier">
+                <i class="fas fa-pen"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-span-full text-center py-12" style="color: var(--text-secondary);">
+        <i class="fas fa-inbox text-4xl mb-3 block opacity-50"></i>
+        <p class="font-medium">Aucun projet disponible</p>
+        <p class="text-sm mt-1">Cliquez sur « Nouveau projet » pour commencer</p>
+    </div>
+    {% endfor %}
+</div>
+
+{# Pagination #}
+{% include "projets/partials/_pagination.html" %}

@@ -1,0 +1,77 @@
+{% load static %}
+<div class="sidebar w-72 flex-shrink-0 md:block hidden">
+    <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
+        <a href="{% url 'projets:landing' %}" class="inline-block">
+            <img src="{% static 'images/logo-goprojet.svg' %}"
+                 alt="Logo GoProjet"
+                 class="h-12 w-auto">
+        </a>
+        <p class="text-sm mt-2 sidebar-logo-text">Gestion des projets BTP</p>
+    </div>
+
+    <nav class="p-4">
+        <div class="mb-6">
+            <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Menu Principal</p>
+            <ul class="space-y-2 text-lg">
+                <li>
+                    <a href="{% url 'home' %}"
+                       class="sidebar-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <span>Tableau de bord</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'projets:liste_projets' %}"
+                       class="sidebar-item {% if 'projets' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-project-diagram"></i>
+                        <span>Projets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'projets:liste_taches' %}"
+                       class="sidebar-item {% if 'tache' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-tasks"></i>
+                        <span>Gestion des Tâches</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <div class="mb-6">
+            <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Paramètres</p>
+            <ul class="space-y-2 text-lg">
+                {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
+                <li>
+                    <a href="{% url 'projets:base_donnees' %}"
+                       class="sidebar-item {% if 'base_donnees' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-database"></i>
+                        <span>Configuration</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'projets:liste_utilisateurs' %}"
+                       class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Administration</span>
+                    </a>
+                </li>
+                {% if user.is_superuser %}
+                <li>
+                    <a href="{% url 'projets:gerer_dossiers' %}"
+                       class="sidebar-item {% if 'dossier' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-folder-tree"></i>
+                        <span>Dossiers</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% endif %}
+                <li>
+                    <a href="{% url 'projets:apropos' %}" class="sidebar-item">
+                        <i class="fas fa-info-circle"></i>
+                        <span>À propos</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</div>

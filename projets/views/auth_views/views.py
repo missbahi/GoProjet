@@ -23,7 +23,15 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
     success_url = reverse_lazy('password_reset_done')
 
     def form_valid(self, form):
-        messages.info(self.request, 'Un email de réinitialisation a été envoyé.')
+        email = form.cleaned_data['email']
+        from django.contrib.auth.models import User
+        if not User.objects.filter(email__iexact=email, is_active=True).exists():
+            messages.warning(
+                self.request,
+                "Aucun compte actif n'est associé à cet email. "
+                "Vérifiez l'adresse ou contactez l'administrateur."
+            )
+            return self.form_invalid(form)
         return super().form_valid(form)
 
 

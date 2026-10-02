@@ -1,0 +1,942 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accueil - GoProjet</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        .group:hover .group-hover\:visible {
+            visibility: visible;
+        }
+
+        .group:hover .group-hover\:opacity-100 {
+            opacity: 1;
+        }
+        
+        /* Styles pour mobile */
+        @media (max-width: 768px) {
+            .mobile-card {
+                min-height: 120px;
+            }
+            .mobile-text-sm {
+                font-size: 0.875rem;
+            }
+            .mobile-text-xs {
+                font-size: 0.75rem;
+            }
+            .mobile-p-3 {
+                padding: 0.75rem;
+            }
+        }
+          
+        /* Animation de la sidebar mobile */
+        .sidebar-mobile {
+            transform: translateX(-100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        .sidebar-mobile.open {
+            transform: translateX(0);
+        }
+        
+        /* Overlay pour mobile */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 40;
+        }
+        
+        .sidebar-overlay.open {
+            display: block;
+        }
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e0e0e0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+        /* Styles pour les graphiques */
+        .apexcharts-tooltip {
+            background: #1f2937 !important;
+            border: 1px solid #374151 !important;
+        }
+        .period-btn.active {
+            background-color: #2563eb !important;
+            color: white !important;
+        }
+    </style>
+</head>
+
+<!-- div principale de la gestion des modals -->  
+<div id="modals-container"></div>
+
+<body class="font-sans bg-[#525252]">
+    <!-- Overlay pour sidebar mobile -->
+    <div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
+    
+    <!-- Container principal -->
+    <div class="flex h-screen overflow-hidden"> 
+        <!-- Sidebar Desktop -->  
+        <div class="sidebar bg-[#2E2E2E] text-[#2B9C62] w-72 flex-shrink-0 md:block hidden">
+            <div class="p-4 border-b border-green-900">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-building text-2xl text-red-500"></i>
+                        <h6 class="text-xl text-red-500 font-bold">GoProjet</h6>
+                </div>
+                <p class="text-sm text-green-400 mt-1">Gestion des projets BTP</p>
+            </div>
+            <nav class="p-4">
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                    <ul class="space-y-2 text-lg">
+                        <li>
+                            <a class="flex items-center space-x-2 p-2 rounded-lg bg-[#107C41] text-white ">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Tableau de bord</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_projets' %}" 
+                            class="flex items-center space-x-2 p-2  hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-project-diagram"></i>
+                                <span>Projets</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_taches' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-tasks"></i>
+                                <span>Gestion des Tâches</span>
+                            </a>
+                        </li>    
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Paramètres</p>
+                    <ul class="space-y-2 text-lg">
+                        {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
+                        <li>
+                            <a href="{% url 'projets:base_donnees' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-database"></i>
+                                <span>Configuration</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_utilisateurs' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-users"></i>
+                                <span>Administration</span>
+                            </a>
+                        </li>
+                        {% if user.is_superuser %}
+                        <li>
+                            <a href="{% url 'projets:gerer_dossiers' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-folder-tree"></i>
+                                <span>Dossiers</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endif %}
+                        <li>
+                            <a href="{% url 'projets:apropos' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-info-circle"></i>
+                                <span>À propos</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+        
+        <!-- Sidebar Mobile -->
+        <div id="mobileSidebar" class="sidebar-mobile fixed inset-y-0 left-0 z-50 w-64 bg-[#2E2E2E] text-[#2B9C62] md:hidden overflow-y-auto">
+            <div class="p-4 border-b border-green-900">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-3">
+                        <i class="fas fa-building text-2xl text-red-500"></i>
+                        <h6 class="text-xl text-red-500 font-bold">GoProjet</h6>
+                    </div>
+                    <button id="mobileSidebarClose" class="text-[#2B9C62] hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-green-400 mt-1">Gestion des projets BTP</p>
+            </div>
+            <nav class="p-4">
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Menu Principal</p>
+                    <ul class="space-y-2 text-lg">
+                        <li>
+                            <a class="flex items-center space-x-2 p-2 rounded-lg bg-[#107C41] text-white ">
+                                <i class="fas fa-tachometer-alt"></i>
+                                <span>Tableau de bord</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_projets' %}" 
+                            class="flex items-center space-x-2 p-2  hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-project-diagram"></i>
+                                <span>Projets</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_taches' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-tasks"></i>
+                                <span>Gestion des Tâches</span>
+                            </a>
+                        </li>    
+                    </ul>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-xs uppercase text-green-400 font-semibold my-3">Paramètres</p>
+                    <ul class="space-y-2 text-lg">
+                        {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
+                        <li>
+                            <a href="{% url 'projets:base_donnees' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-database"></i>
+                                <span>Configuration</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'projets:liste_utilisateurs' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-users"></i>
+                                <span>Administration</span>
+                            </a>
+                        </li>
+                        {% if user.is_superuser %}
+                        <li>
+                            <a href="{% url 'projets:gerer_dossiers' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-folder-tree"></i>
+                                <span>Dossiers</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% endif %}
+                        <li>
+                            <a href="{% url 'projets:apropos' %}" 
+                            class="flex items-center space-x-2 p-2 hover:bg-[#107C41] hover:text-white rounded-lg transition">
+                                <i class="fas fa-info-circle"></i>
+                                <span>À propos</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="flex-1 flex flex-col overflow-hidden min-w-0"> <!-- min-w-0 pour éviter le débordement -->
+            <header class="bg-[#525252] text-[#2B9C62] shadow-sm z-10 border-b border-gray-500">
+                <div class="flex items-center justify-between p-4">
+                    <!-- Titre Tableau de bord-->
+                    <div class="flex items-center space-x-4">
+                        <button id="sidebarToggle" class="md:hidden text-[#2B9C62]">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                        <h2 class="text-lg md:text-xl font-semibold truncate"><i class="fas fa-home mr-2"></i>Tableau de bord</h2>
+                    </div>
+                    
+                    <!-- Notifications et Profil -->
+                    <div class="flex items-center space-x-2 md:space-x-4">
+                        {% if user.is_authenticated %}
+                            <!-- UTILISATEUR CONNECTÉ -->
+                            <div class="relative"> <!-- Notifications -->
+                                <button id="notificationBtn" class="text-[#2B9C62] hover:text-green-500 relative p-2">
+                                    <i class="fas fa-bell text-lg md:text-xl"></i>
+                                    {% if nb_notifications > 0 %}
+                                    <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                        {{ nb_notifications }}
+                                    </span>
+                                    {% endif %}
+                                </button>
+                                <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-80 md:w-96 bg-gray-800 bg-opacity-95 rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto">
+                                    <div class="px-4 py-3 border-b border-gray-600">
+                                        <div class="flex justify-between items-center">
+                                            <p class="text-sm font-semibold text-white">
+                                                Notifications ({{ notifications|length }})
+                                            </p>
+                                            
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="max-h-72 overflow-y-auto">
+                                        {% for notification in notifications|slice:":5" %}
+                                        <a href="{% url 'projets:liste_notifications' %}" 
+                                        class="notification-item block px-4 py-3 hover:bg-gray-700 border-b border-gray-700 transition duration-150 ease-in-out 
+                                                {% if not notification.lue %}bg-gray-900/50{% endif %}">
+                                            <div class="flex items-start">
+                                                <div class="flex-shrink-0 mr-3">
+                                                    {% if not notification.lue %}
+                                                    <div class="w-2 h-2 mt-2 rounded-full bg-cyan-500"></div>
+                                                    {% else %}
+                                                    <div class="w-2 h-2 mt-2 rounded-full bg-gray-500"></div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm font-medium text-white truncate">
+                                                        {{ notification.titre }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-300 mt-1 line-clamp-2">
+                                                        {{ notification.message|truncatechars:80 }}
+                                                    </p>
+                                                    <div class="flex items-center justify-between mt-2">
+                                                        <span class="text-xs text-gray-400">
+                                                            {{ notification.date_creation|timesince }}
+                                                        </span>
+                                                        {% if notification.projet %}
+                                                        <span class="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded">
+                                                            {{ notification.projet.reference }}
+                                                        </span>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </a>
+                                        {% empty %}
+                                        <div class="px-4 py-4 text-center">
+                                            <p class="text-sm text-gray-400">Aucune notification</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    
+                                    <div class="px-4 py-3 border-t border-gray-600">
+                                        <div class="flex justify-between">
+                                            <button id="markAllReadFromDropdown" 
+                                                    class="text-xs text-cyan-400 hover:text-cyan-300 hover:underline">
+                                                <i class="fas fa-check-double mr-1"></i>
+                                                Tout marquer comme lu
+                                            </button>
+                                            <a href="{% url 'projets:liste_notifications' %}" 
+                                            class="text-xs text-cyan-400 hover:text-cyan-300 hover:underline font-medium">
+                                                <i class="fas fa-external-link-alt mr-1"></i>
+                                                Page complète
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="relative"> <!-- Menu utilisateur -->
+                                <button id="userMenuBtn" class="flex items-center space-x-2 text-lg p-2 rounded-lg hover:bg-gray-700 transition">
+                                    <img src="{{ profile.avatar_url }}"  
+                                        alt="Avatar" 
+                                        id="navbar-avatar"
+                                        class="w-8 h-8 rounded-full object-cover"
+                                        onerror="handleNavbarAvatarError(this)">
+                                    <span class="hidden md:inline text-[#2B9C62] truncate max-w-32">{{ user.username}}</span>
+                                    <i class="fas fa-chevron-down text-xs text-[#2B9C62]"></i>
+                                </button>
+                                
+                                <div id="userMenuDropdown" 
+                                    class="hidden absolute bg-gray-800 bg-opacity-95 right-0 mt-2 w-56 rounded-md shadow-lg py-1 z-20">
+                                    <!-- Lien Profil avec HTMX -->
+                                    <a href="#"  
+                                        hx-get="{% url 'projets:profile_modal' %}"
+                                        hx-target="#modals-container"
+                                        hx-swap="innerHTML"
+                                        class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                        <i class="fas fa-user-circle mr-2"></i> Profil
+                                    </a>
+                                    
+                                    {% if user.is_superuser %}
+                                    <a href="{% url 'projets:liste_utilisateurs' %}" 
+                                        class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                        <i class="fas fa-users-cog mr-2"></i> Utilisateurs
+                                    </a>
+                                    {% endif %}
+                                    
+                                    <div class="border-t border-gray-600 my-1"></div>
+                                    
+                                    <form action="{% url 'logout' %}" method="post" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" 
+                                                class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700">
+                                            <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
+                                        </button>
+                                    </form>
+                                </div>                            
+                            </div>
+
+                        {% else %}
+                            <!-- Version tooltip pour utilisateur non connecté -->
+                            <div class="relative group">
+                                <!-- Icône notifications désactivée -->
+                                <button class="text-gray-500 cursor-not-allowed relative p-2" title="Connectez-vous pour voir les notifications">
+                                    <i class="fas fa-bell text-lg md:text-xl"></i>
+                                    <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                                        <i class="fas fa-lock text-xs"></i>
+                                    </span>
+                                </button>
+                                
+                                <!-- Tooltip -->
+                                <div class="absolute right-0 mt-2 w-64 bg-gray-800 text-white text-sm rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20">
+                                    <div class="flex items-start space-x-2">
+                                        <i class="fas fa-info-circle text-blue-400 mt-0.5"></i>
+                                        <div>
+                                            <p class="font-semibold">Fonctionnalité réservée</p>
+                                            <p class="text-gray-300 mt-1">Connectez-vous pour accéder à vos notifications et messages.</p>
+                                            <a href="{% url 'login' %}" class="inline-block mt-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold transition">
+                                                Se connecter
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bouton de connexion principal -->
+                            <a href="{% url 'login' %}" 
+                            class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition duration-300 font-semibold shadow-lg text-sm md:text-base">
+                                <i class="fas fa-sign-in-alt mr-2"></i><span class="hidden sm:inline">Connexion</span>
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Contenu --> 
+            <main class="flex-1 overflow-y-auto p-3 md:p-4 bg-[#525252]">
+                <!-- titre et description -->
+                <div class="mb-4 md:mb-6">
+                    <h1 class="text-lg md:text-2xl font-bold text-white truncate">Bureau d'Études Techniques - Gestion des Projets BTP</h1>
+                    <p class="text-gray-300 text-sm md:text-base mt-1">Suivi complet des projets depuis l'appel d'offres jusqu'à la réception définitive</p>
+                </div>
+                
+                <!-- Cartes de résumé - Version responsive -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
+                    {% for carte in resume_cartes %}
+                    <div class="dashboard-card mobile-card bg-gray-800 text-[#2B9C62] rounded-lg shadow p-4 md:p-6 transition transform hover:scale-105">
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1 min-w-0">
+                                <p class="mobile-text-sm font-medium text-gray-300 truncate">{{ carte.titre }}</p>
+                                <p class="text-xl md:text-2xl font-bold text-{{ carte.couleur }}-600 mt-1">{{ carte.valeur }}</p>
+                            </div>
+                            <div class="p-2 md:p-3 rounded-full bg-{{ carte.couleur }}-100 text-{{ carte.couleur }}-600 ml-3 flex-shrink-0">
+                                <i class="fas {{ carte.icône }} text-lg md:text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mt-3 md:mt-4">
+                            <div class="flex justify-between mobile-text-xs mb-1">
+                                <span class="text-gray-400">{{ carte.sous_titre }}</span>
+                                <span class="text-gray-300">{{ carte.sous_valeur }}</span>
+                            </div>
+                            <div class="progress-bar bg-gray-700 rounded h-2 overflow-hidden">
+                                <div class="progress-fill bg-{{ carte.couleur }}-600 h-full transition-all duration-300"
+                                    style="width: {{ carte.progress }}%">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Projets récents -->
+                <div class="bg-gray-800 text-[#2B9C62] rounded-lg shadow mb-6">
+                    <div class="p-4 border-b border-gray-700">
+                        <h2 class="text-lg font-semibold ">
+                            <i class="fas fa-clock mr-2"></i> Projets récents
+                        </h2>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <!-- En-têtes du tableau -->
+                            <thead class="bg-gray-800 text-[#2B9C62] border-b border-gray-700">
+                                <tr class=" text-left text-m font-medium uppercase">
+                                    <th class="px-6 py-3">Projet</th>
+                                    <th class="px-6 py-3">
+                                        <div>Maitre d'ouvrage</div>
+                                        <div class="text-xs">Entreprise</div>
+                                    </th>
+                                    <th class="px-6 py-3">Localisation</th>
+                                    <th class="px-6 py-3">Statut</th>
+                                    <th class="px-6 py-3">
+                                        <div>Avancement</div>
+                                        <div class="text-xs text-gray-500">% décomptes validés</div> 
+
+                                    </th>
+                                    <!--<th class="px-6 py-3">Actions</th>-->
+                                </tr>
+                            </thead>
+                            <!-- Corps du tableau -->
+                            <tbody class="bg-gray-800 text-[#AECBD6] divide-y divide-green-800">
+                                {% for projet in projets_recents %}
+                                <tr>
+                                    <!-- Colonne Projet -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <a href="{% url 'projets:dashboard' projet.id %}" 
+                                            class="flex items-center p-2 hover:bg-[#107C41] hover:text-white rounded-full transition">
+                                                <i class="fas fa-project-diagram"></i>
+                                            </a>
+                                            <!-- Informations du projet -->                                            
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium">{{ projet.nom|truncatechars:25 }}</div>
+                                                <div class="text-sm text-gray-500">{{ projet.objet|truncatechars:25 }}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <!-- Colonne Client et Entreprise -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm">{{ projet.maitre_ouvrage|truncatechars:25 }}</div>
+                                        <div class="text-sm text-gray-500">
+                                            {% if projet.entreprise %}
+                                                {{ projet.entreprise.nom|truncatechars:25 }}
+                                            {% else %}
+                                                Non défini
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <!-- Colonne Localisation -->
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                        {{ projet.localisation|truncatechars:25 }}
+                                    </td>
+                                    <!-- Colonne Statut et Avancement -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs font-semibold rounded-full 
+                                            {% if projet.statut == 'COURS' %}bg-blue-100 text-blue-800
+                                            {% elif projet.en_retard %}bg-yellow-100 text-yellow-800
+                                            {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}bg-green-100 text-green-800
+                                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                            {{ projet.get_statut_display }}
+                                        </span>
+                                    </td>
+                                    <!-- Colonne Avancement -->
+                                    <td class="px-4 py-3">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden flex-1">
+                                                <div class="h-3
+                                                    {% if projet.avancement_workflow < 20 %}bg-red-500
+                                                    {% elif projet.avancement_workflow < 40 %}bg-orange-500
+                                                    {% elif projet.avancement_workflow < 60 %}bg-yellow-500
+                                                    {% elif projet.avancement_workflow < 80 %}bg-green-300
+                                                    {% else %}bg-green-600{% endif %}" 
+                                                    style="width: {{ projet.avancement_workflow }}%"> 
+                                                </div>
+                                            </div>
+                                            <span class="text-sm text-[#AECBD6] font-medium min-w-[40px]">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center py-6">Aucun projet récent disponible.</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="p-4 text-left border-t border-gray-700">
+                        <a href="{% url 'projets:liste_projets' %}" 
+                        class="text-[#2B9C62] hover:text-green-500 text-sm font-medium">
+                            <i class="fas fa-project-diagram"></i> Voir tous les projets
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Graphiques et calendrier -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Section graphique - Version simplifiée -->
+                <div class="lg:col-span-2 bg-gray-800 rounded-lg shadow">
+                    <div class="flex items-center justify-between border-b border-gray-700 p-4">
+                        <h2 class="text-lg font-semibold text-[#2B9C62]">
+                            <i class="fas fa-chart-line mr-2"></i> Avancement des projets
+                        </h2>
+                        <div class="text-sm text-gray-400">
+                            {{ chart_data.projets|length }} projets récents
+                        </div>
+                    </div>
+                    
+                    <!-- Conteneur du graphique avec hauteur responsive -->
+                    <div class="h-64 sm:h-72 md:h-80 p-4">
+                        <div id="avancementChart" 
+                            data-chart-data="{{ chart_data_json }}"
+                            style="width: 100%; height: 100%;">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendrier des échéances -->
+                <div class="bg-gray-800 rounded-lg shadow flex flex-col h-full">
+                    <div class="flex items-center justify-between border-b border-gray-700 p-4">
+                        <h2 class="text-lg font-semibold text-[#2B9C62]">
+                            <i class="fas fa-calendar-alt mr-2"></i> Échéances à venir
+                        </h2>
+                    </div>
+                    <div class="space-y-4 flex-grow p-4">
+                        {% for echeance in echeances %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 rounded-lg p-2 mr-3
+                                {% if echeance.priorite == 'URGENTE' %}bg-red-100 text-red-800
+                                {% elif echeance.priorite == 'HAUTE' %}bg-orange-100 text-orange-800
+                                {% elif echeance.priorite == 'NORMALE' %}bg-green-100 text-green-800
+                                {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                <div class="text-center">
+                                    <div class="font-bold">{{ echeance.date_fin|date:"d" }}</div>
+                                    <div class="text-xs uppercase">{{ echeance.date_fin|date:"M" }}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="font-medium text-sm text-gray-200">{{ echeance.titre }}</h3>
+                                <p class="text-sm text-gray-400">
+                                    {% if echeance.Terminee %}
+                                    Date limite: {{ echeance.date_fin|date:"d/m/Y" }} (Terminée)
+                                    {% else %}
+                                    Échéance: {{ echeance.date_fin|date:"d/m/Y" }}
+                                    {% endif %}
+                                </p>
+                                <span class="mt-1 inline-block py-1 text-xs font-semibold 
+                                    {% if echeance.priorite == 'URGENTE' %}text-red-800
+                                    {% elif echeance.priorite == 'HAUTE' %}text-orange-800
+                                    {% elif echeance.priorite == 'NORMALE' %}text-green-800
+                                    {% else %}text-yellow-800{% endif %}">
+                                    {{ echeance.priorite}}
+                                </span>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-gray-500 text-center py-4">Aucune échéance à venir</p>
+                        {% endfor %}
+                    </div>
+                    <div class="p-4 border-t border-gray-700 mt-auto">
+                        <a href="{% url 'projets:liste_taches' %}"  
+                        class="text-[#2B9C62] hover:text-green-500 text-sm font-medium">
+                            <i class="fas fa-calendar-alt mr-1"></i> Voir calendrier complet
+                        </a>
+                    </div>
+                </div>
+                
+                </div>
+            </main>
+        </div>
+    </div>
+
+<!-- Toggle sidebar mobile-->
+<script>
+    // JavaScript du template accueil - Version responsive
+    
+    document.getElementById('sidebarToggle').addEventListener('click', function() {
+        document.getElementById('mobileSidebar').classList.add('open');
+        document.getElementById('sidebarOverlay').classList.add('open');
+    });
+
+    // Fermer sidebar mobile
+    document.getElementById('mobileSidebarClose').addEventListener('click', function() {
+        document.getElementById('mobileSidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('open');
+    });
+
+    // Fermer sidebar avec overlay
+    document.addEventListener('DOMContentLoaded', function() {
+        const notificationBtn = document.getElementById('notificationBtn');
+        const notificationDropdown = document.getElementById('notificationDropdown');
+        const markAllReadBtn = document.getElementById('markAllReadFromDropdown');
+        
+        // Toggle dropdown
+        notificationBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                notificationDropdown.classList.toggle('hidden');
+                document.getElementById('userMenuDropdown').classList.add('hidden');
+            });
+            
+        // Marquer toutes comme lues depuis le dropdown
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                fetch("{% url 'projets:mark_all_notifications_as_read' %}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    credentials: 'same-origin'
+                }).then(response => {
+                    if(response.ok) {
+                        // Mettre à jour visuellement
+                        const badge = document.querySelector('#notificationBtn span');
+                        if(badge) badge.remove();
+                        
+                        // Mettre à jour les notifications dans le dropdown
+                        document.querySelectorAll('.notification-item').forEach(item => {
+                            item.classList.remove('bg-gray-900/50');
+                            const dot = item.querySelector('.flex-shrink-0 div');
+                            if(dot) dot.classList.replace('bg-cyan-500', 'bg-gray-500');
+                        });
+                        
+                        // Afficher une notification toast
+                        if (typeof showNotification === 'function') {
+                            showNotification('Toutes les notifications ont été marquées comme lues', 'success');
+                        }
+                    }
+                }).catch(error => {
+                    if (typeof showNotification === 'function') {
+                        showNotification('Erreur lors de la mise à jour', 'error');
+                    }
+                });
+            });
+        }
+        // Fermer le dropdown en cliquant ailleurs
+        document.addEventListener('click', function(e) {
+            if (!notificationDropdown.contains(e.target) && !notificationBtn.contains(e.target)) {
+                notificationDropdown.classList.add('hidden');
+            }
+        });
+    });
+    // Fonction pour afficher une notification toast depuis le backend
+    function showBackendNotification(type, message) {
+        const typeMap = {
+            'success': 'success',
+            'error': 'error',
+            'warning': 'warning',
+            'info': 'info',
+            'RETARD': 'warning',
+            'NOUVEAU_AO': 'info',
+            'RECEPTION': 'success',
+            'VALIDATION_ATTACHEMENT': 'warning'
+        };
+        
+        showNotification(message, typeMap[type] || 'info');
+    }
+
+    // Gestion des clics sur les notifications
+    document.querySelectorAll('.notification').forEach(notification => {
+        notification.addEventListener('click', function(e) {
+            e.preventDefault();
+            const url = this.href;
+            
+            // Marquer cette notification comme lue spécifiquement
+            const notificationId = this.dataset.notificationId;
+            if (notificationId) {
+                fetch(`/notifications/${notificationId}/mark-read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': CSRF_TOKEN
+                    }
+                });
+            }
+            
+            // Rediriger
+            window.location.href = url;
+        });
+    });
+   
+    // Toggle user menu dropdown
+    document.getElementById('userMenuBtn').addEventListener('click', function() {
+        document.getElementById('userMenuDropdown').classList.toggle('hidden');
+        document.getElementById('notificationDropdown').classList.add('hidden');
+    });
+
+    // Fermer les dropdowns quand on clique ailleurs
+    document.addEventListener('click', function(event) {
+        if (!event.target.closest('#notificationBtn') && !event.target.closest('#notificationDropdown')) {
+            document.getElementById('notificationDropdown').classList.add('hidden');
+        }
+        if (!event.target.closest('#userMenuBtn') && !event.target.closest('#userMenuDropdown')) {
+            document.getElementById('userMenuDropdown').classList.add('hidden');
+        }
+    });
+
+    // Animation des cartes au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        const cards = document.querySelectorAll('.dashboard-card');
+        cards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            
+            setTimeout(() => {
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, index * 100);
+        });
+        
+        // Adapter la taille du graphique pour mobile
+        const chartContainer = document.querySelector('#avancementChart');
+        if (chartContainer && window.innerWidth < 768) {
+            chartContainer.style.maxHeight = '200px';
+        }
+    });
+
+    // Redimensionnement responsive
+    window.addEventListener('resize', function() {
+        const chartContainer = document.querySelector('#avancementChart');
+        if (chartContainer) {
+            if (window.innerWidth < 768) {
+                chartContainer.style.maxHeight = '200px';
+            } else {
+                chartContainer.style.maxHeight = 'none';
+            }
+        }
+    });
+</script>
+
+<!-- Gestion des erreurs d'avatar -->
+<script>
+    function handleNavbarAvatarError(img) {
+        img.onerror = null;
+        const username = "{{ user.username|default:'User' }}";
+        const defaultAvatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=10B981&color=fff&size=64`;
+        img.src = defaultAvatarUrl;
+    }
+
+    function refreshNavbarAvatar() {
+        const navbarAvatar = document.getElementById('navbar-avatar');
+        if (navbarAvatar) {
+            const currentSrc = navbarAvatar.src.split('?')[0];
+            navbarAvatar.src = currentSrc + '?t=' + new Date().getTime();
+            navbarAvatar.onerror = function() {
+                handleNavbarAvatarError(this);
+            };
+        }
+    }
+
+    document.addEventListener('avatarUpdated', function() {
+        console.log("Avatar mis à jour - rafraîchissement navbar...");
+        window.location.reload();
+    });
+
+</script>
+
+<script>
+    // Variables globales pour les notifications
+    const CSRF_TOKEN = '{{ csrf_token }}';
+    const NOTIFICATION_API_URL = "{% url 'projets:mark_all_notifications_as_read' %}";
+</script>
+
+<!-- scripts des modals -->
+<script src="{% static 'projets/js/modals.js' %}"></script>
+<script src="{% static 'projets/js/profile.js' %}"></script>
+<script src="{% static 'projets/js/notification-handler.js' %}"></script>
+
+<!-- Scripts pour les graphiques (chargement optimisé) -->
+<script src="{% static 'projets/js/chart-utils.js' %}" defer></script>
+<script src="{% static 'projets/js/charts.js' %}" defer></script>
+
+<script>
+// Chargement léger et optimisé
+(function() {
+    'use strict';
+    
+    // Fonction d'initialisation
+    function initChart() {
+        const chartElement = document.getElementById('avancementChart');
+        if (!chartElement) return;
+        
+        try {
+            const chartData = JSON.parse(chartElement.dataset.chartData || '{}');
+            if (!chartData.projets || chartData.projets.length === 0) {
+                console.warn('Aucune donnée de projet pour le graphique');
+                return;
+            }
+            
+            // Attendre qu'ApexCharts soit disponible
+            if (typeof ApexCharts === 'undefined') {
+
+                loadApexCharts().then(() => {
+                    if (typeof ProjetsChartManager !== 'undefined') {
+                        window.chartManager = new ProjetsChartManager(chartData);
+                    }
+                });
+            } else if (typeof ProjetsChartManager !== 'undefined') {
+                window.chartManager = new ProjetsChartManager(chartData);
+            }
+            
+        } catch (error) {
+            console.error('Erreur initialisation graphique:', error);
+        }
+    }
+    
+    // Charger ApexCharts si nécessaire
+    function loadApexCharts() {
+        return new Promise((resolve) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/apexcharts@3.35.0';
+            script.async = true;
+            script.onload = resolve;
+            document.body.appendChild(script);
+        });
+    }
+    
+    // Démarrer quand le DOM est prêt
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChart);
+    } else {
+        initChart();
+    }
+    
+    // Nettoyer à la fermeture
+    window.addEventListener('beforeunload', () => {
+        if (window.chartManager) {
+            window.chartManager.destroy();
+        }
+    });
+    
+})();
+</script>
+
+<style>
+/* Styles pour le graphique responsive */
+#avancementChart {
+    min-height: 250px;
+    position: relative;
+}
+
+/* Ajustements mobile */
+@media (max-width: 640px) {
+    #avancementChart .apexcharts-tooltip {
+        font-size: 12px !important;
+    }
+    
+    #avancementChart .apexcharts-xaxis-label {
+        font-size: 10px !important;
+    }
+}
+
+/* Amélioration de la visibilité */
+#avancementChart .apexcharts-bar-area {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* Animation de chargement */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+#avancementChart .apexcharts-canvas {
+    animation: fadeIn 0.5s ease-out;
+}
+</style>
+
+</body>
+</html>

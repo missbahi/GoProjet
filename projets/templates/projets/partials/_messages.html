@@ -1,0 +1,23 @@
+{% if messages %}
+<div id="messages-container"
+     class="fixed bottom-4 right-4 z-[9999] space-y-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none">
+    {% for message in messages %}
+    <div class="message-item message-{{ message.tags }} pointer-events-auto px-4 py-3 rounded-lg shadow-2xl border flex items-start gap-3 transition-all duration-300 ease-out">
+        <i class="fas mt-0.5 flex-shrink-0
+            {% if message.tags == 'success' %}fa-check-circle
+            {% elif message.tags == 'error' %}fa-circle-exclamation
+            {% elif message.tags == 'warning' %}fa-triangle-exclamation
+            {% else %}fa-circle-info
+            {% endif %}">
+        </i>
+        <div class="flex-1 text-sm leading-snug">{{ message }}</div>
+        <button type="button"
+                onclick="this.closest('.message-item').remove()"
+                class="text-current opacity-60 hover:opacity-100 transition flex-shrink-0 ml-1"
+                aria-label="Fermer">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}

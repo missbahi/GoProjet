@@ -1,15 +1,24 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full">
+<html lang="fr" class="h-full" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{% block title %}GoProjet - Gestion des Projets{% endblock %}</title>
-
+    <script>
+        (function() {
+            try {
+                const t = localStorage.getItem('goprojet-theme') || 'dark';
+                document.documentElement.setAttribute('data-theme', t);
+            } catch {}
+        })();
+    </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'projets/css/theme.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script src="{% static 'projets/js/theme-switcher.js' %}"></script>
 
     <script>
         tailwind.config = {
@@ -51,11 +60,28 @@
         button {
             transition: background-color 0.2s ease;
         }
+        @keyframes slide-in {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message-item {
+            animation: slide-in 0.3s ease-out;
+        }
     </style>
 
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full bg-gray-900 text-gray-200">
+<body class="h-full">
+
+     <!-- ⚡ Messages Django -->
+    {% include "projets/partials/_messages.html" %}
 
     <div class="flex flex-col min-h-full">
 
@@ -63,7 +89,7 @@
             {% include "projets/partials/_navbar.html" %}
         {% endblock %}
 
-        <main class="flex-1 overflow-y-auto bg-[#2E2E2E] text-[#2B9C62] p-6">
+        <main class="app-main flex-1 overflow-y-auto p-6">
             {% block content %}{% endblock %}
         </main>
 
@@ -75,6 +101,62 @@
 
     <!-- Conteneur pour les modals HTMX -->
     <div id="modals-container"></div>
+
+    <script>
+    // ============================================================
+    // Notifications flash côté client
+    // ============================================================
+    window.showNotification = function(message, type = 'success', duration = 5000) {
+        let container = document.getElementById('messages-container');
+
+        // Créer le conteneur s'il n'existe pas
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'messages-container';
+            container.className = 'fixed bottom-4 right-4 z-[9999] space-y-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none';
+            document.body.appendChild(container);
+        }
+
+        const styles = {
+            success: 'bg-green-900/95 border-green-600 text-green-100',
+            error:   'bg-red-900/95 border-red-600 text-red-100',
+            warning: 'bg-yellow-900/95 border-yellow-600 text-yellow-100',
+            info:    'bg-blue-900/95 border-blue-600 text-blue-100',
+        };
+        const icons = {
+            success: 'fa-check-circle',
+            error:   'fa-circle-exclamation',
+            warning: 'fa-triangle-exclamation',
+            info:    'fa-circle-info',
+        };
+
+        const el = document.createElement('div');
+        el.className = `message-item pointer-events-auto px-4 py-3 rounded-lg shadow-2xl border flex items-start gap-3 transition-all duration-300 ${styles[type] || styles.info}`;
+        el.innerHTML = `
+            <i class="fas ${icons[type] || icons.info} mt-0.5 flex-shrink-0"></i>
+            <div class="flex-1 text-sm leading-snug">${message}</div>
+            <button type="button" class="text-current opacity-60 hover:opacity-100 transition flex-shrink-0 ml-1">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        el.querySelector('button').addEventListener('click', () => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateX(100%)';
+            setTimeout(() => el.remove(), 300);
+        });
+
+        container.appendChild(el);
+
+        setTimeout(() => {
+            if (el.parentElement) {
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(100%)';
+                setTimeout(() => el.remove(), 300);
+            }
+        }, duration);
+    };
+    </script>
 
     <!-- JS commun (menu utilisateur, fallbacks) -->
     <script>
@@ -112,6 +194,51 @@
         }
     </script>
 
+    <!-- JS pour la gestion des messages -->
+    <script>
+        (function() {
+            'use strict';
+
+            const DELAY_MS = 5000;
+
+            function dismissMessage(el) {
+                if (!el || !el.parentElement) return;
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(100%)';
+                setTimeout(() => el.remove(), 300);
+            }
+
+            function initMessages() {
+                const container = document.getElementById('messages-container');
+                if (!container) return;
+
+                container.querySelectorAll('.message-item').forEach(el => {
+                    // Fermeture auto
+                    setTimeout(() => dismissMessage(el), DELAY_MS);
+                    // Fermeture manuelle
+                    const btn = el.querySelector('button');
+                    if (btn) btn.addEventListener('click', () => dismissMessage(el));
+                });
+
+                // Nettoyer le conteneur s'il devient vide
+                const observer = new MutationObserver(() => {
+                    if (container.children.length === 0) {
+                        container.remove();
+                        observer.disconnect();
+                    }
+                });
+                observer.observe(container, { childList: true });
+            }
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMessages);
+            } else {
+                initMessages();
+            }
+        })();
+
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

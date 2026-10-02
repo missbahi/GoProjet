@@ -1,0 +1,169 @@
+/* ============================================================
+   Home — styles spécifiques
+   ============================================================ */
+
+.app-main-sidebar {
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+}
+
+.app-topbar {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.app-topbar-item {
+    color: var(--accent-green);
+}
+.app-topbar-item:hover {
+    color: var(--accent-green-dark);
+    background-color: var(--bg-hover);
+}
+
+.app-topbar-username {
+    color: var(--accent-green);
+}
+
+.app-dropdown {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+}
+.app-dropdown-header { border-bottom: 1px solid var(--border-default); }
+.app-dropdown-footer { border-top: 1px solid var(--border-default); }
+
+.app-dropdown-item {
+    color: var(--text-primary);
+}
+.app-dropdown-item:hover {
+    background-color: var(--bg-hover);
+}
+.app-dropdown-item-unread {
+    background-color: rgba(17, 24, 39, 0.3);
+}
+[data-theme="light"] .app-dropdown-item-unread {
+    background-color: rgba(59, 130, 246, 0.05);
+}
+
+/* Sidebar mobile */
+.sidebar-mobile {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+}
+.sidebar-mobile.open {
+    transform: translateX(0);
+}
+
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 40;
+}
+.sidebar-overlay.open {
+    display: block;
+}
+
+/* Cartes responsive */
+@media (max-width: 768px) {
+    .mobile-card { min-height: 120px; }
+    .mobile-text-sm { font-size: 0.875rem; }
+    .mobile-text-xs { font-size: 0.75rem; }
+}
+
+/* Cartes de résumé */
+.dashboard-card {
+    animation: fadeIn 0.5s ease-out;
+}
+.progress-bar {
+    height: 8px;
+    border-radius: 4px;
+}
+.progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+/* Graphique */
+#avancementChart {
+    min-height: 250px;
+    position: relative;
+}
+.apexcharts-tooltip {
+    background: #1f2937 !important;
+    border: 1px solid #374151 !important;
+}
+@media (max-width: 640px) {
+    #avancementChart .apexcharts-tooltip { font-size: 12px !important; }
+    #avancementChart .apexcharts-xaxis-label { font-size: 10px !important; }
+}
+#avancementChart .apexcharts-bar-area {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+/* Items de la sidebar */
+.sidebar {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border-right: 1px solid var(--border-default);
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    color: var(--text-primary);
+    transition: background-color 0.15s ease;
+}
+
+.sidebar-item:hover {
+    background-color: var(--bg-hover);
+}
+
+.sidebar-section-title {
+    color: var(--text-muted);
+}
+
+.sidebar-logo-text {
+    color: var(--text-secondary);
+}
+/* Badges pour les échéances */
+.badge-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.badge-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+.badge-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.sidebar-item.active {
+    background-color: var(--accent-green);
+    color: white;
+    font-weight: 600;
+}
+
+.sidebar-close-btn {
+    color: var(--text-primary);
+    transition: background-color 0.15s ease;
+}
+
+.sidebar-close-btn:hover {
+    background-color: var(--bg-hover);
+}

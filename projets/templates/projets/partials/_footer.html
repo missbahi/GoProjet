@@ -1,5 +1,5 @@
 {% load static %}
-<footer class="bg-gray-800 text-center py-4 text-sm text-gray-400 border-t border-gray-700">
+<footer class="app-footer text-center py-4 text-sm">
     <div class="container mx-auto px-4">
         <div class="flex flex-col md:flex-row items-center justify-center gap-2">
             <div class="flex items-center space-x-2">
@@ -9,11 +9,11 @@
                          alt="GoProjet"
                          class="h-6 w-auto"
                          onerror="handleDevLogoError(this)">
-                    <span class="font-semibold text-white">- Tous droits réservés.</span>
+                    <span class="font-semibold" style="color: var(--text-inverse);">- Tous droits réservés.</span>
                 </div>
             </div>
             <span class="hidden md:inline">•</span>
-            <span class="text-green-400">GoProjet</span>
+            <span style="color: var(--accent-green);">GoProjet</span>
         </div>
     </div>
 </footer>

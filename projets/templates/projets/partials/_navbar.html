@@ -1,5 +1,5 @@
 {% load static %}
-<header class="bg-gray-800 shadow-md py-4 px-4 border-b border-gray-700">
+<header class="app-navbar shadow-md py-4 px-4">
     <div class="flex flex-col md:flex-row items-center justify-between gap-4">
 
         <div class="bg-white rounded-lg shadow-lg p-2 md:p-4">
@@ -11,36 +11,53 @@
         </div>
 
         <div class="flex items-center space-x-2 md:space-x-4">
+
+            <!-- ⚡ Bouton toggle thème -->
+            <button type="button"
+                    data-theme-toggle
+                    class="p-2 rounded-lg app-navbar-item transition-colors"
+                    style="color: var(--text-primary);"
+                    title="Basculer le thème clair/sombre"
+                    aria-label="Basculer le thème">
+                <i data-theme-toggle-icon class="fas fa-sun"></i>
+            </button>
+
             {% if user.is_authenticated %}
                 <div class="relative">
-                    <button id="userMenuBtn" class="flex items-center space-x-2 text-lg p-2 rounded-lg hover:bg-gray-700 transition">
+                    <button id="userMenuBtn" class="flex items-center space-x-2 text-lg p-2 rounded-lg app-navbar-item transition">
                         <img src="{{ user.profile.avatar_url|default:'' }}"
                              alt="Avatar"
                              id="navbar-avatar"
                              class="w-8 h-8 rounded-full object-cover"
                              onerror="handleNavbarAvatarError(this)">
-                        <span class="hidden md:inline text-[#2B9C62] truncate max-w-32">{{ user.username }}</span>
-                        <i class="fas fa-chevron-down text-xs text-[#2B9C62]"></i>
+                        <span class="hidden md:inline app-navbar-username truncate max-w-32">{{ user.username }}</span>
+                        <i class="fas fa-chevron-down text-xs app-navbar-username"></i>
                     </button>
 
-                    <div id="userMenuDropdown" class="hidden absolute bg-gray-800 bg-opacity-95 right-0 mt-2 w-56 rounded-md shadow-lg py-1 z-20">
+                    <div id="userMenuDropdown"
+                         class="hidden absolute right-0 mt-2 w-56 rounded-md shadow-lg py-1 z-20"
+                         style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
                         <a href="#"
                            hx-get="{% url 'projets:profile_modal' %}"
                            hx-target="#modals-container"
                            hx-swap="innerHTML"
-                           class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                           class="block px-4 py-2 text-sm app-navbar-item"
+                           style="color: var(--text-primary);">
                             <i class="fas fa-user-circle mr-2"></i> Profil
                         </a>
                         {% if user.is_superuser %}
                         <a href="{% url 'projets:liste_utilisateurs' %}"
-                           class="block px-4 py-2 text-sm text-white hover:bg-gray-700">
+                           class="block px-4 py-2 text-sm app-navbar-item"
+                           style="color: var(--text-primary);">
                             <i class="fas fa-users-cog mr-2"></i> Utilisateurs
                         </a>
                         {% endif %}
-                        <div class="border-t border-gray-600 my-1"></div>
+                        <div class="my-1" style="border-top: 1px solid var(--border-default);"></div>
                         <form action="{% url 'logout' %}" method="post" class="inline">
                             {% csrf_token %}
-                            <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-white hover:bg-gray-700">
+                            <button type="submit"
+                                    class="block w-full text-left px-4 py-2 text-sm app-navbar-item"
+                                    style="color: var(--text-primary);">
                                 <i class="fas fa-sign-out-alt mr-2"></i> Déconnexion
                             </button>
                         </form>
@@ -48,24 +65,33 @@
                 </div>
 
                 <a href="{% url 'projets:home' %}"
-                   class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition font-semibold shadow-lg text-sm md:text-base whitespace-nowrap">
+                   class="text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition font-semibold shadow-lg text-sm md:text-base whitespace-nowrap"
+                   style="background-color: var(--accent-green);"
+                   onmouseover="this.style.backgroundColor='var(--accent-green-dark)'"
+                   onmouseout="this.style.backgroundColor='var(--accent-green)'">
                     <i class="fas fa-house mr-2"></i><span>Accueil</span>
                 </a>
             {% else %}
                 <div class="relative group">
-                    <button class="text-gray-500 cursor-not-allowed relative p-2" title="Connectez-vous pour voir les notifications">
+                    <button class="cursor-not-allowed relative p-2"
+                            style="color: var(--text-muted);"
+                            title="Connectez-vous pour voir les notifications">
                         <i class="fas fa-bell text-lg md:text-xl"></i>
-                        <span class="absolute -top-1 -right-1 bg-gray-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                        <span class="absolute -top-1 -right-1 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center"
+                              style="background-color: var(--text-muted);">
                             <i class="fas fa-lock text-xs"></i>
                         </span>
                     </button>
-                    <div class="absolute right-0 mt-2 w-64 bg-gray-800 text-white text-sm rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20">
+                    <div class="absolute right-0 mt-2 w-64 text-sm rounded-lg p-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-20"
+                         style="background-color: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border-default);">
                         <div class="flex items-start space-x-2">
-                            <i class="fas fa-circle-info text-blue-400 mt-0.5"></i>
+                            <i class="fas fa-circle-info mt-0.5" style="color: var(--accent-info);"></i>
                             <div>
                                 <p class="font-semibold">Fonctionnalité réservée</p>
-                                <p class="text-gray-300 mt-1">Connectez-vous pour accéder à l'application.</p>
-                                <a href="{% url 'login' %}" class="inline-block mt-2 bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded text-xs font-semibold transition">
+                                <p class="mt-1" style="color: var(--text-secondary);">Connectez-vous pour accéder à l'application.</p>
+                                <a href="{% url 'login' %}"
+                                   class="inline-block mt-2 text-white px-3 py-1 rounded text-xs font-semibold transition"
+                                   style="background-color: var(--accent-green);">
                                     Se connecter
                                 </a>
                             </div>
@@ -74,7 +100,10 @@
                 </div>
 
                 <a href="{% url 'login' %}"
-                   class="bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition font-semibold shadow-lg text-sm md:text-base whitespace-nowrap">
+                   class="text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition font-semibold shadow-lg text-sm md:text-base whitespace-nowrap"
+                   style="background-color: var(--accent-green);"
+                   onmouseover="this.style.backgroundColor='var(--accent-green-dark)'"
+                   onmouseout="this.style.backgroundColor='var(--accent-green)'">
                     <i class="fas fa-sign-in-alt mr-2"></i><span>Connexion</span>
                 </a>
             {% endif %}
