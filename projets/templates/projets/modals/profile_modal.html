@@ -1,110 +1,119 @@
 {% load static %}
-<div id="profileModal" class="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-    <div class="bg-gray-800 border border-gray-700 rounded-2xl shadow-2xl w-full max-w-md transform transition-all duration-300 scale-95 hover:scale-100">
+<div id="profileModal"
+     class="fixed inset-0 z-50 flex items-center justify-center p-4"
+     style="background-color: var(--modal-overlay); backdrop-filter: blur(4px);">
+
+    <div class="rounded-2xl shadow-2xl w-full max-w-md"
+         style="background-color: var(--modal-bg); color: var(--text-primary); border: 1px solid var(--border-default);">
+
         <!-- En-tête -->
-        <div class="flex justify-between items-center border-b border-gray-700 p-6">
-            <h3 class="text-xl font-bold text-green-400">
+        <div class="flex justify-between items-center p-6"
+             style="border-bottom: 1px solid var(--border-default);">
+            <h3 class="text-xl font-bold" style="color: var(--accent-green);">
                 <i class="fas fa-user-circle mr-2"></i>Mon Profil
             </h3>
-            <button onclick="closeModal('profileModal')" 
-                    class="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full p-2 transition duration-200">
+            <button type="button"
+                    onclick="closeModal('profileModal')"
+                    class="modal-close-btn rounded-full p-2 transition duration-200">
                 <i class="fas fa-times text-lg"></i>
             </button>
         </div>
-          
+
         <!-- Contenu -->
         <div class="p-6">
-            <form id="profileForm" method="post" 
-                action="{% url 'projets:profile_update' %}" 
-                enctype="multipart/form-data"
-                class="space-y-6">
+            <form id="profileForm" method="post"
+                  action="{% url 'projets:profile_update' %}"
+                  enctype="multipart/form-data"
+                  class="space-y-6">
 
                 {% csrf_token %}
-                 
+
                 <!-- Avatar -->
                 <div class="text-center">
-                    <label class="block text-sm font-medium text-gray-300 mb-3">Photo de profil</label>
+                    <label class="block text-sm font-medium mb-3" style="color: var(--text-primary);">
+                        Photo de profil
+                    </label>
                     <div class="flex flex-col items-center space-y-4">
-                        <!-- Prévisualisation -->
                         <div class="relative">
-                            <img id="avatarPreview" 
-                                src="{{ user.profile.avatar_url }}" 
-                                class="w-24 h-24 rounded-full border-4 border-green-500 object-cover shadow-lg"
-                                onerror="this.src='{% static 'images/default.png' %}'">
-                            <div class="absolute -bottom-2 -right-2 bg-green-500 rounded-full p-1 shadow-lg">
+                            <img id="avatarPreview"
+                                 src="{{ user.profile.avatar_url }}"
+                                 class="w-24 h-24 rounded-full object-cover shadow-lg"
+                                 style="border: 4px solid var(--accent-green);"
+                                 onerror="this.src='{% static 'images/default.png' %}'">
+                            <div class="absolute -bottom-2 -right-2 rounded-full p-1 shadow-lg"
+                                 style="background-color: var(--accent-green);">
                                 <i class="fas fa-camera text-white text-xs"></i>
                             </div>
                         </div>
-                        
-                        <!-- Bouton déclencheur -->
-                        <button
-                            hx-get="{% url 'projets:avatar_upload_modal' %}"
-                            hx-target="#modals-nested-container"
-                            hx-swap="innerHTML"
-                            class="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-2 rounded-lg hover:from-green-500 hover:to-green-400 transition duration-200 font-semibold">
+
+                        <!-- Bouton changer la photo -->
+                        <button type="button"
+                                hx-get="{% url 'projets:avatar_upload_modal' %}"
+                                hx-target="#modals-nested-container"
+                                hx-swap="innerHTML"
+                                class="app-btn-primary text-white px-4 py-2 rounded-lg font-semibold">
                             <i class="fas fa-camera mr-2"></i>Changer la photo
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Informations utilisateur -->
                 <div class="space-y-4">
-                    <!-- Nom complet -->
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-user mr-2 text-blue-400"></i>Prénom
+                            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                                <i class="fas fa-user mr-2" style="color: var(--accent-info);"></i>Prénom
                             </label>
                             <input type="text" name="first_name" value="{{ user.first_name }}"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                                placeholder="Prénom">
+                                   class="app-input"
+                                   placeholder="Prénom">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">
-                                <i class="fas fa-user mr-2 text-blue-400"></i>Nom
+                            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                                <i class="fas fa-user mr-2" style="color: var(--accent-info);"></i>Nom
                             </label>
                             <input type="text" name="last_name" value="{{ user.last_name }}"
-                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
-                                placeholder="Nom">
+                                   class="app-input"
+                                   placeholder="Nom">
                         </div>
                     </div>
-                    
-                    <!-- Email -->
+
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">
-                            <i class="fas fa-envelope mr-2 text-yellow-400"></i>Adresse email
+                        <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                            <i class="fas fa-envelope mr-2" style="color: var(--accent-warning);"></i>Adresse email
                         </label>
-                        <input type="email" 
-                               name="email" 
-                               value="{{ user.email }}" 
-                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition"
+                        <input type="email"
+                               name="email"
+                               value="{{ user.email }}"
+                               class="app-input"
                                placeholder="votre@email.com">
                     </div>
                 </div>
-                
-                <!-- Boutons d'action -->
+
+                <!-- Boutons -->
                 <div class="flex space-x-3 pt-4">
-                    <button type="button" 
-                            onclick="closeModal('profileModal')" 
-                            class="flex-1 bg-gray-700 text-gray-300 px-4 py-3 rounded-lg hover:bg-gray-600 hover:text-white transition duration-200 border border-gray-600 font-semibold">
+                    <button type="button"
+                            onclick="closeModal('profileModal')"
+                            class="app-btn-secondary flex-1 px-4 py-3 rounded-lg font-semibold">
                         <i class="fas fa-times mr-2"></i>Annuler
                     </button>
-                    <button type="submit" 
-                            id="submitProfileBtn" 
-                            class="flex-1 bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-3 rounded-lg hover:from-green-500 hover:to-green-400 transition duration-200 font-semibold shadow-lg">
+                    <button type="submit"
+                            id="submitProfileBtn"
+                            class="app-btn-primary text-white flex-1 px-4 py-3 rounded-lg font-semibold shadow-lg">
                         <i class="fas fa-save mr-2"></i>Enregistrer
                     </button>
                 </div>
             </form>
-            
-            <!-- Lien changement mot de passe -->
-            <div class="mt-6 pt-6 border-t border-gray-700 text-center">
-                <button 
-                    hx-get="{% url 'projets:password_modal' %}"
-                    hx-target="#modals-container"
-                    hx-swap="innerHTML"
-                    class="text-green-400 hover:text-green-300 transition duration-200 font-medium group">
-                    <i class="fas fa-key mr-2 group-hover:animate-bounce"></i> 
+
+            <!-- Changer mot de passe -->
+            <div class="mt-6 pt-6 text-center" style="border-top: 1px solid var(--border-default);">
+                <button type="button"
+                        hx-get="{% url 'projets:password_modal' %}"
+                        hx-target="#modals-container"
+                        hx-swap="innerHTML"
+                        class="font-medium transition duration-200 group"
+                        style="color: var(--accent-green);">
+                    <i class="fas fa-key mr-2 group-hover:animate-bounce"></i>
                     Changer le mot de passe
                 </button>
             </div>
