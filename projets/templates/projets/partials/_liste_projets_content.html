@@ -1,0 +1,91 @@
+{% load static %}
+<div class="liste-projets-wrapper">
+
+    <!-- ============================================================
+         En-tête : titre + actions
+         ============================================================ -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2" style="color: var(--accent-primary);">
+                <i class="fas fa-diagram-project"></i>
+                Mes projets
+            </h1>
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                {{ page_obj.paginator.count }} projet{{ page_obj.paginator.count|pluralize }} accessible{{ page_obj.paginator.count|pluralize }}
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2 no-print">
+            <!-- Toggle vue -->
+            <div class="vue-toggle" role="group" aria-label="Choix de la vue">
+                <button type="button" class="vue-btn {% if vue == 'tableau' %}active{% endif %}"
+                        data-vue="tableau" title="Vue tableau">
+                    <i class="fas fa-table-list"></i>
+                    <span class="hidden sm:inline">Tableau</span>
+                </button>
+                <button type="button" class="vue-btn {% if vue == 'cartes' %}active{% endif %}"
+                        data-vue="cartes" title="Vue cartes">
+                    <i class="fas fa-grip"></i>
+                    <span class="hidden sm:inline">Cartes</span>
+                </button>
+            </div>
+
+            <!-- Recherche -->
+            <button type="button" id="searchToggle"
+                    class="app-btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-search"></i>
+                <span class="hidden sm:inline">Rechercher</span>
+            </button>
+
+            <!-- Ajouter un projet -->
+            {% if can_handler %}
+            <a href="#"
+               hx-get="{% url 'projets:ajouter_projet_modal' %}"
+               hx-target="#modals-container"
+               hx-swap="innerHTML"
+               class="app-btn-primary text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                <span class="hidden sm:inline">Nouveau projet</span>
+            </a>
+            {% endif %}
+
+            <!-- Accueil -->
+            <!-- <a href="{% url 'home' %}"
+               class="app-btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-house"></i>
+                <span class="hidden sm:inline">Accueil</span>
+            </a> -->
+        </div>
+    </div>
+
+    <!-- ============================================================
+         Barre de recherche (cachée par défaut)
+         ============================================================ -->
+    <div id="searchBox" class="hidden mb-4 no-print">
+        <div class="app-card p-3 max-w-2xl" style="border-color: var(--accent-primary);">
+            <div class="relative">
+                <input type="text"
+                       id="searchInput"
+                       placeholder="Rechercher projets, entreprises, maîtres d'ouvrage…"
+                       class="app-input pl-10 pr-4">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2" style="color: var(--text-muted);"></i>
+                <button type="button" id="clearSearch"
+                        class="hidden absolute right-3 top-1/2 -translate-y-1/2"
+                        style="color: var(--text-muted);">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="text-xs mt-2" style="color: var(--text-muted);">
+                Minimum 3 caractères. Recherche dans : numéros de marché, noms, entreprises, maîtres d'ouvrage.
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         Conteneur principal — reçoit le tableau ou les cartes
+         ============================================================ -->
+    <div id="liste_projets" class="liste-projets-conteneur">
+        {% include "projets/partials/_liste_projets_partial.html" %}
+    </div>
+
+</div>

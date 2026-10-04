@@ -1,13 +1,13 @@
 {% load static %}
 <header class="app-topbar shadow-sm z-10">
     <div class="flex items-center justify-between p-4">
-
+        
         <!-- Titre + bouton hamburger -->
         <div class="flex items-center space-x-4">
             <button id="sidebarToggle" class="md:hidden text-[#2B9C62]">
                 <i class="fas fa-bars text-xl"></i>
             </button>
-            <h2 class="text-lg md:text-xl font-semibold truncate">
+            <h2 id="topbar-title" class="text-lg md:text-xl font-semibold truncate">
                 <i class="fas fa-home mr-2"></i>{% block page_title %}Tableau de bord{% endblock %}
             </h2>
         </div>
@@ -97,7 +97,7 @@
                 <!-- Menu utilisateur -->
                 <div class="relative">
                     <button id="userMenuBtn" class="flex items-center space-x-2 text-lg p-2 rounded-lg app-topbar-item transition">
-                        <img src="{{ profile.avatar_url }}"
+                        <img src="{{  user.profile.avatar_url|default:'/static/images/default.png' }}"
                              alt="Avatar"
                              id="navbar-avatar"
                              class="w-8 h-8 rounded-full object-cover"

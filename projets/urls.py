@@ -239,6 +239,7 @@ utilisateur_urlpatterns = [
     path('media/avatars/<str:filename>', user_views.serve_avatar, name='serve_avatar'),
     path('modal/avatar-upload/', user_views.avatar_upload_modal, name='avatar_upload_modal'),
     path('upload-avatar/', user_views.upload_avatar, name='upload_avatar'),
+    path('api/user/set-theme/', user_views.set_theme, name='set_theme'),
     # Gestion des utilisateurs
     path('utilisateurs/', user_views.liste_utilisateurs, name='liste_utilisateurs'),
     path('utilisateurs/ajouter/', user_views.ajouter_utilisateur, name='ajouter_utilisateur'),

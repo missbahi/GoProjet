@@ -4,7 +4,7 @@
         <a href="{% url 'projets:landing' %}" class="inline-block">
             <img src="{% static 'images/logo-goprojet.svg' %}"
                  alt="Logo GoProjet"
-                 class="h-12 w-auto">
+                 class="h-10 w-auto">
         </a>
         <p class="text-sm mt-2 sidebar-logo-text">Gestion des projets BTP</p>
     </div>
@@ -14,15 +14,21 @@
             <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Menu Principal</p>
             <ul class="space-y-2 text-lg">
                 <li>
-                    <a href="{% url 'home' %}"
-                       class="sidebar-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <a href="{% url 'projets:home' %}"
+                       class="sidebar-item {% if 'home' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Tableau de bord</span>
                     </a>
+                    
                 </li>
                 <li>
                     <a href="{% url 'projets:liste_projets' %}"
-                       class="sidebar-item {% if 'projets' in request.resolver_match.url_name %}active{% endif %}">
+                        hx-get="{% url 'projets:liste_projets' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'projets' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-project-diagram"></i>
                         <span>Projets</span>
                     </a>
@@ -58,7 +64,12 @@
                 {% if user.is_superuser %}
                 <li>
                     <a href="{% url 'projets:gerer_dossiers' %}"
-                       class="sidebar-item {% if 'dossier' in request.resolver_match.url_name %}active{% endif %}">
+                        hx-get="{% url 'projets:gerer_dossiers' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'dossier' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-folder-tree"></i>
                         <span>Dossiers</span>
                     </a>

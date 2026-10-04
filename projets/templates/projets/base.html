@@ -1,19 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full" data-theme="dark">
+<html lang="fr" class="h-full" data-theme="{{ user.profile.theme|default:'dark' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{% block title %}GoProjet - Gestion des Projets{% endblock %}</title>
-    <script>
-        (function() {
-            try {
-                const t = localStorage.getItem('goprojet-theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', t);
-            } catch {}
-        })();
-    </script>
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'projets/css/theme.css' %}">
@@ -101,6 +94,7 @@
 
     <!-- Conteneur pour les modals HTMX -->
     <div id="modals-container"></div>
+    <div id="modals-nested-container"></div>
 
     <script>
     // ============================================================

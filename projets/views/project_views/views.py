@@ -1,4 +1,5 @@
 from decimal import Decimal
+from projets.models.profile import Profile
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,6 +7,7 @@ from django.db.models import Avg, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from projets.decorators import can_view_projet, chef_projet_required, projets_accessibles, superuser_required
@@ -14,6 +16,7 @@ from projets.models import (
     Attachement, Decompte, DocumentAdministratif, Dossier, Entreprise,
     Notification, OrdreService, Projet, SuiviExecution,
 )
+from projets.utils.utils import render_page_or_fragment
 
 
 @superuser_required
@@ -29,17 +32,24 @@ def gerer_dossiers(request):
             return redirect('projets:gerer_dossiers')
     else:
         form = DossierForm()
-
-    return render(request, 'projets/dossiers/gerer_dossiers.html', {
+    context = {
         'form': form,
         'dossiers': Dossier.objects.prefetch_related('projets'),
         'projets_sans_dossier': Projet.objects.filter(dossier__isnull=True).order_by('nom'),
-    })
+    }
 
+    return render_page_or_fragment(
+        request,
+        full_template='projets/dossiers/gerer_dossiers.html',
+        fragment_template='projets/dossiers/_gerer_dossiers_content.html',
+        context=context,
+    )
 
+    
 @superuser_required
 def modifier_dossier(request, dossier_id):
     dossier = get_object_or_404(Dossier, id=dossier_id)
+
     if request.method == 'POST':
         form = DossierForm(request.POST, instance=dossier)
         if form.is_valid():
@@ -49,10 +59,15 @@ def modifier_dossier(request, dossier_id):
     else:
         form = DossierForm(instance=dossier)
 
-    return render(request, 'projets/dossiers/modifier_dossier.html', {
+    context = {
         'form': form,
         'dossier': dossier,
-    })
+    }
+
+    # ⚡ Rendu conditionnel : fragment si requête HTMX, page complète sinon
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/dossiers/_modifier_dossier_content.html', context)
+    return render(request, 'projets/dossiers/modifier_dossier.html', context)
 
 from django.core.paginator import Paginator
 
@@ -61,7 +76,24 @@ def liste_projets(request):
     search_term = request.GET.get('search', '').strip()
     sort_field = request.GET.get('sort')
     sort_order = request.GET.get('order', 'asc')
-    vue = request.GET.get('vue') or request.COOKIES.get('projets_vue', 'tableau')
+    # vue = request.GET.get('vue') or request.COOKIES.get('projets_vue', 'tableau')
+    # Vue : URL > préférence utilisateur > défaut
+    vue_param = request.GET.get('vue')
+    if vue_param in ('tableau', 'cartes'):
+        vue = vue_param
+        # Mettre à jour la préférence utilisateur (persistant)
+        try:
+            profile = request.user.profile
+            if profile.liste_projets_vue != vue:
+                profile.liste_projets_vue = vue
+                profile.save(update_fields=['liste_projets_vue'])
+        except Profile.DoesNotExist:
+            pass
+    else:
+        try:
+            vue = request.user.profile.liste_projets_vue or 'tableau'
+        except Profile.DoesNotExist:
+            vue = 'tableau'
     if vue not in ('tableau', 'cartes'):
         vue = 'tableau'
 
@@ -108,7 +140,6 @@ def liste_projets(request):
     paginator = Paginator(projets, 25)
     page_number = request.GET.get('page', 1)
     page_obj = paginator.get_page(page_number)
-
     context = {
         'can_handler': can_handler,
         'page_obj': page_obj,
@@ -119,14 +150,19 @@ def liste_projets(request):
         'notification_types': Notification.TYPE_NOTIFICATION,
     }
 
+        # Cas particulier : HTMX pour rafraîchir la liste seule
     if request.headers.get('HX-Request'):
-        response = render(request, 'projets/partials/_liste_projets_partial.html', context)
-    else:
-        response = render(request, 'projets/liste_projets.html', context)
+        hx_target = request.headers.get('HX-Target', '')
 
-    if 'vue' in request.GET:
-        response.set_cookie('projets_vue', vue, max_age=365 * 24 * 3600, samesite='Lax', secure=True)
-    return response
+        if hx_target == 'liste_projets':
+            # Juste le partial tableau/cartes
+            return render(request, 'projets/partials/_liste_projets_partial.html', context)
+        
+        # Sinon, fragment complet (avec en-tête et contrôles)
+        return render(request, 'projets/partials/_liste_projets_content.html', context)
+
+    # Rendu classique (accès direct, F5)
+    return render(request, 'projets/liste_projets.html', context)
 
 
 @chef_projet_required

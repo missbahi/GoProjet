@@ -11,6 +11,8 @@ env/
 ENV/
 env.bak/
 venv.bak/
+venv-1/
+.venv-1/
 
 # IDE
 .vscode/
@@ -18,6 +20,9 @@ venv.bak/
 *.swp
 *.swo
 *~
+
+# scripts
+scripts/
 
 # Fichiers sensibles
 .env

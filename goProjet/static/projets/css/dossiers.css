@@ -1,0 +1,159 @@
+/* ============================================================
+   Gestion des dossiers — styles spécifiques
+   ============================================================ */
+
+/* ============================================================
+   Champs de formulaire (nom, description, activité, gérant)
+   ============================================================ */
+.app-card input[type="text"],
+.app-card input[type="email"],
+.app-card textarea,
+.app-card select {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    background-color: var(--input-bg);
+    border: 1.5px solid var(--input-border);
+    color: var(--input-text);
+}
+
+.app-card input[type="text"]::placeholder,
+.app-card textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+.app-card input[type="text"]:hover,
+.app-card textarea:hover,
+.app-card select:hover {
+    border-color: var(--accent-green);
+}
+
+.app-card input[type="text"]:focus,
+.app-card textarea:focus,
+.app-card select:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.2);
+}
+
+.app-card select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+}
+
+/* Select options */
+.app-card select option {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+/* ============================================================
+   Thème clair — surcharges
+   ============================================================ */
+[data-theme="light"] .app-card input[type="text"],
+[data-theme="light"] .app-card textarea,
+[data-theme="light"] .app-card select {
+    background-color: #FFFFFF;
+    border-color: #D4D6D8;
+    color: #1F2023;
+}
+
+[data-theme="light"] .app-card input[type="text"]::placeholder,
+[data-theme="light"] .app-card textarea::placeholder {
+    color: #8A8E92;
+}
+
+[data-theme="light"] .app-card input[type="text"]:hover,
+[data-theme="light"] .app-card textarea:hover,
+[data-theme="light"] .app-card select:hover {
+    border-color: var(--accent-green);
+    background-color: #F5F6F8;
+}
+
+[data-theme="light"] .app-card input[type="text"]:focus,
+[data-theme="light"] .app-card textarea:focus,
+[data-theme="light"] .app-card select:focus {
+    border-color: var(--accent-green);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+
+/* ============================================================
+   Lignes de checkbox (projets à rattacher)
+   ============================================================ */
+.dossier-checkbox-row {
+    transition: background-color 0.15s ease;
+}
+.dossier-checkbox-row:hover {
+    background-color: var(--bg-hover);
+}
+
+.dossier-checkbox-row input[type="checkbox"] {
+    accent-color: var(--accent-green);
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+    cursor: pointer;
+}
+
+/* ============================================================
+   Bouton "Créer le dossier"
+   ============================================================ */
+.dossier-submit-btn {
+    background-color: var(--accent-green);
+    color: white;
+    border: 1px solid var(--accent-green-dark);
+}
+.dossier-submit-btn:hover {
+    background-color: var(--accent-green-dark);
+    box-shadow: 0 4px 12px rgba(43, 156, 98, 0.3);
+    transform: translateY(-1px);
+}
+/* ============================================================
+   Bouton "Annuler" (retour)
+   ============================================================ */
+.dossier-cancel-btn {
+    background-color: var(--accent-blue);
+    color: white;
+    border: 1px solid var(--accent-blue-dark);
+}
+.dossier-cancel-btn:hover {
+    background-color: var(--accent-blue-dark);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-1px);
+}
+/* ============================================================
+   Item dossier dans la liste
+   ============================================================ */
+.dossier-item {
+    transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.dossier-item:hover {
+    border-color: var(--accent-green) !important;
+    transform: translateY(-1px);
+}
+
+/* ============================================================
+   Scrollbar pour la liste des projets
+   ============================================================ */
+.app-card .overflow-y-auto::-webkit-scrollbar {
+    width: 6px;
+}
+.app-card .overflow-y-auto::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 3px;
+}
+.app-card .overflow-y-auto::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+}
+.app-card .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-green);
+}

@@ -39,7 +39,7 @@
                         <!-- Bouton déclencheur -->
                         <button
                             hx-get="{% url 'projets:avatar_upload_modal' %}"
-                            hx-target="#modals-container"
+                            hx-target="#modals-nested-container"
                             hx-swap="innerHTML"
                             class="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-2 rounded-lg hover:from-green-500 hover:to-green-400 transition duration-200 font-semibold">
                             <i class="fas fa-camera mr-2"></i>Changer la photo
@@ -50,15 +50,23 @@
                 <!-- Informations utilisateur -->
                 <div class="space-y-4">
                     <!-- Nom complet -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">
-                            <i class="fas fa-user mr-2 text-blue-400"></i>Nom complet
-                        </label>
-                        <input type="text" 
-                               name="full_name" 
-                               value="{{ user.get_full_name }}" 
-                               class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                               placeholder="Votre nom complet">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-user mr-2 text-blue-400"></i>Prénom
+                            </label>
+                            <input type="text" name="first_name" value="{{ user.first_name }}"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                                placeholder="Prénom">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                <i class="fas fa-user mr-2 text-blue-400"></i>Nom
+                            </label>
+                            <input type="text" name="last_name" value="{{ user.last_name }}"
+                                class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-3 text-white"
+                                placeholder="Nom">
+                        </div>
                     </div>
                     
                     <!-- Email -->
@@ -103,7 +111,3 @@
         </div>
     </div>
 </div>
-
-<script>
-
-</script>

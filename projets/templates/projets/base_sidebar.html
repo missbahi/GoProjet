@@ -1,21 +1,12 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr" class="h-full" data-theme="dark">
+<html lang="fr" class="h-full" data-theme="{{ user.profile.theme|default:'dark' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{% block title %}GoProjet{% endblock %}</title>
 
-    <!-- ⚡ Anti-flash thème : à exécuter avant tout rendu -->
-    <script>
-        (function() {
-            try {
-                const t = localStorage.getItem('goprojet-theme') || 'dark';
-                document.documentElement.setAttribute('data-theme', t);
-            } catch {}
-        })();
-    </script>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -33,61 +24,105 @@
                             700: '#374151',
                             600: '#4B5563',
                         },
-                        primary: {
-                            600: '#2563eb',
-                            700: '#1d4ed8',
-                        }
                     }
                 }
             }
         }
     </script>
 
-    <!-- ⚡ Thème centralisé -->
+    <!-- ⚡ Thèmes -->
     <link rel="stylesheet" href="{% static 'projets/css/theme.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
+    <!-- ⚡ CSS spécifiques (chargés globalement pour supporter les swaps HTMX) -->
+    <link rel="stylesheet" href="{% static 'projets/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/dossiers.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/liste_projets.css' %}">
+    
+
+    <style>
+        /* Indicateur de chargement HTMX */
+        #htmx-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #22d3ee, #10b981, #22d3ee);
+            background-size: 200% 100%;
+            animation: htmx-progress 1s linear infinite;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            z-index: 100;
+        }
+        #htmx-progress.active {
+            opacity: 1;
+        }
+        @keyframes htmx-progress {
+            0% { background-position: 0% 0%; }
+            100% { background-position: 200% 0%; }
+        }
+
+        /* Transition douce du contenu */
+        #main-content {
+            transition: opacity 0.15s ease-in-out;
+        }
+        #main-content.htmx-swapping {
+            opacity: 0;
+        }
+    </style>
 
     {% block extra_head %}{% endblock %}
     {% block extra_css %}{% endblock %}
 </head>
-<body class="h-full" style="background-color: var(--bg-page); color: var(--text-primary);" data-username="{{ user.username|default:'User' }}">
+<body class="h-full" data-username="{{ user.username|default:'User' }}">
 
     <!-- Overlay sidebar mobile -->
     <div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
 
     <!-- Container principal -->
     <div class="flex h-screen overflow-hidden">
-
-        <!-- ============================================================
-             Sidebar (desktop + mobile)
-             ============================================================ -->
+        <!-- Sidebar -->
         {% block sidebar %}
             {% include "projets/partials/_sidebar.html" %}
             {% include "projets/partials/_sidebar_mobile.html" %}
         {% endblock %}
 
-        <!-- ============================================================
-             Contenu principal
-             ============================================================ -->
+        <!-- Contenu -->
         <div class="flex-1 flex flex-col overflow-hidden min-w-0">
-
+            
             {% block topbar %}
                 {% include "projets/partials/_topbar.html" %}
             {% endblock %}
 
-            <main class="flex-1 overflow-y-auto p-3 md:p-4 app-main-sidebar">
-                {% block content %}{% endblock %}
+            <!-- Zone de contenu (cible des swaps HTMX) -->
+            <main class="flex-1 overflow-y-auto app-main-sidebar relative">
+
+                <!-- Barre de progression HTMX -->
+                <div id="htmx-progress"></div>
+
+                <div id="main-content" class="p-3 md:p-4">
+                    {% block content %}{% endblock %}
+                </div>
             </main>
         </div>
     </div>
 
-    <!-- Messages Django + modals -->
+    <!-- Messages + modals -->
     {% include "projets/partials/_messages.html" %}
     <div id="modals-container"></div>
+    <div id="modals-nested-container"></div>
 
     <!-- ⚡ JS commun -->
     <script src="{% static 'projets/js/theme-switcher.js' %}"></script>
     <script src="{% static 'projets/js/sidebar.js' %}"></script>
     <script src="{% static 'projets/js/common.js' %}"></script>
+    <script src="{% static 'projets/js/htmx-config.js' %}"></script>
+    <script src="{% static 'projets/js/profile-manager.js' %}"></script>
+
+    <!-- ⚡ JS spécifiques par page (chargés globalement pour supporter HTMX) -->
+    <script src="{% static 'projets/js/dossiers.js' %}"></script>
+    <script src="{% static 'projets/js/liste_projets.js' %}"></script>
+    <script src="{% static 'projets/js/home.js' %}" defer></script>
 
     {% block extra_js %}{% endblock %}
 </body>

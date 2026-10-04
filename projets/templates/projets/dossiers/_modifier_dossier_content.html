@@ -1,0 +1,135 @@
+{% load static %}
+<div class="mx-auto max-w-4xl">
+
+    <!-- ============================================================
+         En-tête
+         ============================================================ -->
+    <div class="mb-8">
+        <p class="text-sm font-semibold uppercase tracking-wide" style="color: var(--accent-green);">
+            Administration
+        </p>
+        <h1 class="mt-1 text-2xl font-bold md:text-3xl" style="color: var(--text-primary);">
+            <i class="fas fa-folder-open mr-2" style="color: var(--accent-green);"></i>
+            Modifier le dossier
+        </h1>
+        <p class="mt-2" style="color: var(--text-secondary);">
+            Ajoutez ou retirez des projets de « {{ dossier.nom }} ».
+        </p>
+    </div>
+
+    <!-- ============================================================
+         Formulaire
+         ============================================================ -->
+    <section class="app-card p-5 md:p-7">
+        <form method="post"
+              action="{% url 'projets:modifier_dossier' dossier.id %}"
+              class="space-y-5">
+            {% csrf_token %}
+
+            {% if form.non_field_errors %}
+                <div class="app-alert app-alert-error px-4 py-3 rounded-lg">
+                    {{ form.non_field_errors }}
+                </div>
+            {% endif %}
+
+            <!-- Nom -->
+            <div>
+                <label for="{{ form.nom.id_for_label }}" class="mb-2 block font-medium" style="color: var(--text-primary);">
+                    {{ form.nom.label }}
+                </label>
+                {{ form.nom }}
+                {% for error in form.nom.errors %}
+                    <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label for="{{ form.description.id_for_label }}" class="mb-2 block font-medium" style="color: var(--text-primary);">
+                    {{ form.description.label }}
+                </label>
+                {{ form.description }}
+                {% for error in form.description.errors %}
+                    <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Activité -->
+            <div>
+                <label for="{{ form.activite.id_for_label }}" class="mb-2 block font-medium" style="color: var(--text-primary);">
+                    {{ form.activite.label }}
+                </label>
+                {{ form.activite }}
+                {% for error in form.activite.errors %}
+                    <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Gérant -->
+            <div>
+                <label for="{{ form.gerant.id_for_label }}" class="mb-2 block font-medium" style="color: var(--text-primary);">
+                    {{ form.gerant.label }}
+                </label>
+                {{ form.gerant }}
+                {% for error in form.gerant.errors %}
+                    <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Projets -->
+            <div>
+                <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <label class="font-medium" style="color: var(--text-primary);">
+                        {{ form.projets.label }}
+                    </label>
+                    <button type="button"
+                            id="toggle-projects"
+                            class="text-sm transition-colors"
+                            style="color: var(--accent-green);">
+                        Tout sélectionner
+                    </button>
+                </div>
+
+                <div class="max-h-96 space-y-2 overflow-y-auto rounded-lg p-3"
+                     style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
+                    {% for checkbox in form.projets %}
+                        <label class="dossier-checkbox-row flex cursor-pointer items-start gap-3 rounded-md px-2 py-2">
+                            {{ checkbox.tag }}
+                            <span class="font-medium" style="color: var(--text-primary);">
+                                {{ checkbox.choice_label }}
+                            </span>
+                        </label>
+                    {% empty %}
+                        <p class="px-2 py-3" style="color: var(--text-muted);">
+                            Aucun projet disponible.
+                        </p>
+                    {% endfor %}
+                </div>
+                <p class="mt-2 text-sm" style="color: var(--text-muted);">
+                    Décochez un projet pour le rendre disponible et le rattacher à un autre dossier.
+                </p>
+                {% for error in form.projets.errors %}
+                    <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <!-- Boutons -->
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'projets:gerer_dossiers' %}"
+                hx-get="{% url 'projets:gerer_dossiers' %}"
+                hx-target="#main-content"
+                hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                hx-push-url="true"
+                hx-indicator="#htmx-progress"
+                class="dossier-cancel-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition flex-1">
+                    <i class="fas fa-arrow-left"></i> Annuler
+                </a>
+
+                <button type="submit"
+                        class="dossier-submit-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition flex-1">
+                    <i class="fas fa-save"></i> Enregistrer les modifications
+                </button>
+            </div>
+        </form>
+    </section>
+</div>

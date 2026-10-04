@@ -2,9 +2,9 @@
     'use strict';
 
     // ============================================================
-    // Animation des cartes
+    // Animation des cartes au chargement
     // ============================================================
-    document.addEventListener('DOMContentLoaded', function() {
+    function initCardAnimation() {
         const cards = document.querySelectorAll('.dashboard-card');
         cards.forEach((card, index) => {
             card.style.opacity = '0';
@@ -15,10 +15,10 @@
                 card.style.transform = 'translateY(0)';
             }, index * 100);
         });
-    });
+    }
 
     // ============================================================
-    // Graphique ApexCharts
+    // Charger ApexCharts si nécessaire
     // ============================================================
     function loadApexCharts() {
         return new Promise((resolve) => {
@@ -31,33 +31,67 @@
         });
     }
 
+    // ============================================================
+    // Initialiser le graphique d'avancement
+    // ============================================================
     function initChart() {
-        const el = document.getElementById('avancementChart');
-        if (!el) return;
+        const chartElement = document.getElementById('avancementChart');
+        if (!chartElement) return;
 
         try {
-            const chartData = JSON.parse(el.dataset.chartData || '{}');
-            if (!chartData.projets || chartData.projets.length === 0) return;
+            const chartData = JSON.parse(chartElement.dataset.chartData || '{}');
+            if (!chartData.projets || chartData.projets.length === 0) {
+                console.warn('[home.js] Aucune donnée de projet pour le graphique');
+                return;
+            }
 
             loadApexCharts().then(() => {
                 if (typeof ProjetsChartManager !== 'undefined') {
+                    // Détruire l'ancien graphique s'il existe
+                    if (window.chartManager && typeof window.chartManager.destroy === 'function') {
+                        try { window.chartManager.destroy(); } catch (e) {}
+                    }
                     window.chartManager = new ProjetsChartManager(chartData);
+                    console.log('[home.js] Graphique initialisé');
+                } else {
+                    console.warn('[home.js] ProjetsChartManager non défini');
                 }
             });
-        } catch (e) {
-            console.error('Erreur init graphique:', e);
+        } catch (error) {
+            console.error('[home.js] Erreur initialisation graphique:', error);
         }
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initChart);
-    } else {
+    // ============================================================
+    // Nettoyer à la fermeture
+    // ============================================================
+    window.addEventListener('beforeunload', () => {
+        if (window.chartManager && typeof window.chartManager.destroy === 'function') {
+            try { window.chartManager.destroy(); } catch (e) {}
+        }
+    });
+
+    // ============================================================
+    // Démarrer quand le DOM est prêt
+    // ============================================================
+    function initAll() {
+        initCardAnimation();
         initChart();
     }
 
-    window.addEventListener('beforeunload', () => {
-        if (window.chartManager && typeof window.chartManager.destroy === 'function') {
-            window.chartManager.destroy();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+    } else {
+        initAll();
+    }
+
+    // ============================================================
+    // Ré-exécuter après un swap HTMX (si vous utilisez le pattern SPA)
+    // ============================================================
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+        if (e.target.id === 'main-content') {
+            initCardAnimation();
+            initChart();
         }
     });
 })();

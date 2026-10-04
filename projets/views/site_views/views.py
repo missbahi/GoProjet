@@ -93,7 +93,7 @@ def home(request):
     chart_data['trimestriel'] = {'labels': ['Mois 1', 'Mois 2', 'Mois 3'], 'avancements': [60, 68, 72]}
     chart_data['annuel'] = {'labels': ['Q1', 'Q2', 'Q3', 'Q4'], 'avancements': [55, 65, 70, 68]}
 
-    return render(request, 'projets/home.html', {
+    context = {
         'projets_recents': projets_recents,
         'projets_en_retard': projets_en_retard,
         'nouveaux_ao': nouveaux_ao,
@@ -108,7 +108,9 @@ def home(request):
         'projets_noms_recents': json.dumps([projet.nom for projet in projets_recents]),
         'projets_avancements': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_utilisateur]),
         'avancement_projets_recents': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_recents]),
-    })
+    }
+    
+    return render(request, 'projets/home.html', context)
 
 
 def apropos(request):

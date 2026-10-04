@@ -8,28 +8,32 @@
 :root,
 [data-theme="dark"] {
     /* ---- Fonds ---- */
-    --bg-page:          #1F2937;   /* fond général du body */
-    --bg-main:          #2E2E2E;   /* fond du <main> */
-    --bg-surface:       #3B3B3B;   /* cartes, panneaux */
-    --bg-elevated:      #374151;   /* menus, dropdowns */
-    --bg-hover:         #4B5563;   /* hover sur items */
+    --bg-page:          #1F2937;
+    --bg-main:          #2E2E2E;
+    --bg-surface:       #3B3B3B;
+    --bg-elevated:      #374151;
+    --bg-button:        #0a3883;
+    --bg-button-hover:  #0c4a99;
+    --bg-hover:         #4B5563;
 
     /* ---- Textes ---- */
-    --text-primary:     #AECBD6;   /* texte principal */
-    --text-secondary:   #9CA3AF;   /* texte secondaire */
-    --text-muted:       #6B7280;   /* texte discret */
-    --text-inverse:     #FFFFFF;   /* texte sur fond sombre */
-    --text-heading:     #22d3ee;   /* titres cyan */
+    --text-primary:     #AECBD6;
+    --text-secondary:   #9CA3AF;
+    --text-muted:       #6B7280;
+    --text-inverse:     #FFFFFF;
+    --text-heading:     #22d3ee;
 
     /* ---- Bordures ---- */
     --border-default:   #4B5563;
     --border-subtle:    #374151;
     --border-strong:    #6B7280;
 
-    /* ---- Accents (identiques dans les deux thèmes) ---- */
-    --accent-primary:   #22d3ee;   /* cyan principal */
-    --accent-success:   #10b981;   /* vert succès */
-    --accent-green:     #2B9C62;   /* vert charte GoProjet */
+    /* ---- Accents ---- */
+    --accent-primary:   #22d3ee;
+    --accent-success:   #10b981;
+    --accent-green:     #2B9C62;
+    --accent-blue:      #0a3883;
+    --accent-blue-dark: #08275a;
     --accent-green-dark:#107C41;
     --accent-warning:   #f59e0b;
     --accent-danger:    #ef4444;
@@ -40,7 +44,7 @@
     --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.3);
     --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.4);
 
-    /* ---- Composants spécifiques ---- */
+    /* ---- Composants ---- */
     --navbar-bg:        #1F2937;
     --footer-bg:        #1F2937;
     --modal-overlay:    rgba(0, 0, 0, 0.4);
@@ -86,7 +90,7 @@
     --border-subtle:    #E5E7EA;
     --border-strong:    #8A8E92;
 
-    /* ---- Accents (identiques) ---- */
+    /* ---- Accents ---- */
     --accent-primary:   #0ea5e9;
     --accent-success:   #059669;
     --accent-green:     #2B9C62;
@@ -95,7 +99,7 @@
     --accent-danger:    #dc2626;
     --accent-info:      #0284c7;
 
-    /* ---- Ombres plus douces ---- */
+    /* ---- Ombres ---- */
     --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.05);
     --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.08);
     --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.12);
@@ -124,7 +128,7 @@
 }
 
 /* ============================================================
-   Base — applique les variables aux éléments globaux
+   BASE — Applique les variables aux éléments globaux
    ============================================================ */
 body {
     background-color: var(--bg-page);
@@ -148,12 +152,14 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--accent-green);
 }
+
 main.app-main {
     background-color: var(--bg-main);
     color: var(--text-primary);
 }
+
 /* ============================================================
-   Composants communs
+   COMPOSANTS COMMUNS
    ============================================================ */
 .app-navbar {
     background-color: var(--navbar-bg);
@@ -177,61 +183,45 @@ main.app-main {
     border-top: 1px solid var(--border-default);
     color: var(--text-muted);
 }
+
 /* ============================================================
-   Messages flash
+   MESSAGES FLASH
    ============================================================ */
 .message-success {
     background-color: rgba(16, 185, 129, 0.15);
     border-color: var(--accent-success);
     color: var(--accent-success);
 }
-
 .message-error {
     background-color: rgba(239, 68, 68, 0.15);
     border-color: var(--accent-danger);
     color: var(--accent-danger);
 }
-
 .message-warning {
     background-color: rgba(245, 158, 11, 0.15);
     border-color: var(--accent-warning);
     color: var(--accent-warning);
 }
-
 .message-info,
 .message-debug {
     background-color: rgba(59, 130, 246, 0.15);
     border-color: var(--accent-info);
     color: var(--accent-info);
 }
-
-/* Fallback si pas de tag reconnu */
 .message-item:not([class*="message-"]) {
     background-color: rgba(59, 130, 246, 0.15);
     border-color: var(--accent-info);
     color: var(--accent-info);
 }
 
-/* Theme clair : adapter la transparence */
-[data-theme="light"] .message-success {
-    background-color: rgba(16, 185, 129, 0.12);
-    color: #065f46;
-}
-[data-theme="light"] .message-error {
-    background-color: rgba(239, 68, 68, 0.12);
-    color: #991b1b;
-}
-[data-theme="light"] .message-warning {
-    background-color: rgba(245, 158, 11, 0.12);
-    color: #92400e;
-}
+[data-theme="light"] .message-success { background-color: rgba(16, 185, 129, 0.12); color: #065f46; }
+[data-theme="light"] .message-error   { background-color: rgba(239, 68, 68, 0.12);  color: #991b1b; }
+[data-theme="light"] .message-warning { background-color: rgba(245, 158, 11, 0.12); color: #92400e; }
 [data-theme="light"] .message-info,
-[data-theme="light"] .message-debug {
-    background-color: rgba(59, 130, 246, 0.12);
-    color: #1e40af;
-}
+[data-theme="light"] .message-debug   { background-color: rgba(59, 130, 246, 0.12); color: #1e40af; }
+
 /* ============================================================
-   Composants réutilisables
+   COMPOSANTS RÉUTILISABLES
    ============================================================ */
 .app-card {
     background-color: var(--bg-surface);
@@ -250,67 +240,37 @@ main.app-main {
     border-radius: 0.5rem;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
-
-.app-input::placeholder {
-    color: var(--input-placeholder);
-}
-
+.app-input::placeholder { color: var(--input-placeholder); }
 .app-input:focus {
     outline: none;
     border-color: var(--input-focus);
     box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
 }
-
-.app-input-error {
-    border-color: var(--accent-danger) !important;
-}
+.app-input-error { border-color: var(--accent-danger) !important; }
 
 .app-btn-primary {
     background-color: var(--accent-green);
     transition: background-color 0.15s;
 }
-.app-btn-primary:hover {
-    background-color: var(--accent-green-dark);
-}
+.app-btn-primary:hover { background-color: var(--accent-green-dark); }
 
 .app-btn-secondary {
     background-color: var(--bg-elevated);
     color: var(--text-primary);
     transition: background-color 0.15s;
 }
-.app-btn-secondary:hover {
-    background-color: var(--bg-hover);
-}
+.app-btn-secondary:hover { background-color: var(--bg-hover); }
 
 .app-alert {
     border-width: 1px;
     border-style: solid;
     border-radius: 0.5rem;
 }
+.app-alert-error   { background-color: rgba(239, 68, 68, 0.15);  border-color: var(--accent-danger);  color: var(--accent-danger); }
+.app-alert-success { background-color: rgba(16, 185, 129, 0.15); border-color: var(--accent-success); color: var(--accent-success); }
+.app-alert-warning { background-color: rgba(245, 158, 11, 0.15); border-color: var(--accent-warning); color: var(--accent-warning); }
+.app-alert-info    { background-color: rgba(59, 130, 246, 0.15); border-color: var(--accent-info);    color: var(--accent-info); }
 
-.app-alert-error {
-    background-color: rgba(239, 68, 68, 0.15);
-    border-color: var(--accent-danger);
-    color: var(--accent-danger);
-}
-
-.app-alert-success {
-    background-color: rgba(16, 185, 129, 0.15);
-    border-color: var(--accent-success);
-    color: var(--accent-success);
-}
-
-.app-alert-warning {
-    background-color: rgba(245, 158, 11, 0.15);
-    border-color: var(--accent-warning);
-    color: var(--accent-warning);
-}
-
-.app-alert-info {
-    background-color: rgba(59, 130, 246, 0.15);
-    border-color: var(--accent-info);
-    color: var(--accent-info);
-}
 .app-btn-pagination {
     padding: 0.25rem 0.75rem;
     background-color: var(--bg-elevated);
@@ -332,10 +292,100 @@ main.app-main {
     border-radius: 0.375rem;
     font-weight: 600;
 }
-.modal-close-btn {
-    color: var(--text-muted);
-}
+
+.modal-close-btn { color: var(--text-muted); }
 .modal-close-btn:hover {
     color: var(--text-primary);
     background-color: var(--bg-hover);
+}
+
+/* ============================================================
+   SURCHARGES TAILWIND → VARIABLES DE THÈME
+   ============================================================
+   Permet aux classes Tailwind en dur (bg-gray-800, text-white,
+   border-gray-700, etc.) de réagir au changement de thème,
+   sans avoir à modifier tous les templates.
+   À retirer au fur et à mesure de la migration des templates.
+   ============================================================ */
+
+/* ---- Fonds sombres → variables (thème clair) ---- */
+[data-theme="light"] .bg-gray-900 {
+    background-color: var(--bg-page) !important;
+}
+[data-theme="light"] .bg-gray-800 {
+    background-color: var(--bg-surface) !important;
+}
+[data-theme="light"] .bg-gray-700 {
+    background-color: var(--bg-elevated) !important;
+}
+[data-theme="light"] .bg-gray-600 {
+    background-color: var(--bg-hover) !important;
+}
+
+/* Couleurs fixes hexadécimales courantes */
+[data-theme="light"] .bg-\[\#2E2E2E\] {
+    background-color: var(--bg-main) !important;
+}
+[data-theme="light"] .bg-\[\#525252\] {
+    background-color: var(--bg-page) !important;
+}
+[data-theme="light"] .bg-\[\#3B3B3B\] {
+    background-color: var(--bg-surface) !important;
+}
+[data-theme="light"] .bg-\[\#1F2937\] {
+    background-color: var(--bg-page) !important;
+}
+
+/* ---- Textes clairs → variables (thème clair) ---- */
+[data-theme="light"] .text-white {
+    color: var(--text-primary) !important;
+}
+[data-theme="light"] .text-gray-100,
+[data-theme="light"] .text-gray-200 {
+    color: var(--text-primary) !important;
+}
+[data-theme="light"] .text-gray-300 {
+    color: var(--text-secondary) !important;
+}
+[data-theme="light"] .text-gray-400,
+[data-theme="light"] .text-gray-500 {
+    color: var(--text-muted) !important;
+}
+
+/* ---- Bordures ---- */
+[data-theme="light"] .border-gray-700,
+[data-theme="light"] .border-gray-600,
+[data-theme="light"] .border-gray-500 {
+    border-color: var(--border-default) !important;
+}
+[data-theme="light"] .divide-gray-700 > * + *,
+[data-theme="light"] .divide-gray-800 > * + *,
+[data-theme="light"] .divide-green-800 > * + * {
+    border-color: var(--border-default) !important;
+}
+
+/* ---- Inputs Tailwind ---- */
+[data-theme="light"] input.bg-gray-700,
+[data-theme="light"] input.bg-gray-600,
+[data-theme="light"] textarea.bg-gray-700,
+[data-theme="light"] textarea.bg-gray-600,
+[data-theme="light"] select.bg-gray-700,
+[data-theme="light"] select.bg-gray-600 {
+    background-color: var(--input-bg) !important;
+    color: var(--input-text) !important;
+    border-color: var(--input-border) !important;
+}
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+    color: var(--input-placeholder) !important;
+}
+
+/* ---- Hover ---- */
+[data-theme="light"] .hover\:bg-gray-700:hover,
+[data-theme="light"] .hover\:bg-gray-600:hover,
+[data-theme="light"] .hover\:bg-gray-800:hover {
+    background-color: var(--bg-hover) !important;
+}
+[data-theme="light"] .hover\:text-white:hover {
+    color: var(--text-primary) !important;
 }

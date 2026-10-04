@@ -5,6 +5,25 @@ Utilitaires partagés pour les vues.
 from functools import wraps
 from django.http import JsonResponse
 
+from django.shortcuts import render
+
+
+def render_page_or_fragment(
+    request,
+    full_template: str,
+    fragment_template: str,
+    context: dict,
+):
+    """
+    Rend la page complète (accès direct) ou uniquement le fragment (HTMX).
+    
+    - full_template : template complet qui extends base_sidebar
+    - fragment_template : partial contenant uniquement le contenu de #main-content
+    """
+    if request.headers.get('HX-Request'):
+        return render(request, fragment_template, context)
+    return render(request, full_template, context)
+
 
 def is_ajax(request):
     """

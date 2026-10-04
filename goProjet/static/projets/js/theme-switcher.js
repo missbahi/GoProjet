@@ -1,79 +1,76 @@
+/**
+ * Theme Switcher — minimaliste
+ * - Lit le thème depuis l'attribut data-theme (posé par Django)
+ * - Toggle = change l'attribut + sauvegarde côté serveur
+ */
 (function() {
     'use strict';
 
-    const STORAGE_KEY = 'goprojet-theme';
-    const DEFAULT_THEME = 'dark';
-    const VALID_THEMES = ['dark', 'light'];
+    const SET_THEME_URL = '/api/user/set-theme/';
 
-    // ============================================================
-    // Lecture / écriture de la préférence
-    // ============================================================
-    function getStoredTheme() {
-        try {
-            const t = localStorage.getItem(STORAGE_KEY);
-            return VALID_THEMES.includes(t) ? t : DEFAULT_THEME;
-        } catch {
-            return DEFAULT_THEME;
-        }
+    function getCurrentTheme() {
+        return document.documentElement.getAttribute('data-theme') || 'dark';
     }
 
-    function setStoredTheme(theme) {
-        try {
-            localStorage.setItem(STORAGE_KEY, theme);
-        } catch {}
-    }
-
-    // ============================================================
-    // Application du thème au DOM
-    // ============================================================
     function applyTheme(theme) {
-        if (!VALID_THEMES.includes(theme)) theme = DEFAULT_THEME;
+        if (theme !== 'dark' && theme !== 'light') theme = 'dark';
 
         document.documentElement.setAttribute('data-theme', theme);
-        setStoredTheme(theme);
 
-        // Mise à jour de l'icône du bouton toggle (si présent)
+        // Mise à jour des icônes
         document.querySelectorAll('[data-theme-toggle-icon]').forEach(el => {
             el.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         });
+    }
 
-        // Mise à jour du label (accessibilité)
-        document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-            btn.setAttribute('aria-label',
-                theme === 'dark' ? 'Activer le thème clair' : 'Activer le thème sombre');
-            btn.setAttribute('title',
-                theme === 'dark' ? 'Thème clair' : 'Thème sombre');
-        });
+    function saveTheme(theme) {
+        const csrf = getCookie('csrftoken');
+        if (!csrf) return;
+
+        fetch(SET_THEME_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrf,
+            },
+            body: 'theme=' + encodeURIComponent(theme),
+            credentials: 'same-origin',
+        }).catch(err => console.warn('[Theme]', err));
+    }
+
+    function getCookie(name) {
+        for (let c of document.cookie.split(';')) {
+            c = c.trim();
+            if (c.startsWith(name + '=')) {
+                return decodeURIComponent(c.substring(name.length + 1));
+            }
+        }
+        return null;
     }
 
     function toggleTheme() {
-        const current = document.documentElement.getAttribute('data-theme') || DEFAULT_THEME;
-        applyTheme(current === 'dark' ? 'light' : 'dark');
+        const current = getCurrentTheme();
+        const next = current === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+        saveTheme(next);
     }
 
-    // ============================================================
-    // Exposition globale
-    // ============================================================
     window.GoprojetTheme = {
-        apply: applyTheme,
+        get: getCurrentTheme,
         toggle: toggleTheme,
-        get: () => document.documentElement.getAttribute('data-theme') || DEFAULT_THEME,
+        apply: applyTheme,
     };
 
-    // ============================================================
-    // Init : appliquer le thème stocké IMMÉDIATEMENT
-    // ============================================================
-    applyTheme(getStoredTheme());
-
-    // ============================================================
-    // Délégation d'événements pour les boutons de bascule
-    // (survit aux swaps HTMX)
-    // ============================================================
+    // Délégation : clic sur le bouton
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('[data-theme-toggle]');
         if (!btn) return;
         e.preventDefault();
-        e.stopPropagation();
         toggleTheme();
     }, true);
+
+    // Init : mettre à jour les icônes au chargement (ne PAS changer le thème)
+    document.addEventListener('DOMContentLoaded', function() {
+        applyTheme(getCurrentTheme());
+    });
 })();

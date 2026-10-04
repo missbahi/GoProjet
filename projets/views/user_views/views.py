@@ -19,6 +19,9 @@ from projets.models import Dossier, Profile
 from projets.views.os_views.views import  clean_url
 
 from django.contrib.auth.models import User
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
 logger = logging.getLogger(__name__)
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
@@ -162,6 +165,22 @@ def serve_avatar(request, filename):
         )
     return redirect(avatar_url)
 
+
+@login_required
+@require_POST
+def set_theme(request):
+    """Sauvegarde la préférence de thème de l'utilisateur."""
+    theme = request.POST.get('theme', 'dark')
+    if theme not in ('dark', 'light'):
+        return JsonResponse({'success': False, 'error': 'Thème invalide'}, status=400)
+
+    try:
+        profile = request.user.profile
+        profile.theme = theme
+        profile.save(update_fields=['theme'])
+        return JsonResponse({'success': True, 'theme': theme})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 def upload_avatar(request):
