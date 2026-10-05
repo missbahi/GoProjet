@@ -28,24 +28,61 @@ MAX_UPLOAD_SIZE = 5 * 1024 * 1024
 
 @gestion_utilisateurs_required
 def modifier_utilisateur(request, user_id):
-    user = get_object_or_404(User, id=user_id)
-    if user.is_superuser and user.pk != request.user.pk:
-        raise PermissionDenied
-    if not request.user.is_superuser and not user.dossiers.filter(gerant=request.user).exists():
+    target_user = get_object_or_404(User, id=user_id)
+
+    # ⚠️ Sécurité : ne pas modifier un superuser si on ne l'est pas
+    if target_user.is_superuser and not request.user.is_superuser:
         raise PermissionDenied
 
-    can_manage_account_status = request.user.is_superuser and user.pk != request.user.pk
-    can_manage_roles = (request.user.is_superuser or est_gerant(request.user)) and user.pk != request.user.pk
+    # ⚠️ Sécurité : un gérant ne peut modifier que les utilisateurs
+    #    qui appartiennent à ses dossiers (via dossiers.utilisateurs OU dossiers.gerant)
+    if not request.user.is_superuser:
+        user_accessible = (
+            target_user.dossiers.filter(
+                Q(gerant=request.user) | Q(utilisateurs=request.user)
+            ).exists()
+            or target_user == request.user
+        )
+        if not user_accessible:
+            raise PermissionDenied
+
+    # ⚡ Qui peut gérer quoi
+    can_manage_account_status = (
+        request.user.is_superuser
+        and target_user.pk != request.user.pk
+        and not target_user.is_superuser
+    )
+    can_manage_roles = (
+        (request.user.is_superuser or est_gerant(request.user))
+        and target_user.pk != request.user.pk
+        and not target_user.is_superuser
+    )
+    can_manage_user_dossiers = (
+        target_user.pk != request.user.pk
+        and not target_user.is_superuser
+    )
 
     if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
+        # ⚡ Récupération des champs de base
+        target_user.email = request.POST.get('email', target_user.email).strip()
+        target_user.first_name = request.POST.get('first_name', target_user.first_name).strip()
+        target_user.last_name = request.POST.get('last_name', target_user.last_name).strip()
 
-        user.email = email
-        if password:
-            user.set_password(password)
-        profile, created = Profile.objects.get_or_create(user=user)
+        # ⚡ Mot de passe (seulement si fourni et valide)
+        password = request.POST.get('password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
+        if password or confirm_password:
+            if password != confirm_password:
+                messages.error(request, "Les mots de passe ne correspondent pas.")
+                return render(request, 'projets/utilisateurs/modifier_utilisateur.html',
+                              _modifier_utilisateur_context(request, target_user, can_manage_account_status, can_manage_roles, can_manage_user_dossiers))
+            if len(password) < 8:
+                messages.error(request, "Le mot de passe doit contenir au moins 8 caractères.")
+                return render(request, 'projets/utilisateurs/modifier_utilisateur.html',
+                              _modifier_utilisateur_context(request, target_user, can_manage_account_status, can_manage_roles, can_manage_user_dossiers))
+            target_user.set_password(password)
 
+        # ⚡ Rôle (seulement si autorisé)
         if can_manage_roles:
             role = request.POST.get('role')
             roles_autorises = (
@@ -55,41 +92,94 @@ def modifier_utilisateur(request, user_id):
             )
             if role not in roles_autorises:
                 raise PermissionDenied
-            user.is_superuser = False
-            user.is_staff = False
-            profile.role = role
+            target_user.profile.role = role
 
+        # ⚡ Statut actif (seulement si autorisé)
         if can_manage_account_status:
-            user.is_active = request.POST.get('is_active') == 'on'
+            target_user.is_active = request.POST.get('is_active') == 'on'
 
+        # ⚡ Avatar
         if 'avatar' in request.FILES:
-            profile.avatar = request.FILES['avatar']
-            profile.save()
+            if request.FILES['avatar'].size > MAX_UPLOAD_SIZE:
+                messages.error(request, "L'avatar ne doit pas dépasser 5 Mo.")
+                return redirect('projets:modifier_utilisateur', user_id=target_user.pk)
+            target_user.profile.avatar = request.FILES['avatar']
+            target_user.profile.save()
 
-        user.save()
-        profile.save()
-        if request.user.is_superuser and user.pk != request.user.pk:
-            user.dossiers.set(Dossier.objects.filter(id__in=request.POST.getlist('dossiers')))
-        elif not request.user.is_superuser:
-            user.dossiers.set(Dossier.objects.filter(gerant=request.user, id__in=request.POST.getlist('dossiers')))
+        # ⚡ Sauvegarde
+        target_user.save()
+        target_user.profile.save()
+
+        # ⚡ Dossiers (seulement si autorisé)
+        if can_manage_user_dossiers:
+            if request.user.is_superuser:
+                dossiers_autorises = Dossier.objects.all()
+            else:
+                dossiers_autorises = Dossier.objects.filter(gerant=request.user)
+
+            target_user.dossiers.set(
+                dossiers_autorises.filter(id__in=request.POST.getlist('dossiers'))
+            )
+
+        messages.success(request, f"Utilisateur « {target_user.username} » modifié avec succès.")
+
+        # ⚡ Rendu conditionnel HTMX
+        if request.headers.get('HX-Request'):
+            response = HttpResponse(status=204)
+            response['HX-Trigger'] = json.dumps({
+                'showMessage': f"Utilisateur « {target_user.username} » modifié avec succès.",
+                'closeModal': False,
+                'refreshListeUtilisateurs': True,
+            })
+            return response
+
         return redirect('projets:liste_utilisateurs')
 
-    return render(request, 'projets/utilisateurs/modifier_utilisateur.html', {
-        'user': user,
-        'dossiers': Dossier.objects.all() if request.user.is_superuser else Dossier.objects.filter(gerant=request.user),
-        'role_choices': (
-            [
-                ('CHEF_PROJET', 'Chef de projet'), ('CHEF_CHANTIER', 'Chef de chantier'),
-                ('POINTEUR', 'Pointeur'), ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
-            ] if request.user.is_superuser else [
-                ('CHEF_CHANTIER', 'Chef de chantier'), ('POINTEUR', 'Pointeur'),
-                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
-            ]
-        ),
+    # GET → affichage
+    context = _modifier_utilisateur_context(
+        request, target_user,
+        can_manage_account_status, can_manage_roles, can_manage_user_dossiers
+    )
+
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/utilisateurs/_modifier_utilisateur_content.html', context)
+    return render(request, 'projets/utilisateurs/modifier_utilisateur.html', context)
+
+
+# ============================================================
+# Helper pour le contexte de modifier_utilisateur
+# ============================================================
+def _modifier_utilisateur_context(request, target_user, can_manage_account_status, can_manage_roles, can_manage_user_dossiers):
+    """Construit le contexte du formulaire de modification."""
+    if request.user.is_superuser:
+        dossiers_disponibles = Dossier.objects.all()
+        role_choices = [
+            ('CHEF_PROJET', 'Chef de projet'),
+            ('GERANT', 'Chef de projet (historique)'),
+            ('CHEF_CHANTIER', 'Chef de chantier'),
+            ('POINTEUR', 'Pointeur'),
+            ('STAFF', 'Staff'),
+            ('UTILISATEUR', 'Utilisateur'),
+        ]
+    else:
+        dossiers_disponibles = Dossier.objects.filter(gerant=request.user)
+        role_choices = [
+            ('CHEF_CHANTIER', 'Chef de chantier'),
+            ('POINTEUR', 'Pointeur'),
+            ('STAFF', 'Staff'),
+            ('UTILISATEUR', 'Utilisateur'),
+        ]
+
+    return {
+        'user': target_user,                     # rétrocompatibilité
+        'target_user': target_user,              # nom explicite
+        'dossiers': dossiers_disponibles,
+        'role_choices': role_choices,
         'can_manage_account_status': can_manage_account_status,
         'can_manage_roles': can_manage_roles,
-        'can_manage_user_dossiers': user.pk != request.user.pk,
-    })
+        'can_manage_user_dossiers': can_manage_user_dossiers,
+    }
 
 
 @gestion_utilisateurs_required
