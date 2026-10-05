@@ -1,0 +1,143 @@
+{% load static %}
+<div class="mx-auto max-w-3xl">
+
+    <div class="mb-6">
+        <a href="{% url 'projets:liste_utilisateurs' %}"
+           hx-get="{% url 'projets:liste_utilisateurs' %}"
+           hx-target="#main-content"
+           hx-swap="innerHTML swap:150ms settle:150ms show:top"
+           hx-push-url="true"
+           hx-indicator="#htmx-progress"
+           class="text-sm flex items-center gap-2 mb-4"
+           style="color: var(--accent-primary);">
+            <i class="fas fa-arrow-left"></i>
+            Retour à la liste
+        </a>
+
+        <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2"
+            style="color: var(--accent-primary);">
+            <i class="fas fa-user-plus"></i>
+            Ajouter un utilisateur
+        </h1>
+        <p class="text-sm mt-2" style="color: var(--text-secondary);">
+            Créez un nouveau compte utilisateur
+        </p>
+    </div>
+
+    <form method="post"
+          enctype="multipart/form-data"
+          class="app-card p-6 space-y-5"
+          hx-post="{% url 'projets:ajouter_utilisateur' %}"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-indicator="#htmx-progress">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="app-alert app-alert-error p-3 rounded-lg">
+            {{ form.non_field_errors }}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Nom d'utilisateur *
+                </label>
+                {{ form.username }}
+                {% for error in form.username.errors %}
+                    <p class="text-xs mt-1" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Email
+                </label>
+                {{ form.email }}
+                {% for error in form.email.errors %}
+                    <p class="text-xs mt-1" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Prénom
+                </label>
+                {{ form.first_name }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Nom
+                </label>
+                {{ form.last_name }}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Mot de passe *
+                </label>
+                {{ form.password1 }}
+                {% for error in form.password1.errors %}
+                    <p class="text-xs mt-1" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Confirmation *
+                </label>
+                {{ form.password2 }}
+                {% for error in form.password2.errors %}
+                    <p class="text-xs mt-1" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Rôle *
+                </label>
+                {{ form.role }}
+                {% for error in form.role.errors %}
+                    <p class="text-xs mt-1" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                Dossiers autorisés
+            </label>
+            <div class="rounded-lg p-3 max-h-60 overflow-y-auto space-y-2"
+                 style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
+                {% for checkbox in form.dossiers %}
+                    <label class="flex items-center gap-2 cursor-pointer p-1 rounded"
+                           style="color: var(--text-primary);">
+                        {{ checkbox.tag }}
+                        <span class="text-sm">{{ checkbox.choice_label }}</span>
+                    </label>
+                {% empty %}
+                    <span class="text-sm" style="color: var(--text-muted);">Aucun dossier disponible</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-4"
+             style="border-top: 1px solid var(--border-default);">
+            <a href="{% url 'projets:liste_utilisateurs' %}"
+               hx-get="{% url 'projets:liste_utilisateurs' %}"
+               hx-target="#main-content"
+               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+               hx-push-url="true"
+               hx-indicator="#htmx-progress"
+               class="app-btn-secondary px-4 py-3 rounded-lg flex items-center justify-center gap-2 flex-1">
+                <i class="fas fa-times"></i> Annuler
+            </a>
+            <button type="submit"
+                    class="app-btn-primary text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 flex-1">
+                <i class="fas fa-user-plus"></i> Créer l'utilisateur
+            </button>
+        </div>
+    </form>
+</div>

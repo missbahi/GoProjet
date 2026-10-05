@@ -1,0 +1,96 @@
+{% load static %}
+<div class="mx-auto max-w-5xl">
+
+    <div class="mb-6">
+        <a href="{% url 'projets:liste_utilisateurs' %}"
+           hx-get="{% url 'projets:liste_utilisateurs' %}"
+           hx-target="#main-content"
+           hx-swap="innerHTML swap:150ms settle:150ms show:top"
+           hx-push-url="true"
+           hx-indicator="#htmx-progress"
+           class="text-sm flex items-center gap-2 mb-4"
+           style="color: var(--accent-primary);">
+            <i class="fas fa-arrow-left"></i>
+            Retour à la liste
+        </a>
+
+        <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2"
+            style="color: var(--accent-primary);">
+            <i class="fas fa-project-diagram"></i>
+            Projets de {{ utilisateur.get_full_name|default:utilisateur.username }}
+        </h1>
+        <p class="text-sm mt-2" style="color: var(--text-secondary);">
+            Cochez les projets à affecter à cet utilisateur
+        </p>
+    </div>
+
+    <form method="post"
+          class="app-card p-6"
+          hx-post="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
+          hx-target="#main-content"
+          hx-swap="innerHTML"
+          hx-indicator="#htmx-progress">
+        {% csrf_token %}
+
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold" style="color: var(--text-primary);">
+                Projets disponibles ({{ tous_les_projets|length }})
+            </h2>
+            <div class="flex gap-2">
+                <button type="button" id="select-all-projets"
+                        class="text-sm px-3 py-1 rounded"
+                        style="color: var(--accent-primary);">
+                    Tout sélectionner
+                </button>
+                <button type="button" id="deselect-all-projets"
+                        class="text-sm px-3 py-1 rounded"
+                        style="color: var(--text-muted);">
+                    Tout désélectionner
+                </button>
+            </div>
+        </div>
+
+        <div class="space-y-2 max-h-[60vh] overflow-y-auto rounded-lg p-3"
+             style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
+            {% for projet in tous_les_projets %}
+            <label class="projet-checkbox-row flex items-start gap-3 cursor-pointer p-3 rounded-lg">
+                <input type="checkbox"
+                       name="projets"
+                       value="{{ projet.id }}"
+                       style="accent-color: var(--accent-green); margin-top: 4px;"
+                       {% if projet in projets_utilisateur %}checked{% endif %}>
+                <div class="flex-1">
+                    <div class="font-medium" style="color: var(--text-primary);">
+                        {{ projet.nom }}
+                    </div>
+                    <div class="text-xs mt-1" style="color: var(--text-muted);">
+                        {{ projet.numero }}
+                        {% if projet.dossier %} — {{ projet.dossier.nom }}{% endif %}
+                    </div>
+                </div>
+            </label>
+            {% empty %}
+            <p class="text-center py-8" style="color: var(--text-muted);">
+                Aucun projet disponible
+            </p>
+            {% endfor %}
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 pt-6 mt-6"
+             style="border-top: 1px solid var(--border-default);">
+            <a href="{% url 'projets:liste_utilisateurs' %}"
+               hx-get="{% url 'projets:liste_utilisateurs' %}"
+               hx-target="#main-content"
+               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+               hx-push-url="true"
+               hx-indicator="#htmx-progress"
+               class="app-btn-secondary px-4 py-3 rounded-lg flex items-center justify-center gap-2 flex-1">
+                <i class="fas fa-times"></i> Annuler
+            </a>
+            <button type="submit"
+                    class="app-btn-primary text-white px-4 py-3 rounded-lg flex items-center justify-center gap-2 flex-1">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+        </div>
+    </form>
+</div>

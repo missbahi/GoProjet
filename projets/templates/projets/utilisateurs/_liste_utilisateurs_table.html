@@ -1,0 +1,206 @@
+{% load static %}
+
+{% if utilisateurs %}
+<div class="app-card overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[800px]">
+            <thead style="background-color: var(--table-header-bg); color: var(--accent-green);">
+                <tr class="text-left text-sm font-semibold uppercase">
+                    <th class="px-4 py-3">Utilisateur</th>
+                    <th class="px-4 py-3">Email</th>
+                    <th class="px-4 py-3">Rôle</th>
+                    <th class="px-4 py-3">Dossiers</th>
+                    <th class="px-4 py-3 text-center">Statut</th>
+                    <th class="px-4 py-3 text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for utilisateur in utilisateurs %}
+                <tr class="border-b transition-colors"
+                    style="border-color: var(--border-default);"
+                    onmouseover="this.style.backgroundColor='var(--table-row-hover)'"
+                    onmouseout="this.style.backgroundColor='transparent'">
+
+                    <!-- Utilisateur (avatar + nom) -->
+                    <td class="px-4 py-3">
+                        <div class="flex items-center gap-3">
+                            <img src="{{ utilisateur.profile.avatar_url }}"
+                                 alt="{{ utilisateur.username }}"
+                                 class="w-10 h-10 rounded-full object-cover"
+                                 style="border: 2px solid var(--accent-green);"
+                                 onerror="this.src='{% static 'images/default.png' %}'">
+                            <div>
+                                <div class="font-medium" style="color: var(--text-primary);">
+                                    {{ utilisateur.get_full_name|default:utilisateur.username }}
+                                </div>
+                                <div class="text-xs" style="color: var(--text-muted);">
+                                    @{{ utilisateur.username }}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+
+                    <!-- Email -->
+                    <td class="px-4 py-3 text-sm" style="color: var(--text-secondary);">
+                        {{ utilisateur.email|default:"—" }}
+                    </td>
+
+                    <!-- Rôle -->
+                    <td class="px-4 py-3">
+                        {% if utilisateur.is_superuser %}
+                            <span class="badge-role badge-superadmin">
+                                <i class="fas fa-crown"></i> Super Admin
+                            </span>
+                        {% elif utilisateur.profile.role == 'GERANT' or utilisateur.profile.role == 'CHEF_PROJET' %}
+                            <span class="badge-role badge-gerant">
+                                <i class="fas fa-user-tie"></i> Chef de projet
+                            </span>
+                        {% elif utilisateur.profile.role == 'CHEF_CHANTIER' %}
+                            <span class="badge-role badge-chef-chantier">
+                                <i class="fas fa-hard-hat"></i> Chef de chantier
+                            </span>
+                        {% elif utilisateur.profile.role == 'POINTEUR' %}
+                            <span class="badge-role badge-pointeur">
+                                <i class="fas fa-clock"></i> Pointeur
+                            </span>
+                        {% elif utilisateur.profile.role == 'STAFF' %}
+                            <span class="badge-role badge-staff">
+                                <i class="fas fa-users"></i> Staff
+                            </span>
+                        {% else %}
+                            <span class="badge-role badge-user">
+                                <i class="fas fa-user"></i> Utilisateur
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Dossiers -->
+                    <td class="px-4 py-3 text-sm" style="color: var(--text-secondary);">
+                        {% with dossiers=utilisateur.dossiers.all %}
+                            {% if dossiers %}
+                                <span title="{% for d in dossiers %}{{ d.nom }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                                    {{ dossiers.count }} dossier{{ dossiers.count|pluralize }}
+                                </span>
+                            {% else %}
+                                <span style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        {% endwith %}
+                    </td>
+
+                    <!-- Statut -->
+                    <td class="px-4 py-3 text-center">
+                        {% if utilisateur.is_active %}
+                            <span class="badge-role badge-actif">
+                                <i class="fas fa-circle text-xs"></i> Actif
+                            </span>
+                        {% else %}
+                            <span class="badge-role badge-inactif">
+                                <i class="fas fa-circle text-xs"></i> Inactif
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <!-- Actions -->
+                    <td class="px-4 py-3">
+                        <div class="flex justify-center gap-2">
+                            <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
+                               hx-get="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
+                               hx-target="#main-content"
+                               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                               hx-push-url="true"
+                               hx-indicator="#htmx-progress"
+                               class="action-btn"
+                               title="Modifier"
+                               style="color: var(--accent-info); background-color: rgba(59, 130, 246, 0.1);">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
+                               hx-get="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
+                               hx-target="#main-content"
+                               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                               hx-push-url="true"
+                               hx-indicator="#htmx-progress"
+                               class="action-btn"
+                               title="Gérer les projets"
+                               style="color: var(--accent-success); background-color: rgba(16, 185, 129, 0.1);">
+                                <i class="fas fa-project-diagram"></i>
+                            </a>
+                            {% if not utilisateur.is_superuser or request.user.is_superuser %}
+                            <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}"
+                               onclick="return confirm('Supprimer cet utilisateur ? Cette action est irréversible.')"
+                               class="action-btn"
+                               title="Supprimer"
+                               style="color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1);">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    {% if page_obj.has_other_pages %}
+    <div class="flex items-center justify-between p-4"
+         style="border-top: 1px solid var(--border-default);">
+        <div class="text-sm" style="color: var(--text-muted);">
+            Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+        </div>
+        <div class="flex gap-2">
+            {% if page_obj.has_previous %}
+            <button type="button"
+                    hx-get="?page={{ page_obj.previous_page_number }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                    hx-target="#liste-utilisateurs-container"
+                    hx-swap="innerHTML"
+                    class="app-btn-pagination">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                    <span class="app-pagination-current">{{ num }}</span>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <button type="button"
+                            hx-get="?page={{ num }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                            hx-target="#liste-utilisateurs-container"
+                            hx-swap="innerHTML"
+                            class="app-btn-pagination">
+                        {{ num }}
+                    </button>
+                {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <button type="button"
+                    hx-get="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if role_filter %}&role={{ role_filter }}{% endif %}"
+                    hx-target="#liste-utilisateurs-container"
+                    hx-swap="innerHTML"
+                    class="app-btn-pagination">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% else %}
+<!-- État vide -->
+<div class="app-card p-12 text-center">
+    <i class="fas fa-users-slash text-4xl mb-4" style="color: var(--text-muted);"></i>
+    <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+        Aucun utilisateur trouvé
+    </h3>
+    <p style="color: var(--text-muted);">
+        {% if search or role_filter %}
+            Essayez de modifier vos filtres de recherche.
+        {% else %}
+            Commencez par ajouter un utilisateur.
+        {% endif %}
+    </p>
+</div>
+{% endif %}

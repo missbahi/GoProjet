@@ -29,27 +29,24 @@
         // Après swap : ré-exécuter les scripts et ré-initialiser
         // ============================================================
         document.body.addEventListener('htmx:afterSwap', function(e) {
-            // Si le swap concerne le contenu principal
-            if (e.target.id === 'main-content') {
-                // Remonter en haut de page
-                const main = document.querySelector('main');
-                if (main) main.scrollTop = 0;
+            if (e.target.id !== 'main-content') return;
 
-                // Ré-exécuter les scripts inline du nouveau contenu
-                e.target.querySelectorAll('script').forEach(oldScript => {
-                    const newScript = document.createElement('script');
-                    Array.from(oldScript.attributes).forEach(attr => {
-                        newScript.setAttribute(attr.name, attr.value);
-                    });
-                    newScript.textContent = oldScript.textContent;
-                    oldScript.parentNode.replaceChild(newScript, oldScript);
-                });
-
-                // Ré-initialiser les composants spécifiques
-                if (typeof window.initCharts === 'function') {
-                    try { window.initCharts(); } catch (err) { console.warn('initCharts:', err); }
+            e.target.querySelectorAll('script').forEach(oldScript => {
+                // ⚡ Ignorer les scripts PWA (déjà chargés)
+                const content = oldScript.textContent || '';
+                if (content.includes('deferredPrompt') ||
+                    content.includes('beforeinstallprompt') ||
+                    content.includes('serviceWorker')) {
+                    return;
                 }
-            }
+
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => {
+                    newScript.setAttribute(attr.name, attr.value);
+                });
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
         });
 
         // ============================================================
