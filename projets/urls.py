@@ -192,11 +192,13 @@ atelier_urlpatterns = [
 
 # Gestion des taches
 tache_urlpatterns = [
-    path('taches/', task_views.ListeTachesView.as_view(), name='liste_taches'),
-    path('taches/nouvelle/', task_views.CreerTacheView.as_view(), name='creer_tache'),
-    path('taches/<int:pk>/modifier/', task_views.ModifierTacheView.as_view(), name='modifier_tache'),
-    path('taches/<int:pk>/supprimer/', task_views.SupprimerTacheView.as_view(), name='supprimer_tache'),
-    path('taches/<int:pk>/', task_views.DetailTacheView.as_view(), name='detail_tache'), 
+    path('projet/<int:projet_id>/taches/', task_views.ListeTachesView.as_view(), name='liste_taches_projet'),
+    path('projet/<int:projet_id>/taches/nouvelle/', task_views.CreerTacheView.as_view(), name='creer_tache'),
+    path('projet/<int:projet_id>/taches/<int:pk>/', task_views.DetailTacheView.as_view(), name='detail_tache'),
+    path('projet/<int:projet_id>/taches/<int:pk>/modifier/', task_views.ModifierTacheView.as_view(), name='modifier_tache'),
+    path('projet/<int:projet_id>/taches/<int:pk>/supprimer/', task_views.SupprimerTacheView.as_view(), name='supprimer_tache'), 
+    # Page globale (toutes les tâches accessibles)
+    path('taches/', task_views.ListeTachesView.as_view(), name='liste_taches'), 
 ]
 
 # Attachements au niveau du PROJET (pas du lot) et processus de validation des attachements

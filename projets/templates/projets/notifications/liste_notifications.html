@@ -1,0 +1,13 @@
+{% extends "projets/base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Notifications – GoProjet{% endblock %}
+{% block page_title %}Notifications{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'projets/css/notifications.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% include "projets/notifications/_notifications_content.html" %}
+{% endblock %}

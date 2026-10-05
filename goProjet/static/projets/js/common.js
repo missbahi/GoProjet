@@ -68,6 +68,31 @@
         }
     });
 
+    // ⚡ Fermer le dropdown au clic en dehors OU sur un lien à l'intérieur
+    document.addEventListener('click', function(e) {
+        // Menu utilisateur
+        if (userDropdown && !userDropdown.classList.contains('hidden')) {
+            const clickedOutside = !e.target.closest('#userMenuBtn')
+                                && !e.target.closest('#userMenuDropdown');
+            const clickedInsideLink = e.target.closest('#userMenuDropdown a');
+
+            if (clickedOutside || clickedInsideLink) {
+                userDropdown.classList.add('hidden');
+            }
+        }
+
+        // Dropdown notifications
+        if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+            const clickedOutside = !e.target.closest('#notificationBtn')
+                                && !e.target.closest('#notificationDropdown');
+            const clickedInsideLink = e.target.closest('#notificationDropdown a');
+
+            if (clickedOutside || clickedInsideLink) {
+                notifDropdown.classList.add('hidden');
+            }
+        }
+    });
+
     // ============================================================
     // Fallback avatar
     // ============================================================
@@ -76,4 +101,5 @@
         const username = document.body.dataset.username || 'User';
         img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=10B981&color=fff&size=64`;
     };
+
 })();

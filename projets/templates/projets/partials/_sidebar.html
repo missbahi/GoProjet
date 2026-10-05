@@ -35,7 +35,12 @@
                 </li>
                 <li>
                     <a href="{% url 'projets:liste_taches' %}"
-                       class="sidebar-item {% if 'tache' in request.resolver_match.url_name %}active{% endif %}">
+                    hx-get="{% url 'projets:liste_taches' %}"
+                    hx-target="#main-content"
+                    hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                    hx-push-url="true"
+                    hx-indicator="#htmx-progress"
+                    class="sidebar-item {% if 'tache' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-tasks"></i>
                         <span>Gestion des Tâches</span>
                     </a>

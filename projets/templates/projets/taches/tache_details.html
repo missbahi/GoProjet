@@ -42,7 +42,7 @@
                class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg flex items-center transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i> Retour
             </a>
-            <!-- <a href="{% url 'projets:modifier_tache' tache.pk %}" 
+            <!-- <a href="{% url 'projets:modifier_tache'  tache.pk %}" 
                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition-colors">
                 <i class="fas fa-edit mr-2"></i> Modifier
             </a>  -->
@@ -192,11 +192,11 @@
             <!-- <div class="bg-white rounded-xl shadow-md p-6">
                 <h2 class="text-xl font-semibold text-gray-800 mb-4">Actions</h2>
                 <div class="space-y-2">
-                    <a href="{% url 'projets:modifier_tache' tache.pk %}" 
+                    <a href="{% url 'projets:modifier_tache' tache.projet_id tache.pk %}" 
                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg flex items-center justify-center transition-colors">
                         <i class="fas fa-edit mr-2"></i> Modifier la tâche
                     </a>
-                    <a href="{% url 'projets:supprimer_tache' tache.pk %}" 
+                    <a href="{% url 'projets:supprimer_tache' tache.projet_id tache.pk %}" 
                        class="w-full bg-red-100 hover:bg-red-200 text-red-700 py-2 px-4 rounded-lg flex items-center justify-center transition-colors">
                         <i class="fas fa-trash mr-2"></i> Supprimer
                     </a>

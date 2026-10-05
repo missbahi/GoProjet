@@ -1,0 +1,135 @@
+<div id="taskModal"
+     class="modal-tache hidden"
+     role="dialog"
+     aria-modal="true">
+
+    <div>
+        <!-- En-tête -->
+        <div class="modal-tache-header">
+            <h3>
+                <i class="fas fa-tasks mr-2"></i>
+                <span id="modalTitle">Nouvelle Tâche</span>
+            </h3>
+            <button type="button"
+                    onclick="closeTaskModal()"
+                    class="modal-close-btn rounded-full p-2">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Formulaire -->
+        <form id="taskForm"
+              method="post"
+              onsubmit="submitTacheForm(event)"
+              class="p-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="tache_id" id="tacheId">
+            <input type="hidden" name="projetId" id="projetId"
+                   value="{% if projet %}{{ projet.id }}{% endif %}">
+
+            <!-- Grille 2 colonnes -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Colonne 1 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                            Titre *
+                        </label>
+                        <input type="text" name="titre" id="titre" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                            Projet *
+                        </label>
+                        <select name="projet" id="projet" required
+                                {% if projet %}disabled{% endif %}>
+                            <option value="">Sélectionnez un projet...</option>
+                            {% for p in projets_disponibles %}
+                                <option value="{{ p.id }}" {% if projet and projet.id == p.id %}selected{% endif %}>
+                                    {{ p.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        {% if projet %}
+                        <input type="hidden" name="projet" value="{{ projet.id }}">
+                        {% endif %}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                                Date début *
+                            </label>
+                            <input type="date" name="date_debut" id="date_debut" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                                Date fin *
+                            </label>
+                            <input type="date" name="date_fin" id="date_fin" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Colonne 2 -->
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                            Responsable *
+                        </label>
+                        <select name="responsable" id="responsable" required>
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                            Priorité *
+                        </label>
+                        <select name="priorite" id="priorite" required>
+                            <option value="">Chargement...</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" name="terminee" id="terminee">
+                            <span class="text-sm" style="color: var(--text-primary);">Terminée</span>
+                        </label>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                            Avancement
+                        </label>
+                        <input type="range" name="avancement" id="avancement" min="0" max="100" value="0">
+                        <div class="text-right text-sm" id="avancementLabel" style="color: var(--text-primary);">0%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
+                    Description
+                </label>
+                <textarea name="description" id="description" rows="4"></textarea>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-tache-footer -mx-6 -mb-6 mt-6">
+                <button type="button"
+                        onclick="closeTaskModal()"
+                        class="app-btn-secondary px-5 py-2.5 rounded-lg">
+                    <i class="fas fa-times mr-2"></i> Annuler
+                </button>
+                <button type="submit"
+                        class="app-btn-primary text-white px-5 py-2.5 rounded-lg">
+                    <i class="fas fa-save mr-2"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,188 @@
+/* ============================================================
+   Tâches — styles spécifiques (thème-aware)
+   ============================================================ */
+
+/* ---- Tableau des tâches ---- */
+.taches-table {
+    width: 100%;
+    min-width: 900px;
+    background-color: var(--bg-main);
+}
+
+.taches-table thead th {
+    background-color: var(--table-header-bg);
+    color: var(--accent-green);
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--table-border);
+}
+
+.taches-table tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--table-border);
+}
+
+.taches-table tbody tr:hover {
+    background-color: var(--table-row-hover);
+}
+
+/* ---- Badges statut ---- */
+.badge-terminee {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-en-cours {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: var(--accent-info);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* ---- Modal tâche ---- */
+.modal-tache {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: var(--modal-overlay);
+    backdrop-filter: blur(4px);
+}
+
+.modal-tache > div {
+    background-color: var(--modal-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 42rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    animation: modalEnter 0.3s ease-out;
+}
+
+.modal-tache-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-elevated);
+    border-bottom: 1px solid var(--border-default);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.modal-tache-header h3 {
+    color: var(--accent-info);
+    font-size: 1.15rem;
+    font-weight: bold;
+}
+
+@keyframes modalEnter {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---- Formulaires dans la modal tâche ---- */
+.modal-tache input,
+.modal-tache select,
+.modal-tache textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background-color: var(--input-bg);
+    border: 1.5px solid var(--input-border);
+    color: var(--input-text);
+}
+
+.modal-tache input::placeholder,
+.modal-tache textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+.modal-tache input:hover,
+.modal-tache select:hover,
+.modal-tache textarea:hover {
+    border-color: var(--accent-green);
+}
+
+.modal-tache input:focus,
+.modal-tache select:focus,
+.modal-tache textarea:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.25);
+}
+
+.modal-tache select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+}
+
+/* ---- Switch / checkbox ---- */
+.modal-tache input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    accent-color: var(--accent-green);
+}
+
+/* ---- Range avancement ---- */
+.modal-tache input[type="range"] {
+    accent-color: var(--accent-green);
+    padding: 0;
+    background: transparent;
+    border: none;
+}
+
+/* ---- Footer modal ---- */
+.modal-tache-footer {
+    padding: 1rem 1.5rem;
+    background-color: var(--bg-elevated);
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+/* ---- Thème clair ---- */
+[data-theme="light"] .badge-terminee {
+    background-color: rgba(16, 185, 129, 0.12);
+    color: #065f46;
+}
+[data-theme="light"] .badge-en-cours {
+    background-color: rgba(59, 130, 246, 0.12);
+    color: #1e40af;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .taches-table {
+        min-width: 700px;
+    }
+    .modal-tache > div {
+        max-width: 100%;
+    }
+}

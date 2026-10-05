@@ -1,0 +1,129 @@
+{% load i18n %}
+
+{% if notifications %}
+<div class="notifications-container max-h-[600px] overflow-y-auto p-4">
+    {% for notification in notifications %}
+    <div class="notification-item mb-3 p-4 rounded-lg {% if not notification.lue %}unread{% endif %}"
+         data-id="{{ notification.id }}"
+         data-read="{{ notification.lue|yesno:'true,false' }}"
+         data-type="{{ notification.type_notification }}"
+         data-priority="{{ notification.niveau_urgence }}">
+
+        <div class="flex items-start gap-3">
+
+            <!-- Checkbox -->
+            <input type="checkbox"
+                   class="notification-checkbox mt-1 rounded"
+                   data-notification-id="{{ notification.id }}"
+                   style="accent-color: var(--accent-primary);">
+
+            <!-- Contenu -->
+            <div class="flex-1 min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-2">
+                    <span class="type-badge type-{{ notification.type_notification }}">
+                        {{ notification.get_type_notification_display }}
+                    </span>
+
+                    {% if notification.prioritaire %}
+                    <span class="type-badge priority-CRITIQUE">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> Prioritaire
+                    </span>
+                    {% endif %}
+
+                    <span class="type-badge priority-{{ notification.niveau_urgence }}">
+                        {{ notification.get_niveau_urgence_display }}
+                    </span>
+
+                    {% if not notification.lue %}
+                    <span class="type-badge new-notification"
+                          style="background-color: var(--accent-primary); color: white;">
+                        Nouvelle
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h3 class="text-base font-semibold mb-1" style="color: var(--text-primary);">
+                    {{ notification.titre }}
+                    {% if notification.projet %}
+                    <span class="text-sm ml-2" style="color: var(--accent-primary);">
+                        ({{ notification.projet.nom }})
+                    </span>
+                    {% endif %}
+                </h3>
+
+                <p class="text-sm mb-3" style="color: var(--text-secondary);">
+                    {{ notification.message }}
+                </p>
+
+                <div class="flex flex-wrap items-center gap-4 text-xs"
+                     style="color: var(--text-muted);">
+                    <span>
+                        <i class="fas fa-clock mr-1"></i>
+                        {{ notification.date_creation|date:"d/m/Y H:i" }}
+                    </span>
+
+                    {% if notification.date_echeance %}
+                    <span style="color: var(--accent-warning);">
+                        <i class="fas fa-calendar-day mr-1"></i>
+                        Échéance : {{ notification.date_echeance|date:"d/m/Y" }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if notification.get_absolute_url and notification.get_absolute_url != '#' %}
+                <div class="mt-3">
+                    <a href="{{ notification.get_absolute_url }}"
+                       class="inline-flex items-center gap-2 px-3 py-1.5 rounded text-sm text-white"
+                       style="background-color: var(--accent-primary);">
+                        <i class="fas fa-external-link-alt"></i>
+                        Voir les détails
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions individuelles -->
+            <div class="notification-actions flex flex-col gap-1">
+                {% if not notification.lue %}
+                <button type="button"
+                        class="action-btn mark-as-read-btn"
+                        data-notification-id="{{ notification.id }}"
+                        title="Marquer comme lu"
+                        style="background-color: var(--accent-primary);">
+                    <i class="fas fa-check text-white"></i>
+                </button>
+                {% else %}
+                <button type="button"
+                        class="action-btn mark-as-unread-btn"
+                        data-notification-id="{{ notification.id }}"
+                        title="Marquer comme non lu"
+                        style="background-color: var(--bg-elevated);">
+                    <i class="fas fa-undo" style="color: var(--text-primary);"></i>
+                </button>
+                {% endif %}
+
+                <button type="button"
+                        class="action-btn delete-btn"
+                        data-notification-id="{{ notification.id }}"
+                        title="Supprimer"
+                        style="background-color: var(--accent-danger);">
+                    <i class="fas fa-trash text-white"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<!-- État vide -->
+<div class="text-center py-16 px-4">
+    <i class="fas fa-bell-slash text-4xl mb-4" style="color: var(--text-muted);"></i>
+    <h3 class="text-xl font-semibold mb-2" style="color: var(--text-primary);">
+        Aucune notification
+    </h3>
+    <p style="color: var(--text-muted);">
+        Vous êtes à jour !
+    </p>
+</div>
+{% endif %}

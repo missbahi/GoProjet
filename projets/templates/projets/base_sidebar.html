@@ -37,6 +37,8 @@
     <link rel="stylesheet" href="{% static 'projets/css/home.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/dossiers.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/liste_projets.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/taches.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/notifications.css' %}">
     
 
     <style>
@@ -118,11 +120,15 @@
     <script src="{% static 'projets/js/common.js' %}"></script>
     <script src="{% static 'projets/js/htmx-config.js' %}"></script>
     <script src="{% static 'projets/js/profile-manager.js' %}"></script>
+    
 
     <!-- ⚡ JS spécifiques par page (chargés globalement pour supporter HTMX) -->
     <script src="{% static 'projets/js/dossiers.js' %}"></script>
     <script src="{% static 'projets/js/liste_projets.js' %}"></script>
+    <script src="{% static 'projets/js/taches.js' %}"></script>
     <script src="{% static 'projets/js/home.js' %}" defer></script>
+    <script src="{% static 'projets/js/notifications.js' %}"></script>
+
 
     {% block extra_js %}{% endblock %}
 </body>

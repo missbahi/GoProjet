@@ -120,14 +120,16 @@
    Bouton "Annuler" (retour)
    ============================================================ */
 .dossier-cancel-btn {
-    background-color: var(--accent-blue);
-    color: white;
-    border: 1px solid var(--accent-blue-dark);
+    background-color: transparent;
+    color: var(--accent-green);
+    border: 1.5px solid var(--accent-green);
+    transition: all 0.2s ease;
 }
 .dossier-cancel-btn:hover {
-    background-color: var(--accent-blue-dark);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background-color: var(--accent-green);
+    color: white;
     transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(43, 156, 98, 0.25);
 }
 /* ============================================================
    Item dossier dans la liste

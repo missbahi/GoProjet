@@ -85,9 +85,15 @@
                                     <i class="fas fa-check-double mr-1"></i>
                                     Tout marquer comme lu
                                 </button>
-                                <a href="{% url 'projets:liste_notifications' %}" class="text-xs hover:underline font-medium" style="color: var(--accent-primary);">
-                                    <i class="fas fa-external-link-alt mr-1"></i>
-                                    Page complète
+                                <a href="{% url 'projets:liste_notifications' %}"
+                                    hx-get="{% url 'projets:liste_notifications' %}"
+                                    hx-target="#main-content"
+                                    hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                                    hx-push-url="true"
+                                    hx-indicator="#htmx-progress"
+                                    class="block px-4 py-2 text-sm app-dropdown-item">
+                                    <i class="fas fa-external-link-alt mr-2"></i>
+                                    Voir toutes les notifications
                                 </a>
                             </div>
                         </div>

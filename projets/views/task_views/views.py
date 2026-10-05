@@ -3,9 +3,9 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
-from django.urls import reverse_lazy
+from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
@@ -16,10 +16,14 @@ from projets.models import Projet, Tache
 logger = logging.getLogger(__name__)
 
 
+# ============================================================
+# Vue de liste — gère /taches/ ET /projet/<id>/taches/
+# ============================================================
 class ListeTachesView(LoginRequiredMixin, ListView):
     model = Tache
     template_name = 'projets/taches/liste_taches.html'
     context_object_name = 'taches'
+    paginate_by = 50
 
     def get_queryset(self):
         user = self.request.user
@@ -28,6 +32,14 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         if not user.is_superuser:
             queryset = queryset.filter(projet__in=projets_accessibles(user))
 
+        projet_id = self.kwargs.get('projet_id')
+        if projet_id:
+            self.projet = get_object_or_404(projets_accessibles(user), pk=projet_id)
+            queryset = queryset.filter(projet=self.projet)
+        else:
+            self.projet = None
+
+        # Filtres
         terminee_param = self.request.GET.get('terminee', '').strip().lower()
         terminee_val = None
         if terminee_param in ['true', '1']:
@@ -40,13 +52,13 @@ class ListeTachesView(LoginRequiredMixin, ListView):
             'terminee': terminee_val,
             'priorite': self.request.GET.get('priorite') or None,
         }
-
         return queryset.filter(**{k: v for k, v in filters.items() if v is not None})
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
+        # Responsables filtrés
         if user.is_superuser:
             context['responsables'] = User.objects.filter(tache__isnull=False).distinct()
         else:
@@ -54,9 +66,40 @@ class ListeTachesView(LoginRequiredMixin, ListView):
                 projets__in=projets_accessibles(user)
             ).distinct()
 
+        # ⚡ Projets accessibles (pour le select de la modal)
+        context['projets_disponibles'] = projets_accessibles(user).order_by('nom')
+
+        # Projet courant (None sur /taches/)
+        context['projet'] = self.projet
+
         return context
 
-
+    def render_to_response(self, context, **response_kwargs):
+        """Rendu conditionnel : fragment si HTMX, page complète sinon."""
+        if self.request.headers.get('HX-Request'):
+            hx_target = self.request.headers.get('HX-Target', '')
+            
+            # Si la cible est #taches-container (refresh après ajout/suppression)
+            if hx_target == 'taches-container':
+                return render(
+                    self.request,
+                    'projets/taches/_liste_taches_table.html',
+                    context,
+                )
+            
+            # Sinon (clic depuis la sidebar) → fragment complet
+            return render(
+                self.request,
+                'projets/taches/_liste_taches_content.html',
+                context,
+            )
+        
+        # Requête classique (F5, accès direct) → page complète
+        return super().render_to_response(context, **response_kwargs)
+    
+# ============================================================
+# API JSON pour la modal (projets + responsables filtrés)
+# ============================================================
 @login_required
 def get_form_data(request):
     user = request.user
@@ -64,9 +107,10 @@ def get_form_data(request):
         projets = Projet.objects.all().values('id', 'nom')
         responsables = User.objects.all().values('id', 'username')
     else:
-        projets = projets_accessibles(user).values('id', 'nom')
+        accessibles = projets_accessibles(user)
+        projets = accessibles.values('id', 'nom')
         responsables = User.objects.filter(
-            projets__in=projets_accessibles(user)
+            projets__in=accessibles
         ).distinct().values('id', 'username')
 
     priorites = [
@@ -81,21 +125,31 @@ def get_form_data(request):
     })
 
 
+# ============================================================
+# Création — toujours scopée par projet
+# ============================================================
 class CreerTacheView(LoginRequiredMixin, CreateView):
     model = Tache
     form_class = TacheForm
-    success_url = reverse_lazy('projets:liste_taches')
 
-    def post(self, request, *args, **kwargs):
-        logger.info(
-            f"Création tâche - User: {request.user} - Données: {request.POST.dict()}"
+    def dispatch(self, request, *args, **kwargs):
+        # ⚡ Vérifier l'accès au projet AVANT tout
+        self.projet = get_object_or_404(
+            projets_accessibles(request.user),
+            pk=kwargs['projet_id'],
         )
-        form = self.get_form()
-        if form.is_valid():
-            return self.form_valid(form)
-        return self.form_invalid(form)
+        return super().dispatch(request, *args, **kwargs)
+
+    # ⚡ ESSENTIEL : passer user au formulaire pour filtrer les querysets
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
+        # ⚡ Forcer le projet depuis l'URL
+        form.instance.projet = self.projet
+
         try:
             self.object = form.save()
 
@@ -114,7 +168,7 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
             return super().form_valid(form)
 
         except Exception as e:
-            logger.error(f"Erreur création tâche: {str(e)}")
+            logger.error(f"Erreur création tâche: {e}")
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
@@ -123,9 +177,7 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
             raise
 
     def form_invalid(self, form):
-        logger.warning(
-            f"Formulaire invalide - Erreurs: {form.errors.as_json()}"
-        )
+        logger.warning(f"Formulaire invalide - Erreurs: {form.errors.as_json()}")
 
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({
@@ -137,25 +189,38 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
 
         return super().form_invalid(form)
 
+    def get_success_url(self):
+        return reverse('projets:detail_tache', kwargs={
+            'projet_id': self.kwargs['projet_id'],
+            'pk': self.object.pk,
+        })
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['projet'] = self.projet
+        return context
+
+
+# ============================================================
+# Modification — toujours scopée par projet
+# ============================================================
 class ModifierTacheView(LoginRequiredMixin, UpdateView):
     model = Tache
     form_class = TacheForm
     template_name = 'projets/taches/modifier_tache.html'
-    success_url = reverse_lazy('projets:liste_taches')
 
     def get_queryset(self):
-        qs = Tache.objects.select_related('projet', 'responsable')
-        if not self.request.user.is_superuser:
-            qs = qs.filter(projet__in=projets_accessibles(self.request.user))
-        return qs
-
-    def post(self, request, *args, **kwargs):
-        self.object = self.get_object()
-        logger.info(
-            f"Modification tâche ID {self.object.id} - User: {request.user} - Données: {request.POST.dict()}"
+        # ⚡ Double filtre : tâches accessibles ET appartenant au projet de l'URL
+        return Tache.objects.select_related('projet', 'responsable').filter(
+            projet__in=projets_accessibles(self.request.user),
+            projet_id=self.kwargs['projet_id'],
         )
-        return super().post(request, *args, **kwargs)
+
+    # ⚡ ESSENTIEL : passer user au formulaire
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
 
     def form_valid(self, form):
         try:
@@ -176,7 +241,7 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
             return super().form_valid(form)
 
         except Exception as e:
-            logger.error(f"Erreur modification tâche: {str(e)}")
+            logger.error(f"Erreur modification tâche: {e}")
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
@@ -186,7 +251,7 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
 
     def form_invalid(self, form):
         logger.warning(
-            f"Formulaire modification invalide - ID: {self.object.id} - Erreurs: {form.errors.as_json()}"
+            f"Formulaire modification invalide - Erreurs: {form.errors.as_json()}"
         )
 
         if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -199,17 +264,26 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
 
         return super().form_invalid(form)
 
+    def get_success_url(self):
+        return reverse('projets:detail_tache', kwargs={
+            'projet_id': self.kwargs['projet_id'],
+            'pk': self.object.pk,
+        })
 
+
+# ============================================================
+# Détail — toujours scopé par projet
+# ============================================================
 class DetailTacheView(LoginRequiredMixin, DetailView):
     model = Tache
     template_name = 'projets/taches/tache_details.html'
     context_object_name = 'tache'
 
     def get_queryset(self):
-        qs = Tache.objects.select_related('projet', 'responsable')
-        if not self.request.user.is_superuser:
-            qs = qs.filter(projet__in=projets_accessibles(self.request.user))
-        return qs
+        return Tache.objects.select_related('projet', 'responsable').filter(
+            projet__in=projets_accessibles(self.request.user),
+            projet_id=self.kwargs['projet_id'],
+        )
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -219,6 +293,7 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
         context['est_en_retard'] = (
             tache.date_fin and tache.date_fin < timezone.now().date() and not tache.terminee
         )
+        context['projet'] = tache.projet
         return context
 
     def render_to_json_response(self):
@@ -253,7 +328,7 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
             try:
                 return self.render_to_json_response()
             except Exception as e:
-                logger.error(f"Erreur détail tâche {self.object.id}: {str(e)}")
+                logger.error(f"Erreur détail tâche {self.object.id}: {e}")
                 return JsonResponse({
                     'success': False,
                     'message': "Erreur lors du chargement des données",
@@ -262,15 +337,17 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
         return super().get(request, *args, **kwargs)
 
 
+# ============================================================
+# Suppression — toujours scopée par projet
+# ============================================================
 class SupprimerTacheView(LoginRequiredMixin, DeleteView):
     model = Tache
-    success_url = reverse_lazy('projets:liste_taches')
 
     def get_queryset(self):
-        qs = Tache.objects.all()
-        if not self.request.user.is_superuser:
-            qs = qs.filter(projet__in=projets_accessibles(self.request.user))
-        return qs
+        return Tache.objects.filter(
+            projet__in=projets_accessibles(self.request.user),
+            projet_id=self.kwargs['projet_id'],
+        )
 
     def delete(self, request, *args, **kwargs):
         self.object = self.get_object()
@@ -285,9 +362,15 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
             return super().delete(request, *args, **kwargs)
 
         except Exception as e:
+            logger.error(f"Erreur suppression tâche: {e}")
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return JsonResponse({
                     'success': False,
                     'message': str(e),
                 }, status=400)
             raise
+
+    def get_success_url(self):
+        return reverse('projets:liste_taches_projet', kwargs={
+            'projet_id': self.kwargs['projet_id'],
+        })

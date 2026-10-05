@@ -3,6 +3,7 @@ import calendar
 import os
 from django.db import models
 from django.db.models import Sum
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from datetime import date, timedelta
 from django.contrib.auth.models import User
@@ -671,7 +672,34 @@ class Tache(models.Model):
 
     def __str__(self):
         return f"{self.titre} - {self.projet.nom}"
-
+    
+    @classmethod
+    def accessibles(cls, user):
+        """Retourne les tâches que l'utilisateur peut voir."""
+        if user.is_superuser:
+            return cls.objects.all()
+        
+        # Filtre : tâches dont le projet est accessible
+        return cls.objects.filter(
+            Q(projet__users=user)
+            | Q(projet__dossier__utilisateurs=user)
+            | Q(projet__dossier__gerant=user)
+        ).distinct()
+    
+    def est_accessible_par(self, user):
+        """Vérifie si un user peut voir cette tâche."""
+        if user.is_superuser:
+            return True
+        return (
+            self.projet.users.filter(id=user.id).exists()
+            or (
+                self.projet.dossier and (
+                    self.projet.dossier.utilisateurs.filter(id=user.id).exists()
+                    or self.projet.dossier.gerant_id == user.id
+                )
+            )
+        )
+    
     @property
     def jours_restants(self):
         if self.date_fin:
@@ -1283,20 +1311,44 @@ class Notification(models.Model):
         }
         return icons.get(self.type_notification, 'fas fa-bell')
 
+
     def get_absolute_url(self):
-        """Retourne l'URL de l'objet concerné"""
+        """Retourne l'URL de l'objet concerné."""
         if self.action_url:
             return self.action_url
-        projet_id = self.projet.id
-        # URLs par défaut selon le type d'objet
-        url_map = {
-            'tache': f'/taches/{self.objet_id}', # path('taches/<int:pk>/', views.DetailTacheView.as_view(), name='detail_tache'),
-            'document': f'document/{self.objet_id}/afficher/', #path('document/<int:document_id>/afficher/', views.AfficherDocumentView.as_view(), name='afficher_document'), 
-            'projet': f'/projet/{projet_id}/dashboard', #path('projet/<int:projet_id>/dashboard/', views.dashboard_projet, name='dashboard'),
-            'ordre_service': f'/projet/{projet_id}/ordres-service/{self.objet_id}/details/', # path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/details/', views.details_ordre_service, name='details_ordre_service'),
-        }
-        
-        return url_map.get(self.objet_type, '#')
+
+        # ⚡ Tâche — URL scopée par projet
+        if self.objet_type == 'tache' and self.tache_id:
+            try:
+                return reverse('projets:detail_tache', kwargs={
+                    'projet_id': self.tache.projet_id,
+                    'pk': self.tache_id,
+                })
+            except Exception:
+                return '#'
+
+        # ⚡ Projet
+        if self.objet_type == 'projet' and self.projet_id:
+            return reverse('projets:dashboard', kwargs={'projet_id': self.projet_id})
+
+        # ⚡ Ordre de service
+        if self.objet_type == 'ordre_service' and self.projet_id and self.objet_id:
+            try:
+                return reverse('projets:details_ordre_service', kwargs={
+                    'projet_id': self.projet_id,
+                    'ordre_id': self.objet_id,
+                })
+            except Exception:
+                return '#'
+
+        # ⚡ Document
+        if self.objet_type == 'document' and self.objet_id:
+            try:
+                return reverse('projets:afficher_document', kwargs={'document_id': self.objet_id})
+            except Exception:
+                return '#'
+
+        return '#'
 
     # ==================== MÉTHODES DE CLASSE NOTIFICATION ====================
 
@@ -1340,7 +1392,18 @@ class Notification(models.Model):
         }
         
         notifications = []
+        
         for user in utilisateurs_cibles:
+            # ⚡ Éviter les doublons récents (< 1h)
+            existe = cls.objects.filter(
+                utilisateur=user,
+                tache=tache,
+                type_notification=type_notif,
+                date_creation__gte=timezone.now() - timedelta(hours=1),
+            ).exists()
+            
+            if existe:
+                continue
             notification = cls(
                 utilisateur=user,
                 projet=tache.projet,
@@ -1350,7 +1413,7 @@ class Notification(models.Model):
                 titre=titre_map.get(type_notif, f"Notification tâche"),
                 message=message_map.get(type_notif, f"Notification pour la tâche {tache.titre}"),
                 niveau_urgence=niveau_urgence_map.get(type_notif, 'MOYEN'),
-                action_url=f"/taches/{tache.id}/",
+                # action_url=f"/taches/{tache.id}/",
                 objet_id=tache.id,
                 objet_type='tache',
                 date_echeance=tache.date_fin if type_notif in ['TACHE_ECHEANCE', 'TACHE_EN_RETARD'] else None,
@@ -1367,7 +1430,13 @@ class Notification(models.Model):
     def creer_notification_projet(cls, projet, type_notif, emetteur=None, utilisateurs_cibles=None):
         """Crée une notification pour un projet"""
         if utilisateurs_cibles is None:
-            utilisateurs_cibles = projet.users.all()
+            
+            qs = User.objects.filter(
+                Q(projets=projet) |
+                Q(dossiers__projets=projet) |
+                Q(dossiers_geres__projets=projet)
+            ).distinct()
+            utilisateurs_cibles = qs
         
         titre_map = {
             'RETARD': f"⏰ Projet en retard: {projet.nom}",
@@ -1410,12 +1479,14 @@ class Notification(models.Model):
     def creer_notification_os(cls, ordre_service, type_notif, emetteur=None, utilisateurs_cibles=None):
         """Crée une notification pour un ordre de service"""
         if utilisateurs_cibles is None:
-            # Notifier les utilisateurs du projet et les admins
-            from django.db.models import Q
-            utilisateurs_cibles = User.objects.filter(
-                Q(profile__projets=ordre_service.projet) | 
-                Q(profile__role__in=['ADMIN', 'CHEF_PROJET'])
+            
+            projet = ordre_service.projet
+            qs = User.objects.filter(
+                Q(projets=projet) |
+                Q(dossiers__projets=projet) |
+                Q(dossiers_geres__projets=projet)
             ).distinct()
+            utilisateurs_cibles = qs
         
         titre_map = {
             'OS_NOTIFIE': f"📋 OS notifié: {ordre_service.reference}",

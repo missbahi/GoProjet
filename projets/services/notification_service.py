@@ -67,6 +67,7 @@ class NotificationService:
         action_url = f"/projets/attachement/{etape_validation.processus_validation.attachement.id}/"
         
         # Notifier le chef de projet et l'admin
+        from django.contrib.auth.models import User
         utilisateurs = User.objects.filter(
             profile__role__in=['ADMIN', 'CHEF_PROJET'],
             profile__projets=etape_validation.processus_validation.attachement.projet

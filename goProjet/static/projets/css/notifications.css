@@ -1,0 +1,118 @@
+/* ============================================================
+   Notifications — styles (thème-aware)
+   ============================================================ */
+
+.notification-item {
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-default);
+}
+
+.notification-item.unread {
+    border-left-color: var(--accent-primary);
+    background-color: rgba(34, 211, 238, 0.05);
+}
+
+.notification-item:hover {
+    transform: translateX(2px);
+    box-shadow: var(--shadow-md);
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.notification-item:hover .notification-actions {
+    opacity: 1;
+}
+
+.type-badge {
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 600;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.action-btn:hover {
+    transform: scale(1.1);
+}
+
+/* Filtres */
+.filter-pill {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-decoration: none;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.filter-pill:hover {
+    background-color: var(--bg-hover);
+}
+
+.filter-pill.active {
+    background-color: var(--accent-primary);
+    color: #0f172a;
+    font-weight: 600;
+}
+
+/* Badges de type */
+.type-RETARD,
+.type-TACHE_URGENTE,
+.type-TACHE_EN_RETARD,
+.type-OS_ANNULE,
+.type-PROJET_ANNULE { background-color: var(--accent-danger); color: white; }
+.type-NOUVEAU_AO,
+.type-VALIDATION_DEMANDEE { background-color: var(--accent-info); color: white; }
+.type-RECEPTION,
+.type-TACHE_TERMINEE { background-color: var(--accent-success); color: white; }
+.type-ECHEANCE,
+.type-TACHE_ECHEANCE,
+.type-OS_ECHEANCE { background-color: var(--accent-warning); color: white; }
+.type-OS_NOTIFIE,
+.type-NOUVELLE_TACHE { background-color: var(--accent-primary); color: #0f172a; }
+.type-AUTRE { background-color: var(--text-muted); color: white; }
+
+/* Priorités */
+.priority-CRITIQUE { background-color: var(--accent-danger); color: white; }
+.priority-ELEVE { background-color: var(--accent-warning); color: white; }
+.priority-MOYEN { background-color: var(--accent-info); color: white; }
+.priority-FAIBLE,
+.priority-INFO { background-color: var(--text-muted); color: white; }
+
+/* Animation nouvelle notification */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.new-notification {
+    animation: pulse 2s infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .notification-actions {
+        opacity: 1;
+    }
+}

@@ -545,20 +545,62 @@ class FournitureForm(forms.ModelForm):
 class TacheForm(forms.ModelForm):
     class Meta:
         model = Tache
-        fields = '__all__'
+        fields = [
+            'projet', 'titre', 'description',
+            'date_debut', 'date_fin',
+            'priorite', 'responsable',
+            'terminee', 'avancement',
+        ]
         widgets = {
             'date_debut': forms.DateInput(attrs={'type': 'date', 'class': 'form-input'}),
             'date_fin': forms.DateInput(attrs={'type': 'date', 'class': 'form-input'}),
-            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-textarea'}),
-            'priorite': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
+            'priorite': forms.Select(attrs={'class': 'form-input'}),
         }
-        
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
+
+        if user is not None:
+            from projets.decorators import projets_accessibles
+            accessibles = projets_accessibles(user)
+
+            # ⚡ Filtrer les projets accessibles
+            self.fields['projet'].queryset = accessibles.order_by('nom')
+
+            # ⚡ Filtrer les responsables aux users des projets accessibles
+            self.fields['responsable'].queryset = User.objects.filter(
+                projets__in=accessibles
+            ).distinct().order_by('username')
+        else:
+            self.fields['projet'].queryset = Projet.objects.none()
+            self.fields['responsable'].queryset = User.objects.none()
+
         for field in self.fields:
             if field not in ['terminee', 'description']:
                 self.fields[field].widget.attrs.update({'class': 'form-input'})
 
+    def clean(self):
+        cleaned = super().clean()
+        debut = cleaned.get('date_debut')
+        fin = cleaned.get('date_fin')
+        avancement = cleaned.get('avancement')
+        projet = cleaned.get('projet')
+
+        if debut and fin and fin < debut:
+            self.add_error('date_fin', 'La date de fin ne peut précéder la date de début.')
+
+        if avancement is not None and (avancement < 0 or avancement > 100):
+            self.add_error('avancement', "L'avancement doit être compris entre 0 et 100.")
+
+        if projet and self.user is not None:
+            from projets.decorators import projets_accessibles
+            if not projets_accessibles(self.user).filter(pk=projet.pk).exists():
+                self.add_error('projet', "Vous n'avez pas accès à ce projet.")
+
+        return cleaned
+    
 class AttachementForm(forms.ModelForm):
     original_filename = forms.CharField(widget=forms.HiddenInput(), required=False)
     class Meta:

@@ -1,0 +1,69 @@
+<div class="app-card overflow-x-auto">
+    <table class="taches-table min-w-full">
+        <thead>
+            <tr>
+                <th>Titre</th>
+                <th>Projet</th>
+                <th>Responsable</th>
+                <th>Priorité</th>
+                <th>Statut</th>
+                <th class="text-center">Avancement</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for tache in taches %}
+            <tr>
+                <td>
+                    <a href="{% url 'projets:detail_tache' projet_id=tache.projet_id pk=tache.pk %}"
+                       class="font-medium"
+                       style="color: var(--accent-primary);">
+                        {{ tache.titre }}
+                    </a>
+                </td>
+                <td>{{ tache.projet.nom }}</td>
+                <td>{{ tache.responsable.username|default:"—" }}</td>
+                <td>{{ tache.get_priorite_display }}</td>
+                <td>
+                    {% if tache.terminee %}
+                        <span class="badge-terminee">Terminée</span>
+                    {% else %}
+                        <span class="badge-en-cours">En cours</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    <div class="flex items-center gap-2 justify-center">
+                        <div class="w-20 h-2 rounded-full overflow-hidden" style="background-color: var(--bg-elevated);">
+                            <div class="h-full" style="width: {{ tache.avancement }}%; background-color: var(--accent-primary);"></div>
+                        </div>
+                        <span class="text-sm">{{ tache.avancement }}%</span>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <button type="button"
+                            onclick="openTaskModal({{ tache.id }}, {{ tache.projet_id }})"
+                            class="p-2 rounded-lg"
+                            style="color: var(--accent-info);"
+                            title="Modifier">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button type="button"
+                            onclick="deleteTask({{ tache.id }}, {{ tache.projet_id }})"
+                            class="p-2 rounded-lg"
+                            style="color: var(--accent-danger);"
+                            title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="text-center py-8" style="color: var(--text-muted);">
+                    <i class="fas fa-inbox text-4xl mb-2 block opacity-50"></i>
+                    Aucune tâche disponible.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -13,23 +13,69 @@ from django.views.decorators.http import require_GET, require_http_methods, requ
 
 from projets.decorators import can_view_projet, projets_accessibles
 from projets.models import Attachement, DocumentAdministratif, Notification, OrdreService, Projet, Tache
+from django.core.paginator import Paginator
 
 
 @login_required
 def liste_notifications(request):
-    """Page complète des notifications"""
-    notifications = Notification.objects.filter(
+    """Page des notifications."""
+    notifications_qs = Notification.objects.filter(
         utilisateur=request.user
-    ).order_by('-date_creation').select_related('projet')
+    ).order_by('-prioritaire', '-date_creation').select_related(
+        'projet', 'tache', 'tache__projet'
+    )
 
-    unread_count = notifications.filter(lue=False).count()
+    # Filtres
+    filter_type = request.GET.get('filter', 'all')
+    if filter_type == 'unread':
+        notifications_qs = notifications_qs.filter(lue=False)
+    elif filter_type == 'read':
+        notifications_qs = notifications_qs.filter(lue=True)
+    elif filter_type == 'today':
+        from datetime import date
+        notifications_qs = notifications_qs.filter(date_creation__date=date.today())
+    elif filter_type == 'priority':
+        notifications_qs = notifications_qs.filter(prioritaire=True, lue=False)
+
+    # Pagination
+    paginator = Paginator(notifications_qs, 20)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Compteurs globaux
+    all_qs = Notification.objects.filter(utilisateur=request.user)
+    unread_count = all_qs.filter(lue=False).count()
+    read_count = all_qs.filter(lue=True).count()
 
     context = {
-        'notifications': notifications,
+        'notifications': page_obj,
+        'filter': filter_type,
         'unread_count': unread_count,
+        'read_count': read_count,
+        'total_count': all_qs.count(),
     }
-    return render(request, 'projets/liste_notifications.html', context)
 
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        hx_target = request.headers.get('HX-Target', '')
+
+        # Clic sur un filtre ou pagination → juste la liste
+        if hx_target == 'notifications-container':
+            return render(
+                request,
+                'projets/notifications/_notifications_list.html',
+                context,
+            )
+
+        # Clic depuis la cloche ou la sidebar → fragment complet
+        return render(
+            request,
+            'projets/notifications/_notifications_content.html',
+            context,
+        )
+
+    # Rendu classique (F5, accès direct)
+    return render(request, 'projets/notifications/liste_notifications.html', context)
 
 @require_POST
 @login_required
@@ -176,61 +222,73 @@ def creer_notification(request):
             messages.error(request, "Vous n'avez pas la permission de créer des notifications pour ce projet.")
             return redirect(request.META.get('HTTP_REFERER', 'home'))
 
-        notification_data = {
-            'utilisateur_id': data.get('utilisateur') or request.user.id,
-            'projet': projet,
-            'type_notification': data['type_notification'],
-            'titre': data['titre'],
-            'message': data['message'],
-            'niveau_urgence': data.get('niveau_urgence', 'MOYEN'),
-            'action_url': data.get('action_url', ''),
-            'emetteur': request.user,
-        }
+        destinataire_id = data.get('utilisateur')
+        from django.contrib.auth.models import User 
+        if destinataire_id:
+            destinataires = User.objects.filter(id=destinataire_id)
+        else:
+            # Par défaut : tous les users du projet + dossier
+            projet = get_object_or_404(Projet, id=data['projet_id'])
+            destinataires = User.objects.filter(
+                Q(projets=projet) |
+                Q(dossiers__projets=projet) |
+                Q(dossiers_geres__projets=projet)
+            ).distinct().exclude(id=request.user.id) 
+        notifications = []
+        for user in destinataires:
+            notification_data['utilisateur_id'] = user.id
+            
+            notification_data = {
+                'utilisateur_id': data.get('utilisateur') or request.user.id,
+                'projet': projet,
+                'type_notification': data['type_notification'],
+                'titre': data['titre'],
+                'message': data['message'],
+                'niveau_urgence': data.get('niveau_urgence', 'MOYEN'),
+                'action_url': data.get('action_url', ''),
+                'emetteur': request.user,
+            }
 
-        if data.get('date_echeance'):
-            notification_data['date_echeance'] = data['date_echeance']
+            if data.get('date_echeance'):
+                notification_data['date_echeance'] = data['date_echeance']
 
-        if data.get('expire_le'):
-            notification_data['expire_le'] = data['expire_le']
+            if data.get('expire_le'):
+                notification_data['expire_le'] = data['expire_le']
 
-        notification_data['prioritaire'] = data.get('prioritaire') == 'true'
-        notification_data['can_be_closed'] = data.get('can_be_closed', 'true') == 'true'
+            notification_data['prioritaire'] = data.get('prioritaire') == 'true'
+            notification_data['can_be_closed'] = data.get('can_be_closed', 'true') == 'true'
 
-        if data.get('tache'):
-            try:
-                notification_data['tache'] = Tache.objects.get(id=data['tache'], projet=projet)
-            except Tache.DoesNotExist:
-                pass
+            if data.get('tache'):
+                try:
+                    notification_data['tache'] = Tache.objects.get(id=data['tache'], projet=projet)
+                except Tache.DoesNotExist:
+                    pass
 
-        if data.get('document'):
-            try:
-                notification_data['document'] = DocumentAdministratif.objects.get(
-                    id=data['document'], projet=projet
-                )
-            except DocumentAdministratif.DoesNotExist:
-                pass
+            if data.get('document'):
+                try:
+                    notification_data['document'] = DocumentAdministratif.objects.get(
+                        id=data['document'], projet=projet
+                    )
+                except DocumentAdministratif.DoesNotExist:
+                    pass
 
-        if data.get('ordre_service'):
-            try:
-                notification_data['ordre_service'] = OrdreService.objects.get(
-                    id=data['ordre_service'], projet=projet
-                )
-            except OrdreService.DoesNotExist:
-                pass
+            if data.get('ordre_service'):
+                try:
+                    notification_data['ordre_service'] = OrdreService.objects.get(
+                        id=data['ordre_service'], projet=projet
+                    )
+                except OrdreService.DoesNotExist:
+                    pass
 
-        if data.get('objet_id') and data.get('objet_type'):
-            notification_data['objet_id'] = data['objet_id']
-            notification_data['objet_type'] = data['objet_type']
+            if data.get('objet_id') and data.get('objet_type'):
+                notification_data['objet_id'] = data['objet_id']
+                notification_data['objet_type'] = data['objet_type']
 
-        notification = Notification.objects.create(**notification_data)
+            notification = Notification.objects.create(**notification_data)
+            notifications.append(notification)
 
-        messages.success(
-            request,
-            f"Notification '{notification.titre}' créée avec succès.",
-        )
+        Notification.objects.bulk_create(notifications)
 
-        redirect_url = data.get('redirect_to') or reverse('projets:liste_projets')
-        return redirect(redirect_url)
 
     except Exception as e:
         messages.error(
