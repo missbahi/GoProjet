@@ -1,3 +1,4 @@
+from decimal import Decimal
 import json
 from datetime import date, datetime
 
@@ -10,12 +11,13 @@ from django.views.decorators.http import require_GET
 
 from projets.decorators import projets_accessibles
 from projets.models import Notification, Tache
+from projets.models.decomptes import Attachement
 
 
 def landing(request):
     if request.user.is_authenticated:
         return redirect('projets:liste_projets')
-    return render(request, 'projets/apropos.html')
+    return render(request, 'projets/landing/apropos.html')
 
 
 @login_required
@@ -38,7 +40,14 @@ def home(request):
     nb_receptions_validees = projets_utilisateur.filter(reception_validee=True).count()
     nb_receptions_en_retard = projets_utilisateur.filter(reception_validee=True, en_retard=True).count()
     annee_courante = date.today().year
-    ca_total = projets_utilisateur.filter(date_debut__year=annee_courante).aggregate(total=Sum('montant'))['total'] or 0
+
+    # Calcul du chiffre d'affaires total pour l'année en cours (à partire des attachements de l'année en cours)
+    attachements = Attachement.objects.filter(projet__in=projets_utilisateur, date_debut_periode__year=annee_courante)
+
+    montant_attachements = attachements.aggregate(total=Sum('montant_ht'))['total'] or 0
+    ca_total = sum((p.montant_ht for p in projets_utilisateur), Decimal('0'))
+ 
+    avt_total = montant_attachements / ca_total if ca_total else 0
     notifications = Notification.objects.filter(utilisateur=request.user, lue=False).order_by('-date_creation')[:5]
     nb_notifications = Notification.objects.filter(utilisateur=request.user, lue=False).count()
 
@@ -46,7 +55,14 @@ def home(request):
         {'titre': 'Projets en cours', 'valeur': nb_projets_en_cours, 'couleur': 'blue', 'icône': 'fa-hard-hat', 'sous_titre': 'Avancement moyen', 'sous_valeur': f'{avancement_moyen:.0f} %', 'progress': round(avancement_moyen)},
         {'titre': "Appels d'offres", 'valeur': nb_appels_offres, 'couleur': 'cyan', 'icône': 'fa-file-signature', 'sous_titre': 'À traiter', 'sous_valeur': nb_a_traiter, 'progress': round((nb_a_traiter / nb_appels_offres) * 100) if nb_appels_offres else 0},
         {'titre': 'Réceptions validées', 'valeur': nb_receptions_validees, 'couleur': 'purple', 'icône': 'fa-check-circle', 'sous_titre': 'En retard', 'sous_valeur': nb_receptions_en_retard, 'progress': round((nb_receptions_en_retard / nb_receptions_validees) * 100) if nb_receptions_validees else 0},
-        {'titre': "Chiffre d'affaires", 'valeur': f'{round(ca_total / 1_000_000, 1)}M MAD', 'couleur': 'orange', 'icône': 'fa-coins', 'sous_titre': 'Cette année', 'sous_valeur': f'{nb_receptions_validees} réceptions', 'progress': min(100, nb_receptions_validees * 10)},
+        {'titre': "Chiffre d'affaires", 
+         'valeur': f'{round(avt_total, 1)}M MAD', 
+         'couleur': 'orange', 
+         'icône': 'fa-coins', 
+         'sous_titre': 'Cette année', 
+         'sous_valeur': f'{montant_attachements / 1_000_000:.1f}M MAD', 
+         'progress': min(100, avt_total * 100)
+         },
     ]
     echeances = Tache.objects.filter(date_fin__gte=today).order_by('date_fin')[:3]
     chart_data = {
@@ -110,16 +126,16 @@ def home(request):
         'avancement_projets_recents': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_recents]),
     }
     
-    return render(request, 'projets/home.html', context)
+    return render(request, 'projets/home/home.html', context)
 
 
 def apropos(request):
-    return render(request, 'projets/apropos.html')
+    return render(request, 'projets/landing/apropos.html')
 
 
 @require_GET
 def offline_view(request):
-    return render(request, 'projets/offline.html')
+    return render(request, 'projets/landing/offline.html')
 
 
 def permission_denied(request, exception=None):

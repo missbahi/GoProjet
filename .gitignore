@@ -30,6 +30,7 @@ scripts/
 !.env.example
 .secrets
 structure.txt
+suivi_projet.html
 
 # Static files collectés et media locaux
 staticfiles/

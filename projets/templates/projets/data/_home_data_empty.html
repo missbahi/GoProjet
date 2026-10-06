@@ -1,0 +1,38 @@
+{% load static %}
+
+<div class="app-card p-8 md:p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+
+    <!-- Icône -->
+    <div class="mb-6 flex h-20 w-20 items-center justify-center rounded-full"
+         style="background-color: rgba(43, 156, 98, 0.15); color: var(--accent-green);">
+        <i class="fas fa-database text-3xl"></i>
+    </div>
+
+    <!-- Titre -->
+    <h2 class="text-xl md:text-2xl font-semibold mb-3"
+        style="color: var(--text-primary);">
+        Base de données
+    </h2>
+
+    <!-- Description -->
+    <p class="text-sm md:text-base max-w-lg mb-8"
+       style="color: var(--text-secondary);">
+        Sélectionnez un module dans le menu latéral pour commencer à gérer les données de référence de l'application.
+    </p>
+
+    <!-- Aide / raccourci clavier -->
+    <div class="flex flex-wrap gap-2 justify-center text-xs"
+         style="color: var(--text-muted);">
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md"
+              style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+            <i class="fas fa-mouse-pointer"></i>
+            Cliquez sur un module
+        </span>
+        <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-md"
+              style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+            <i class="fas fa-mobile-screen"></i>
+            Menu disponible sur mobile
+        </span>
+    </div>
+
+</div>

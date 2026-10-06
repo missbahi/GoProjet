@@ -156,13 +156,13 @@ def liste_projets(request):
 
         if hx_target == 'liste_projets':
             # Juste le partial tableau/cartes
-            return render(request, 'projets/partials/_liste_projets_partial.html', context)
+            return render(request, 'projets/projets/_liste_projets_partial.html', context)
         
         # Sinon, fragment complet (avec en-tête et contrôles)
-        return render(request, 'projets/partials/_liste_projets_content.html', context)
+        return render(request, 'projets/projets/_liste_projets_content.html', context)
 
     # Rendu classique (accès direct, F5)
-    return render(request, 'projets/liste_projets.html', context)
+    return render(request, 'projets/projets/liste_projets.html', context)
 
 
 @chef_projet_required
@@ -230,7 +230,7 @@ def modifier_projet_modal(request, projet_id):
             }, status=400)
 
     form = ProjetForm(instance=projet, user=request.user)
-    return render(request, 'projets/modals/modifier_projet_modal.html', {
+    return render(request, 'projets/projets/modifier_projet_modal.html', {
         'form': form,
         'projet': projet,
         'statuts': Projet.Statut.choices,
@@ -326,7 +326,7 @@ def dashboard_projet(request, projet_id):
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
 
-    return render(request, 'projets/dashboard.html', {
+    return render(request, 'projets/projets/dashboard.html', {
         'can_handler': can_handler,
         'projet': projet,
         'lots': lots,

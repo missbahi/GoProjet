@@ -1,0 +1,160 @@
+/* static/projets/css/data.css */
+
+/* ---------- Menu actif sidebar ---------- */
+.active-menu-item {
+    background-color: var(--accent-green) !important;
+    color: var(--text-inverse) !important;
+}
+
+/* ---------- Modal backdrop ---------- */
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: var(--modal-overlay);
+    z-index: 40;
+}
+
+/* ---------- Modal ---------- */
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: var(--modal-bg);
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    z-index: 50;
+    width: 95%;
+    max-width: 32rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ---------- Contenu (cible HTMX) ---------- */
+#content-area {
+    min-height: calc(100vh - 200px);
+}
+
+/* ---------- Responsive modal ---------- */
+@media (max-width: 768px) {
+    .modal { width: 95%; padding: 1rem; }
+}
+@media (min-width: 769px) {
+    .modal { width: 90%; padding: 1.5rem; }
+}
+/* ══════════════════════════════════════════════════════════════ */
+/* TOASTS — Notifications flash élégantes                        */
+/* ══════════════════════════════════════════════════════════════ */
+.toast {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 22px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.4;
+    min-width: 280px;
+    max-width: 420px;
+
+    /* Thème : fond surface + ombre profonde */
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    box-shadow: var(--shadow-lg), 0 12px 40px rgba(0, 0, 0, 0.25);
+
+    /* Animation d'entrée */
+    animation: toastSlideIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+
+    /* Barre colorée à gauche */
+    overflow: hidden;
+    pointer-events: auto;
+}
+
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: 16px 0 0 16px;
+}
+
+.toast i {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.toast .toast-message {
+    flex: 1;
+}
+
+.toast .toast-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.15s, background-color 0.15s;
+    flex-shrink: 0;
+}
+.toast .toast-close:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+/* Types : couleur de l'icône + barre latérale */
+.toast.toast-success::before  { background: var(--accent-green); }
+.toast.toast-success i        { color: var(--accent-green); }
+
+.toast.toast-error::before    { background: var(--accent-danger); }
+.toast.toast-error i          { color: var(--accent-danger); }
+
+.toast.toast-warning::before  { background: var(--accent-warning); }
+.toast.toast-warning i        { color: var(--accent-warning); }
+
+.toast.toast-info::before     { background: var(--accent-info); }
+.toast.toast-info i           { color: var(--accent-info); }
+
+/* Animation de sortie */
+.toast.toast-hiding {
+    animation: toastSlideOut 0.3s ease forwards;
+}
+
+/* Animations */
+@keyframes toastSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes toastSlideOut {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(120%);
+    }
+}
+
+/* Responsive : sur mobile, toast pleine largeur en bas */
+@media (max-width: 640px) {
+    .toast {
+        min-width: unset;
+        max-width: unset;
+        width: 100%;
+    }
+}

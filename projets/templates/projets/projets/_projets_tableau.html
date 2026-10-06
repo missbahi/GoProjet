@@ -1,0 +1,130 @@
+<div class="app-card p-4">
+    <!-- Tableau des projets avec largeur minimale garantie -->
+    <table class="min-w-full table-min-width" style="background-color: var(--bg-main);">
+        <thead style="background-color: var(--table-header-bg); color: var(--accent-green);">
+            <tr class="text-left text-m font-medium uppercase">
+                <th class="px-6 py-3 sortable" onclick="sortTable('nom')" data-sort="nom">
+                    <div>Projet</div>
+                    <div class="text-xs" style="color: var(--text-secondary);">Numéro de marché</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('maitre_ouvrage')" data-sort="maitre_ouvrage">
+                    <div>Maitre d'ouvrage</div>
+                    <div class="text-xs" style="color: var(--text-secondary);">Entreprise</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('montant_total')" data-sort="montant_total">
+                    Montant TTC
+                </th>
+                <th class="px-6 py-3">
+                    <div>Décomptes</div>
+                    <div class="text-xs" style="color: var(--text-secondary);">Nb attachements</div>
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('localisation')" data-sort="localisation">
+                    Localisation
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('statut')" data-sort="statut">
+                    Statut
+                </th>
+                <th class="px-6 py-3 sortable" onclick="sortTable('avancement')" data-sort="avancement">
+                    <div>Avancement</div>
+                    <div class="text-xs" style="color: var(--text-secondary);">(%) Décomptes</div>
+                </th>
+                <th class="px-6 py-3 no-print min-w-[140px]">Actions</th>
+            </tr>
+        </thead>
+        <!-- Corps du tableau -->
+        <tbody style="background-color: var(--bg-surface); border-color: var(--table-border);">
+            {% for projet in page_obj %}
+            <tr style="color: var(--text-primary); border-bottom: 1px solid var(--table-border);"
+                onmouseover="this.style.backgroundColor='var(--table-row-hover)'"
+                onmouseout="this.style.backgroundColor='transparent'">
+                <td class="px-4 py-3">
+                    <div><a href="{% url 'projets:dashboard' projet.id %}" class="font-medium" style="color: var(--accent-primary);">{{ projet.nom }}</a></div>
+                    <div class="text-xs" style="color: var(--text-muted);">{{ projet.numero }}</div>
+                    {% if projet.dossier %}<div class="text-xs" style="color: var(--accent-green);"><i class="fas fa-folder mr-1"></i>{{ projet.dossier.nom }}</div>{% endif %}
+                </td>
+                <td class="px-4 py-3">
+                    <div>{{ projet.maitre_ouvrage }}</div>
+                    <div class="text-xs" style="color: var(--text-muted);">{{ projet.entreprise }}</div>
+                </td>
+                <td class="px-4 py-3 text-right print-right font-medium">{{ projet.montant_total_formate }}</td>
+                <td class="px-4 py-3 text-center">
+                    {% if projet.attachements.all %}
+                        <div>
+                            <a href="{% url 'projets:liste_attachements' projet.id %}"
+                            class="font-medium text-lg" style="color: var(--accent-primary);">
+                                {{ projet.attachements.count }}
+                            </a>
+                        </div>
+                    {% else %}
+                        <span style="color: var(--text-muted);">-</span>
+                    {% endif %}
+                </td>
+                <td class="px-4 py-3">{{ projet.localisation }}</td>
+                <td class="px-6 py-3 whitespace-nowrap">
+                    <span class="px-3 py-1 inline-flex text-sm font-semibold rounded-full
+                        {% if projet.statut == 'COURS' %}badge-cours
+                        {% elif projet.en_retard %}badge-retard
+                        {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}badge-recep
+                        {% else %}badge-defaut{% endif %}">
+                        {{ projet.get_statut_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-3">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-full rounded-full h-3 overflow-hidden flex-1" style="background-color: var(--bg-elevated);">
+                            <div class="h-3
+                                {% if projet.avancement_workflow < 20 %}fill-rouge
+                                {% elif projet.avancement_workflow < 40 %}fill-orange
+                                {% elif projet.avancement_workflow < 60 %}fill-jaune
+                                {% elif projet.avancement_workflow < 80 %}fill-vert-clair
+                                {% else %}fill-vert{% endif %}"
+                                style="width: {{ projet.avancement_workflow }}%">
+                            </div>
+                        </div>
+                        <span class="text-sm font-medium min-w-[40px]" style="color: var(--text-primary);">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+                    </div>
+                </td>
+                <td class="px-6 py-3 whitespace-nowrap no-print">
+                    <div class="flex justify-center items-center space-x-4">
+                        <button class="btn-create-notification"
+                                data-projet-id="{{ projet.id }}"
+                                data-projet-nom="{{ projet.nom }}"
+                                title="Créer une notification"
+                                style="color: var(--accent-warning);">
+                            <i class="fas fa-bell text-lg"></i>
+                        </button>
+                        {% if can_handler %}
+                        <button onclick="charger_modal('{% url 'projets:modifier_projet_modal' projet.id %}')"
+                            class="p-2 rounded-lg transition-colors"
+                            style="color: var(--accent-green); background-color: rgba(43, 156, 98, 0.1);"
+                            title="Voir/modifier le projet">
+                            <i class="fas fa-eye text-lg"></i>
+                        </button>
+                        <a href="{% url 'projets:supprimer_projet' projet.id %}"
+                           onclick="supprimerProjet(event, this)"
+                           class="p-2 rounded-lg transition-colors inline-flex"
+                           style="color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1);"
+                           title="Supprimer le projet">
+                            <i class="fas fa-trash-alt text-lg"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="8" class="px-4 py-8 text-center text-lg" style="color: var(--text-primary);">
+                    <div class="flex flex-col items-center justify-center">
+                        <i class="fas fa-inbox text-4xl mb-3" style="color: var(--text-muted);"></i>
+                        <p class="font-medium">Aucun projet disponible</p>
+                        <p class="text-sm mt-1" style="color: var(--text-secondary);">Cliquez sur "Ajouter un projet" pour commencer</p>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {# Pagination #}
+    {% include "projets/projets/_pagination.html" %}
+</div>

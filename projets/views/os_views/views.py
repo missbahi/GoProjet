@@ -219,7 +219,7 @@ def documents_projet(request, projet_id):
     documents = projet.documents_administratifs.all()
     return render(
         request,
-        'projets/documents_administratifs.html',
+        'projets/documents/documents_administratifs.html',
         {'projet': projet, 'documents': documents},
     )
 

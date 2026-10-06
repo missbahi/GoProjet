@@ -26,7 +26,8 @@ class Attachement(models.Model):
     date_fin_periode = models.DateField(verbose_name="Date fin période")
     statut = models.CharField(max_length=15, choices=STATUT_ATTACHEMENT, default='BROUILLON')
     observations = models.TextField(blank=True, verbose_name="Observations")
-    
+    montant_ht = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Montant HT", default=Decimal('0.00'))
+
     fichier = models.FileField(upload_to='attachements/%Y/%m/', null=True, blank=True)
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")
     
@@ -68,6 +69,10 @@ class Attachement(models.Model):
         elif self.fichier:
             return os.path.basename(self.fichier.name)
         return ""
+    @property
+    def annee(self):
+        return self.date_debut_periode.year if self.date_debut_periode else None
+    
     @property
     def peut_etre_reouvert(self):
         return self.statut == 'VALIDE'
@@ -134,10 +139,15 @@ class Attachement(models.Model):
     
     @property
     def montant_situation(self):
-        return self.total_montant_ht - self.montant_ht_attachement_precedent
+        self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
+        return self.montant_ht
         
     def __str__(self):
         return f"Attachement {self.numero} - {self.projet.nom}"
+
+    def save(self, *, force_insert = ..., force_update = ..., using = ..., update_fields = ...):
+        self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
+        return super().save(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
     
 # ------------------------ Ligne Attachement ------------------------
 class LigneAttachement(models.Model):

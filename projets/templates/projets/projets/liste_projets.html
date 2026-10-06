@@ -1,0 +1,13 @@
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Liste des projets – GoProjet{% endblock %}
+{% block page_title %}Mes projets{% endblock %}
+
+{% block content %}
+    {% include "projets/projets/_liste_projets_content.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'projets/js/liste_projets.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block sidebar %}
+    {% include "projets/data/_sidebar_data.html" %}
+    {% include "projets/data/_sidebar_data_mobile.html" %}
+{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'projets/css/data.css' %}">
+    {{ block.super }}
+{% endblock %}

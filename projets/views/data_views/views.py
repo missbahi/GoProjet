@@ -28,32 +28,32 @@ from django.db import transaction
 @chef_projet_required
 def partial_ingenieurs(request):
     ingenieurs = Ingenieur.objects.all()
-    return render(request, 'projets/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
+    return render(request, 'projets/data/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
 
 
 @chef_projet_required
 def partial_entreprises(request):
     entreprises = Entreprise.objects.all()
-    return render(request, 'projets/partials/entreprises.html', {'entreprises': entreprises})
+    return render(request, 'projets/data/partials/entreprises.html', {'entreprises': entreprises})
 
 
 @chef_projet_required
 def partial_clients(request):
     clients = Client.objects.all()
-    return render(request, 'projets/partials/clients.html', {'clients': clients})
+    return render(request, 'projets/data/partials/clients.html', {'clients': clients})
 
 
 @chef_projet_required
 def partial_personnel(request):
     personnel = Personnel.objects.all()
-    return render(request, 'projets/partials/personnel.html', {'personnel': personnel})
+    return render(request, 'projets/data/partials/personnel.html', {'personnel': personnel})
 
 
 @chef_projet_required
 def partial_materiel(request):
     materiel = Materiel.objects.select_related('type_materiel').all()
     types_materiel_actifs = TypeMateriel.objects.filter(actif=True).order_by('nom')
-    return render(request, 'projets/partials/materiel.html', {
+    return render(request, 'projets/data/partials/materiel.html', {
         'materiel': materiel,
         'types_materiel_actifs': types_materiel_actifs,
     })
@@ -62,36 +62,36 @@ def partial_materiel(request):
 @chef_projet_required
 def partial_transports(request):
     transports = Transport.objects.all()
-    return render(request, 'projets/partials/transport.html', {'transports': transports})
+    return render(request, 'projets/data/partials/transport.html', {'transports': transports})
 
 
 @chef_projet_required
 def partial_locations(request):
     locations = Location.objects.all()
-    return render(request, 'projets/partials/locations.html', {'locations': locations})
+    return render(request, 'projets/data/partials/locations.html', {'locations': locations})
 
 
 @chef_projet_required
 def partial_sous_traitances(request):
     sous_traitances = SousTraitance.objects.all()
-    return render(request, 'projets/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
+    return render(request, 'projets/data/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
 
 
 @chef_projet_required
 def partial_consommables(request):
     consommables = Consommable.objects.all()
-    return render(request, 'projets/partials/consommables.html', {'consommables': consommables})
+    return render(request, 'projets/data/partials/consommables.html', {'consommables': consommables})
 
 
 @chef_projet_required
 def partial_fournitures(request):
     fournitures = Fourniture.objects.all()
-    return render(request, 'projets/partials/fournitures.html', {'fournitures': fournitures})
+    return render(request, 'projets/data/partials/fournitures.html', {'fournitures': fournitures})
 
 
 @chef_projet_required
 def base_donnees(request):
-    return render(request, 'projets/base_donnees.html', {
+    return render(request, 'projets/data/base_donnees.html', {
         'choix_icones': choix_icones(),
         'types_materiel_actifs': TypeMateriel.objects.filter(actif=True).order_by('nom'),
     })
@@ -105,7 +105,7 @@ def partial_types_materiel(request):
     types_materiel = TypeMateriel.objects.all()
     return render(
         request,
-        'projets/partials/types_materiel.html',
+        'projets/data/partials/types_materiel.html',
         {'types_materiel': types_materiel},
     )
 
@@ -116,7 +116,7 @@ def ajouter_type_materiel(request):
         form = TypeMaterielForm()
         return render(
             request,
-            'projets/partials/types_materiel.html',
+            'projets/data/partials/types_materiel.html',
             {'form': form},
         )
 
@@ -137,7 +137,7 @@ def ajouter_type_materiel(request):
         )
     return render(
         request,
-        'projets/partials/types_materiel.html',
+        'projets/data/partials/types_materiel.html',
         {'form': form},
     )
 
@@ -169,7 +169,7 @@ def modifier_type_materiel(request, type_materiel_id):
 
     return render(
         request,
-        'projets/partials/types_materiel.html',
+        'projets/data/partials/types_materiel.html',
         {'form': form, 'type_materiel': type_materiel},
     )
 
@@ -221,7 +221,7 @@ def partial_categories_charges(request):
         }
         for category in categories
     ]
-    return render(request, 'projets/partials/categories_charges.html', {
+    return render(request, 'projets/data/partials/categories_charges.html', {
         'categories': categories,
         'category_rows': category_rows,
         'form': CategorieChargeForm(),
@@ -264,7 +264,7 @@ def ajouter_ingenieur(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = IngenieurForm()
-    return render(request, 'projets/partials/ingenieurs.html', {'form': form})
+    return render(request, 'projets/data/partials/ingenieurs.html', {'form': form})
 
 
 @chef_projet_required
@@ -304,7 +304,7 @@ def ajouter_client(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = ClientForm()
-    return render(request, 'projets/partials/clients.html', {'form': form})
+    return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
 @chef_projet_required
@@ -321,7 +321,7 @@ def modifier_client(request, client_id):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = ClientForm(instance=client)
-    return render(request, 'projets/partials/clients.html', {'form': form})
+    return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
 @chef_projet_required
@@ -347,7 +347,7 @@ def ajouter_entreprise(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = EntrepriseForm()
-    return render(request, 'projets/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
+    return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
 @chef_projet_required
@@ -366,7 +366,7 @@ def modifier_entreprise(request, entreprise_id):
             return JsonResponse({'success': False, 'errors': errors}, status=400)
     else:
         form = EntrepriseForm(instance=entreprise)
-    return render(request, 'projets/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
+    return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
 @chef_projet_required
@@ -392,7 +392,7 @@ def ajouter_personnel(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = PersonnelForm()
-    return render(request, 'projets/partials/personnel.html', {'form': form})
+    return render(request, 'projets/data/partials/personnel.html', {'form': form})
 
 
 @chef_projet_required
@@ -432,7 +432,7 @@ def ajouter_materiel(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = MaterielForm()
-    return render(request, 'projets/partials/materiel.html', {'form': form})
+    return render(request, 'projets/data/partials/materiel.html', {'form': form})
 
 
 @chef_projet_required
@@ -740,7 +740,7 @@ def ajouter_transport(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = TransportForm()
-    return render(request, 'projets/partials/transport.html', {'form': form})
+    return render(request, 'projets/data/partials/transport.html', {'form': form})
 
 
 @chef_projet_required
@@ -780,7 +780,7 @@ def ajouter_location(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = LocationForm()
-    return render(request, 'projets/partials/locations.html', {'form': form})
+    return render(request, 'projets/data/partials/locations.html', {'form': form})
 
 
 @chef_projet_required
@@ -820,7 +820,7 @@ def ajouter_sous_traitance(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = SousTraitanceForm()
-    return render(request, 'projets/partials/sous_traitances.html', {'form': form})
+    return render(request, 'projets/data/partials/sous_traitances.html', {'form': form})
 
 
 @chef_projet_required
@@ -860,7 +860,7 @@ def ajouter_consommable(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = ConsommableForm()
-    return render(request, 'projets/partials/consommables.html', {'form': form})
+    return render(request, 'projets/data/partials/consommables.html', {'form': form})
 
 
 @chef_projet_required
@@ -900,7 +900,7 @@ def ajouter_fourniture(request):
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
         form = FournitureForm()
-    return render(request, 'projets/partials/fournitures.html', {'form': form})
+    return render(request, 'projets/data/partials/fournitures.html', {'form': form})
 
 
 @chef_projet_required

@@ -1,0 +1,101 @@
+{% load static %}
+
+{% with modal_id=mode|yesno:"nouveauProjetModal,projetModal" %}
+
+<div id="{{ modal_id }}"
+     class="modal-projet fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4 transition-all duration-300"
+     style="background-color: var(--modal-overlay); backdrop-filter: blur(2px);">
+
+    <div class="w-full max-w-4xl rounded-xl shadow-2xl overflow-hidden"
+         style="background-color: var(--bg-surface); color: var(--text-primary); border: 1px solid var(--border-default);">
+
+        <!-- ============================================================
+             En-tête
+             ============================================================ -->
+        <div class="p-4 md:p-6 shadow-lg"
+             style="background-color: var(--bg-elevated); border-bottom: 2px solid var(--accent-green);">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="p-3 rounded-lg" style="background-color: var(--accent-green); color: white;">
+                        <i class="fas {% if mode == 'ajouter' %}fa-project-diagram{% else %}fa-pen-to-square{% endif %} text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl md:text-2xl font-bold" style="color: var(--text-primary);">
+                            {% if mode == 'ajouter' %}Nouveau Projet{% else %}Modifier le projet{% endif %}
+                        </h3>
+                        <p class="text-sm" style="color: var(--text-secondary);">
+                            {% if mode == 'ajouter' %}
+                                Remplissez les informations du projet
+                            {% else %}
+                                {{ projet.nom }}
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                <button type="button"
+                        onclick="closeModal('{{ modal_id }}')"
+                        class="modal-close-btn p-2 rounded-full transition-colors duration-200">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+             Formulaire
+             ============================================================ -->
+        <form id="{% if mode == 'ajouter' %}nouveauProjetForm{% else %}projetForm{% endif %}"
+              method="post"
+              action="{% if mode == 'ajouter' %}{% url 'projets:ajouter_projet_modal' %}{% else %}{% url 'projets:modifier_projet_modal' projet.id %}{% endif %}"
+              class="modal-projet-form space-y-6 max-h-[65vh] overflow-y-auto p-4 md:p-6"
+              enctype="multipart/form-data">
+            {% csrf_token %}
+
+            {# Messages d'erreur globaux #}
+            <div id="form-errors" class="app-alert app-alert-error p-3 hidden">
+                {{ form.non_field_errors }}
+            </div>
+
+            {% include "projets/projets/_modal_projet_fields.html" %}
+
+            <!-- ============================================================
+                 Boutons d'action
+                 ============================================================ -->
+            <div class="p-4 md:p-6 -mx-4 md:-mx-6 -mb-4 md:-mb-6 mt-6"
+                 style="background-color: var(--bg-elevated); border-top: 1px solid var(--border-default);">
+                <div class="flex flex-col md:flex-row justify-between items-center space-y-3 md:space-y-0">
+
+                    {# Bouton Configuration Révision (ajout uniquement) #}
+                    {% if mode == 'ajouter' %}
+                    <div id="config-revision-btn-container" class="w-full md:w-auto hidden">
+                        <button type="button" id="configRevisionBtn"
+                                class="w-full md:w-auto text-white font-medium py-2 px-6 rounded-lg flex items-center justify-center space-x-2 transition-all duration-200"
+                                style="background-color: var(--accent-info); border: 1px solid var(--accent-info);">
+                            <i class="fas fa-calculator"></i>
+                            <span>Configurer la Révision</span>
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex space-x-3 w-full md:w-auto {% if mode == 'modifier' %}ml-auto{% endif %}">
+                        <button type="button"
+                                onclick="closeModal('{{ modal_id }}')"
+                                class="modal-btn-cancel font-medium py-2 px-6 rounded-lg flex items-center justify-center space-x-2">
+                            <i class="fas fa-times"></i>
+                            <span>Annuler</span>
+                        </button>
+
+                        <button type="submit"
+                                id="{% if mode == 'ajouter' %}submitNouveauProjetBtn{% else %}submitProjetBtn{% endif %}"
+                                class="btn-save-projet text-white font-medium py-2 px-6 rounded-lg flex items-center justify-center space-x-2">
+                            <i class="fas fa-save"></i>
+                            <span>{% if mode == 'ajouter' %}Enregistrer le projet{% else %}Enregistrer les modifications{% endif %}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endwith %}

@@ -606,7 +606,7 @@ def avatar_upload_modal(request):
     """Modal d'upload d'avatar."""
     return render(
         request,
-        'projets/modals/avatar_upload_modal.html',
+        'projets/profile/avatar_upload_modal.html',
         {'user': request.user},
     )
 
@@ -623,7 +623,7 @@ def profile_view(request):
             return redirect('profile')
     else:
         form = AvatarUpdateForm(instance=profile)
-    return render(request, 'profile.html', {'form': form, 'profile': profile})
+    return render(request, 'projets/profile/profile.html', {'form': form, 'profile': profile})
 
 
 @login_required
@@ -662,7 +662,7 @@ def profile_modal(request):
     """Modal de profil."""
     return render(
         request,
-        'projets/modals/profile_modal.html',
+        'projets/profile/profile_modal.html',
         {'user': request.user},
     )
 
@@ -670,7 +670,7 @@ def profile_modal(request):
 @login_required
 def password_modal(request):
     """Modal de changement de mot de passe."""
-    return render(request, 'projets/modals/password_modal.html')
+    return render(request, 'projets/profile/password_modal.html')
 
 
 @login_required
@@ -694,5 +694,5 @@ def password_change(request):
     else:
         form = PasswordChangeForm(request.user)
     return render(
-        request, 'projets/password_change.html', {'form': form}
+        request, 'projets/profile/password_change.html', {'form': form}
     )

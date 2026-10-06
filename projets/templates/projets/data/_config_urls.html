@@ -1,0 +1,49 @@
+{# projets/data/_config_urls.html #}
+<script>
+window.DATA_URLS = {
+    // --- Partials (contenu des modules) ---
+    partialIngenieurs:        "{% url 'projets:partial_ingenieurs' %}",
+    partialClients:           "{% url 'projets:partial_clients' %}",
+    partialEntreprises:       "{% url 'projets:partial_entreprises' %}",
+    partialPersonnel:         "{% url 'projets:partial_personnel' %}",
+    partialMateriel:          "{% url 'projets:partial_materiel' %}",
+    partialTransports:        "{% url 'projets:partial_transports' %}",
+    partialLocations:         "{% url 'projets:partial_locations' %}",
+    partialSousTraitances:    "{% url 'projets:partial_sous_traitances' %}",
+    partialConsommables:      "{% url 'projets:partial_consommables' %}",
+    partialFournitures:       "{% url 'projets:partial_fournitures' %}",
+    partialCategoriesCharges: "{% url 'projets:partial_categories_charges' %}",
+    partialTypesMateriel:     "{% url 'projets:partial_types_materiel' %}",
+
+    // --- Ajout (0 = placeholder pour les URLs avec pk) ---
+    ajouterIngenieur:    "{% url 'projets:ajouter_ingenieur' %}",
+    ajouterClient:       "{% url 'projets:ajouter_client' %}",
+    ajouterEntreprise:   "{% url 'projets:ajouter_entreprise' %}",
+    ajouterPersonnel:    "{% url 'projets:ajouter_personnel' %}",
+    ajouterMateriel:     "{% url 'projets:ajouter_materiel' %}",
+    ajouterTransport:    "{% url 'projets:ajouter_transport' %}",
+    ajouterLocation:     "{% url 'projets:ajouter_location' %}",
+    ajouterSousTraitance:"{% url 'projets:ajouter_sous_traitance' %}",
+    ajouterConsommable:  "{% url 'projets:ajouter_consommable' %}",
+    ajouterFourniture:   "{% url 'projets:ajouter_fourniture' %}",
+    ajouterTypeMateriel: "{% url 'projets:ajouter_type_materiel' %}",
+    ajouterCategorie:    "{% url 'projets:ajouter_categorie_charge' %}",
+
+    // --- Modification ---
+    modifierIngenieur:    "{% url 'projets:modifier_ingenieur' 0 %}",
+    modifierClient:       "{% url 'projets:modifier_client' 0 %}",
+    modifierEntreprise:   "{% url 'projets:modifier_entreprise' 0 %}",
+    modifierPersonnel:    "{% url 'projets:modifier_personnel' 0 %}",
+    modifierMateriel:     "{% url 'projets:modifier_materiel' 0 %}",
+    modifierTransport:    "{% url 'projets:modifier_transport' 0 %}",
+    modifierLocation:     "{% url 'projets:modifier_location' 0 %}",
+    modifierSousTraitance:"{% url 'projets:modifier_sous_traitance' 0 %}",
+    modifierConsommable:  "{% url 'projets:modifier_consommable' 0 %}",
+    modifierFourniture:   "{% url 'projets:modifier_fourniture' 0 %}",
+    modifierTypeMateriel: "{% url 'projets:modifier_type_materiel' 0 %}",
+
+    // --- Actions groupées / import ---
+    supprimerMaterielMasse: "{% url 'projets:supprimer_materiel_masse' %}",
+    importerMateriels:      "{% url 'projets:importer_materiels' %}",
+};
+</script>

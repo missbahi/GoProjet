@@ -1,0 +1,15 @@
+{% extends "projets/base_data.html" %}
+{% load static %}
+
+{% block title %}Base de données - GoProjet{% endblock %}
+{% block page_title %}<i class="fas fa-database mr-2"></i>Base de données{% endblock %}
+
+{% block content %}
+    {% include "projets/data/_home_data.html" %}
+    {% include "projets/data/_modals_data.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    {% include "projets/data/_config_urls.html" %}
+    <script src="{% static 'projets/js/data.js' %}" defer></script>
+{% endblock %}

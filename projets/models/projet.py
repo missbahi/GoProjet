@@ -267,12 +267,16 @@ class Projet(models.Model):
         elif self.statut in ['RECEP', 'RECEP_DEF']:
             return "Réception"
         return "Échéance"
+    @property
+    def montant_ht(self):
+        """Retourne le montant hors taxes du projet."""
+        return self.montant_total() or Decimal('0')
     
     def montant_total(self, force_update=False):
         """Calcule le montant total et synchronise le champ si nécessaire."""
         try:
             total_lots = sum(lot.montant_total_ht for lot in self.lots.all()) 
-            nouveau_montant = total_lots * Decimal('1.2')
+            nouveau_montant = total_lots
             ancien_montant = self.montant or Decimal('0')
             montants_different = abs(ancien_montant - nouveau_montant) > Decimal('0.01')
             
