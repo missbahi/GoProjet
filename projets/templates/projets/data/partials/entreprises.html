@@ -1,43 +1,48 @@
-<h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
-    <i class="fa-solid fa-building mr-3"></i> Liste des entreprises
+{# projets/data/partials/entreprises.html #}
+
+<h2 class="app-section-title mb-6">
+    <i class="fa-solid fa-building mr-3"></i>
+    Liste des entreprises
 </h2>
 
 {% if entreprises %}
-<div class="bg-gray-800 p-2 overflow-x-auto">
-    <table class="min-w-full bg-[#2E2E2E]">
-        <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+<div class="app-card overflow-x-auto">
+    <table class="app-table">
+        <thead>
             <tr>
-                <th class="px-4 py-3 text-left">Nom</th>
-                <th class="px-4 py-3 text-left">Contact</th>
-                <th class="px-4 py-3 text-left">Email</th>
-                <th class="px-4 py-3 text-left">Téléphone</th>
-                <th class="px-4 py-3 text-left">Adresse</th>
-                <th class="px-4 py-3 text-center">Actions</th>
+                <th class="text-left">Nom</th>
+                <th class="text-left">Contact</th>
+                <th class="text-left">Email</th>
+                <th class="text-left">Téléphone</th>
+                <th class="text-left">Adresse</th>
+                <th class="text-center">Actions</th>
             </tr>
         </thead>
-        <tbody class="bg-gray-800 divide-y divide-green-800">
+        <tbody>
             {% for entreprise in entreprises %}
-            <tr class="style="color: var(--text-primary);"">
-                <td class="px-4 py-3">{{ entreprise.nom }}</td>
-                <td class="px-4 py-3">{{ entreprise.contact }}</td>
-                <td class="px-4 py-3">{{ entreprise.email }}</td>
-                <td class="px-4 py-3">{{ entreprise.telephone }}</td>
-                <td class="px-4 py-3">{{ entreprise.adresse }}</td>
-                <td class="px-4 py-3 text-center space-x-3">
-                    <button data-edit-entreprise-button 
-                            data-id="{{ entreprise.id }}" 
-                            data-nom="{{ entreprise.nom }}" 
-                            data-contact="{{ entreprise.contact }}" 
-                            data-email="{{ entreprise.email }}" 
-                            data-telephone="{{ entreprise.telephone }}" 
-                            data-adresse="{{ entreprise.adresse }}"
-                            class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+            <tr>
+                <td>{{ entreprise.nom }}</td>
+                <td>{{ entreprise.contact|default:"—" }}</td>
+                <td>{{ entreprise.email|default:"—" }}</td>
+                <td>{{ entreprise.telephone|default:"—" }}</td>
+                <td>{{ entreprise.adresse|default:"—" }}</td>
+                <td class="text-center space-x-3">
+                    <button type="button"
+                            data-edit
+                            data-entity="entreprise"
+                            data-payload='{"id": {{ entreprise.id }}, "nom": "{{ entreprise.nom|escapejs }}", "contact": "{{ entreprise.contact|default:""|escapejs }}", "email": "{{ entreprise.email|default:""|escapejs }}", "telephone": "{{ entreprise.telephone|default:""|escapejs }}", "adresse": "{{ entreprise.adresse|default:""|escapejs }}"}'
+                            class="app-action-btn app-action-edit"
+                            title="Modifier">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <a href="{% url 'projets:supprimer_entreprise' entreprise.id %}" 
-                       class="text-red-500 hover:text-red-400 transition">
+                    <button type="button"
+                            data-delete
+                            data-entity="entreprise"
+                            data-id="{{ entreprise.id }}"
+                            class="app-action-btn app-action-delete"
+                            title="Supprimer">
                         <i class="fa-solid fa-trash"></i>
-                    </a>
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -45,14 +50,17 @@
     </table>
 </div>
 {% else %}
-<div class="p-4 bg-green-900 text-green-200 rounded-lg shadow mb-4 border border-green-700">
+<div class="app-empty-state">
+    <i class="fa-solid fa-circle-info mr-2"></i>
     Aucune entreprise enregistrée.
 </div>
 {% endif %}
+
 <div class="mt-6">
-    <button data-add-entreprise-button
-            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">
+    <button type="button"
+            data-add
+            data-entity="entreprise"
+            class="app-btn-primary">
         <i class="fa-solid fa-plus mr-2"></i> Ajouter une entreprise
     </button>
 </div>
-

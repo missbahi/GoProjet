@@ -1,70 +1,76 @@
-{% load static %}
-<div class="bg-gray-800 rounded-lg p-4 md:p-6" data-types-materiel-module>
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-lg md:text-xl font-semibold text-green-400">
-            <i class="fas fa-tractor mr-2"></i>Types de matériel
-        </h2>
-        <button data-add-type-materiel-button
-                class="bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded-lg text-sm md:text-base transition">
-            <i class="fas fa-plus mr-1"></i> Ajouter
-        </button>
-    </div>
+{# projets/data/partials/types_materiel.html #}
 
-    {% if types_materiel %}
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-sm md:text-base">
-            <thead>
-                <tr class="border-b border-green-800 text-green-300">
-                    <th class="px-3 py-2 text-left">Icône</th>
-                    <th class="px-3 py-2 text-left">Désignation</th>
-                    <th class="px-3 py-2 text-left">Actif</th>
-                    <th class="px-3 py-2 text-right">Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for type in types_materiel %}
-                <tr class="border-b border-gray-700 hover:bg-gray-750">
-                    <td class="px-2 py-1">
-                        {% if type.icone %}
-                            <img src="{% static type.icone_path %}" alt="{{ type.nom }}"
-                                class="h-10 w-10 object-contain bg-white rounded p-0.5">
-                        {% else %}
-                            <span class="text-gray-500">—</span>
-                        {% endif %}
-                    </td>
-                    <td class="px-3 py-2 text-white">{{ type.nom }}</td>
-                    <td class="px-3 py-2">
-                        {% if type.actif %}
-                            <span class="text-green-400"><i class="fas fa-check"></i></span>
-                        {% else %}
-                            <span class="text-red-400"><i class="fas fa-times"></i></span>
-                        {% endif %}
-                    </td>
-                    <td class="px-3 py-2 text-right space-x-2 whitespace-nowrap">
-                        <button data-edit-type-materiel-button
-                                data-id="{{ type.id }}"
-                                data-nom="{{ type.nom }}"
-                                data-icone="{{ type.icone }}"
-                                data-actif="{{ type.actif|yesno:'true,false' }}"
-                                class="text-green-400 hover:text-green-200 transition"
-                                title="Modifier">
-                            <i class="fas fa-pen"></i>
-                        </button>
-                        <a href="{% url 'projets:supprimer_type_materiel' type.id %}"
-                           class="text-red-400 hover:text-red-200 transition"
-                           title="Supprimer">
-                            <i class="fas fa-trash"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="text-center py-8 text-gray-400">
-        <i class="fas fa-inbox text-3xl mb-2"></i>
-        <p class="text-sm md:text-base">Aucun type de matériel enregistré.</p>
-    </div>
-    {% endif %}
+<h2 class="app-section-title mb-6">
+    <i class="fa-solid fa-tractor mr-3"></i>
+    Liste des types de matériel
+</h2>
+
+{% if types_materiel %}
+<div class="app-card overflow-x-auto">
+    <table class="app-table">
+        <thead>
+            <tr>
+                <th class="text-left">Désignation</th>
+                <th class="text-center">Icône</th>
+                <th class="text-center">Statut</th>
+                <th class="text-center">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for type in types_materiel %}
+            <tr>
+                <td>{{ type.nom }}</td>
+                <td class="text-center">
+                    {% if type.icone %}
+                        <img src="/static/images/materiels/{{ type.icone }}"
+                             alt="{{ type.nom }}"
+                             class="h-10 w-10 object-contain inline-block">
+                    {% else %}
+                        <span style="color: var(--text-muted);">—</span>
+                    {% endif %}
+                </td>
+                <td class="text-center">
+                    {% if type.actif %}
+                        <span class="app-badge app-badge-success">Actif</span>
+                    {% else %}
+                        <span class="app-badge app-badge-muted">Inactif</span>
+                    {% endif %}
+                </td>
+                <td class="text-center space-x-3">
+                    <button type="button"
+                            data-edit
+                            data-entity="typeMateriel"
+                            data-payload='{"id": {{ type.id }}, "nom": "{{ type.nom|escapejs }}", "icone": "{{ type.icone|default:""|escapejs }}", "actif": {% if type.actif %}true{% else %}false{% endif %}}'
+                            class="app-action-btn app-action-edit"
+                            title="Modifier">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button type="button"
+                            data-delete
+                            data-entity="typeMateriel"
+                            data-id="{{ type.id }}"
+                            class="app-action-btn app-action-delete"
+                            title="Supprimer">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="app-empty-state">
+    <i class="fa-solid fa-circle-info mr-2"></i>
+    Aucun type de matériel enregistré.
+</div>
+{% endif %}
+
+<div class="mt-6">
+    <button type="button"
+            data-add
+            data-entity="typeMateriel"
+            class="app-btn-primary">
+        <i class="fa-solid fa-plus mr-2"></i> Ajouter un type de matériel
+    </button>
 </div>

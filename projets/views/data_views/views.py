@@ -174,30 +174,31 @@ def modifier_type_materiel(request, type_materiel_id):
     )
 
 
+@require_POST
 @chef_projet_required
 def supprimer_type_materiel(request, type_materiel_id):
     type_materiel = get_object_or_404(TypeMateriel, id=type_materiel_id)
     nom = type_materiel.nom
-
-    # Protection : empêcher la suppression si des matériels y sont rattachés
-    if type_materiel.materiels.exists():
-        message = (
-            f"Impossible de supprimer « {nom} » : "
-            f"{type_materiel.materiels.count()} matériel(s) y sont rattachés."
-        )
+    
+    try:
+        type_materiel.delete()
+    except ProtectedError:
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'message': message}, status=400)
-        messages.error(request, message)
-        return redirect('projets:partial_types_materiel')
+            return JsonResponse({
+                'success': False,
+                'message': 'Impossible : ce type est utilisé par des matériels.',
+            }, status=400)
+        messages.error(request, 'Impossible de supprimer ce type.')
+        return redirect('projets:base_donnees')
 
-    type_materiel.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
             'success': True,
-            'message': f"Type de matériel « {nom} » supprimé avec succès.",
+            'message': f'Type « {nom} » supprimé avec succès.',
         })
-    messages.success(request, f"Type de matériel « {nom} » supprimé avec succès.")
-    return redirect('projets:partial_types_materiel')
+
+    messages.success(request, f'Type « {nom} » supprimé avec succès.')
+    return redirect('projets:base_donnees')
 
 @categorie_charge_required
 def partial_categories_charges(request):
@@ -239,16 +240,57 @@ def ajouter_categorie_charge(request):
     return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
 
 
+@require_POST
 @categorie_charge_required
 def modifier_categorie_charge(request, categorie_id):
     categorie = get_object_or_404(CategorieCharge, id=categorie_id)
-    if request.method != 'POST':
-        return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
     form = CategorieChargeForm(request.POST, instance=categorie)
-    if form.is_valid():
-        categorie = form.save()
-        return JsonResponse({'success': True, 'message': f'Catégorie « {categorie.nom} » modifiée.'})
-    return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
+
+    if not form.is_valid():
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors.get_json_data(),
+                'message': 'Erreur de validation.',
+            }, status=400)
+        messages.error(request, 'Erreur de validation.')
+        return redirect('projets:base_donnees')
+
+    form.save()
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': f'Catégorie « {categorie.nom} » modifiée avec succès.',
+        })
+
+    messages.success(request, 'Catégorie modifiée.')
+    return redirect('projets:base_donnees')
+
+
+@require_POST
+@categorie_charge_required
+def supprimer_categorie_charge(request, categorie_id):
+    categorie = get_object_or_404(CategorieCharge, id=categorie_id)
+    nom = categorie.nom
+
+    try:
+        categorie.delete()
+    except ProtectedError:
+        msg = 'Impossible : cette catégorie est utilisée par d\'autres entrées.'
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('projets:base_donnees')
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': f'Catégorie « {nom} » supprimée avec succès.',
+        })
+
+    messages.success(request, f'Catégorie « {nom} » supprimée avec succès.')
+    return redirect('projets:base_donnees')
 
 
 @chef_projet_required
@@ -281,14 +323,36 @@ def modifier_ingenieur(request, ingenieur_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
+@require_POST
 @chef_projet_required
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
-    ingenieur.delete()
+
+    # Sauvegarder le nom AVANT suppression
+    nom = ingenieur.nom
+
+    try:
+        ingenieur.delete()
+    except ProtectedError:
+        # Si l'ingénieur est référencé ailleurs
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'success': False,
+                'message': 'Impossible de supprimer : cet ingénieur est utilisé dans un projet.',
+            }, status=400)
+        messages.error(request, 'Impossible de supprimer cet ingénieur.')
+        return redirect('projets:base_donnees')
+
+    # Réponse JSON pour AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
-        return JsonResponse({'success': True, 'message': 'Ingénieur ' + ingenieur.nom + ' supprimé avec succès.'})
-    messages.success(request, 'Ingénieur supprimé avec succès.')
-    return redirect('projets:partial_ingenieurs')
+        return JsonResponse({
+            'success': True,
+            'message': f'Ingénieur « {nom} » supprimé avec succès.',
+        })
+
+    # Fallback classique
+    messages.success(request, f'Ingénieur « {nom} » supprimé avec succès.')
+    return redirect('projets:base_donnees')
 
 
 @chef_projet_required

@@ -1,62 +1,531 @@
-/* static/projets/js/data.js */
 (function () {
     'use strict';
 
     const U = window.DATA_URLS;
     const $ = (id) => document.getElementById(id);
+    const $$ = (sel, root = document) => root.querySelector(sel);
+    const $$all = (sel, root = document) => root.querySelectorAll(sel);
 
-    // ============================================================
-    // ÉTAT GLOBAL
-    // ============================================================
+    /* ═══════════════════════════════════════════════════════════
+       REGISTRE DES ENTITÉS
+       ═══════════════════════════════════════════════════════════ */
+
+    const ENTITIES = {
+        // ═══════════════════════════════════════════════════════════
+        // MODULES DIRECTS (items sidebar)
+        // ═══════════════════════════════════════════════════════════
+        ingenieur: {
+            addUrl:    U.ajouterIngenieur,
+            editUrl:   U.modifierIngenieur,
+            deleteUrl: U.supprimerIngenieur,
+            partial:   U.partialIngenieurs,
+            menuId:    'menu-ingenieurs',
+            reload:    'module',
+            fields:    ['id', 'nom'],
+            required:  ['nom'],
+            label:     'cet ingénieur',
+        },
+
+        client: {
+            addUrl:    U.ajouterClient,
+            editUrl:   U.modifierClient,
+            deleteUrl: U.supprimerClient,
+            partial:   U.partialClients,
+            menuId:    'menu-clients',
+            reload:    'module',
+            fields:    ['id', 'nom', 'contact', 'email', 'telephone', 'adresse'],
+            required:  ['nom'],
+            label:     'ce client',
+        },
+
+        entreprise: {
+            addUrl:    U.ajouterEntreprise,
+            editUrl:   U.modifierEntreprise,
+            deleteUrl: U.supprimerEntreprise,
+            partial:   U.partialEntreprises,
+            menuId:    'menu-entreprises',
+            reload:    'module',
+            fields:    ['id', 'nom', 'contact', 'email', 'telephone', 'adresse'],
+            required:  ['nom'],
+            label:     'cette entreprise',
+        },
+
+        typeMateriel: {
+            addUrl:    U.ajouterTypeMateriel,
+            editUrl:   U.modifierTypeMateriel,
+            deleteUrl: U.supprimerTypeMateriel,
+            partial:   U.partialTypesMateriel,
+            menuId:    'menu-types-materiel',
+            reload:    'module',
+            fields:    ['id', 'nom', 'icone', 'actif'],
+            required:  ['nom'],
+            label:     'ce type de matériel',
+            onOpenEdit: (modal, data) => {
+                updateIconePreview(modal);
+            },
+        },
+
+        // ═══════════════════════════════════════════════════════════
+        // RESSOURCES IMBRIQUÉES (accordéon catégories)
+        // ═══════════════════════════════════════════════════════════
+        categorie: {
+            addUrl:    U.ajouterCategorie,
+            editUrl:   U.modifierCategorie,
+            deleteUrl: U.supprimerCategorie,
+            partial:   U.partialCategoriesCharges,
+            menuId:    'menu-categories',
+            reload:    'module',
+            fields:    ['id', 'code', 'nom', 'ordre', 'actif'],
+            required:  ['code', 'nom'],
+            label:     'cette catégorie',
+        },
+        // Ressources 
+        personnel: {
+            addUrl:    U.ajouterPersonnel,
+            editUrl:   U.modifierPersonnel,
+            deleteUrl: U.supprimerPersonnel,
+            partial:   U.partialPersonnel,
+            reload:    'resources',
+            fields:    ['id', 'nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif'],
+            required:  ['nom'],
+            label:     'ce membre du personnel',
+        },
+
+        materiel: {
+            addUrl:    U.ajouterMateriel,
+            editUrl:   U.modifierMateriel,
+            deleteUrl: U.supprimerMateriel,
+            partial:   U.partialMateriel,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'ce matériel',
+            onOpenEdit: (modal, data) => {
+                if (typeof rebuildTypeMaterielSelect !== 'function') return;
+                rebuildTypeMaterielSelect(
+                    'editMaterielTypeMateriel',
+                    data.typeId,
+                    data.typeActif === 'false' ? { id: data.typeId, nom: data.typeNom } : null
+                );
+            },
+        },
+
+        transport: {
+            addUrl:    U.ajouterTransport,
+            editUrl:   U.modifierTransport,
+            deleteUrl: U.supprimerTransport,
+            partial:   U.partialTransports,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'ce transport',
+        },
+
+        location: {
+            addUrl:    U.ajouterLocation,
+            editUrl:   U.modifierLocation,
+            deleteUrl: U.supprimerLocation,
+            partial:   U.partialLocations,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'cette location',
+        },
+
+        sousTraitance: {
+            addUrl:    U.ajouterSousTraitance,
+            editUrl:   U.modifierSousTraitance,
+            deleteUrl: U.supprimerSousTraitance,
+            partial:   U.partialSousTraitances,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'cette sous-traitance',
+        },
+
+        consommable: {
+            addUrl:    U.ajouterConsommable,
+            editUrl:   U.modifierConsommable,
+            deleteUrl: U.supprimerConsommable,
+            partial:   U.partialConsommables,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'ce consommable',
+        },
+
+        fourniture: {
+            addUrl:    U.ajouterFourniture,
+            editUrl:   U.modifierFourniture,
+            deleteUrl: U.supprimerFourniture,
+            partial:   U.partialFournitures,
+            reload:    'resources',
+            fields:    ['id', 'designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif'],
+            required:  ['designation'],
+            label:     'cette fourniture',
+        },
+    };
+
+    /* ═══════════════════════════════════════════════════════════
+       UTILITAIRES
+       ═══════════════════════════════════════════════════════════ */
+    function capitalize(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    function getModalId(entity, mode) {
+        return `${mode}${capitalize(entity)}Modal`;
+    }
+
+    function getModal(entity, mode) {
+        return document.getElementById(getModalId(entity, mode));
+    }
+
+    function getBackdrop() {
+        return document.getElementById('modalBackdrop');
+    }
+
+    function getCsrfToken() {
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input && input.value) return input.value;
+        const match = document.cookie.match(/csrftoken=([^;]+)/);
+        return match ? match[1] : '';
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       TOASTS (notifications flash)
+       ═══════════════════════════════════════════════════════════ */
+    function getOrCreateToastContainer() {
+        let container = document.getElementById('toast-container');
+        if (container) return container;
+
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = `
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            z-index: 9999;
+            pointer-events: none;
+            max-width: calc(100vw - 3rem);
+        `;
+        document.body.appendChild(container);
+        return container;
+    }
+
+    function showToast(message, type = 'info', duration = 3500) {
+        const container = getOrCreateToastContainer();
+        const icons = {
+            success: 'fa-check-circle',
+            error:   'fa-circle-exclamation',
+            warning: 'fa-triangle-exclamation',
+            info:    'fa-circle-info',
+        };
+
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.style.pointerEvents = 'auto';
+        toast.innerHTML = `
+            <i class="fas ${icons[type] || icons.info}"></i>
+            <span class="toast-message">${message}</span>
+            <button type="button" class="toast-close" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+
+        toast.querySelector('.toast-close').addEventListener('click', () => hideToast(toast));
+        container.appendChild(toast);
+
+        toast._toastTimer = setTimeout(() => hideToast(toast), duration);
+    }
+
+    function hideToast(toast) {
+        if (!toast || toast._hiding) return;
+        toast._hiding = true;
+        clearTimeout(toast._toastTimer);
+
+        const remove = () => {
+            if (toast.parentElement) toast.remove();
+            const container = document.getElementById('toast-container');
+            if (container && container.children.length === 0) container.remove();
+        };
+
+        toast.classList.add('toast-hiding');
+        const fallback = setTimeout(remove, 350);
+        toast.addEventListener('animationend', () => {
+            clearTimeout(fallback);
+            remove();
+        }, { once: true });
+    }
+
+    window.showToast = showToast;
+    window.showSuccessMessage = (msg) => showToast(msg, 'success');
+    window.showErrorMessage   = (msg) => showToast(msg, 'error', 5000);
+    window.showWarningMessage = (msg) => showToast(msg, 'warning', 4500);
+    window.showInfoMessage    = (msg) => showToast(msg, 'info');
+
+    // ═══════════════════════════════════════════════════════════
+    // MODALES — OUVERTURE / FERMETURE
+    // ═══════════════════════════════════════════════════════════ 
+    function openModal(entity, mode, data = {}) {
+        const cfg = ENTITIES[entity];
+        if (!cfg) return console.warn('[openModal] Entité inconnue :', entity);
+
+        const modal = getModal(entity, mode);
+        if (!modal) return console.warn('[openModal] Modal introuvable :', getModalId(entity, mode));
+
+        const form = modal.querySelector('form');
+        if (!form) return console.warn('[openModal] Form absent dans', modal.id);
+
+        clearFormErrors(form);
+
+        if (mode === 'add') {
+            form.reset();
+        }
+
+        if (mode === 'edit') {
+            cfg.fields.forEach(field => {
+                const input = form.querySelector(`[name="${field}"]`);
+                if (!input) return;
+                const value = data[field];
+                if (input.type === 'checkbox') {
+                    input.checked = value === true || value === 'true' || value === 'on';
+                } else if (input.type === 'number') {
+                    input.value = normalizeNumber(value);
+                } else {
+                    input.value = value ?? '';
+                }
+            });
+        }
+
+        if (typeof cfg.onOpenEdit === 'function' && mode === 'edit') {
+            try {
+                cfg.onOpenEdit(modal, data);
+            } catch (err) {
+                console.error(`[openModal] onOpenEdit(${entity}) :`, err);
+            }
+        }
+
+        modal.style.display = 'block';
+        const backdrop = getBackdrop();
+        if (backdrop) backdrop.style.display = 'block';
+
+        const firstInput = form.querySelector('input:not([type="hidden"]):not([disabled]), textarea, select');
+        if (firstInput) setTimeout(() => firstInput.focus(), 50);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODALES — FERMETURE
+    // ═══════════════════════════════════════════════════════════
+
+    function closeModal(entity, mode) {
+        const modal = getModal(entity, mode);
+        if (!modal) return;
+
+        modal.style.display = 'none';
+        const form = modal.querySelector('form');
+        if (form) {
+            form.classList.remove('was-validated');
+            clearFormErrors(form);
+        }
+
+        if (!document.querySelector('.modal[style*="block"]')) {
+            const backdrop = getBackdrop();
+            if (backdrop) backdrop.style.display = 'none';
+        }
+    }
+
+    function closeAllModals() {
+        Object.keys(ENTITIES).forEach(entity => {
+            closeModal(entity, 'add');
+            closeModal(entity, 'edit');
+        });
+        const backdrop = getBackdrop();
+        if (backdrop) backdrop.style.display = 'none';
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       VALIDATION DE FORMULAIRE
+       ═══════════════════════════════════════════════════════════ */
+    function clearFormErrors(form) {
+        form.querySelectorAll('.invalid-feedback').forEach(el => el.classList.add('hidden'));
+        form.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
+    }
+
+    function showFieldError(input) {
+        input.classList.add('border-red-500');
+        const feedback = input.parentElement.querySelector('.invalid-feedback');
+        if (feedback) feedback.classList.remove('hidden');
+    }
+
+    function validateForm(form, requiredFields = []) {
+        clearFormErrors(form);
+        let valid = true;
+        let firstError = null;
+
+        requiredFields.forEach(field => {
+            const input = form.querySelector(`[name="${field}"]`);
+            if (!input) return;
+
+            const value = input.type === 'checkbox'
+                ? input.checked
+                : (input.value || '').trim();
+
+            if (!value) {
+                showFieldError(input);
+                valid = false;
+                if (!firstError) firstError = input;
+            }
+        });
+
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return valid;
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       SOUMISSION
+       ═══════════════════════════════════════════════════════════ */
+    function buildEditUrl(template, id) {
+        return template.replace('/0/', `/${id}/`);
+    }
+
+    async function reloadEntity(entity, focusId = null) {
+        const cfg = ENTITIES[entity];
+        if (!cfg) return;
+
+        if (cfg.reload === 'resources') {
+            // Appel direct de la fonction locale (plus de garde "typeof")
+            await rechargerRessourcesOuvertes(focusId);
+        } else if (cfg.partial && cfg.menuId) {
+            await loadModule(cfg.partial, cfg.menuId);
+        }
+    }
+
+    async function submitForm(form, entity, mode) {
+        const cfg = ENTITIES[entity];
+        if (!cfg) return showErrorMessage(`Entité inconnue : ${entity}`);
+
+        if (!validateForm(form, cfg.required)) return;
+
+        const idInput = form.querySelector('[name="id"]');
+        const id = idInput ? idInput.value : null;
+
+        const baseUrl = mode === 'add' ? cfg.addUrl : buildEditUrl(cfg.editUrl, id);
+        const url = `${baseUrl}?modal=true`;
+
+        let data;
+        try {
+            const formData = new FormData(form);
+            const res = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': formData.get('csrfmiddlewaretoken') || getCsrfToken(),
+                },
+            });
+            data = await res.json();
+        } catch (err) {
+            console.error(`[submitForm ${entity}/${mode}]`, err);
+            return showErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+        }
+
+        if (!data.success) {
+            const detail = data.message
+                || (data.errors ? JSON.stringify(data.errors) : null)
+                || 'Erreur lors de l\'enregistrement.';
+            return showErrorMessage(detail);
+        }
+
+        // Fermeture de la modale UNIQUEMENT si elle existe (cas catégories : non)
+        const modal = getModal(entity, mode);
+        if (modal) closeModal(entity, mode);
+
+        try {
+            await reloadEntity(entity, id);
+        } catch (err) {
+            console.error(`[reloadEntity ${entity}]`, err);
+        }
+
+        showSuccessMessage(data.message || 'Enregistré avec succès.');
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // MODALES — SUPPRESSION
+    // ═══════════════════════════════════════════════════════════
+    async function deleteEntity(entity, id) {
+        const cfg = ENTITIES[entity];
+        if (!cfg || !cfg.deleteUrl) return;
+
+        // Confirmation
+        const label = cfg.label || entity;
+        if (!confirm(`Supprimer ${label} ? Cette action est irréversible.`)) return;
+
+        const url = buildEditUrl(cfg.deleteUrl, id);  // même helper /0/ → /id/
+
+        let data;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+            });
+            data = await res.json();
+        } catch (err) {
+            console.error(`[deleteEntity ${entity}]`, err);
+            return showErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+        }
+
+        if (!data.success) {
+            return showErrorMessage(data.message || 'Impossible de supprimer.');
+        }
+
+        await reloadEntity(entity);
+        showSuccessMessage(data.message || 'Supprimé avec succès.');
+    }
+
+    
+    // MISE À JOUR DE L'APERÇU DE L'ICÔNE
+    function updateIconePreview(modal) {
+        if (!modal) return;
+        const select = modal.querySelector('[name="icone"]');
+        const preview = modal.querySelector('[data-icone-preview]');
+        if (!select || !preview) return;
+
+        const img = preview.querySelector('img');
+        const valeur = select.value;
+        if (valeur) {
+            img.src = `/static/images/materiels/${encodeURIComponent(valeur)}`;
+            preview.classList.remove('hidden');
+        } else {
+            preview.classList.add('hidden');
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       CHARGEMENT DE MODULE (sidebar)
+       ═══════════════════════════════════════════════════════════ */
     let activeMenuItemId = null;
-    let currentIngenieurId = null;
-    let currentClientId = null;
-    let currentEntrepriseId = null;
-    let currentPersonnelId = null;
-    let currentMaterielId = null;
-    let currentTransportId = null;
-    let currentLocationId = null;
-    let currentSousTraitanceId = null;
-    let currentConsommableId = null;
-    let currentFournitureId = null;
-    let currentTypeMaterielId = null;
-
-    // ============================================================
-    // SIDEBAR MOBILE
-    // ============================================================
-    $('mobileMenuBtn')?.addEventListener('click', () => {
-        $('mobileSidebar')?.classList.add('open');
-        $('sidebarOverlay')?.classList.add('open');
-    });
-    $('mobileSidebarClose')?.addEventListener('click', closeMobileSidebar);
-    $('sidebarOverlay')?.addEventListener('click', closeMobileSidebar);
 
     function closeMobileSidebar() {
         $('mobileSidebar')?.classList.remove('open');
         $('sidebarOverlay')?.classList.remove('open');
     }
 
-    // ============================================================
-    // CHARGEMENT DE MODULE
-    // ============================================================
-    window.loadModule = function (url, menuItemId) {
-        return loadModuleInternal(url, menuItemId);
-    };
-    window.loadModuleMobile = function (url, menuItemId) {
-        closeMobileSidebar();
-        return loadModuleInternal(url, menuItemId);
-    };
-
-    function loadModuleInternal(url, menuItemId) {
+    function loadModule(url, menuItemId) {
         if (activeMenuItemId) {
             $(activeMenuItemId)?.classList.remove('active-menu-item');
-            $(activeMenuItemId + '-mobile')?.classList.remove('active-menu-item');
         }
         $(menuItemId)?.classList.add('active-menu-item');
         activeMenuItemId = menuItemId;
 
         const area = $('content-area');
-        if (!area) return;
+        if (!area) return Promise.resolve();
 
         area.innerHTML = `
             <div class="app-card p-8 text-center">
@@ -77,564 +546,236 @@
             });
     }
 
-    // ============================================================
-    // SIDEBAR DATA — Navigation déclarative
-    // ============================================================
-    document.body.addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-config-menu]');
-        if (!btn) return;
-        e.preventDefault();
-
-        const url = btn.dataset.configUrl;
-        const menuId = btn.dataset.configTarget;
-        if (!url) return;
-
-        // Marqueur "actif" (desktop + mobile)
-        document.querySelectorAll('[data-config-menu]').forEach(b => {
-            b.classList.toggle('active-menu-item', b === btn);
-        });
-
-        // Chargement
-        loadModule(url, menuId);
-
-        // Fermer la sidebar mobile si ouverte
-        closeMobileSidebar();
-    });
-
-    // ============================================================
-    // CHARGEMENT PAR DÉFAUT
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', () => {
-        loadModule(U.partialIngenieurs, 'menu-ingenieurs');
-    });
-
-    // Fonctions d'ouverture/fermeture des modals
-    function openEditIngenieurModal(id, nom) {
-        currentIngenieurId = id;
-        document.getElementById('editId').value = id;
-        document.getElementById('editNom').value = nom;
-        document.getElementById('editIngenieurModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
+    /**
+     * Normalise une valeur numérique pour un <input type="number">.
+     * - Supprime les espaces (séparateurs de milliers)
+     * - Remplace la virgule décimale par un point
+     * - Renvoie une chaîne vide si la valeur est nulle/undefined
+     */
+    function normalizeNumber(value) {
+        if (value === null || value === undefined) return '';
+        const n = Number(String(value).replace(/\s/g, '').replace(',', '.'));
+        return isNaN(n) ? '' : String(n);
     }
 
-    function openAddIngenieurModal() {
-        document.getElementById('addIngenieurModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditIngenieurModal() {
-        document.getElementById('editIngenieurModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editIngenieurForm').classList.remove('was-validated');
-        document.getElementById('editNom').classList.remove('border-red-500');
-        document.querySelector('#editIngenieurForm .invalid-feedback').classList.add('hidden');
-    }
-
-    function closeAddIngenieurModal() {
-        document.getElementById('addIngenieurModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addIngenieurForm').classList.remove('was-validated');
-        document.getElementById('addNom').classList.remove('border-red-500');
-        document.querySelector('#addIngenieurForm .invalid-feedback').classList.add('hidden');
-        document.getElementById('addNom').value = '';
-    }
-
-    // Fonctions pour les clients
-    function openEditClientModal(id, nom, contact, email, telephone, adresse) {
-        currentClientId = id;
-        document.getElementById('editClientId').value = id;
-        document.getElementById('editClientNom').value = nom;
-        document.getElementById('editClientContact').value = contact || '';
-        document.getElementById('editClientEmail').value = email || '';
-        document.getElementById('editClientTelephone').value = telephone || '';
-        document.getElementById('editClientAdresse').value = adresse || '';
-        document.getElementById('editClientModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddClientModal() {
-        document.getElementById('addClientModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditClientModal() {
-        document.getElementById('editClientModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editClientForm').classList.remove('was-validated');
-        document.getElementById('editClientNom').classList.remove('border-red-500');
-        document.querySelectorAll('#editClientForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddClientModal() {
-        document.getElementById('addClientModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addClientForm').classList.remove('was-validated');
-        document.getElementById('addClientNom').classList.remove('border-red-500');
-        document.querySelectorAll('#addClientForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addClientNom').value = '';
-        document.getElementById('addClientContact').value = '';
-        document.getElementById('addClientEmail').value = '';
-        document.getElementById('addClientTelephone').value = '';
-        document.getElementById('addClientAdresse').value = '';
-    }
-
-    // Fonctions pour les entreprises
-    function openEditEntrepriseModal(id, nom, contact, email, telephone, adresse) {
-        currentEntrepriseId = id;
-        document.getElementById('editEntrepriseId').value = id;
-        document.getElementById('editEntrepriseNom').value = nom;
-        document.getElementById('editEntrepriseContact').value = contact || '';
-        document.getElementById('editEntrepriseEmail').value = email || '';
-        document.getElementById('editEntrepriseTelephone').value = telephone || '';
-        document.getElementById('editEntrepriseAdresse').value = adresse || '';
-        document.getElementById('editEntrepriseModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddEntrepriseModal() {
-        document.getElementById('addEntrepriseModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditEntrepriseModal() {
-        document.getElementById('editEntrepriseModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editEntrepriseForm').classList.remove('was-validated');
-        document.getElementById('editEntrepriseNom').classList.remove('border-red-500');
-        document.querySelectorAll('#editEntrepriseForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddEntrepriseModal() {
-        document.getElementById('addEntrepriseModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addEntrepriseForm').classList.remove('was-validated');
-        document.getElementById('addEntrepriseNom').classList.remove('border-red-500');
-        document.querySelectorAll('#addEntrepriseForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addEntrepriseNom').value = '';
-        document.getElementById('addEntrepriseContact').value = '';
-        document.getElementById('addEntrepriseEmail').value = '';
-        document.getElementById('addEntrepriseTelephone').value = '';
-        document.getElementById('addEntrepriseAdresse').value = '';
-    }
-
-    // Fonctions pour le personnel
-    function openEditPersonnelModal(id, nom, fonction, telephone, unite, tarif, actif) {
-        currentPersonnelId = id;
-        document.getElementById('editPersonnelId').value = id;
-        document.getElementById('editPersonnelNom').value = nom;
-        document.getElementById('editPersonnelFonction').value = fonction || '';
-        document.getElementById('editPersonnelTelephone').value = telephone || '';
-        document.getElementById('editPersonnelUnite').value = unite || '';
-        document.getElementById('editPersonnelTarif').value = tarif
-            ? String(tarif).replace(',', '.')
-            : '';
-        document.getElementById('editPersonnelActif').checked = actif === 'true';
-        document.getElementById('editPersonnelModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddPersonnelModal() {
-        document.getElementById('addPersonnelModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditPersonnelModal() {
-        document.getElementById('editPersonnelModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editPersonnelForm').classList.remove('was-validated');
-        document.getElementById('editPersonnelNom').classList.remove('border-red-500');
-        document.querySelectorAll('#editPersonnelForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddPersonnelModal() {
-        document.getElementById('addPersonnelModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addPersonnelForm').classList.remove('was-validated');
-        document.getElementById('addPersonnelNom').classList.remove('border-red-500');
-        document.querySelectorAll('#addPersonnelForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addPersonnelForm').reset();
-    }
-
-    // Fonctions pour le matériel
-    function formatPrixPourChamp(prix) {
-        return prix ? String(prix).replace(',', '.') : '';
-    }
-
+    /**
+     * Reconstruit le <select> des types de matériel dans une modal.
+     * Utilise window.MATERIEL_TYPES (injecté par le partial materiel.html).
+     *
+     * @param {string} selectId     - ID du <select> à remplir
+     * @param {number|string} selectedId - ID du type à sélectionner
+     * @param {object|null} inactiveType - { id, nom } du type inactif (si le matériel est lié à un type désactivé)
+     */
     function rebuildTypeMaterielSelect(selectId, selectedId, inactiveType) {
         const select = document.getElementById(selectId);
-        if (!select) return;
+        if (!select) return console.warn('[rebuildTypeMaterielSelect] select introuvable');
+
+        select.innerHTML = '';
 
         // Option vide
-        select.innerHTML = '<option value="">— Non défini —</option>';
+        const emptyOpt = document.createElement('option');
+        emptyOpt.value = '';
+        emptyOpt.textContent = '— Non défini —';
+        select.appendChild(emptyOpt);
 
-        // Types actifs depuis la variable globale (remplie par le partial)
-        (window.MATERIEL_TYPES || []).forEach(type => {
+        // Types depuis le DOM
+        const types = getMaterielTypes();   // ← au lieu de window.MATERIEL_TYPES
+        types.forEach(type => {
             const opt = document.createElement('option');
-            opt.value = type.id;
+            opt.value = String(type.id);
             opt.textContent = type.nom;
             select.appendChild(opt);
         });
 
-        // Cas particulier : type inactif déjà rattaché → ne pas le perdre
+        // Type inactif
         if (inactiveType && inactiveType.id) {
             const opt = document.createElement('option');
-            opt.value = inactiveType.id;
+            opt.value = String(inactiveType.id);
             opt.textContent = `${inactiveType.nom} (inactif)`;
             select.appendChild(opt);
         }
 
-        select.value = selectedId || '';
+        select.value = selectedId != null ? String(selectedId) : '';
     }
 
-    function openEditMaterielModal(id, designation, typeId, typeNom, typeActif,
-                                   immatriculation, unite, prixUnitaire, actif) {
-        currentMaterielId = id;
-
-        document.getElementById('editMaterielId').value = id;
-        document.getElementById('editMaterielDesignation').value = designation;
-        document.getElementById('editMaterielImmatriculation').value = immatriculation || '';
-        document.getElementById('editMaterielUnite').value = unite || '';
-        document.getElementById('editMaterielPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editMaterielActif').checked = actif === 'true';
-
-        // Reconstruction du <select> type_materiel (gère tout : options, actif, inactif, sélection)
-        rebuildTypeMaterielSelect(
-            'editMaterielTypeMateriel',
-            typeId,
-            typeActif === 'false' ? { id: typeId, nom: typeNom } : null
-        );
-
-        document.getElementById('editMaterielModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
+    /**
+     * Récupère les types de matériel actifs depuis le DOM
+     * (data-types du conteneur [data-materiel-module]).
+     */
+    function getMaterielTypes() {
+        const container = document.querySelector('[data-materiel-module]');
+        if (!container || !container.dataset.types) return [];
+        try {
+            return JSON.parse(container.dataset.types);
+        } catch (err) {
+            console.error('[getMaterielTypes] Parse error:', err);
+            return [];
+        }
     }
+    /* ═══════════════════════════════════════════════════════════════
+    RECHARGEMENT DES RESSOURCES IMBRIQUÉES (accordéons catégories)
+    ═══════════════════════════════════════════════════════════════ */
 
-    function openAddMaterielModal() {
-        document.getElementById('addMaterielModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditMaterielModal() {
-        document.getElementById('editMaterielModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editMaterielForm').classList.remove('was-validated');
-        document.getElementById('editMaterielDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddMaterielModal() {
-        document.getElementById('addMaterielModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addMaterielForm').classList.remove('was-validated');
-        document.getElementById('addMaterielDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addMaterielForm').reset();
-    }
-
-    // Fonctions pour les types de matériel
-    function openAddTypeMaterielModal() {
-        document.getElementById('addTypeMaterielModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openEditTypeMaterielModal(id, nom, icone, actif) {
-        currentTypeMaterielId = id;
-        document.getElementById('editTypeMaterielId').value = id;
-        document.getElementById('editTypeMaterielNom').value = nom;
-        document.getElementById('editTypeMaterielIcone').value = icone || '';
-        document.getElementById('editTypeMaterielActif').checked = actif === 'true';
-        updateIconePreview('editTypeMaterielIcone', 'editTypeMaterielIconePreview');
-        document.getElementById('editTypeMaterielModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeAddTypeMaterielModal() {
-        document.getElementById('addTypeMaterielModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addTypeMaterielForm').classList.remove('was-validated');
-        document.getElementById('addTypeMaterielNom').classList.remove('border-red-500');
-        document.querySelectorAll('#addTypeMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addTypeMaterielForm').reset();
-        document.getElementById('addTypeMaterielIconePreview').classList.add('hidden');
-    }
-
-    function closeEditTypeMaterielModal() {
-        document.getElementById('editTypeMaterielModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editTypeMaterielForm').classList.remove('was-validated');
-        document.getElementById('editTypeMaterielNom').classList.remove('border-red-500');
-        document.querySelectorAll('#editTypeMaterielForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    // Aperçu de l'icône sélectionnée
-    function updateIconePreview(selectId, previewId) {
-        const select = document.getElementById(selectId);
-        const preview = document.getElementById(previewId);
-        if (!select || !preview) return;
-        const img = preview.querySelector('img');
-        const valeur = select.value;
-        if (valeur) {
-            img.src = `/static/images/materiels/${encodeURIComponent(valeur)}`;
-            preview.classList.remove('hidden');
-        } else {
-            preview.classList.add('hidden');
+    /**
+     * Recharge le contenu d'un conteneur de ressource dans une catégorie donnée,
+     * en respectant son état ouvert/fermé.
+     */
+    async function reloadCategoryResource(categoryId) {
+        const container = document.getElementById(`category-resource-${categoryId}`);
+        if (!container) {
+            console.warn(`Conteneur #category-resource-${categoryId} introuvable`);
+            return Promise.resolve();
+        }
+        const button = document.querySelector(`[data-resource-target="category-resource-${categoryId}"]`);
+        if (!button || !button.dataset.resourceUrl) {
+            console.warn('Bouton toggle ou URL introuvable pour la catégorie', categoryId);
+            return Promise.resolve();
+        }
+        const etaitOuvert = !container.classList.contains('hidden');
+        try {
+            const response = await fetch(button.dataset.resourceUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const html = await response.text();
+            container.innerHTML = html;
+            container.dataset.loaded = 'true';
+            container.classList.toggle('hidden', !etaitOuvert);
+        } catch (err) {
+            console.error('Erreur rechargement ressource:', err);
         }
     }
 
-    // Fonctions pour le transport
-    function openEditTransportModal(id, designation, type, transporteur, prixUnitaire, actif) {
-        currentTransportId = id;
-        document.getElementById('editTransportId').value = id;
-        document.getElementById('editTransportDesignation').value = designation;
-        document.getElementById('editTransportType').value = type || '';
-        document.getElementById('editTransportTransporteur').value = transporteur || '';
-        document.getElementById('editTransportPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editTransportActif').checked = actif === 'true';
-        document.getElementById('editTransportModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
+    /**
+     * Recharge uniquement les conteneurs de ressources actuellement OUVERTS.
+     * Utilisé après un ajout / modif / suppression d'une ressource imbriquée
+     * (personnel, materiel, transport, etc.).
+     *
+     * @param {number|string|null} focusId - ID de l'élément modifié (optionnel)
+     */
+    function rechargerRessourcesOuvertes(focusId) {
+        const conteneurs = document.querySelectorAll('[data-category-resource]:not(.hidden)');
+        const promises = [];
+
+        if (conteneurs.length === 0) {
+            // Aucun accordéon ouvert : rien à rafraîchir visuellement.
+            // On informe que la modification est enregistrée.
+            return Promise.resolve();
+        }
+
+        conteneurs.forEach(container => {
+            const match = container.id.match(/category-resource-(\d+)/);
+            if (!match) return;
+            const categoryId = match[1];
+            const button = document.querySelector(`[data-resource-target="category-resource-${categoryId}"]`);
+            if (!button || !button.dataset.resourceUrl) return;
+
+            const p = fetch(button.dataset.resourceUrl, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.text())
+            .then(html => {
+                container.innerHTML = html;
+                container.dataset.loaded = 'true';
+            })
+            .catch(err => console.error('Erreur rechargement ressource:', err));
+
+            promises.push(p);
+        });
+
+        return Promise.all(promises);
     }
 
-    function openAddTransportModal() {
-        document.getElementById('addTransportModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
+    window.loadModule = loadModule;
 
-    function closeEditTransportModal() {
-        document.getElementById('editTransportModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editTransportForm').classList.remove('was-validated');
-        document.getElementById('editTransportDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editTransportForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddTransportModal() {
-        document.getElementById('addTransportModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addTransportForm').classList.remove('was-validated');
-        document.getElementById('addTransportDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addTransportForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addTransportForm').reset();
-    }
-
-    // Fonctions pour les locations
-    function openEditLocationModal(id, designation, type, locataire, unite, prixUnitaire, actif) {
-        currentLocationId = id;
-        document.getElementById('editLocationId').value = id;
-        document.getElementById('editLocationDesignation').value = designation;
-        document.getElementById('editLocationType').value = type || '';
-        document.getElementById('editLocationLocataire').value = locataire || '';
-        document.getElementById('editLocationUnite').value = unite || '';
-        document.getElementById('editLocationPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editLocationActif').checked = actif === 'true';
-        document.getElementById('editLocationModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddLocationModal() {
-        document.getElementById('addLocationModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditLocationModal() {
-        document.getElementById('editLocationModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editLocationForm').classList.remove('was-validated');
-        document.getElementById('editLocationDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editLocationForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddLocationModal() {
-        document.getElementById('addLocationModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addLocationForm').classList.remove('was-validated');
-        document.getElementById('addLocationDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addLocationForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addLocationForm').reset();
-    }
-
-    // Fonctions pour les sous-traitances
-    function openEditSousTraitanceModal(id, designation, type, prestataire, unite, prixUnitaire, actif) {
-        currentSousTraitanceId = id;
-        document.getElementById('editSousTraitanceId').value = id;
-        document.getElementById('editSousTraitanceDesignation').value = designation;
-        document.getElementById('editSousTraitanceType').value = type || '';
-        document.getElementById('editSousTraitancePrestataire').value = prestataire || '';
-        document.getElementById('editSousTraitanceUnite').value = unite || '';
-        document.getElementById('editSousTraitancePrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editSousTraitanceActif').checked = actif === 'true';
-        document.getElementById('editSousTraitanceModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddSousTraitanceModal() {
-        document.getElementById('addSousTraitanceModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditSousTraitanceModal() {
-        document.getElementById('editSousTraitanceModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editSousTraitanceForm').classList.remove('was-validated');
-        document.getElementById('editSousTraitanceDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editSousTraitanceForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddSousTraitanceModal() {
-        document.getElementById('addSousTraitanceModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addSousTraitanceForm').classList.remove('was-validated');
-        document.getElementById('addSousTraitanceDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addSousTraitanceForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addSousTraitanceForm').reset();
-    }
-
-    // Fonctions pour les consommables
-    function openEditConsommableModal(id, designation, type, fournisseur, unite, prixUnitaire, actif) {
-        currentConsommableId = id;
-        document.getElementById('editConsommableId').value = id;
-        document.getElementById('editConsommableDesignation').value = designation;
-        document.getElementById('editConsommableType').value = type || '';
-        document.getElementById('editConsommableFournisseur').value = fournisseur || '';
-        document.getElementById('editConsommableUnite').value = unite || '';
-        document.getElementById('editConsommablePrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editConsommableActif').checked = actif === 'true';
-        document.getElementById('editConsommableModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddConsommableModal() {
-        document.getElementById('addConsommableModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditConsommableModal() {
-        document.getElementById('editConsommableModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editConsommableForm').classList.remove('was-validated');
-        document.getElementById('editConsommableDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editConsommableForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddConsommableModal() {
-        document.getElementById('addConsommableModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addConsommableForm').classList.remove('was-validated');
-        document.getElementById('addConsommableDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addConsommableForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addConsommableForm').reset();
-    }
-
-    // Fonctions pour les fournitures
-    function openEditFournitureModal(id, designation, type, fournisseur, unite, prixUnitaire, actif) {
-        currentFournitureId = id;
-        document.getElementById('editFournitureId').value = id;
-        document.getElementById('editFournitureDesignation').value = designation;
-        document.getElementById('editFournitureType').value = type || '';
-        document.getElementById('editFournitureFournisseur').value = fournisseur || '';
-        document.getElementById('editFournitureUnite').value = unite || '';
-        document.getElementById('editFournitureUniPrixUnitaire').value = formatPrixPourChamp(prixUnitaire);
-        document.getElementById('editFournitureActif').checked = actif === 'true';
-        document.getElementById('editFournitureModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function openAddFournitureModal() {
-        document.getElementById('addFournitureModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
-    }
-
-    function closeEditFournitureModal() {
-        document.getElementById('editFournitureModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('editFournitureForm').classList.remove('was-validated');
-        document.getElementById('editFournitureDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#editFournitureForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-    }
-
-    function closeAddFournitureModal() {
-        document.getElementById('addFournitureModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
-        document.getElementById('addFournitureForm').classList.remove('was-validated');
-        document.getElementById('addFournitureDesignation').classList.remove('border-red-500');
-        document.querySelectorAll('#addFournitureForm .invalid-feedback').forEach(el => el.classList.add('hidden'));
-        document.getElementById('addFournitureForm').reset();
-    }
-
-    function closeAllModals() {
-        closeEditIngenieurModal();
-        closeAddIngenieurModal();
-
-        closeEditClientModal();
-        closeAddClientModal();
-
-        closeEditEntrepriseModal();
-        closeAddEntrepriseModal();
-
-        closeEditPersonnelModal();
-        closeAddPersonnelModal();
-
-        closeEditMaterielModal();
-        closeAddMaterielModal();
-
-        closeEditTypeMaterielModal();
-        closeAddTypeMaterielModal();
-
-        closeEditTransportModal();
-        closeAddTransportModal();
-
-        closeEditLocationModal();
-        closeAddLocationModal();
-
-        closeEditSousTraitanceModal();
-        closeAddSousTraitanceModal();
-
-        closeEditConsommableModal();
-        closeAddConsommableModal();
-
-        closeEditFournitureModal();
-        closeAddFournitureModal();
-    }
-
-    // === DELEGATION D'EVENEMENTS : GESTION CENTRALISÉE ===
-    document.addEventListener('click', function(e) {
-        const nestedDelete = e.target.closest('[data-category-resource] a[href*="supprimer"]');
-        if (nestedDelete) {
+    /* ═══════════════════════════════════════════════════════════
+       DELEGATION D'ÉVÉNEMENTS
+       ═══════════════════════════════════════════════════════════ */
+    document.body.addEventListener('click', (e) => {
+        // 1. Sidebar menu (data-config-menu)
+        const menuBtn = e.target.closest('[data-config-menu]');
+        if (menuBtn) {
             e.preventDefault();
+            const url = menuBtn.dataset.configUrl;
+            const menuId = menuBtn.dataset.configTarget;
+            if (!url) return;
 
-            // Confirmer la suppression
-            if (!confirm('Supprimer cet élément ?')) return;
-
-            // Envoyer la requête AJAX avec CSRF
-            fetch(nestedDelete.href, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCsrfToken(),
-                }
-            })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok || !data.success) {
-                    throw data;
-                }
-                return data;
-            })
-            .then(data => {
-                showSuccessMessage(data.message || 'Supprimé avec succès.');
-                // Recharger uniquement le conteneur concerné
-                const container = nestedDelete.closest('[data-category-resource]');
-                if (container) {
-                    const match = container.id.match(/category-resource-(\d+)/);
-                    if (match) reloadCategoryResource(match[1]);
-                }
-            })
-            .catch(error => {
-                console.error('Delete error:', error);
-                showErrorMessage(error.message || 'Erreur lors de la suppression.');
+            document.querySelectorAll('[data-config-menu]').forEach(b => {
+                b.classList.toggle('active-menu-item', b === menuBtn);
             });
 
+            loadModule(url, menuId);
+            closeMobileSidebar();
+            return;
+        }
+
+        // 2. Sidebar mobile
+        if (e.target.closest('#mobileMenuBtn')) {
+            $('mobileSidebar')?.classList.add('open');
+            $('sidebarOverlay')?.classList.add('open');
+            return;
+        }
+        if (e.target.closest('#mobileSidebarClose') || e.target.closest('#sidebarOverlay')) {
+            closeMobileSidebar();
+            return;
+        }
+
+        // 3. Bouton "Ajouter"
+        const addBtn = e.target.closest('[data-add]');
+        if (addBtn) {
+            e.preventDefault();
+            const entity = addBtn.dataset.entity;
+            if (entity) openModal(entity, 'add');
+            return;
+        }
+
+        // 4. Bouton "Modifier"
+        const editBtn = e.target.closest('[data-edit]');
+        if (editBtn) {
+            e.preventDefault();
+            const entity = editBtn.dataset.entity;
+            let payload = {};
+            try { payload = JSON.parse(editBtn.dataset.payload || '{}'); } catch (_) {}
+            if (entity) openModal(entity, 'edit', payload);
             return;
         }
         
+        // 6. Bouton "Supprimer"
+        const deleteBtn = e.target.closest('[data-delete]');
+        if (deleteBtn) {
+            e.preventDefault();
+            const entity = deleteBtn.dataset.entity;
+            const id = deleteBtn.dataset.id;
+            if (entity && id) deleteEntity(entity, id);
+            return;
+        }
+
+        // 5. Fermeture modal (croix, Annuler, etc.)
+        const closeBtn = e.target.closest('[data-modal-close]');
+        if (closeBtn) {
+            e.preventDefault();
+            const modal = closeBtn.closest('.modal');
+            if (modal) {
+                const match = modal.id.match(/^(add|edit)([A-Z]\w+)Modal$/);
+                if (match) {
+                    const mode = match[1];
+                    const entity = match[2].charAt(0).toLowerCase() + match[2].slice(1);
+                    closeModal(entity, mode);
+                } else {
+                    closeAllModals();
+                }
+            }
+            return;
+        }
+
+        // Bouton "Importer depuis un tableur"
+        const importBtn = e.target.closest('[data-import-materiel-button]');
+        if (importBtn) {
+            e.preventDefault();
+            openImportMaterielModal();
+            return;
+        }
+
+        // ─── Accordéon ressources (chargement dynamique) ───
         const resourceToggle = e.target.closest('[data-resource-url]');
         if (resourceToggle) {
             e.preventDefault();
@@ -644,1424 +785,140 @@
             const chevron = resourceToggle.querySelector('.fa-chevron-down, .fa-chevron-up');
             const isOpen = !target.classList.contains('hidden');
 
-            // --- CAS 1 : on referme ---
+            // Fermeture
             if (isOpen) {
                 target.classList.add('hidden');
                 chevron?.classList.remove('rotate-180');
                 return;
             }
 
-            // --- CAS 2 : on ouvre ---
+            // Ouverture
             target.classList.remove('hidden');
             chevron?.classList.add('rotate-180');
 
-            // Si déjà chargé une fois, ne pas re-fetcher (évite le clignotement)
+            // Déjà chargé une fois → ne pas re-fetch
             if (target.dataset.loaded === 'true') {
                 return;
             }
 
-            // Premier chargement uniquement
+            // Premier chargement
             target.dataset.loaded = 'loading';
-            target.innerHTML = '<p class="py-3 text-sm text-gray-400">Chargement...</p>';
+            target.innerHTML = '<p class="py-3 text-sm" style="color: var(--text-muted);">Chargement...</p>';
 
             fetch(resourceToggle.dataset.resourceUrl, {
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-                .then(response => {
-                    if (!response.ok) throw new Error('Chargement impossible');
-                    return response.text();
-                })
-                .then(html => {
-                    // Si entre-temps l'utilisateur a fermé, on ne remplace pas
-                    if (target.dataset.loaded === 'loading') {
-                        target.innerHTML = html;
-                        target.dataset.loaded = 'true';
-                    }
-                })
-                .catch(() => {
-                    target.dataset.loaded = '';
-                    target.innerHTML = '<p class="py-3 text-sm text-red-300">Impossible de charger le référentiel.</p>';
-                });
-            return;
-        }
-        
-        // Boutons d'ajout 
-        if (e.target.matches('[data-add-ingenieur-button]')) {
-            e.preventDefault();
-            openAddIngenieurModal();
-        } else if (e.target.matches('[data-add-client-button]')) {
-            e.preventDefault();
-            openAddClientModal();
-        } else if (e.target.matches('[data-add-entreprise-button]')) {
-            e.preventDefault();
-            openAddEntrepriseModal();
-        } else if (e.target.matches('[data-add-personnel-button]')) {
-            e.preventDefault();
-            openAddPersonnelModal();
-        } else if (e.target.matches('[data-add-materiel-button]')) {
-            e.preventDefault();
-            openAddMaterielModal();
-        } else if (e.target.matches('[data-add-transport-button]')) {
-            e.preventDefault();
-            openAddTransportModal();
-        } else if (e.target.matches('[data-add-location-button]')) {
-            e.preventDefault();
-            openAddLocationModal();
-        } else if (e.target.matches('[data-add-sous-traitance-button]')) {
-            e.preventDefault();
-            openAddSousTraitanceModal();
-        } else if (e.target.matches('[data-add-consommable-button]')) {
-            e.preventDefault();
-            openAddConsommableModal();
-        } else if (e.target.matches('[data-add-fourniture-button]')) {
-            e.preventDefault();
-            openAddFournitureModal();
-        } else if (e.target.matches('[data-add-type-materiel-button]')) {
-            e.preventDefault();
-            openAddTypeMaterielModal();
-        }
-        // Bouton "Importer depuis un tableur"
-        if (e.target.matches('[data-import-materiel-button]') || e.target.closest('[data-import-materiel-button]')) {
-            e.preventDefault();
-            openImportMaterielModal();
-            return;
-        }
-        // Boutons d'édition Ingénieurs
-        if (e.target.matches('[data-edit-ingenieur-button]') || e.target.closest('[data-edit-ingenieur-button]')) {
-            const button = e.target.matches('[data-edit-ingenieur-button]') ? e.target : e.target.closest('[data-edit-ingenieur-button]');
-            const id = button.getAttribute('data-id');
-            const nom = button.getAttribute('data-nom');
-            openEditIngenieurModal(id, nom);
-        }
-        
-        // Boutons d'édition Clients
-        if (e.target.matches('[data-edit-client-button]') || e.target.closest('[data-edit-client-button]')) {
-            const button = e.target.matches('[data-edit-client-button]') ? e.target : e.target.closest('[data-edit-client-button]');
-            const id = button.getAttribute('data-id');
-            const nom = button.getAttribute('data-nom');
-            const contact = button.getAttribute('data-contact');
-            const email = button.getAttribute('data-email');
-            const telephone = button.getAttribute('data-telephone');
-            const adresse = button.getAttribute('data-adresse');
-            openEditClientModal(id, nom, contact, email, telephone, adresse);
-        }
-        
-        // Boutons d'édition Entreprises
-        if (e.target.matches('[data-edit-entreprise-button]') || e.target.closest('[data-edit-entreprise-button]')) {
-            const button = e.target.matches('[data-edit-entreprise-button]') ? e.target : e.target.closest('[data-edit-entreprise-button]');
-            const id = button.getAttribute('data-id');
-            const nom = button.getAttribute('data-nom');
-            const contact = button.getAttribute('data-contact');
-            const email = button.getAttribute('data-email');
-            const telephone = button.getAttribute('data-telephone');
-            const adresse = button.getAttribute('data-adresse');
-            openEditEntrepriseModal(id, nom, contact, email, telephone, adresse);
-        }
-        
-        // Boutons d'édition Personnel
-        if (e.target.matches('[data-edit-personnel-button]') || e.target.closest('[data-edit-personnel-button]')) {
-            const button = e.target.matches('[data-edit-personnel-button]') ? e.target : e.target.closest('[data-edit-personnel-button]');
-            const id = button.getAttribute('data-id');
-            const nom = button.getAttribute('data-nom');
-            const fonction = button.getAttribute('data-fonction');
-            const telephone = button.getAttribute('data-telephone');
-            const unite = button.getAttribute('data-unite');
-            const tarif = button.getAttribute('data-tarif');
-            const actif = button.getAttribute('data-actif');
-            openEditPersonnelModal(id, nom, fonction, telephone, unite, tarif, actif);
-        }
-        
-        // Boutons d'édition Matériel
-        if (e.target.matches('[data-edit-materiel-button]') || e.target.closest('[data-edit-materiel-button]')) {
-            const button = e.target.matches('[data-edit-materiel-button]') ? e.target : e.target.closest('[data-edit-materiel-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const typeId = button.getAttribute('data-type-id');
-            const typeNom = button.getAttribute('data-type-nom');
-            const typeActif = button.getAttribute('data-type-actif');
-            const immatriculation = button.getAttribute('data-immatriculation');
-            const unite = button.getAttribute('data-unite');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditMaterielModal(id, designation, typeId, typeNom, typeActif, immatriculation, unite, prixUnitaire, actif);
-        }
-
-        // Boutons d'édition Transport
-        if (e.target.matches('[data-edit-transport-button]') || e.target.closest('[data-edit-transport-button]')) {
-            const button = e.target.matches('[data-edit-transport-button]') ? e.target : e.target.closest('[data-edit-transport-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const type = button.getAttribute('data-type');
-            const transporteur = button.getAttribute('data-transporteur');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditTransportModal(id, designation, type, transporteur, prixUnitaire, actif);
-        }
-        
-        // Boutons d'édition Locations
-        if (e.target.matches('[data-edit-location-button]') || e.target.closest('[data-edit-location-button]')) {
-            const button = e.target.matches('[data-edit-location-button]') ? e.target : e.target.closest('[data-edit-location-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const type = button.getAttribute('data-type');
-            const locataire = button.getAttribute('data-locataire');
-            const unite = button.getAttribute('data-unite');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditLocationModal(id, designation, type, locataire, unite, prixUnitaire, actif);
-        }
-        
-        // Boutons d'édition Sous-traitances
-        if (e.target.matches('[data-edit-sous-traitance-button]') || e.target.closest('[data-edit-sous-traitance-button]')) {
-            const button = e.target.matches('[data-edit-sous-traitance-button]') ? e.target : e.target.closest('[data-edit-sous-traitance-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const type = button.getAttribute('data-type');
-            const prestataire = button.getAttribute('data-prestataire');
-            const unite = button.getAttribute('data-unite');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditSousTraitanceModal(id, designation, type, prestataire, unite, prixUnitaire, actif);
-        }
-        
-        // Boutons d'édition Consommables
-        if (e.target.matches('[data-edit-consommable-button]') || e.target.closest('[data-edit-consommable-button]')) {
-            const button = e.target.matches('[data-edit-consommable-button]') ? e.target : e.target.closest('[data-edit-consommable-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const type = button.getAttribute('data-type');
-            const fournisseur = button.getAttribute('data-fournisseur');
-            const unite = button.getAttribute('data-unite');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditConsommableModal(id, designation, type, fournisseur, unite, prixUnitaire, actif);
-        }
-        
-        // Boutons d'édition Fournitures
-        if (e.target.matches('[data-edit-fourniture-button]') || e.target.closest('[data-edit-fourniture-button]')) {
-            const button = e.target.matches('[data-edit-fourniture-button]') ? e.target : e.target.closest('[data-edit-fourniture-button]');
-            const id = button.getAttribute('data-id');
-            const designation = button.getAttribute('data-designation');
-            const type = button.getAttribute('data-type');
-            const fournisseur = button.getAttribute('data-fournisseur');
-            const unite = button.getAttribute('data-unite');
-            const prixUnitaire = button.getAttribute('data-prix-unitaire');
-            const actif = button.getAttribute('data-actif');
-            openEditFournitureModal(id, designation, type, fournisseur, unite, prixUnitaire, actif);
-        }
-        
-        // Boutons d'édition Types de matériel
-                // Boutons d'édition TypeMateriel
-        if (e.target.matches('[data-edit-type-materiel-button]') || e.target.closest('[data-edit-type-materiel-button]')) {
-            const button = e.target.matches('[data-edit-type-materiel-button]') ? e.target : e.target.closest('[data-edit-type-materiel-button]');
-            const id = button.getAttribute('data-id');
-            const nom = button.getAttribute('data-nom');
-            const icone = button.getAttribute('data-icone');
-            const actif = button.getAttribute('data-actif');
-            openEditTypeMaterielModal(id, nom, icone, actif);
-        }
-
-        // Boutons de suppression
-        if (e.target.matches('a[href*="supprimer"]') || e.target.closest('a[href*="supprimer"]')) {
-            const link = e.target.matches('a[href*="supprimer"]') ? e.target : e.target.closest('a[href*="supprimer"]');
-            e.preventDefault();
-
-            const entityType = link.href.includes('type_materiel') ? 'type de matériel' :
-                            link.href.includes('ingenieur') ? 'ingénieur' :
-                            link.href.includes('client') ? 'client' :
-                            link.href.includes('entreprise') ? 'entreprise' :
-                            link.href.includes('personnel') ? 'membre du personnel' :
-                            link.href.includes('materiel') ? 'matériel' :
-                            link.href.includes('location') ? 'location' :
-                            link.href.includes('sous_traitance') ? 'sous-traitance' :
-                            link.href.includes('consommable') ? 'consommable' : 'fourniture';
-
-            if (!confirm(`Supprimer ce ${entityType} ?`)) return;
-
-            fetch(link.href, {
-                method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRFToken': getCsrfToken(),
+            .then(r => {
+                if (!r.ok) throw new Error('Chargement impossible');
+                return r.text();
+            })
+            .then(html => {
+                if (target.dataset.loaded === 'loading') {
+                    target.innerHTML = html;
+                    target.dataset.loaded = 'true';
                 }
             })
-            .then(async response => {
-                const data = await response.json();
-                if (!response.ok || !data.success) {
-                    throw data;
-                }
-                return data;
-            })
-            .then(data => {
-                // 1. Afficher le message de succès (reste affiché, conteneur stable)
-                showSuccessMessage(data.message || 'Suppression effectuée.');
-
-                // 2. Recharger uniquement le partial concerné, pas tout le module
-                if (link.href.includes('type_materiel')) {
-                    loadModule(U.partialTypesMateriel, 'menu-types-materiel');
-                } else if (link.href.includes('ingenieur')) {
-                    loadModule(U.partialIngenieurs, 'menu-ingenieurs');
-                } else if (link.href.includes('client')) {
-                    loadModule(U.partialClients, 'menu-clients');
-                } else if (link.href.includes('entreprise')) {
-                    loadModule(U.partialEntreprises, 'menu-entreprises');
-                } else if (link.href.includes('personnel')) {
-                    // Les ressources sont dans des sous-conteneurs de catégories
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                } else if (link.href.includes('materiel')) {
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                } else if (link.href.includes('location')) {
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                } else if (link.href.includes('sous_traitance')) {
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                } else if (link.href.includes('consommable')) {
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                } else if (link.href.includes('fourniture')) {
-                    reloadCategoryResource(getCategoryIdForLink(link));
-                }
-            })
-            .catch(error => {
-                console.error('Delete error:', error);
-                showErrorMessage(
-                    error.message || 'Une erreur est survenue lors de la suppression.'
-                );
+            .catch(err => {
+                console.error('[resource-toggle]', err);
+                target.dataset.loaded = '';
+                target.innerHTML = '<p class="py-3 text-sm" style="color: var(--accent-danger);">Impossible de charger le référentiel.</p>';
             });
-        }
-        
-        // Boutons de fermeture des modals
-        if (e.target.matches('.modal button i.fa-times') || e.target.closest('.modal button i.fa-times')) {
-            closeAllModals();
+            return;
         }
     });
 
-    function getCategoryIdForLink(link) {
-        // Le lien est dans le partial materiel.html, qui est dans category-resource-XXX
-        const container = link.closest('[data-category-resource]');
-        if (!container) {
-            console.warn('Conteneur data-category-resource introuvable');
-            return null;
-        }
-        // L'ID est "category-resource-123"
-        const match = container.id.match(/category-resource-(\d+)/);
-        return match ? match[1] : null;
-    }
-
-    // Gérer toutes les soumissions de formulaires
-    document.addEventListener('submit', function(e) {
-        if (e.target.matches('.category-charge-form')) {
-            e.preventDefault();
-            const form = e.target;
-            const feedback = document.querySelector('[data-categories-module] .category-charge-feedback');
-            const csrfToken = form.querySelector('[name="csrfmiddlewaretoken"]')?.value;
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                credentials: 'same-origin',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    ...(csrfToken ? {'X-CSRFToken': csrfToken} : {}),
-                }
-            }).then(async response => {
-                const contentType = response.headers.get('content-type') || '';
-                const responseText = await response.text();
-                let data;
-                try {
-                    data = contentType.includes('application/json') ? JSON.parse(responseText) : null;
-                } catch (parseError) {
-                    data = null;
-                }
-                if (!data) {
-                    throw new Error(response.status === 401
-                        ? 'Votre session a expiré. Veuillez vous reconnecter.'
-                        : response.status === 403
-                            ? 'La requête a été refusée par le serveur (CSRF ou permission). Actualisez la page puis réessayez.'
-                            : 'Le serveur a renvoyé une réponse inattendue.');
-                }
-                if (!response.ok || !data.success) {
-                    const errors = Object.values(data.errors || {}).flat().map(error => error.message || error).join(' ');
-                    throw new Error(errors || data.message || 'Impossible d’enregistrer la catégorie.');
-                }
-                return loadModule(form.dataset.reloadUrl, 'menu-personnel').then(() => {
-                    const reloadedFeedback = document.querySelector('[data-categories-module] .category-charge-feedback');
-                    if (reloadedFeedback) {
-                        reloadedFeedback.textContent = data.message;
-                        reloadedFeedback.className = 'category-charge-feedback rounded border border-emerald-700/60 bg-emerald-950/50 px-3 py-2 text-sm text-emerald-200';
-                    }
-                });
-            }).catch(error => {
-                if (feedback) {
-                    feedback.textContent = error.message;
-                    feedback.className = 'category-charge-feedback rounded border border-red-700/60 bg-red-950/40 px-3 py-2 text-sm text-red-200';
-                }
-            });
-        } else if (e.target.matches('#addIngenieurForm')) {
-            e.preventDefault();
-            handleAddIngenieur(e.target);
-        } else if (e.target.matches('#editIngenieurForm')) {
-            e.preventDefault();
-            handleEditIngenieur(e.target);
-        } else if (e.target.matches('#addClientForm')) {
-            e.preventDefault();
-            handleAddClient(e.target);
-        } else if (e.target.matches('#editClientForm')) {
-            e.preventDefault();
-            handleEditClient(e.target);
-        } else if (e.target.matches('#addEntrepriseForm')) {
-            e.preventDefault();
-            handleAddEntreprise(e.target);
-        } else if (e.target.matches('#editEntrepriseForm')) {
-            e.preventDefault();
-            handleEditEntreprise(e.target);
-        } else if (e.target.matches('#addPersonnelForm')) {
-            e.preventDefault();
-            handleAddPersonnel(e.target);
-        } else if (e.target.matches('#editPersonnelForm')) {
-            e.preventDefault();
-            handleEditPersonnel(e.target);
-        } else if (e.target.matches('#addMaterielForm')) {
-            e.preventDefault();
-            handleAddMateriel(e.target);
-        } else if (e.target.matches('#addTypeMaterielForm')) {
-            e.preventDefault();
-            handleAddTypeMateriel(e.target);
-        } else if (e.target.matches('#editTypeMaterielForm')) {
-            e.preventDefault();
-            handleEditTypeMateriel(e.target);
-        } else if (e.target.matches('#editMaterielForm')) {
-            e.preventDefault();
-            handleEditMateriel(e.target);
-        } else if (e.target.matches('#addTransportForm')) {
-            e.preventDefault();
-            handleAddTransport(e.target);
-        } else if (e.target.matches('#editTransportForm')) {
-            e.preventDefault();
-            handleEditTransport(e.target);
-        } else if (e.target.matches('#addLocationForm')) {
-            e.preventDefault();
-            handleAddLocation(e.target);
-        } else if (e.target.matches('#editLocationForm')) {
-            e.preventDefault();
-            handleEditLocation(e.target);
-        } else if (e.target.matches('#addSousTraitanceForm')) {
-            e.preventDefault();
-            handleAddSousTraitance(e.target);
-        } else if (e.target.matches('#editSousTraitanceForm')) {
-            e.preventDefault();
-            handleEditSousTraitance(e.target);
-        } else if (e.target.matches('#addConsommableForm')) {
-            e.preventDefault();
-            handleAddConsommable(e.target);
-        } else if (e.target.matches('#editConsommableForm')) {
-            e.preventDefault();
-            handleEditConsommable(e.target);
-        } else if (e.target.matches('#addFournitureForm')) {
-            e.preventDefault();
-            handleAddFourniture(e.target);
-        } else if (e.target.matches('#editFournitureForm')) {
-            e.preventDefault();
-            handleEditFourniture(e.target);
-        }
+    // Soumission de formulaires
+    document.body.addEventListener('submit', (e) => {
+        const form = e.target.closest('[data-entity-form]');
+        if (!form) return;
+        e.preventDefault();
+        submitForm(form, form.dataset.entity, form.dataset.mode);
     });
-
-    // === FONCTIONS DE GESTION DES FORMULAIRES ===
-
-    // Ingénieurs
-    function handleAddIngenieur(form) {
-        const nomInput = document.getElementById('addNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#addIngenieurForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#addIngenieurForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterIngenieur}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddIngenieurModal();
-                showSuccessMessage('Ingénieur ajouté avec succès!');
-                loadModule(U.partialIngenieurs, 'menu-ingenieurs')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de l\'ajout.');
-                    });
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditIngenieur(form) {
-        const nomInput = document.getElementById('editNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#editIngenieurForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#editIngenieurForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editId').value;
-
-        fetch(`${U.modifierIngenieur.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditIngenieurModal();
-                loadModule(U.partialIngenieurs, 'menu-ingenieurs')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de la modification.');
-                    });
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Clients
-    function handleAddClient(form) {
-        const nomInput = document.getElementById('addClientNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#addClientForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#addClientForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-
-        fetch(`${U.ajouterClient}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddClientModal();
-                loadModule(U.partialClients, 'menu-clients')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de l\'ajout.');
-                    });
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditClient(form) {
-        const nomInput = document.getElementById('editClientNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#editClientForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#editClientForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editClientId').value;
-
-        fetch(`${U.modifierClient.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditClientModal();
-                loadModule(U.partialClients, 'menu-clients')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de la modification.');
-                    });
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Entreprises
-    function handleAddEntreprise(form) {
-        const nomInput = document.getElementById('addEntrepriseNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#addEntrepriseForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#addEntrepriseForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-
-        fetch(`${U.ajouterEntreprise}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddEntrepriseModal();
-                loadModule(U.partialEntreprises, 'menu-entreprises')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de l\'ajout.');
-                    });
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditEntreprise(form) {
-        const nomInput = document.getElementById('editEntrepriseNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#editEntrepriseForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#editEntrepriseForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editEntrepriseId').value;
-
-        fetch(`${U.modifierEntreprise.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditEntrepriseModal();
-                loadModule(U.partialEntreprises, 'menu-entreprises')
-                    .then(() => {
-                        showSuccessMessage(data.message);
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Une erreur est survenue lors de la modification.');
-                    });
-                    
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Personnel
-    function handleAddPersonnel(form) {
-        const nomInput = document.getElementById('addPersonnelNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#addPersonnelForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#addPersonnelForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterPersonnel}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddPersonnelModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditPersonnel(form) {
-        const nomInput = document.getElementById('editPersonnelNom');
-        let isValid = true;
-
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#editPersonnelForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#editPersonnelForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editPersonnelId').value;
-
-        fetch(`${U.modifierPersonnel.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditPersonnelModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Matériel
-    function handleAddMateriel(form) {
-        const designationInput = document.getElementById('addMaterielDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addMaterielForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addMaterielForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-
-        fetch(`${U.ajouterMateriel}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddMaterielModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditMateriel(form) {
-        const designationInput = document.getElementById('editMaterielDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editMaterielForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editMaterielForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editMaterielId').value;
-
-        fetch(`${U.modifierMateriel.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditMaterielModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Types de matériel
-    function handleAddTypeMateriel(form) {
-        const nomInput = document.getElementById('addTypeMaterielNom');
-        let isValid = true;
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#addTypeMaterielForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#addTypeMaterielForm .invalid-feedback').classList.add('hidden');
-        }
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(U.ajouterTypeMateriel + "?modal=true", {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddTypeMaterielModal();
-                // ⬇️ loadModule, pas rechargerRessourcesOuvertes
-                loadModule(U.partialTypesMateriel, 'menu-types-materiel')
-                    .then(() => showSuccessMessage(data.message));
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditTypeMateriel(form) {
-        const nomInput = document.getElementById('editTypeMaterielNom');
-        let isValid = true;
-        if (!nomInput.value.trim()) {
-            nomInput.classList.add('border-red-500');
-            document.querySelector('#editTypeMaterielForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            nomInput.classList.remove('border-red-500');
-            document.querySelector('#editTypeMaterielForm .invalid-feedback').classList.add('hidden');
-        }
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editTypeMaterielId').value;
-        const modifierUrl = U.modifierTypeMateriel.replace('0', id);
-
-        fetch(`${modifierUrl}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditTypeMaterielModal();
-                // ⬇️ CORRECTION : utiliser loadModule, pas rechargerRessourcesOuvertes
-                loadModule(U.partialTypesMateriel, 'menu-types-materiel')
-                    .then(() => showSuccessMessage(data.message));
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
     
-    // Transports
-    function handleAddTransport(form) {
-        const designationInput = document.getElementById('addTransportDesignation');
-        let isValid = true;
+    // Changement de l'icône : met à jour l'aperçu
+    document.body.addEventListener('change', (e) => {
+        const select = e.target.closest('[name="icone"]');
+        if (!select) return;
+        const modal = select.closest('.modal');
+        if (modal) updateIconePreview(modal);
+    });
 
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addTransportForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addTransportForm .invalid-feedback').classList.add('hidden');
-        }
+    // Échap : ferme toutes les modals
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllModals();
+    });
 
-        if (!isValid) return;
+    // Backdrop : ferme toutes les modals
+    const backdropEl = getBackdrop();
+    if (backdropEl) backdropEl.addEventListener('click', closeAllModals);
 
-        const formData = new FormData(form);
+    /* ═══════════════════════════════════════════════════════════
+       CHARGEMENT PAR DÉFAUT
+       ═══════════════════════════════════════════════════════════ */
+    document.addEventListener('DOMContentLoaded', () => {
+        loadModule(U.partialIngenieurs, 'menu-ingenieurs');
+    });
 
-        fetch(`${U.ajouterTransport}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddTransportModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
+    /* ═══════════════════════════════════════════════════════════════
+    FILTRE + SÉLECTION MULTIPLE MATÉRIEL
+    ═══════════════════════════════════════════════════════════════
+    Ces fonctions sont exposées globalement car elles sont appelées
+    via des attributs HTML inline (oninput, onchange, onclick).
+    ═══════════════════════════════════════════════════════════════ */
 
-    function handleEditTransport(form) {
-        const designationInput = document.getElementById('editTransportDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editTransportForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editTransportForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const transportId = document.getElementById('editTransportId').value;
-        const modifierTransportUrl = U.modifierTransport.replace('0', transportId);
-
-        fetch(`${modifierTransportUrl}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditTransportModal();
-                rechargerRessourcesOuvertes(parseInt(transportId, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Locations
-    function handleAddLocation(form) {
-        const designationInput = document.getElementById('addLocationDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addLocationForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addLocationForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterLocation}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddLocationModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditLocation(form) {
-        const designationInput = document.getElementById('editLocationDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editLocationForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editLocationForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editLocationId').value;
-
-        fetch(`${U.modifierLocation.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditLocationModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Sous-traitances
-    function handleAddSousTraitance(form) {
-        const designationInput = document.getElementById('addSousTraitanceDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addSousTraitanceForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addSousTraitanceForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterSousTraitance}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddSousTraitanceModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditSousTraitance(form) {
-        const designationInput = document.getElementById('editSousTraitanceDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editSousTraitanceForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editSousTraitanceForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editSousTraitanceId').value;
-
-        fetch(`${U.modifierSousTraitance.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditSousTraitanceModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Consommables
-    function handleAddConsommable(form) {
-        const designationInput = document.getElementById('addConsommableDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addConsommableForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addConsommableForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterConsommable}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddConsommableModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditConsommable(form) {
-        const designationInput = document.getElementById('editConsommableDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editConsommableForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editConsommableForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editConsommableId').value;
-
-        fetch(`${U.modifierConsommable.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditConsommableModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    // Fournitures
-    function handleAddFourniture(form) {
-        const designationInput = document.getElementById('addFournitureDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#addFournitureForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#addFournitureForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        fetch(`${U.ajouterFourniture}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeAddFournitureModal();
-                rechargerRessourcesOuvertes();
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur: ' + JSON.stringify(data.errors));
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de l\'ajout.');
-        });
-    }
-
-    function handleEditFourniture(form) {
-        const designationInput = document.getElementById('editFournitureDesignation');
-        let isValid = true;
-
-        if (!designationInput.value.trim()) {
-            designationInput.classList.add('border-red-500');
-            document.querySelector('#editFournitureForm .invalid-feedback').classList.remove('hidden');
-            isValid = false;
-        } else {
-            designationInput.classList.remove('border-red-500');
-            document.querySelector('#editFournitureForm .invalid-feedback').classList.add('hidden');
-        }
-
-        if (!isValid) return;
-
-        const formData = new FormData(form);
-        const id = document.getElementById('editFournitureId').value;
-
-        fetch(`${U.modifierFourniture.replace('0', id)}?modal=true`, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': formData.get('csrfmiddlewaretoken')
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                closeEditFournitureModal();
-                rechargerRessourcesOuvertes(parseInt(id, 10));
-                showSuccessMessage(data.message);
-            } else {
-                alert('Erreur lors de la modification.');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Une erreur est survenue lors de la modification.');
-        });
-    }
-
-    window.filterMaterielTable = function() {
-        const search = (document.getElementById('materielSearchInput')?.value || '').toLowerCase().trim();
+    /**
+     * Filtre les lignes du tableau matériel selon :
+     *   - le texte de recherche (désignation)
+     *   - le type de matériel sélectionné
+     */
+    window.filterMaterielTable = function () {
+        const search = (document.getElementById('materielSearchInput')?.value || '')
+            .toLowerCase().trim();
         const typeId = document.getElementById('materielTypeFilter')?.value || '';
         const rows = document.querySelectorAll('#materielTable tbody tr');
         let visibles = 0;
 
         rows.forEach(row => {
-            const designation = row.dataset.designation || '';
-            const rowTypeId = row.dataset.typeId || '';
+            const designation = (row.dataset.designation || '').toLowerCase();
+            const rowTypeId = String(row.dataset.typeId || '');
             const matchSearch = !search || designation.includes(search);
             const matchType = !typeId || rowTypeId === typeId;
             const visible = matchSearch && matchType;
+
             row.classList.toggle('hidden', !visible);
             if (visible) visibles++;
         });
 
-        document.getElementById('materielNoResult')?.classList.toggle('hidden', visibles > 0);
+        // Message "aucun résultat"
+        const noResult = document.getElementById('materielNoResult');
+        if (noResult) noResult.classList.toggle('hidden', visibles > 0);
 
-        // Réinitialiser la sélection quand le filtre change (évite les faux positifs)
+        // Décocher les lignes masquées (évite les faux positifs)
         document.querySelectorAll('#materielTable .materiel-row-checkbox').forEach(cb => {
             const row = cb.closest('tr');
             if (row.classList.contains('hidden')) cb.checked = false;
         });
-        if (typeof updateMaterielSelectionBar === 'function') {
-            updateMaterielSelectionBar();
-        }
-    };
-    
-    // ============================================================
-    // Sélection multiple + suppression en masse
-    // ============================================================
 
-    window.toggleSelectAllMateriel = function(checkbox) {
+        // Rafraîchir la barre de sélection
+        window.updateMaterielSelectionBar();
+    };
+
+    /**
+     * Coche / décoche toutes les lignes VISIBLES.
+     */
+    window.toggleSelectAllMateriel = function (checkbox) {
         const rows = document.querySelectorAll('#materielTable tbody tr:not(.hidden)');
         rows.forEach(row => {
             const cb = row.querySelector('.materiel-row-checkbox');
             if (cb) cb.checked = checkbox.checked;
         });
-        updateMaterielSelectionBar();
+        window.updateMaterielSelectionBar();
     };
 
-    window.updateMaterielSelectionBar = function() {
+    /**
+     * Met à jour la barre d'actions groupées + l'état de la case "Tout sélectionner".
+     */
+    window.updateMaterielSelectionBar = function () {
         const checkboxes = document.querySelectorAll('#materielTable .materiel-row-checkbox:checked');
         const bar = document.getElementById('materielBulkBar');
         const count = document.getElementById('materielBulkCount');
@@ -2084,14 +941,25 @@
         }
     };
 
-    window.clearMaterielSelection = function() {
-        document.querySelectorAll('#materielTable .materiel-row-checkbox').forEach(cb => cb.checked = false);
+    /**
+     * Décoche toutes les lignes + reset des états.
+     */
+    window.clearMaterielSelection = function () {
+        document.querySelectorAll('#materielTable .materiel-row-checkbox').forEach(cb => {
+            cb.checked = false;
+        });
         const all = document.getElementById('materielSelectAll');
-        if (all) { all.checked = false; all.indeterminate = false; }
-        updateMaterielSelectionBar();
+        if (all) {
+            all.checked = false;
+            all.indeterminate = false;
+        }
+        window.updateMaterielSelectionBar();
     };
 
-    window.supprimerSelectionMateriel = function() {
+    /**
+     * Supprime en masse les matériels sélectionnés.
+     */
+    window.supprimerSelectionMateriel = async function () {
         const ids = Array.from(
             document.querySelectorAll('#materielTable .materiel-row-checkbox:checked')
         ).map(cb => cb.value);
@@ -2099,85 +967,122 @@
         if (ids.length === 0) return;
 
         const msg = ids.length === 1
-            ? `Supprimer ce matériel ?`
+            ? 'Supprimer ce matériel ?'
             : `⚠️ Supprimer ${ids.length} matériels ?\n\nCette action est irréversible.`;
         if (!confirm(msg)) return;
 
-        // Double confirmation pour les gros volumes
+        // Double confirmation pour gros volumes
         if (ids.length > 10) {
             if (!confirm(`Confirmer la suppression de ${ids.length} matériels ?`)) return;
         }
 
-        fetch(U.supprimerMaterielMasse, {
-            method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCsrfToken(),
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ ids: ids })
-        })
-        .then(async r => {
-            const data = await r.json();
-            if (!r.ok || !data.success) throw data;
-            return data;
-        })
-        .then(data => {
-            showSuccessMessage(data.message || `${ids.length} matériel(s) supprimé(s).`);
-            // Recharger uniquement le conteneur ouvert (préserve l'accordéon)
-            if (typeof rechargerRessourcesOuvertes === 'function') {
-                rechargerRessourcesOuvertes();
-            } else {
-                loadModule(U.partialCategoriesCharges, 'menu-personnel');
-            }
-        })
-        .catch(error => {
-            console.error('Suppression en masse:', error);
-            showErrorMessage(error.message || 'Erreur lors de la suppression.');
-        });
+        let data;
+        try {
+            const res = await fetch(U.supprimerMaterielMasse, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ids: ids }),
+            });
+            data = await res.json();
+        } catch (err) {
+            console.error('[supprimerSelectionMateriel]', err);
+            return showErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+        }
+
+        if (!data.success) {
+            return showErrorMessage(data.message || 'Impossible de supprimer la sélection.');
+        }
+
+        // Recharger uniquement les accordéons ouverts
+        if (typeof rechargerRessourcesOuvertes === 'function') {
+            await rechargerRessourcesOuvertes();
+        }
+
+        showSuccessMessage(data.message || `${ids.length} matériel(s) supprimé(s).`);
     };
 
-    // ============================================================
-    // Import de matériel depuis un tableur
-    // ============================================================
+    /* ═══════════════════════════════════════════════════════════════
+    IMPORT MATÉRIEL DEPUIS UN TABLEUR
+    ═══════════════════════════════════════════════════════════════ */
 
-    window.openImportMaterielModal = function() {
+    /**
+     * Ouvre la modal d'import et remet l'état à zéro.
+     */
+    window.openImportMaterielModal = function () {
+        const modal = document.getElementById('importMaterielModal');
+        if (!modal) return console.warn('[import] modal introuvable');
+
+        // Reset des champs
         document.getElementById('importMaterielText').value = '';
         document.getElementById('importHasHeader').checked = true;
         document.getElementById('importCreateTypes').checked = false;
         document.getElementById('importUpdateExisting').checked = false;
+
+        // Reset des étapes
         document.getElementById('importMaterielStep1').classList.remove('hidden');
         document.getElementById('importMaterielStep2').classList.add('hidden');
         document.getElementById('importMaterielRapport').innerHTML = '';
-        document.getElementById('importMaterielModal').style.display = 'block';
-        document.getElementById('modalBackdrop').style.display = 'block';
+
+        // Bouton de confirmation : état initial
+        const confirmBtn = document.getElementById('importMaterielConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        modal.style.display = 'block';
+        const backdrop = getBackdrop();
+        if (backdrop) backdrop.style.display = 'block';
     };
 
-    window.closeImportMaterielModal = function() {
-        document.getElementById('importMaterielModal').style.display = 'none';
-        document.getElementById('modalBackdrop').style.display = 'none';
+    /**
+     * Ferme la modal d'import.
+     */
+    window.closeImportMaterielModal = function () {
+        const modal = document.getElementById('importMaterielModal');
+        if (!modal) return;
+        modal.style.display = 'none';
+
+        const backdrop = getBackdrop();
+        if (backdrop) backdrop.style.display = 'none';
     };
 
-    window.retourImportMateriel = function() {
+    /**
+     * Retour à l'étape 1 (saisie) depuis l'étape 2 (aperçu).
+     */
+    window.retourImportMateriel = function () {
         document.getElementById('importMaterielStep1').classList.remove('hidden');
         document.getElementById('importMaterielStep2').classList.add('hidden');
     };
 
-    window.analyserImportMateriel = function() {
+    /**
+     * Étape 1 → analyse à blanc (dry_run=true).
+     */
+    window.analyserImportMateriel = function () {
         const texte = document.getElementById('importMaterielText').value;
         if (!texte.trim()) {
-            alert('Collez d\'abord des données.');
-            return;
+            return showWarningMessage('Collez d\'abord des données.');
         }
         envoyerImportMateriel(true);
     };
 
-    window.confirmerImportMateriel = function() {
+    /**
+     * Étape 2 → import réel (dry_run=false).
+     */
+    window.confirmerImportMateriel = function () {
         if (!confirm('Confirmer l\'import ? Les données seront enregistrées.')) return;
         envoyerImportMateriel(false);
     };
 
-    function envoyerImportMateriel(dryRun) {
+    /**
+     * Envoi réel de la requête d'import.
+     * @param {boolean} dryRun - true = analyse seule, false = import réel
+     */
+    async function envoyerImportMateriel(dryRun) {
         const texte = document.getElementById('importMaterielText').value;
         const hasHeader = document.getElementById('importHasHeader').checked ? 'true' : 'false';
         const createTypes = document.getElementById('importCreateTypes').checked ? 'true' : 'false';
@@ -2190,329 +1095,147 @@
         formData.append('update_existing', updateExisting);
         formData.append('csrfmiddlewaretoken', getCsrfToken());
 
-        const url = '/materiel/importer/?dry_run=' + (dryRun ? '1' : '0');
+        const url = `${U.importerMateriels}?dry_run=${dryRun ? '1' : '0'}`;
 
-        fetch(url, {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCsrfToken(),
-            },
-        })
-        .then(async response => {
-            const data = await response.json();
-            if (!response.ok) throw data;
-            return data;
-        })
-        .then(data => {
-            renderImportMaterielRapport(data, dryRun);
-            if (!dryRun) {
-                // Import réel : recharger la liste après
-                setTimeout(() => {
-                    closeImportMaterielModal();
-                    loadModule(U.partialMateriel, 'menu-materiel');
-                }, 1500);
-            }
-        })
-        .catch(error => {
-            console.error('Import error:', error);
-            alert('Erreur lors de l\'import : ' + (error.message || JSON.stringify(error)));
-        });
+        // Indicateur visuel
+        const rapport = document.getElementById('importMaterielRapport');
+        if (rapport) {
+            rapport.innerHTML = `<p style="color: var(--text-muted);">Analyse en cours...</p>`;
+        }
+        document.getElementById('importMaterielStep1').classList.add('hidden');
+        document.getElementById('importMaterielStep2').classList.remove('hidden');
+
+        let data;
+        try {
+            const res = await fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': getCsrfToken(),
+                },
+            });
+            data = await res.json();
+        } catch (err) {
+            console.error('[envoyerImportMateriel]', err);
+            showErrorMessage('Erreur réseau. Vérifiez votre connexion.');
+            // Revenir à l'étape 1
+            document.getElementById('importMaterielStep1').classList.remove('hidden');
+            document.getElementById('importMaterielStep2').classList.add('hidden');
+            return;
+        }
+
+        if (data.success === false && data.message) {
+            showErrorMessage(data.message);
+            document.getElementById('importMaterielStep1').classList.remove('hidden');
+            document.getElementById('importMaterielStep2').classList.add('hidden');
+            return;
+        }
+
+        renderImportMaterielRapport(data, dryRun);
+
+        // Import réel : fermer après 1.5s et recharger
+        if (!dryRun) {
+            setTimeout(async () => {
+                closeImportMaterielModal();
+                await rechargerRessourcesOuvertes();
+                showSuccessMessage(data.message || 'Import effectué avec succès.');
+            }, 1500);
+        }
     }
 
+    /**
+     * Construit le rapport HTML de l'import.
+     */
     function renderImportMaterielRapport(data, dryRun) {
         const container = document.getElementById('importMaterielRapport');
+        if (!container) return;
+
         let html = '';
 
         // Titre
         const titre = dryRun ? 'Aperçu (rien n\'a été enregistré)' : 'Import effectué';
-        html += `<p class="text-cyan-300 font-semibold mb-3">${titre}</p>`;
+        html += `<p class="font-semibold mb-3" style="color: var(--accent-info);">${titre}</p>`;
 
         // Warnings
         if (data.warnings && data.warnings.length) {
-            html += '<div class="p-2 bg-yellow-900/40 border border-yellow-700 rounded text-yellow-200 text-xs space-y-1">';
-            data.warnings.forEach(w => { html += `<div><i class="fas fa-info-circle mr-1"></i> ${w}</div>`; });
-            html += '</div>';
+            html += `<div class="p-2 rounded text-xs space-y-1" style="background-color: rgba(245, 158, 11, 0.15); border: 1px solid var(--accent-warning); color: var(--accent-warning);">`;
+            data.warnings.forEach(w => {
+                html += `<div><i class="fas fa-info-circle mr-1"></i>${w}</div>`;
+            });
+            html += `</div>`;
         }
 
         // Créés
         if (data.created && data.created.length) {
-            html += `<div class="p-3 bg-green-900/40 border border-green-700 rounded">`;
-            html += `<p class="text-green-300 font-semibold mb-1"><i class="fas fa-check-circle mr-1"></i> ${data.created.length} matériel(s) ${dryRun ? 'seront créés' : 'créés'} :</p>`;
-            html += '<ul class="list-disc list-inside text-green-200 text-xs space-y-0.5">';
+            html += `<div class="p-3 rounded" style="background-color: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-success);">`;
+            html += `<p class="font-semibold mb-1" style="color: var(--accent-success);">`;
+            html += `<i class="fas fa-check-circle mr-1"></i>`;
+            html += `${data.created.length} matériel(s) ${dryRun ? 'seront créés' : 'créés'} :`;
+            html += `</p>`;
+            html += `<ul class="list-disc list-inside text-xs space-y-0.5" style="color: var(--text-primary);">`;
             data.created.forEach(item => {
-                html += `<li>${item.designation} <span class="text-green-400">(${item.type})</span></li>`;
+                html += `<li>${item.designation} <span style="color: var(--text-muted);">(${item.type || '—'})</span></li>`;
             });
-            html += '</ul></div>';
+            html += `</ul></div>`;
         }
 
         // Mis à jour
         if (data.updated && data.updated.length) {
-            html += `<div class="p-3 bg-blue-900/40 border border-blue-700 rounded">`;
-            html += `<p class="text-blue-300 font-semibold mb-1"><i class="fas fa-edit mr-1"></i> ${data.updated.length} matériel(s) ${dryRun ? 'seront mis à jour' : 'mis à jour'} :</p>`;
-            html += '<ul class="list-disc list-inside text-blue-200 text-xs space-y-0.5">';
+            html += `<div class="p-3 rounded mt-2" style="background-color: rgba(59, 130, 246, 0.1); border: 1px solid var(--accent-info);">`;
+            html += `<p class="font-semibold mb-1" style="color: var(--accent-info);">`;
+            html += `<i class="fas fa-edit mr-1"></i>`;
+            html += `${data.updated.length} matériel(s) ${dryRun ? 'seront mis à jour' : 'mis à jour'} :`;
+            html += `</p>`;
+            html += `<ul class="list-disc list-inside text-xs space-y-0.5" style="color: var(--text-primary);">`;
             data.updated.forEach(item => {
-                html += `<li>${item.designation} <span class="text-blue-400">(${item.type})</span></li>`;
+                html += `<li>${item.designation} <span style="color: var(--text-muted);">(${item.type || '—'})</span></li>`;
             });
-            html += '</ul></div>';
+            html += `</ul></div>`;
         }
 
         // Ignorés
         if (data.ignored && data.ignored.length) {
-            html += `<div class="p-3 bg-yellow-900/40 border border-yellow-700 rounded">`;
-            html += `<p class="text-yellow-300 font-semibold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> ${data.ignored.length} ligne(s) ignorée(s) :</p>`;
-            html += '<ul class="list-disc list-inside text-yellow-200 text-xs space-y-0.5">';
+            html += `<div class="p-3 rounded mt-2" style="background-color: rgba(245, 158, 11, 0.1); border: 1px solid var(--accent-warning);">`;
+            html += `<p class="font-semibold mb-1" style="color: var(--accent-warning);">`;
+            html += `<i class="fas fa-exclamation-triangle mr-1"></i>`;
+            html += `${data.ignored.length} ligne(s) ignorée(s) :`;
+            html += `</p>`;
+            html += `<ul class="list-disc list-inside text-xs space-y-0.5" style="color: var(--text-primary);">`;
             data.ignored.forEach(item => {
-                html += `<li>Ligne ${item.numero} : ${item.designation} — ${item.raison}</li>`;
+                html += `<li>Ligne ${item.numero} : ${item.designation} — <em>${item.raison}</em></li>`;
             });
-            html += '</ul></div>';
+            html += `</ul></div>`;
         }
 
         // Erreurs
         if (data.errors && data.errors.length) {
-            html += `<div class="p-3 bg-red-900/40 border border-red-700 rounded">`;
-            html += `<p class="text-red-300 font-semibold mb-1"><i class="fas fa-times-circle mr-1"></i> ${data.errors.length} ligne(s) en erreur :</p>`;
-            html += '<ul class="list-disc list-inside text-red-200 text-xs space-y-0.5">';
+            html += `<div class="p-3 rounded mt-2" style="background-color: rgba(239, 68, 68, 0.1); border: 1px solid var(--accent-danger);">`;
+            html += `<p class="font-semibold mb-1" style="color: var(--accent-danger);">`;
+            html += `<i class="fas fa-times-circle mr-1"></i>`;
+            html += `${data.errors.length} ligne(s) en erreur :`;
+            html += `</p>`;
+            html += `<ul class="list-disc list-inside text-xs space-y-0.5" style="color: var(--text-primary);">`;
             data.errors.forEach(item => {
                 html += `<li>Ligne ${item.numero} : ${item.raison}</li>`;
             });
-            html += '</ul></div>';
+            html += `</ul></div>`;
         }
 
-        // Résumé si vide
-        if (!data.created?.length && !data.updated?.length && !data.ignored?.length && !data.errors?.length) {
-            html += '<p class="text-gray-400">Aucune ligne exploitable.</p>';
+        // Aucun résultat
+        const total = (data.created?.length || 0) + (data.updated?.length || 0)
+                    + (data.ignored?.length || 0) + (data.errors?.length || 0);
+        if (total === 0) {
+            html += `<p style="color: var(--text-muted);">Aucune ligne exploitable.</p>`;
         }
 
         container.innerHTML = html;
-        document.getElementById('importMaterielStep1').classList.add('hidden');
-        document.getElementById('importMaterielStep2').classList.remove('hidden');
 
-        // Désactiver le bouton "Confirmer" si dry_run était déjà un import réel
-        if (!dryRun) {
-            document.getElementById('importMaterielConfirmBtn').disabled = true;
-            document.getElementById('importMaterielConfirmBtn').classList.add('opacity-50', 'cursor-not-allowed');
+        // Bouton "Confirmer" : désactivé après un import réel
+        const confirmBtn = document.getElementById('importMaterielConfirmBtn');
+        if (confirmBtn && !dryRun) {
+            confirmBtn.disabled = true;
+            confirmBtn.classList.add('opacity-50', 'cursor-not-allowed');
         }
     }
-    // ============================================================
-    // Récupération du jeton CSRF
-    // ============================================================
-    window.getCsrfToken = function() {
-        // 1. Depuis un champ de formulaire (le plus fiable)
-        const input = document.querySelector('[name=csrfmiddlewaretoken]');
-        if (input && input.value) return input.value;
-
-        // 2. Depuis le cookie csrftoken
-        const match = document.cookie.match(/csrftoken=([^;]+)/);
-        if (match) return match[1];
-
-        // 3. Fallback : chercher dans tous les cookies
-        for (const cookie of document.cookie.split(';')) {
-            const [name, value] = cookie.trim().split('=');
-            if (name === 'csrftoken') return value;
-        }
-
-        console.warn('getCsrfToken: aucun token trouvé');
-        return '';
-    };
-
-    // ═══════════════════════════════════════════════════════════════
-    // RECHARGEMENT DES RESSOURCES DANS LES ACCORDÉONS CATÉGORIES
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Recharge le contenu d'un conteneur de ressource (ex : materiel)
-     * dans une catégorie donnée, en respectant son état ouvert/fermé.
-     */
-    window.reloadCategoryResource = function (categoryId) {
-        const container = document.getElementById(`category-resource-${categoryId}`);
-        if (!container) {
-            console.warn(`Conteneur #category-resource-${categoryId} introuvable`);
-            return Promise.resolve();
-        }
-
-        const button = document.querySelector(`[data-resource-target="category-resource-${categoryId}"]`);
-        if (!button || !button.dataset.resourceUrl) {
-            console.warn('Bouton toggle ou URL introuvable pour la catégorie', categoryId);
-            return Promise.resolve();
-        }
-
-        const etaitOuvert = !container.classList.contains('hidden');
-
-        return fetch(button.dataset.resourceUrl, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(r => r.text())
-        .then(html => {
-            container.innerHTML = html;
-            container.dataset.loaded = 'true';
-            // Respecter l'état précédent (ne pas rouvrir si c'était fermé)
-            container.classList.toggle('hidden', !etaitOuvert);
-        })
-        .catch(err => {
-            console.error('Erreur rechargement ressource:', err);
-        });
-    };
-
-    /**
-     * Recharge uniquement les conteneurs de ressources actuellement OUVERTS,
-     * sans recharger tout le module. Préserve l'état ouvert/fermé,
-     * les filtres internes et la position de scroll.
-     *
-     * @param {number|null} focusMaterielId - ID du matériel sur lequel remettre le focus (optionnel)
-     */
-    window.rechargerRessourcesOuvertes = function (focusMaterielId) {
-        const conteneurs = document.querySelectorAll('[data-category-resource]:not(.hidden)');
-        const promises = [];
-
-        conteneurs.forEach(container => {
-            const match = container.id.match(/category-resource-(\d+)/);
-            if (!match) return;
-            const categoryId = match[1];
-            const button = document.querySelector(`[data-resource-target="category-resource-${categoryId}"]`);
-            if (!button || !button.dataset.resourceUrl) return;
-
-            const p = fetch(button.dataset.resourceUrl, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(r => r.text())
-            .then(html => {
-                container.innerHTML = html;
-                container.dataset.loaded = 'true';
-                // On ne touche pas à .hidden : le conteneur reste ouvert
-            })
-            .catch(err => console.error('Erreur rechargement ressource:', err));
-
-            promises.push(p);
-        });
-
-        // Restaurer le focus sur le bouton d'édition de l'élément modifié
-        if (focusMaterielId) {
-            Promise.all(promises).then(() => {
-                const btn = document.querySelector(`[data-edit-materiel-button][data-id="${focusMaterielId}"]`);
-                if (btn) btn.focus({ preventScroll: true });
-            });
-        }
-    };
-
-    // ═══════════════════════════════════════════════════════════════
-    // TOASTS — Système de notifications flash unifié
-    // ═══════════════════════════════════════════════════════════════
-
-    /**
-     * Récupère ou crée le conteneur de toasts (bas-droite, empilable)
-     */
-    function getOrCreateToastContainer() {
-        let container = document.getElementById('toast-container');
-        if (container) return container;
-
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.className = 'fixed bottom-6 right-6 z-[9999] flex flex-col gap-3 pointer-events-none';
-        // Sur mobile : largeur limitée
-        container.style.cssText = `
-            position: fixed;
-            bottom: 1.5rem;
-            right: 1.5rem;
-            left: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            z-index: 9999;
-            pointer-events: none;
-            max-width: calc(100vw - 3rem);
-        `;
-        document.body.appendChild(container);
-        return container;
-    }
-
-    /**
-     * Affiche un toast générique
-     * @param {string} message - Texte à afficher
-     * @param {string} type    - 'success' | 'error' | 'warning' | 'info'
-     * @param {number} duration - Durée en ms (défaut 3500)
-     */
-    window.showToast = function (message, type = 'info', duration = 3500) {
-        const container = getOrCreateToastContainer();
-
-        const icons = {
-            success: 'fa-check-circle',
-            error: 'fa-circle-exclamation',
-            warning: 'fa-triangle-exclamation',
-            info: 'fa-circle-info',
-        };
-
-        const toast = document.createElement('div');
-        toast.className = `toast toast-${type}`;
-        toast.innerHTML = `
-            <i class="fas ${icons[type] || icons.info}"></i>
-            <span class="toast-message">${message}</span>
-            <button type="button" class="toast-close" aria-label="Fermer">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-
-        // Fermeture manuelle
-        toast.querySelector('.toast-close').addEventListener('click', () => hideToast(toast));
-
-        container.appendChild(toast);
-
-        // Auto-hide
-        const timer = setTimeout(() => hideToast(toast), duration);
-        toast._toastTimer = timer;
-    };
-
-    /**
-     * Cache un toast avec animation
-     */
-    function hideToast(toast) {
-        if (!toast || toast._hiding) return;
-        toast._hiding = true;
-        clearTimeout(toast._toastTimer);
-
-        toast.classList.add('toast-hiding');
-        toast.addEventListener('animationend', () => {
-            toast.remove();
-            // Nettoyer le conteneur s'il est vide
-            const container = document.getElementById('toast-container');
-            if (container && container.children.length === 0) container.remove();
-        }, { once: true });
-    }
-
-    // ── Raccourcis (compatibilité avec l'existant) ──
-    window.showSuccessMessage = (msg) => window.showToast(msg, 'success');
-    window.showErrorMessage   = (msg) => window.showToast(msg, 'error', 5000);
-    window.showWarningMessage = (msg) => window.showToast(msg, 'warning', 4500);
-    window.showInfoMessage    = (msg) => window.showToast(msg, 'info', 4000);
-    // ═══════════════════════════════════════════════════════════════
-    // EXPOSITION GLOBALE DES FONCTIONS DE FERMETURE
-    // (nécessaire pour les onclick="..." dans les templates modals)
-    // ═══════════════════════════════════════════════════════════════
-    Object.assign(window, {
-        // Ingénieurs
-        closeEditIngenieurModal, closeAddIngenieurModal,
-        // Clients
-        closeEditClientModal, closeAddClientModal,
-        // Entreprises
-        closeEditEntrepriseModal, closeAddEntrepriseModal,
-        // Personnel
-        closeEditPersonnelModal, closeAddPersonnelModal,
-        // Matériel
-        closeEditMaterielModal, closeAddMaterielModal,
-        // Types de matériel
-        closeEditTypeMaterielModal, closeAddTypeMaterielModal,
-        // Transport
-        closeEditTransportModal, closeAddTransportModal,
-        // Locations
-        closeEditLocationModal, closeAddLocationModal,
-        // Sous-traitances
-        closeEditSousTraitanceModal, closeAddSousTraitanceModal,
-        // Consommables
-        closeEditConsommableModal, closeAddConsommableModal,
-        // Fournitures
-        closeEditFournitureModal, closeAddFournitureModal,
-        // Global
-        closeAllModals,
-    });
 })();

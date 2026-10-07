@@ -4,74 +4,44 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- INGÉNIEURS                                                     -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal de modification ingénieur -->
-<div id="editIngenieurModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier l'ingénieur
-            </h3>
-            <button onclick="closeEditIngenieurModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="addIngenieurModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un ingénieur</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="editIngenieurForm" method="POST" class="needs-validation">
+        <form id="addIngenieurForm" method="POST" data-entity-form data-entity="ingenieur" data-mode="add">
             {% csrf_token %}
-            <input type="hidden" id="editId" name="id">
-            <div class="mb-3">
-                <label for="editNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
-                <input type="text" id="editNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom de l'ingénieur</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditIngenieurModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal d'ajout ingénieur -->
-<div id="addIngenieurModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un ingénieur
-            </h3>
-            <button onclick="closeAddIngenieurModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="editIngenieurModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier l'ingénieur</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="addIngenieurForm" method="POST" class="needs-validation">
+        <form id="editIngenieurForm" method="POST" data-entity-form data-entity="ingenieur" data-mode="edit">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'ingénieur</label>
-                <input type="text" id="addNom" name="nom" 
-                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                    required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom de l'ingénieur</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddIngenieurModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -80,126 +50,76 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- CLIENTS                                                        -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal de modification client -->
-<div id="editClientModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le client
-            </h3>
-            <button onclick="closeEditClientModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="addClientModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un client</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="editClientForm" method="POST" class="needs-validation">
+        <form id="addClientForm" method="POST" data-entity-form data-entity="client" data-mode="add">
             {% csrf_token %}
-            <input type="hidden" id="editClientId" name="id">
-            
-            <div class="mb-3">
-                <label for="editClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
-                <input type="text" id="editClientNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom du client</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="mb-3">
-                <label for="editClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
-                <input type="text" id="editClientContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Contact</label>
+                <input type="text" name="contact" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
-                <input type="email" id="editClientEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Email</label>
+                <input type="email" name="email" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="editClientTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
-                <textarea id="editClientAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
-                </textarea>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Adresse</label>
+                <textarea name="adresse" rows="3" class="app-modal-input"></textarea>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditClientModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal d'ajout client -->
-<div id="addClientModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un client
-            </h3>
-            <button onclick="closeAddClientModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="editClientModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le client</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="addClientForm" method="POST" class="needs-validation">
+        <form id="editClientForm" method="POST" data-entity-form data-entity="client" data-mode="edit">
             {% csrf_token %}
-            
-            <div class="mb-3">
-                <label for="addClientNom" class="block text-sm font-medium text-green-300 mb-1">Nom du client</label>
-                <input type="text" id="addClientNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom du client</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="mb-3">
-                <label for="addClientContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
-                <input type="text" id="addClientContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Contact</label>
+                <input type="text" name="contact" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addClientEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
-                <input type="email" id="addClientEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Email</label>
+                <input type="email" name="email" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addClientTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="addClientTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addClientAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
-                <textarea id="addClientAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
-                </textarea>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Adresse</label>
+                <textarea name="adresse" rows="3" class="app-modal-input"></textarea>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddClientModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -208,126 +128,76 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- ENTREPRISES                                                    -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal de modification entreprise -->
-<div id="editEntrepriseModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier l'entreprise
-            </h3>
-            <button onclick="closeEditEntrepriseModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="addEntrepriseModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter une entreprise</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="editEntrepriseForm" method="POST" class="needs-validation">
+        <form id="addEntrepriseForm" method="POST" data-entity-form data-entity="entreprise" data-mode="add">
             {% csrf_token %}
-            <input type="hidden" id="editEntrepriseId" name="id">
-            
-            <div class="mb-3">
-                <label for="editEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
-                <input type="text" id="editEntrepriseNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom de l'entreprise</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="mb-3">
-                <label for="editEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
-                <input type="text" id="editEntrepriseContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Contact</label>
+                <input type="text" name="contact" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
-                <input type="email" id="editEntrepriseEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Email</label>
+                <input type="email" name="email" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="editEntrepriseTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="editEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
-                <textarea id="editEntrepriseAdresse" name="adresse" rows="3"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
-                </textarea>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Adresse</label>
+                <textarea name="adresse" rows="3" class="app-modal-input"></textarea>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditEntrepriseModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal d'ajout entreprise -->
-<div id="addEntrepriseModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter une entreprise
-            </h3>
-            <button onclick="closeAddEntrepriseModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="editEntrepriseModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier l'entreprise</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        
-        <form id="addEntrepriseForm" method="POST" class="needs-validation">
+        <form id="editEntrepriseForm" method="POST" data-entity-form data-entity="entreprise" data-mode="edit">
             {% csrf_token %}
-            
-            <div class="mb-3">
-                <label for="addEntrepriseNom" class="block text-sm font-medium text-green-300 mb-1">Nom de l'entreprise</label>
-                <input type="text" id="addEntrepriseNom" name="nom" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base" 
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom de l'entreprise</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            
-            <div class="mb-3">
-                <label for="addEntrepriseContact" class="block text-sm font-medium text-green-300 mb-1">Contact</label>
-                <input type="text" id="addEntrepriseContact" name="contact" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Contact</label>
+                <input type="text" name="contact" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addEntrepriseEmail" class="block text-sm font-medium text-green-300 mb-1">Email</label>
-                <input type="email" id="addEntrepriseEmail" name="email" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Email</label>
+                <input type="email" name="email" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addEntrepriseTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="addEntrepriseTelephone" name="telephone" 
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            
-            <div class="mb-3">
-                <label for="addEntrepriseAdresse" class="block text-sm font-medium text-green-300 mb-1">Adresse</label>
-                <textarea id="addEntrepriseAdresse" name="adresse" rows="3"
-                    class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
-                </textarea>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Adresse</label>
+                <textarea name="adresse" rows="3" class="app-modal-input"></textarea>
             </div>
-            
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddEntrepriseModal()" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit" 
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -336,120 +206,84 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- PERSONNEL                                                      -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout personnel -->
 <div id="addPersonnelModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un membre du personnel
-            </h3>
-            <button onclick="closeAddPersonnelModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un membre du personnel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addPersonnelForm" method="POST" class="needs-validation">
+        <form id="addPersonnelForm" method="POST" data-entity-form data-entity="personnel" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addPersonnelNom" class="block text-sm font-medium text-green-300 mb-1">Nom</label>
-                <input type="text" id="addPersonnelNom" name="nom"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            <div class="mb-3">
-                <label for="addPersonnelFonction" class="block text-sm font-medium text-green-300 mb-1">Fonction</label>
-                <input type="text" id="addPersonnelFonction" name="fonction"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fonction</label>
+                <input type="text" name="fonction" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addPersonnelTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="addPersonnelTelephone" name="telephone"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addPersonnelUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addPersonnelUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addPersonnelTarif" class="block text-sm font-medium text-green-300 mb-1">Tarif (DH)</label>
-                <input type="number" step="0.01" id="addPersonnelTarif" name="tarif"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Tarif (DH)</label>
+                <input type="number" step="0.01" name="tarif" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addPersonnelActif" name="actif" checked
-                       class="h-4 w-4">
-                <label for="addPersonnelActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddPersonnelModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification personnel -->
 <div id="editPersonnelModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le personnel
-            </h3>
-            <button onclick="closeEditPersonnelModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le personnel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editPersonnelForm" method="POST" class="needs-validation">
+        <form id="editPersonnelForm" method="POST" data-entity-form data-entity="personnel" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editPersonnelId" name="id">
-            <div class="mb-3">
-                <label for="editPersonnelNom" class="block text-sm font-medium text-green-300 mb-1">Nom</label>
-                <input type="text" id="editPersonnelNom" name="nom"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir un nom.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
             </div>
-            <div class="mb-3">
-                <label for="editPersonnelFonction" class="block text-sm font-medium text-green-300 mb-1">Fonction</label>
-                <input type="text" id="editPersonnelFonction" name="fonction"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fonction</label>
+                <input type="text" name="fonction" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editPersonnelTelephone" class="block text-sm font-medium text-green-300 mb-1">Téléphone</label>
-                <input type="text" id="editPersonnelTelephone" name="telephone"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Téléphone</label>
+                <input type="text" name="telephone" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editPersonnelUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editPersonnelUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editPersonnelTarif" class="block text-sm font-medium text-green-300 mb-1">Tarif (DH)</label>
-                <input type="number" step="0.01" id="editPersonnelTarif" name="tarif"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Tarif (DH)</label>
+                <input type="number" step="0.01" name="tarif" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editPersonnelActif" name="actif"
-                       class="h-4 w-4">
-                <label for="editPersonnelActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditPersonnelModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -458,130 +292,91 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- MATÉRIEL                                                       -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout matériel -->
 <div id="addMaterielModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un matériel
-            </h3>
-            <button onclick="closeAddMaterielModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un matériel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addMaterielForm" method="POST" class="needs-validation">
+        <form id="addMaterielForm" method="POST" data-entity-form data-entity="materiel" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addMaterielDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addMaterielDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addMaterielTypeMateriel" class="block text-sm font-medium text-green-300 mb-1">Type de matériel</label>
-                <select id="addMaterielTypeMateriel" name="type_materiel"
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type de matériel</label>
+                <select name="type_materiel" class="app-modal-input">
                     <option value="">— Non défini —</option>
                     {% for type in types_materiel_actifs %}
                         <option value="{{ type.id }}">{{ type.nom }}</option>
                     {% endfor %}
                 </select>
             </div>
-            <div class="mb-3">
-                <label for="addMaterielImmatriculation" class="block text-sm font-medium text-green-300 mb-1">N° de parc</label>
-                <input type="text" id="addMaterielImmatriculation" name="immatriculation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">N° de parc</label>
+                <input type="text" name="immatriculation" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addMaterielUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addMaterielUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addMaterielPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="addMaterielPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addMaterielActif" name="actif" checked
-                       class="h-4 w-4">
-                <label for="addMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddMaterielModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification matériel -->
 <div id="editMaterielModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le matériel
-            </h3>
-            <button onclick="closeEditMaterielModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le matériel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editMaterielForm" method="POST" class="needs-validation">
+        <form id="editMaterielForm" method="POST" data-entity-form data-entity="materiel" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editMaterielId" name="id">
-            <div class="mb-3">
-                <label for="editMaterielDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editMaterielDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editMaterielTypeMateriel" class="block text-sm font-medium text-green-300 mb-1">Type de matériel</label>
-                <select id="editMaterielTypeMateriel" name="type_materiel"
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type de matériel</label>
+                <select id="editMaterielTypeMateriel" name="type_materiel" class="app-modal-input">
                     <option value="">— Non défini —</option>
-                    {% for type in types_materiel_actifs %}
-                        <option value="{{ type.id }}">{{ type.nom }}</option>
-                    {% endfor %}
                 </select>
             </div>
-            <div class="mb-3">
-                <label for="editMaterielImmatriculation" class="block text-sm font-medium text-green-300 mb-1">N° de parc</label>
-                <input type="text" id="editMaterielImmatriculation" name="immatriculation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">N° de parc</label>
+                <input type="text" name="immatriculation" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editMaterielUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editMaterielUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editMaterielPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editMaterielPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editMaterielActif" name="actif"
-                       class="h-4 w-4">
-                <label for="editMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditMaterielModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -590,111 +385,77 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- TYPES DE MATÉRIEL                                              -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout type de matériel -->
 <div id="addTypeMaterielModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un type de matériel
-            </h3>
-            <button onclick="closeAddTypeMaterielModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un type de matériel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-
-        <form id="addTypeMaterielForm" method="POST" class="needs-validation">
+        <form id="addTypeMaterielForm" method="POST" data-entity-form data-entity="typeMateriel" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addTypeMaterielNom" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addTypeMaterielNom" name="nom"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="nom" class="app-modal-input"
                        placeholder="Pelle sur chenilles à godet" required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-
-            <div class="mb-3">
-                <label for="addTypeMaterielIcone" class="block text-sm font-medium text-green-300 mb-1">Icône</label>
-                <select id="addTypeMaterielIcone" name="icone"
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Icône</label>
+                <select name="icone" class="app-modal-input">
                     {% for valeur, libelle in choix_icones %}
                         <option value="{{ valeur }}">{{ libelle }}</option>
                     {% endfor %}
                 </select>
-                <div id="addTypeMaterielIconePreview" class="mt-2 hidden">
-                    <img src="" alt="Aperçu" class="h-16 w-16 object-contain bg-gray-800 rounded p-1">
+                <div data-icone-preview class="mt-2 hidden">
+                    <img src="" alt="Aperçu" class="h-16 w-16 object-contain rounded p-1"
+                        style="background-color: var(--bg-elevated);">
                 </div>
             </div>
-
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addTypeMaterielActif" name="actif" checked class="h-4 w-4">
-                <label for="addTypeMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddTypeMaterielModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification type de matériel -->
 <div id="editTypeMaterielModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le type de matériel
-            </h3>
-            <button onclick="closeEditTypeMaterielModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le type de matériel</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-
-        <form id="editTypeMaterielForm" method="POST" class="needs-validation">
+        <form id="editTypeMaterielForm" method="POST" data-entity-form data-entity="typeMateriel" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editTypeMaterielId" name="id">
-
-            <div class="mb-3">
-                <label for="editTypeMaterielNom" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editTypeMaterielNom" name="nom"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-
-            <div class="mb-3">
-                <label for="editTypeMaterielIcone" class="block text-sm font-medium text-green-300 mb-1">Icône</label>
-                <select id="editTypeMaterielIcone" name="icone"
-                        class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Icône</label>
+                <select name="icone" class="app-modal-input">
                     {% for valeur, libelle in choix_icones %}
                         <option value="{{ valeur }}">{{ libelle }}</option>
                     {% endfor %}
                 </select>
-                <div id="editTypeMaterielIconePreview" class="mt-2 hidden">
-                    <img src="" alt="Aperçu" class="h-16 w-16 object-contain bg-gray-800 rounded p-1">
+                <div data-icone-preview class="mt-2 hidden">
+                    <img src="" alt="Aperçu" class="h-16 w-16 object-contain rounded p-1"
+                        style="background-color: var(--bg-elevated);">
                 </div>
             </div>
-
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editTypeMaterielActif" name="actif" class="h-4 w-4">
-                <label for="editTypeMaterielActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditTypeMaterielModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -703,113 +464,84 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- TRANSPORT                                                      -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout transport -->
 <div id="addTransportModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un transport
-            </h3>
-            <button onclick="closeAddTransportModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un transport</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addTransportForm" method="POST" class="needs-validation">
+        <form id="addTransportForm" method="POST" data-entity-form data-entity="transport" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addTransportDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addTransportDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addTransportType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="addTransportType" name="type_transport"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_transport" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addTransportTransporteur" class="block text-sm font-medium text-green-300 mb-1">Transporteur</label>
-                <input type="text" id="addTransportTransporteur" name="transporteur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Transporteur</label>
+                <input type="text" name="transporteur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addTransportUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addTransportUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addTransportPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire</label>
-                <input type="number" id="addTransportPrixUnitaire" name="prix_unitaire" step="0.01"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addTransportActif" class="block text-sm font-medium text-green-300 mb-1">Actif</label>
-                <input type="checkbox" id="addTransportActif" name="actif"
-                       class="h-4 w-4 text-green-500 focus:ring-green-400 border-gray-300 rounded">
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end">
-                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Ajouter</button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification transport -->
- <div id="editTransportModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le transport
-            </h3>
-            <button onclick="closeEditTransportModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+<div id="editTransportModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le transport</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editTransportForm" method="POST" class="needs-validation">
+        <form id="editTransportForm" method="POST" data-entity-form data-entity="transport" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editTransportId" name="id">
-            <div class="mb-3">
-                <label for="editTransportDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editTransportDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editTransportType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="editTransportType" name="type_transport"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_transport" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editTransportTransporteur" class="block text-sm font-medium text-green-300 mb-1">Transporteur</label>
-                <input type="text" id="editTransportTransporteur" name="transporteur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Transporteur</label>
+                <input type="text" name="transporteur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editTransportUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editTransportUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editTransportPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editTransportPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editTransportActif" name="actif"
-                       class="h-4 w-4">
-                <label for="editTransportActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditTransportModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -818,118 +550,84 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- LOCATIONS                                                      -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout location -->
 <div id="addLocationModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter une location
-            </h3>
-            <button onclick="closeAddLocationModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter une location</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addLocationForm" method="POST" class="needs-validation">
+        <form id="addLocationForm" method="POST" data-entity-form data-entity="location" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addLocationDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addLocationDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addLocationType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="addLocationType" name="type_materiel"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_materiel" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addLocationLocataire" class="block text-sm font-medium text-green-300 mb-1">Locataire</label>
-                <input type="text" id="addLocationLocataire" name="locataire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Locataire</label>
+                <input type="text" name="locataire" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addLocationUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addLocationUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addLocationPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="addLocationPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addLocationActif" name="actif" checked class="h-4 w-4">
-                <label for="addLocationActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddLocationModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification location -->
 <div id="editLocationModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier la location
-            </h3>
-            <button onclick="closeEditLocationModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier la location</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editLocationForm" method="POST" class="needs-validation">
+        <form id="editLocationForm" method="POST" data-entity-form data-entity="location" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editLocationId" name="id">
-            <div class="mb-3">
-                <label for="editLocationDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editLocationDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editLocationType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="editLocationType" name="type_materiel"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_materiel" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editLocationLocataire" class="block text-sm font-medium text-green-300 mb-1">Locataire</label>
-                <input type="text" id="editLocationLocataire" name="locataire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Locataire</label>
+                <input type="text" name="locataire" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editLocationUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editLocationUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editLocationPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editLocationPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editLocationActif" name="actif" class="h-4 w-4">
-                <label for="editLocationActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditLocationModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -938,118 +636,84 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- SOUS-TRAITANCES                                                -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout sous-traitance -->
 <div id="addSousTraitanceModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter une sous-traitance
-            </h3>
-            <button onclick="closeAddSousTraitanceModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter une sous-traitance</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addSousTraitanceForm" method="POST" class="needs-validation">
+        <form id="addSousTraitanceForm" method="POST" data-entity-form data-entity="sousTraitance" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addSousTraitanceDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addSousTraitanceDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addSousTraitanceType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="addSousTraitanceType" name="type_sous_traitance"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_sous_traitance" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addSousTraitancePrestataire" class="block text-sm font-medium text-green-300 mb-1">Prestataire</label>
-                <input type="text" id="addSousTraitancePrestataire" name="prestataire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prestataire</label>
+                <input type="text" name="prestataire" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addSousTraitanceUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addSousTraitanceUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addSousTraitancePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="addSousTraitancePrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addSousTraitanceActif" name="actif" checked class="h-4 w-4">
-                <label for="addSousTraitanceActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddSousTraitanceModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification sous-traitance -->
 <div id="editSousTraitanceModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier la sous-traitance
-            </h3>
-            <button onclick="closeEditSousTraitanceModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier la sous-traitance</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editSousTraitanceForm" method="POST" class="needs-validation">
+        <form id="editSousTraitanceForm" method="POST" data-entity-form data-entity="sousTraitance" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editSousTraitanceId" name="id">
-            <div class="mb-3">
-                <label for="editSousTraitanceDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editSousTraitanceDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editSousTraitanceType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="editSousTraitanceType" name="type_sous_traitance"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_sous_traitance" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editSousTraitancePrestataire" class="block text-sm font-medium text-green-300 mb-1">Prestataire</label>
-                <input type="text" id="editSousTraitancePrestataire" name="prestataire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prestataire</label>
+                <input type="text" name="prestataire" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editSousTraitanceUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editSousTraitanceUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editSousTraitancePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editSousTraitancePrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editSousTraitanceActif" name="actif" class="h-4 w-4">
-                <label for="editSousTraitanceActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditSousTraitanceModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -1058,118 +722,84 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- CONSOMMABLES                                                   -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout consommable -->
 <div id="addConsommableModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter un consommable
-            </h3>
-            <button onclick="closeAddConsommableModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter un consommable</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addConsommableForm" method="POST" class="needs-validation">
+        <form id="addConsommableForm" method="POST" data-entity-form data-entity="consommable" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addConsommableDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addConsommableDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addConsommableType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="addConsommableType" name="type_consommable"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_consommable" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addConsommableFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
-                <input type="text" id="addConsommableFournisseur" name="fournisseur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fournisseur</label>
+                <input type="text" name="fournisseur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addConsommableUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addConsommableUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addConsommablePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="addConsommablePrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addConsommableActif" name="actif" checked class="h-4 w-4">
-                <label for="addConsommableActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddConsommableModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification consommable -->
 <div id="editConsommableModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier le consommable
-            </h3>
-            <button onclick="closeEditConsommableModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier le consommable</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editConsommableForm" method="POST" class="needs-validation">
+        <form id="editConsommableForm" method="POST" data-entity-form data-entity="consommable" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editConsommableId" name="id">
-            <div class="mb-3">
-                <label for="editConsommableDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editConsommableDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editConsommableType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="editConsommableType" name="type_consommable"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_consommable" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editConsommableFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
-                <input type="text" id="editConsommableFournisseur" name="fournisseur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fournisseur</label>
+                <input type="text" name="fournisseur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editConsommableUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editConsommableUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editConsommablePrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editConsommablePrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editConsommableActif" name="actif" class="h-4 w-4">
-                <label for="editConsommableActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditConsommableModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -1178,118 +808,156 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- FOURNITURES                                                    -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<!-- Modal d'ajout fourniture -->
 <div id="addFournitureModal" class="modal">
-    <div class="bg-[#525252] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-plus mr-2"></i>Ajouter une fourniture
-            </h3>
-            <button onclick="closeAddFournitureModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter une fourniture</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="addFournitureForm" method="POST" class="needs-validation">
+        <form id="addFournitureForm" method="POST" data-entity-form data-entity="fourniture" data-mode="add">
             {% csrf_token %}
-            <div class="mb-3">
-                <label for="addFournitureDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="addFournitureDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="addFournitureType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="addFournitureType" name="type_fourniture"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_fourniture" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addFournitureFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
-                <input type="text" id="addFournitureFournisseur" name="fournisseur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fournisseur</label>
+                <input type="text" name="fournisseur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addFournitureUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="addFournitureUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="addFournitureUniPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="addFournitureUniPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="addFournitureActif" name="actif" checked class="h-4 w-4">
-                <label for="addFournitureActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeAddFournitureModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Ajouter
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Modal de modification fourniture -->
 <div id="editFournitureModal" class="modal">
-    <div class="bg-[#2E2E2E] p-4 md:p-6 rounded-lg shadow-xl w-full">
-        <div class="flex justify-between items-center mb-4 border-b border-green-700 pb-2">
-            <h3 class="text-lg md:text-xl font-bold text-green-400">
-                <i class="fa-solid fa-pen mr-2"></i>Modifier la fourniture
-            </h3>
-            <button onclick="closeEditFournitureModal()" class="text-gray-400 hover:text-white">
-                <i class="fa-solid fa-times text-xl"></i>
-            </button>
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier la fourniture</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
         </div>
-        <form id="editFournitureForm" method="POST" class="needs-validation">
+        <form id="editFournitureForm" method="POST" data-entity-form data-entity="fourniture" data-mode="edit">
             {% csrf_token %}
-            <input type="hidden" id="editFournitureId" name="id">
-            <div class="mb-3">
-                <label for="editFournitureDesignation" class="block text-sm font-medium text-green-300 mb-1">Désignation</label>
-                <input type="text" id="editFournitureDesignation" name="designation"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base"
-                       required>
-                <div class="invalid-feedback text-red-400 text-sm mt-1 hidden">Veuillez saisir une désignation.</div>
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Désignation</label>
+                <input type="text" name="designation" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir une désignation.</div>
             </div>
-            <div class="mb-3">
-                <label for="editFournitureType" class="block text-sm font-medium text-green-300 mb-1">Type</label>
-                <input type="text" id="editFournitureType" name="type_fourniture"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Type</label>
+                <input type="text" name="type_fourniture" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editFournitureFournisseur" class="block text-sm font-medium text-green-300 mb-1">Fournisseur</label>
-                <input type="text" id="editFournitureFournisseur" name="fournisseur"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Fournisseur</label>
+                <input type="text" name="fournisseur" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editFournitureUnite" class="block text-sm font-medium text-green-300 mb-1">Unité</label>
-                <input type="text" id="editFournitureUnite" name="unite"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Unité</label>
+                <input type="text" name="unite" class="app-modal-input">
             </div>
-            <div class="mb-3">
-                <label for="editFournitureUniPrixUnitaire" class="block text-sm font-medium text-green-300 mb-1">Prix unitaire (DH)</label>
-                <input type="number" step="0.01" id="editFournitureUniPrixUnitaire" name="prix_unitaire"
-                       class="w-full px-3 py-2 bg-gray-700 border border-green-800 rounded text-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm md:text-base">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Prix unitaire (DH)</label>
+                <input type="number" step="0.01" name="prix_unitaire" class="app-modal-input">
             </div>
-            <div class="mb-3 flex items-center gap-2">
-                <input type="checkbox" id="editFournitureActif" name="actif" class="h-4 w-4">
-                <label for="editFournitureActif" class="text-sm font-medium text-green-300">Actif</label>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Actif</label>
             </div>
-            <div class="flex justify-end space-x-2 md:space-x-3 mt-6 pt-4 border-t border-green-800">
-                <button type="button" onclick="closeEditFournitureModal()"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-500 transition text-sm md:text-base">
-                    Annuler
-                </button>
-                <button type="submit"
-                        class="px-3 py-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm md:text-base">
-                    💾 Enregistrer
-                </button>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════ -->
+<!-- CATÉGORIES DE CHARGES                                          -->
+<!-- ══════════════════════════════════════════════════════════════ -->
+<div id="addCategorieModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-plus mr-2"></i>Ajouter une catégorie</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="addCategorieForm" method="POST" data-entity-form data-entity="categorie" data-mode="add">
+            {% csrf_token %}
+            <div class="app-modal-field">
+                <label class="app-modal-label">Code</label>
+                <input type="text" name="code" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un code.</div>
+            </div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
+            </div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Ordre</label>
+                <input type="number" name="ordre" min="0" value="0" class="app-modal-input">
+            </div>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" checked class="h-4 w-4">
+                <label class="app-modal-label mb-0">Active</label>
+            </div>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Ajouter</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="editCategorieModal" class="modal">
+    <div class="app-modal">
+        <div class="app-modal-header">
+            <h3 class="app-modal-title"><i class="fa-solid fa-pen mr-2"></i>Modifier la catégorie</h3>
+            <button type="button" data-modal-close class="app-modal-close"><i class="fa-solid fa-times"></i></button>
+        </div>
+        <form id="editCategorieForm" method="POST" data-entity-form data-entity="categorie" data-mode="edit">
+            {% csrf_token %}
+            <input type="hidden" name="id">
+            <div class="app-modal-field">
+                <label class="app-modal-label">Code</label>
+                <input type="text" name="code" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un code.</div>
+            </div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Nom</label>
+                <input type="text" name="nom" class="app-modal-input" required>
+                <div class="invalid-feedback hidden">Veuillez saisir un nom.</div>
+            </div>
+            <div class="app-modal-field">
+                <label class="app-modal-label">Ordre</label>
+                <input type="number" name="ordre" min="0" class="app-modal-input">
+            </div>
+            <div class="app-modal-checkbox-row">
+                <input type="checkbox" name="actif" class="h-4 w-4">
+                <label class="app-modal-label mb-0">Active</label>
+            </div>
+            <div class="app-modal-footer">
+                <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">Annuler</button>
+                <button type="submit" class="app-modal-btn app-modal-btn-submit">💾 Enregistrer</button>
             </div>
         </form>
     </div>
@@ -1298,4 +966,4 @@
 <!-- ══════════════════════════════════════════════════════════════ -->
 <!-- BACKDROP PARTAGÉ                                               -->
 <!-- ══════════════════════════════════════════════════════════════ -->
-<div id="modalBackdrop" class="modal-backdrop" onclick="closeAllModals()"></div>
+<div id="modalBackdrop" class="modal-backdrop"></div>

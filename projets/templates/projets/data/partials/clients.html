@@ -1,43 +1,48 @@
-<h2 class="text-2xl font-bold text-green-400 mb-6 flex items-center">
-    <i class="fa-solid fa-users mr-3"></i> Liste des clients
+{# projets/data/partials/clients.html #}
+
+<h2 class="app-section-title mb-6">
+    <i class="fa-solid fa-users mr-3"></i>
+    Liste des clients
 </h2>
 
 {% if clients %}
-<div class="bg-gray-800 p-2 overflow-x-auto">
-    <table class="min-w-full bg-[#2E2E2E]">
-        <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
+<div class="app-card overflow-x-auto">
+    <table class="app-table">
+        <thead>
             <tr>
-                <th class="px-4 py-3 text-left">Nom</th>
-                <th class="px-4 py-3 text-left">Contact</th>
-                <th class="px-4 py-3 text-left">Email</th>
-                <th class="px-4 py-3 text-left">Téléphone</th>
-                <th class="px-4 py-3 text-left">Adresse</th>
-                <th class="px-4 py-3 text-center">Actions</th>
+                <th class="text-left">Nom</th>
+                <th class="text-left">Contact</th>
+                <th class="text-left">Email</th>
+                <th class="text-left">Téléphone</th>
+                <th class="text-left">Adresse</th>
+                <th class="text-center">Actions</th>
             </tr>
         </thead>
-        <tbody class="bg-gray-800 divide-y divide-green-800">
+        <tbody>
             {% for client in clients %}
-            <tr class="style="color: var(--text-primary);"">
-                <td class="px-4 py-3">{{ client.nom }}</td>
-                <td class="px-4 py-3">{{ client.contact }}</td>
-                <td class="px-4 py-3">{{ client.email }}</td>
-                <td class="px-4 py-3">{{ client.telephone }}</td>
-                <td class="px-4 py-3">{{ client.adresse }}</td>
-                <td class="px-4 py-3 text-center space-x-3">
-                    <button data-edit-client-button 
-                            data-id="{{ client.id }}" 
-                            data-nom="{{ client.nom }}" 
-                            data-contact="{{ client.contact }}" 
-                            data-email="{{ client.email }}" 
-                            data-telephone="{{ client.telephone }}" 
-                            data-adresse="{{ client.adresse }}"
-                            class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
+            <tr>
+                <td>{{ client.nom }}</td>
+                <td>{{ client.contact|default:"—" }}</td>
+                <td>{{ client.email|default:"—" }}</td>
+                <td>{{ client.telephone|default:"—" }}</td>
+                <td>{{ client.adresse|default:"—" }}</td>
+                <td class="text-center space-x-3">
+                    <button type="button"
+                            data-edit
+                            data-entity="client"
+                            data-payload='{"id": {{ client.id }}, "nom": "{{ client.nom|escapejs }}", "contact": "{{ client.contact|default:""|escapejs }}", "email": "{{ client.email|default:""|escapejs }}", "telephone": "{{ client.telephone|default:""|escapejs }}", "adresse": "{{ client.adresse|default:""|escapejs }}"}'
+                            class="app-action-btn app-action-edit"
+                            title="Modifier">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <a href="{% url 'projets:supprimer_client' client.id %}" 
-                       class="text-red-500 hover:text-red-400 transition">
+                    <button type="button"
+                            data-delete
+                            data-entity="client"
+                            data-id="{{ client.id }}"
+                            class="app-action-btn app-action-delete"
+                            title="Supprimer">
                         <i class="fa-solid fa-trash"></i>
-                    </a>
+                    </button>
                 </td>
             </tr>
             {% endfor %}
@@ -45,14 +50,17 @@
     </table>
 </div>
 {% else %}
-<div class="p-4 bg-green-900 text-green-200 rounded-lg shadow mb-4 border border-green-700">
+<div class="app-empty-state">
+    <i class="fa-solid fa-circle-info mr-2"></i>
     Aucun client enregistré.
 </div>
 {% endif %}
 
 <div class="mt-6">
-    <button data-add-client-button
-            class="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-500 transition text-sm shadow-lg">
+    <button type="button"
+            data-add
+            data-entity="client"
+            class="app-btn-primary">
         <i class="fa-solid fa-plus mr-2"></i> Ajouter un client
     </button>
 </div>
