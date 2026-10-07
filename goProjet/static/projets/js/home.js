@@ -52,7 +52,6 @@
                         try { window.chartManager.destroy(); } catch (e) {}
                     }
                     window.chartManager = new ProjetsChartManager(chartData);
-                    console.log('[home.js] Graphique initialisé');
                 } else {
                     console.warn('[home.js] ProjetsChartManager non défini');
                 }

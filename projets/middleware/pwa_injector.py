@@ -96,7 +96,7 @@ class PWAInjectorMiddleware:
         }
         
         // Log pour débogage
-        console.log('📱 PWA prête à être installée');
+        // console.log('📱 PWA prête à être installée');
     });
     
     function showPWAInstallButton() {
@@ -110,6 +110,7 @@ class PWAInjectorMiddleware:
         installBtn.innerHTML = '📱 Installer GoProjet';
         installBtn.id = 'pwa-install-button';
         installBtn.style.cssText = `
+            display: none;
             position: fixed;
             bottom: 20px;
             right: 20px;
@@ -143,7 +144,7 @@ class PWAInjectorMiddleware:
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('✅ PWA installée avec succès');
+                        // console.log('✅ PWA installée avec succès');
                         installBtn.remove();
                     } else {
                         console.log('❌ Installation annulée');
@@ -166,7 +167,7 @@ class PWAInjectorMiddleware:
     
     // Cacher le bouton si déjà installé
     window.addEventListener('appinstalled', () => {
-        console.log('🎉 GoProjet installée comme PWA!');
+        // console.log('🎉 GoProjet installée comme PWA!');
         const installBtn = document.getElementById('pwa-install-button');
         if (installBtn) {
             installBtn.remove();
