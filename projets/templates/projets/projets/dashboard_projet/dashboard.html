@@ -1,0 +1,19 @@
+{# projets/templates/projets/projets/dashboard_projet/dashboard.html #}
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord – {{ projet.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-diagram-project mr-2"></i>Tableau de bord{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'projets/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% include "projets/projets/dashboard_projet/_dashboard_content.html" %}
+    {% include "projets/projets/dashboard_projet/_dashboard_modal_container.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'projets/js/dashboard.js' %}" defer></script>
+{% endblock %}

@@ -64,7 +64,7 @@
     // ============================================================
     // OUVERTURE DE LA MODAL
     // ============================================================
-    window.openTaskModal = async function(tacheId = null, projetId = null) {
+    window.openTaskModal = async function(tacheId = null, projetId = null, projetNom = null) {
         const modal = document.getElementById('taskModal');
         if (!modal) {
             console.error('[taches] #taskModal introuvable');
@@ -82,29 +82,73 @@
         const form = document.getElementById('taskForm');
         const projetSelect = document.getElementById('projet');
 
-        // ⚡ Gestion du projet
+        /* ═══════════════════════════════════════════════════════════
+        GESTION DU PROJET (pré-remplir + verrouiller)
+        ═══════════════════════════════════════════════════════════ */
         if (projetId) {
-            // Contexte projet : projet verrouillé
             if (form) form.dataset.projetId = projetId;
+
             if (projetSelect) {
+                // 1. Vérifier si l'option existe déjà
+                let option = projetSelect.querySelector(`option[value="${projetId}"]`);
+
+                // 2. Si non, l'injecter avec le nom fourni
+                if (!option) {
+                    option = document.createElement('option');
+                    option.value = String(projetId);
+                    option.textContent = projetNom || `Projet #${projetId}`;
+                    projetSelect.appendChild(option);
+                }
+
+                // 3. Sélectionner
                 projetSelect.value = String(projetId);
+
+                // 4. Désactiver (verrouiller)
                 projetSelect.disabled = true;
+                projetSelect.style.opacity = '0.7';
+                projetSelect.style.cursor = 'not-allowed';
+
+                // 5. Hidden input (un select disabled n'est pas soumis)
+                let hidden = document.getElementById('projetHidden');
+                if (!hidden) {
+                    hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'projet';
+                    hidden.id = 'projetHidden';
+                    projetSelect.parentElement.appendChild(hidden);
+                }
+                hidden.value = projetId;
+
+                // 6. Hint "verrouillé"
+                let hint = document.getElementById('projetLockedHint');
+                if (!hint) {
+                    hint = document.createElement('p');
+                    hint.id = 'projetLockedHint';
+                    hint.className = 'text-xs mt-1';
+                    hint.style.color = 'var(--text-muted)';
+                    hint.innerHTML = '<i class="fas fa-lock mr-1"></i>Projet verrouillé';
+                    projetSelect.parentElement.appendChild(hint);
+                }
             }
         } else {
-            // Contexte global : l'utilisateur choisit
+            /* ─── Contexte global : l'utilisateur choisit ─── */
             if (form) delete form.dataset.projetId;
-            if (projetSelect && !tacheId) {
-                projetSelect.value = '';
+
+            if (projetSelect) {
                 projetSelect.disabled = false;
+                projetSelect.style.opacity = '';
+                projetSelect.style.cursor = '';
+                if (!tacheId) projetSelect.value = '';
             }
+
+            document.getElementById('projetHidden')?.remove();
+            document.getElementById('projetLockedHint')?.remove();
         }
 
         try {
-            // Charger responsables + priorités
             const data = await loadFormData();
             populateFormOptions(data);
 
-            // ⚡ Si modification : charger la tâche
             if (tacheId) {
                 const url = `/projet/${projetId}/taches/${tacheId}/`;
                 const response = await fetch(url, {
@@ -117,9 +161,7 @@
                 if (!response.ok) throw new Error(`Erreur ${response.status}`);
 
                 const taskData = await response.json();
-                if (!taskData?.success) {
-                    throw new Error(taskData?.message || 'Réponse invalide');
-                }
+                if (!taskData?.success) throw new Error(taskData?.message || 'Réponse invalide');
 
                 fillTaskForm(taskData.data);
             }
@@ -173,17 +215,29 @@
     // ============================================================
     window.closeTaskModal = function() {
         const modal = document.getElementById('taskModal');
-        if (modal) modal.classList.add('hidden');
+        if (!modal) return;
 
+        // ─── Réinitialiser le projet ───
+        const projetSelect = document.getElementById('projet');
+        if (projetSelect) {
+            projetSelect.disabled = false;
+            projetSelect.style.opacity = '';
+            projetSelect.style.cursor = '';
+            projetSelect.value = '';
+        }
+
+        // ─── Retirer le champ caché et le hint ───
+        document.getElementById('projetHidden')?.remove();
+        document.getElementById('projetLockedHint')?.remove();
+
+        // ─── Reset du formulaire ───
         const form = document.getElementById('taskForm');
         if (form) {
             form.reset();
             delete form.dataset.projetId;
         }
 
-        // Réactiver le select projet (au cas où il était désactivé)
-        const projetSelect = document.getElementById('projet');
-        if (projetSelect) projetSelect.disabled = false;
+        modal.classList.add('hidden');
     };
 
     // ============================================================

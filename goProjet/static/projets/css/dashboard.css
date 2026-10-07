@@ -1,0 +1,194 @@
+/* static/projets/css/dashboard.css */
+/* ============================================================
+   TABLEAU DE BORD PROJET
+   ============================================================ */
+
+/* ---------- Cartes génériques ---------- */
+.project-dashboard-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    color: var(--text-primary);
+    transition: border-color 0.2s ease;
+}
+@media (min-width: 768px) {
+    .project-dashboard-card { padding: 1.5rem; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOUTON D'ACCÈS AUX MODULES
+   ══════════════════════════════════════════════════════════════ */
+.btn-access {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-inverse);
+    background-color: var(--accent-primary);
+    border: 1px solid var(--accent-primary);
+    text-decoration: none;
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 2px 6px rgba(34, 211, 238, 0.2);
+}
+
+.btn-access:hover {
+    /* Éclaircit automatiquement, sans dépendre d'une variable */
+    /* filter: brightness(1.1); */
+    box-shadow: 0 4px 12px rgba(34, 211, 238, 0.35);
+    transform: translateY(-1px);
+}
+
+.btn-access:active {
+    transform: translateY(0);
+    filter: brightness(0.95);
+    box-shadow: 0 1px 3px rgba(34, 211, 238, 0.2);
+}
+
+.btn-access:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+/* ---------- Section Pilotage du délai ---------- */
+.dashboard-delay-section {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.delay-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    align-self: flex-start;
+}
+.delay-status-retard   { background-color: rgba(239, 68, 68, 0.15);  color: var(--accent-danger); }
+.delay-status-arret    { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+.delay-status-alerte   { background-color: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+.delay-status-incomplet{ background-color: rgba(245, 158, 11, 0.15); color: var(--accent-warning); }
+.delay-status-normal   { background-color: rgba(16, 185, 129, 0.15); color: var(--accent-success); }
+.delay-status-attente_osc { background-color: rgba(34, 211, 238, 0.15); color: var(--accent-primary); }
+
+/* Classes de couleur pour la date de fin */
+.text-red   { color: var(--accent-danger); }
+.text-amber { color: var(--accent-warning); }
+.text-cyan  { color: var(--accent-primary); }
+
+/* ---------- Modules du projet ---------- */
+.dashboard-module-card {
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+@media (min-width: 768px) {
+    .dashboard-module-card { padding: 1.5rem; }
+}
+.dashboard-module-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--accent-primary);
+    box-shadow: 0 10px 25px rgba(34, 211, 238, 0.15);
+}
+
+.dashboard-module-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--accent-primary);
+}
+@media (min-width: 768px) {
+    .dashboard-module-icon { font-size: 2rem; margin-bottom: 1rem; }
+}
+
+.dashboard-module-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+@media (min-width: 768px) {
+    .dashboard-module-title { font-size: 1.1rem; }
+}
+
+.dashboard-module-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-grow: 1;
+    margin-bottom: 1rem;
+    line-height: 1.4;
+}
+@media (min-width: 768px) {
+    .dashboard-module-desc { font-size: 0.9rem; }
+}
+
+.dashboard-no-data {
+    color: var(--text-muted);
+    font-style: italic;
+    font-size: 13px;
+    margin-bottom: 0.5rem;
+}
+
+/* ---------- Statistiques décomptes ---------- */
+.dashboard-stat-card {
+    background-color: var(--bg-elevated);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid var(--border-default);
+}
+@media (min-width: 768px) {
+    .dashboard-stat-card { padding: 1.5rem; }
+}
+.dashboard-stat-card h4 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+@media (min-width: 768px) {
+    .dashboard-stat-card h4 { font-size: 1.5rem; }
+}
+.dashboard-stat-total { border-top: 4px solid var(--accent-primary); }
+.dashboard-stat-payes { border-top: 4px solid var(--accent-success); }
+.dashboard-stat-emis  { border-top: 4px solid var(--accent-warning); }
+.dashboard-stat-retard{ border-top: 4px solid var(--accent-danger); }
+
+/* ---------- Cartes de décompte ---------- */
+.dashboard-decompte-card {
+    background-color: var(--bg-elevated);
+    border-radius: 0.625rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid var(--accent-primary);
+}
+@media (min-width: 768px) {
+    .dashboard-decompte-card { padding: 1rem; margin-bottom: 1rem; }
+}
+
+.dashboard-decompte-statut {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75em;
+    font-weight: 700;
+    color: var(--text-inverse);
+}
+.dashboard-decompte-statut.statut-valide    { background-color: var(--accent-success); }
+.dashboard-decompte-statut.statut-brouillon { background-color: var(--text-muted); }
+.dashboard-decompte-statut.statut-emis      { background-color: var(--accent-info); }
+.dashboard-decompte-statut.statut-en_retard { background-color: var(--accent-danger); }
+.dashboard-decompte-statut.statut-paye      { background-color: var(--accent-success); }
+.dashboard-decompte-statut.statut-partiel   { background-color: var(--accent-warning); }

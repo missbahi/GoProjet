@@ -43,8 +43,7 @@
                         <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
                             Projet *
                         </label>
-                        <select name="projet" id="projet" required
-                                {% if projet %}disabled{% endif %}>
+                        <select name="projet" id="projet" required {% if projet %}disabled{% endif %}>
                             <option value="">Sélectionnez un projet...</option>
                             {% for p in projets_disponibles %}
                                 <option value="{{ p.id }}" {% if projet and projet.id == p.id %}selected{% endif %}>
@@ -115,7 +114,7 @@
                 <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
                     Description
                 </label>
-                <textarea name="description" id="description" rows="4"></textarea>
+                <textarea name="description" id="description" rows="3" required></textarea>
             </div>
 
             <!-- Footer -->

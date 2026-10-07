@@ -44,12 +44,6 @@
     from { opacity: 0; }
     to   { opacity: 1; }
 }
-/* Items de la sidebar */
-.sidebar {
-    background-color: var(--bg-surface);
-    color: var(--text-primary);
-    border-right: 1px solid var(--border-default);
-}
 
 /* Badges pour les échéances */
 .badge-danger {
