@@ -1,0 +1,24 @@
+{# projets/templates/projets/home/base_project.html #}
+{% extends "projets/home/base_core.html" %}
+{% load static %}
+
+{# Signale à HTMX la famille de cette page #}
+{% block data_family %}project{% endblock %}
+
+{# ══════════════════════════════════════════════════════════════
+   CSS spécifiques à la Famille B
+   ══════════════════════════════════════════════════════════════ #}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'projets/css/dashboard.css' %}">
+{% endblock %}
+
+{# ══════════════════════════════════════════════════════════════
+   JS communs à tous les sous-modules projet
+   ══════════════════════════════════════════════════════════════ #}
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'projets/js/dashboard.js' %}" defer></script>
+    <script src="{% static 'projets/js/taches.js' %}" defer></script>
+    <script src="{% static 'projets/js/os.js' %}" defer></script>
+{% endblock %}

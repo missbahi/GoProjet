@@ -1,0 +1,362 @@
+/* static/projets/css/components.css */
+/* ============================================================
+   COMPOSANTS RÉUTILISABLES — chargés partout
+   ============================================================
+   Contenu :
+   1. Titres de section
+   2. Cartes génériques
+   3. Tableaux
+   4. Boutons (action, primaire, secondaire)
+   5. Badges
+   6. Modales
+   7. États vides
+   8. Formulaires (labels, inputs)
+   ============================================================ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   1. TITRES DE SECTION
+   ══════════════════════════════════════════════════════════════ */
+.app-section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    color: var(--accent-green);
+}
+
+.app-section-subtitle {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   2. CARTES
+   ══════════════════════════════════════════════════════════════ */
+.app-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    color: var(--text-primary);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   3. TABLEAUX
+   ══════════════════════════════════════════════════════════════ */
+.app-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.app-table thead {
+    background-color: var(--table-header-bg);
+    color: var(--accent-green);
+    border-bottom: 1px solid var(--table-border);
+}
+.app-table thead th {
+    padding: 0.75rem 1rem;
+    font-weight: 500;
+}
+.app-table tbody tr {
+    border-bottom: 1px solid var(--table-border);
+    transition: background-color 0.15s;
+}
+.app-table tbody tr:last-child {
+    border-bottom: none;
+}
+.app-table tbody tr:hover {
+    background-color: var(--table-row-hover);
+}
+.app-table tbody td {
+    padding: 0.75rem 1rem;
+    color: var(--text-primary);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   4. BOUTONS
+   ══════════════════════════════════════════════════════════════ */
+
+/* Boutons d'action (icônes) */
+.app-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, background-color 0.15s;
+    text-decoration: none;
+}
+.app-action-btn:hover {
+    background-color: var(--bg-hover);
+    opacity: 0.85;
+}
+.app-action-edit   { color: var(--accent-warning); }
+.app-action-delete { color: var(--accent-danger); }
+
+/* Bouton primaire (variante locale, pour ne pas dépendre de themes.css) */
+.app-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+.app-btn-primary {
+    background-color: var(--accent-green);
+    color: var(--text-inverse);
+    box-shadow: var(--shadow-md);
+}
+.app-btn-primary:hover {
+    opacity: 0.9;
+}
+.app-btn-secondary {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+}
+.app-btn-secondary:hover {
+    background-color: var(--bg-hover);
+}
+.app-btn-danger {
+    background-color: var(--accent-danger);
+    color: var(--text-inverse);
+}
+.app-btn-danger:hover {
+    opacity: 0.9;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. BADGES
+   ══════════════════════════════════════════════════════════════ */
+.app-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 9999px;
+}
+.app-badge-success {
+    background-color: rgba(16, 185, 129, 0.15);
+    color: var(--accent-success);
+}
+.app-badge-warning {
+    background-color: rgba(245, 158, 11, 0.15);
+    color: var(--accent-warning);
+}
+.app-badge-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: var(--accent-danger);
+}
+.app-badge-info {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: var(--accent-info);
+}
+.app-badge-muted {
+    background-color: rgba(107, 114, 128, 0.15);
+    color: var(--text-muted);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   6. MODALES
+   ══════════════════════════════════════════════════════════════ */
+
+/* Backdrop */
+.modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: var(--modal-overlay);
+    z-index: 40;
+}
+
+/* Conteneur (positionnement) */
+.modal {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    width: 95%;
+    max-width: 32rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+@media (min-width: 769px) {
+    .modal { width: 90%; }
+}
+
+/* Carte interne */
+.app-modal {
+    background-color: var(--modal-bg);
+    color: var(--text-primary);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+}
+
+/* Header */
+.app-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-default);
+}
+.app-modal-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--accent-green);
+    display: flex;
+    align-items: center;
+}
+@media (min-width: 768px) {
+    .app-modal-title { font-size: 1.25rem; }
+}
+.app-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 0.375rem;
+    transition: color 0.15s, background-color 0.15s;
+}
+.app-modal-close:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
+}
+
+/* Champs */
+.app-modal-field { margin-bottom: 0.75rem; }
+.app-modal-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+}
+.app-modal-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+@media (min-width: 768px) {
+    .app-modal-input { font-size: 1rem; }
+}
+.app-modal-input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+.app-modal-input.border-red-500 {
+    border-color: var(--accent-danger) !important;
+}
+
+/* Checkbox */
+.app-modal-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+/* Footer + boutons */
+.app-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-default);
+}
+.app-modal-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, background-color 0.15s;
+}
+@media (min-width: 768px) {
+    .app-modal-btn { font-size: 1rem; padding: 0.5rem 1.25rem; }
+}
+.app-modal-btn-cancel {
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+}
+.app-modal-btn-cancel:hover {
+    background-color: var(--bg-hover);
+}
+.app-modal-btn-submit {
+    background-color: var(--accent-green);
+    color: var(--text-inverse);
+}
+.app-modal-btn-submit:hover {
+    opacity: 0.9;
+}
+
+/* Validation */
+.app-modal .invalid-feedback {
+    font-size: 0.75rem;
+    color: var(--accent-danger);
+    margin-top: 0.25rem;
+}
+.app-modal .invalid-feedback.hidden { display: none; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   7. ÉTATS VIDES
+   ══════════════════════════════════════════════════════════════ */
+.app-empty-state {
+    padding: 1rem;
+    border-radius: 0.5rem;
+    background-color: var(--bg-elevated);
+    color: var(--text-secondary);
+    border-left: 4px solid var(--accent-green);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   8. FORMULAIRES
+   ══════════════════════════════════════════════════════════════ */
+.app-input {
+    width: 100%;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.app-input::placeholder { color: var(--input-placeholder); }
+.app-input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+.app-input-error { border-color: var(--accent-danger) !important; }

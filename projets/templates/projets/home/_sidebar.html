@@ -15,7 +15,12 @@
             <ul class="space-y-2 text-lg">
                 <li>
                     <a href="{% url 'projets:home' %}"
-                       class="sidebar-item {% if 'home' in request.resolver_match.url_name %}active{% endif %}">
+                        hx-get="{% url 'projets:home' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'home' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Tableau de bord</span>
                     </a>
@@ -35,12 +40,12 @@
                 </li>
                 <li>
                     <a href="{% url 'projets:liste_taches' %}"
-                    hx-get="{% url 'projets:liste_taches' %}"
-                    hx-target="#main-content"
-                    hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                    hx-push-url="true"
-                    hx-indicator="#htmx-progress"
-                    class="sidebar-item {% if 'tache' in request.resolver_match.url_name %}active{% endif %}">
+                        hx-get="{% url 'projets:liste_taches' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'tache' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-tasks"></i>
                         <span>Gestion des Tâches</span>
                     </a>
@@ -53,15 +58,20 @@
             <ul class="space-y-2 text-lg">
                 {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
                 <li>
-                    <a href="{% url 'projets:base_donnees' %}"
-                       class="sidebar-item {% if 'base_donnees' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'projets:data_view' %}"
+                        class="sidebar-item {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-database"></i>
                         <span>Configuration</span>
                     </a>
                 </li>
                 <li>
                     <a href="{% url 'projets:liste_utilisateurs' %}"
-                       class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
+                        hx-get="{% url 'projets:liste_utilisateurs' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-users"></i>
                         <span>Administration</span>
                     </a>

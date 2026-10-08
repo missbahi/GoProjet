@@ -62,8 +62,8 @@
             <ul class="space-y-2 text-lg">
                 {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
                 <li>
-                    <a href="{% url 'projets:base_donnees' %}"
-                       class="sidebar-item {% if 'base_donnees' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'projets:data_view' %}"
+                       class="sidebar-item {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-database"></i>
                         <span>Configuration</span>
                     </a>

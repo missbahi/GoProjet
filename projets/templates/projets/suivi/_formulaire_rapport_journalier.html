@@ -779,7 +779,7 @@
                class="w-full bg-slate-800/80 border border-gray-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-400 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/50">
       </div>
       {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
-        <a href="{% url 'projets:base_donnees' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-600/50 rounded-lg hover:bg-amber-900/70 transition shrink-0" title="Gérer le référentiel global BDD">
+        <a href="{% url 'projets:data_view' %}" target="_blank" rel="noopener" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-amber-300 bg-amber-950/50 border border-amber-600/50 rounded-lg hover:bg-amber-900/70 transition shrink-0" title="Gérer le référentiel global BDD">
           <i class="fas fa-external-link-alt text-amber-400"></i>
           <span class="hidden sm:inline">Gérer la BDD</span>
         </a>

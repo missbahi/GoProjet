@@ -1,50 +1,73 @@
-{% extends 'projets/base.html' %}
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Supprimer la tâche – GoProjet{% endblock %}
+{% block page_title %}<i class="fas fa-trash mr-2"></i>Supprimer la tâche{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 max-w-2xl">
-    <div class="bg-white shadow-md rounded-lg overflow-hidden">
-        <div class="p-6 border-b border-gray-200 bg-red-50">
-            <h2 class="text-xl font-semibold text-red-700">
+<div class="max-w-2xl mx-auto">
+
+    <div class="app-card overflow-hidden">
+
+        <!-- En-tête rouge -->
+        <div class="p-6"
+             style="background-color: rgba(239, 68, 68, 0.1); border-bottom: 1px solid var(--accent-danger);">
+            <h2 class="text-xl font-semibold flex items-center"
+                style="color: var(--accent-danger);">
                 <i class="fas fa-exclamation-triangle mr-2"></i>
                 Confirmer la suppression
             </h2>
         </div>
-        
+
+        <!-- Contenu -->
         <div class="p-6">
-            <p class="mb-4 text-gray-700">
+
+            <p class="mb-4" style="color: var(--text-secondary);">
                 Êtes-vous sûr de vouloir supprimer définitivement cette tâche ?
             </p>
-            
-            <div class="bg-gray-50 p-4 rounded-md mb-6">
-                <h3 class="font-medium text-gray-900 mb-2">{{ tache.titre }}</h3>
-                <p class="text-sm text-gray-600">
-                    <span class="font-medium">Projet:</span> {{ tache.projet.nom }}
+
+            <!-- Détails de la tâche -->
+            <div class="p-4 rounded-md mb-6"
+                 style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+
+                <h3 class="font-medium mb-2" style="color: var(--text-primary);">
+                    {{ tache.titre }}
+                </h3>
+
+                <p class="text-sm mb-1" style="color: var(--text-secondary);">
+                    <span class="font-medium">Projet :</span> {{ tache.projet.nom }}
                 </p>
-                <p class="text-sm text-gray-600">
-                    <span class="font-medium">Dates:</span> 
+
+                <p class="text-sm mb-1" style="color: var(--text-secondary);">
+                    <span class="font-medium">Dates :</span>
                     {{ tache.date_debut|date:"d/m/Y" }} - {{ tache.date_fin|date:"d/m/Y" }}
                 </p>
-                <p class="text-sm text-gray-600">
-                    <span class="font-medium">Priorité:</span> 
-                    <span class="px-2 py-1 rounded text-xs 
-                        {% if tache.priorite == 'HAUTE' %}bg-red-100 text-red-800
-                        {% elif tache.priorite == 'URGENTE' %}bg-red-600 text-white
-                        {% elif tache.priorite == 'BASSE' %}bg-blue-100 text-blue-800
-                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+
+                <p class="text-sm" style="color: var(--text-secondary);">
+                    <span class="font-medium">Priorité :</span>
+                    <span class="app-badge
+                        {% if tache.priorite == 'URGENTE' %}app-badge-danger
+                        {% elif tache.priorite == 'HAUTE' %}app-badge-warning
+                        {% elif tache.priorite == 'BASSE' %}app-badge-info
+                        {% else %}app-badge-muted{% endif %}">
                         {{ tache.get_priorite_display }}
                     </span>
                 </p>
             </div>
 
+            <!-- Formulaire -->
             <form method="post">
                 {% csrf_token %}
-                <div class="flex justify-end space-x-4">
-                    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'projets:liste_taches' %}{% endif %}" 
-                       class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                <div class="flex justify-end gap-3">
+
+                    <a href="{% if request.GET.next %}{{ request.GET.next }}{% else %}{% url 'projets:liste_taches' %}{% endif %}"
+                       class="app-btn-secondary">
                         <i class="fas fa-times mr-2"></i> Annuler
                     </a>
-                    <button type="submit" 
-                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700">
+
+                    <button type="submit"
+                            class="app-btn"
+                            style="background-color: var(--accent-danger); color: var(--text-inverse);">
                         <i class="fas fa-trash mr-2"></i> Confirmer la suppression
                     </button>
                 </div>

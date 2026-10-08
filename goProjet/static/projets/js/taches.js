@@ -28,12 +28,25 @@
         }
     }
 
-    function populateFormOptions(data) {
+    function populateFormOptions(data, projetId = null) {
         if (!data) return;
 
-        // ⚡ NE PAS toucher au <select name="projet"> : il est rendu par Django
+        // ═══════════════════════════════════════════════════════════
+        // PROJET : ne remplir QUE si non verrouillé (pas de projetId)
+        // ═══════════════════════════════════════════════════════════
+        const projetSelect = document.getElementById('projet');
+        if (projetSelect && !projetId) {
+            const currentValue = projetSelect.value;
+            projetSelect.innerHTML = '<option value="">Sélectionnez un projet...</option>';
+            (data.projets || []).forEach(p => {
+                projetSelect.add(new Option(p.nom, p.id));
+            });
+            if (currentValue) projetSelect.value = currentValue;
+        }
 
-        // Responsables
+        // ═══════════════════════════════════════════════════════════
+        // RESPONSABLES
+        // ═══════════════════════════════════════════════════════════
         const responsableSelect = document.getElementById('responsable');
         if (responsableSelect) {
             const currentValue = responsableSelect.value;
@@ -44,7 +57,9 @@
             if (currentValue) responsableSelect.value = currentValue;
         }
 
-        // Priorités
+        // ═══════════════════════════════════════════════════════════
+        // PRIORITÉS
+        // ═══════════════════════════════════════════════════════════
         const prioriteSelect = document.getElementById('priorite');
         if (prioriteSelect) {
             const currentValue = prioriteSelect.value;
@@ -55,7 +70,6 @@
             if (currentValue) {
                 prioriteSelect.value = currentValue;
             } else {
-                // Valeur par défaut
                 prioriteSelect.value = 'NORMALE';
             }
         }
@@ -362,11 +376,25 @@
     // UTILITAIRES
     // ============================================================
     function showAlert(type, message) {
-        if (typeof window.showNotification === 'function') {
-            window.showNotification(message, type);
+        if (type === 'success' && typeof window.showSuccessMessage === 'function') {
+            window.showSuccessMessage(message);
             return;
         }
-        // Fallback : alerte simple
+        if (type === 'error' && typeof window.showErrorMessage === 'function') {
+            window.showErrorMessage(message);
+            return;
+        }
+        if (type === 'warning' && typeof window.showWarningMessage === 'function') {
+            window.showWarningMessage(message);
+            return;
+        }
+        if (type === 'info' && typeof window.showInfoMessage === 'function') {
+            window.showInfoMessage(message);
+            return;
+        }
+
+        // Fallback : alerte simple si toast.js n'est pas chargé
+        console.warn('[taches] toast.js non chargé, fallback');
         const alert = document.createElement('div');
         alert.className = `fixed top-4 right-4 p-4 rounded-md text-white z-50 ${
             type === 'success' ? 'bg-green-500' : 'bg-red-500'

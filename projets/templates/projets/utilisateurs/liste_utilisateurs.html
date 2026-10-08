@@ -4,14 +4,6 @@
 {% block title %}Utilisateurs – GoProjet{% endblock %}
 {% block page_title %}Utilisateurs{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'projets/css/utilisateurs.css' %}">
-{% endblock %}
-
 {% block content %}
     {% include "projets/utilisateurs/_liste_utilisateurs_content.html" %}
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'projets/js/utilisateurs.js' %}"></script>
 {% endblock %}

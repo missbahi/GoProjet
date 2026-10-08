@@ -125,7 +125,9 @@ def home(request):
         'projets_avancements': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_utilisateur]),
         'avancement_projets_recents': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_recents]),
     }
-    
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/home/_home_content.html', context)
+
     return render(request, 'projets/home/home.html', context)
 
 

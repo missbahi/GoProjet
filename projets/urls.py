@@ -97,70 +97,70 @@ projets_urlpatterns = [
 
 # Gestion de la base de données
 base_donnees_urlpatterns = [
-    path('base-donnees/', data_views.base_donnees, name='base_donnees'),
+    path('data_view/', data_views.data_view, name='data_view'),
     # Gestion des ingénieurs
     path('ingenieurs/ajouter/', data_views.ajouter_ingenieur, name='ajouter_ingenieur'),
     path('ingenieurs/modifier/<int:ingenieur_id>/', data_views.modifier_ingenieur, name='modifier_ingenieur'),
     path('ingenieurs/supprimer/<int:ingenieur_id>/', data_views.supprimer_ingenieur, name='supprimer_ingenieur'),
-    path('base_donnees/ingenieurs/', data_views.partial_ingenieurs, name='partial_ingenieurs'),
+    path('data_view/ingenieurs/', data_views.partial_ingenieurs, name='partial_ingenieurs'),
     
     # Gestion des entreprises
     path('entreprises/ajouter/', data_views.ajouter_entreprise, name='ajouter_entreprise'),
     path('entreprises/modifier/<int:entreprise_id>/', data_views.modifier_entreprise, name='modifier_entreprise'),
     path('entreprises/supprimer/<int:entreprise_id>/', data_views.supprimer_entreprise, name='supprimer_entreprise'),
-    path('base_donnees/entreprises/', data_views.partial_entreprises, name='partial_entreprises'),
+    path('data_view/entreprises/', data_views.partial_entreprises, name='partial_entreprises'),
     
     # Gestion des clients
     path('clients/ajouter/', data_views.ajouter_client, name='ajouter_client'),
     path('clients/modifier/<int:client_id>/', data_views.modifier_client, name='modifier_client'),
     path('clients/supprimer/<int:client_id>/', data_views.supprimer_client, name='supprimer_client'),
-    path('base_donnees/clients/', data_views.partial_clients, name='partial_clients'),
+    path('data_view/clients/', data_views.partial_clients, name='partial_clients'),
 
     # Gestion du personnel
     path('personnel/ajouter/', data_views.ajouter_personnel, name='ajouter_personnel'),
     path('personnel/modifier/<int:personnel_id>/', data_views.modifier_personnel, name='modifier_personnel'),
     path('personnel/supprimer/<int:personnel_id>/', data_views.supprimer_personnel, name='supprimer_personnel'),
-    path('base_donnees/personnel/', data_views.partial_personnel, name='partial_personnel'),
+    path('data_view/personnel/', data_views.partial_personnel, name='partial_personnel'),
 
     # Gestion du matériel
     path('materiel/ajouter/', data_views.ajouter_materiel, name='ajouter_materiel'),
     path('materiel/modifier/<int:materiel_id>/', data_views.modifier_materiel, name='modifier_materiel'),
     path('materiel/supprimer/<int:materiel_id>/', data_views.supprimer_materiel, name='supprimer_materiel'),
-    path('base_donnees/materiel/', data_views.partial_materiel, name='partial_materiel'),
+    path('data_view/materiel/', data_views.partial_materiel, name='partial_materiel'),
     path('materiel/supprimer-masse/', data_views.supprimer_materiel_masse, name='supprimer_materiel_masse'),
 
     # Gestion des transports
     path('transports/ajouter/', data_views.ajouter_transport, name='ajouter_transport'),
     path('transports/modifier/<int:transport_id>/', data_views.modifier_transport, name='modifier_transport'),
     path('transports/supprimer/<int:transport_id>/', data_views.supprimer_transport, name='supprimer_transport'),
-    path('base_donnees/transports/', data_views.partial_transports, name='partial_transports'),
+    path('data_view/transports/', data_views.partial_transports, name='partial_transports'),
 
     # Gestion des locations
     path('locations/ajouter/', data_views.ajouter_location, name='ajouter_location'),
     path('locations/modifier/<int:location_id>/', data_views.modifier_location, name='modifier_location'),
     path('locations/supprimer/<int:location_id>/', data_views.supprimer_location, name='supprimer_location'),
-    path('base_donnees/locations/', data_views.partial_locations, name='partial_locations'),
+    path('data_view/locations/', data_views.partial_locations, name='partial_locations'),
 
     # Gestion des sous-traitances
     path('sous_traitances/ajouter/', data_views.ajouter_sous_traitance, name='ajouter_sous_traitance'),
     path('sous_traitances/modifier/<int:sous_traitance_id>/', data_views.modifier_sous_traitance, name='modifier_sous_traitance'),
     path('sous_traitances/supprimer/<int:sous_traitance_id>/', data_views.supprimer_sous_traitance, name='supprimer_sous_traitance'),
-    path('base_donnees/sous_traitances/', data_views.partial_sous_traitances, name='partial_sous_traitances'),
+    path('data_view/sous_traitances/', data_views.partial_sous_traitances, name='partial_sous_traitances'),
 
     # Gestion des consommables
     path('consommables/ajouter/', data_views.ajouter_consommable, name='ajouter_consommable'),
     path('consommables/modifier/<int:consommable_id>/', data_views.modifier_consommable, name='modifier_consommable'),
     path('consommables/supprimer/<int:consommable_id>/', data_views.supprimer_consommable, name='supprimer_consommable'),
-    path('base_donnees/consommables/', data_views.partial_consommables, name='partial_consommables'),
+    path('data_view/consommables/', data_views.partial_consommables, name='partial_consommables'),
 
     # Gestion des fournitures
     path('fournitures/ajouter/', data_views.ajouter_fourniture, name='ajouter_fourniture'),
     path('fournitures/modifier/<int:fourniture_id>/', data_views.modifier_fourniture, name='modifier_fourniture'),
     path('fournitures/supprimer/<int:fourniture_id>/', data_views.supprimer_fourniture, name='supprimer_fourniture'),
-    path('base_donnees/fournitures/', data_views.partial_fournitures, name='partial_fournitures'),
+    path('data_view/fournitures/', data_views.partial_fournitures, name='partial_fournitures'),
 
     # Gestion des categories de charges
-    path('base_donnees/categories-charges/', data_views.partial_categories_charges, name='partial_categories_charges'),
+    path('data_view/categories-charges/', data_views.partial_categories_charges, name='partial_categories_charges'),
     path('categories-charges/ajouter/', data_views.ajouter_categorie_charge, name='ajouter_categorie_charge'),
     path('categories-charges/<int:categorie_id>/modifier/', data_views.modifier_categorie_charge, name='modifier_categorie_charge'),
     path('categories-charges/<int:categorie_id>/supprimer/', data_views.supprimer_categorie_charge, name='supprimer_categorie_charge'),
@@ -169,7 +169,7 @@ base_donnees_urlpatterns = [
     path('types-materiel/ajouter/', data_views.ajouter_type_materiel, name='ajouter_type_materiel'),
     path('types-materiel/modifier/<int:type_materiel_id>/', data_views.modifier_type_materiel, name='modifier_type_materiel'),
     path('types-materiel/supprimer/<int:type_materiel_id>/', data_views.supprimer_type_materiel, name='supprimer_type_materiel'),
-    path('base_donnees/types-materiel/', data_views.partial_types_materiel, name='partial_types_materiel'),
+    path('data_view/types-materiel/', data_views.partial_types_materiel, name='partial_types_materiel'),
 ]
 
 # Gestion des ateliers rattachés à un projet

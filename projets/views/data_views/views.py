@@ -90,11 +90,17 @@ def partial_fournitures(request):
 
 
 @chef_projet_required
-def base_donnees(request):
-    return render(request, 'projets/data/base_donnees.html', {
+def data_view(request):
+    context = {
         'choix_icones': choix_icones(),
         'types_materiel_actifs': TypeMateriel.objects.filter(actif=True).order_by('nom'),
-    })
+    }
+
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/data/_home_data.html', context)
+
+    return render(request, 'projets/data/data_view.html', context)
 
 # ============================================================
 # Gestion des types de matériel (référentiel)
@@ -189,7 +195,7 @@ def supprimer_type_materiel(request, type_materiel_id):
                 'message': 'Impossible : ce type est utilisé par des matériels.',
             }, status=400)
         messages.error(request, 'Impossible de supprimer ce type.')
-        return redirect('projets:base_donnees')
+        return redirect('projets:data_view')
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
@@ -198,7 +204,7 @@ def supprimer_type_materiel(request, type_materiel_id):
         })
 
     messages.success(request, f'Type « {nom} » supprimé avec succès.')
-    return redirect('projets:base_donnees')
+    return redirect('projets:data_view')
 
 @categorie_charge_required
 def partial_categories_charges(request):
@@ -254,7 +260,7 @@ def modifier_categorie_charge(request, categorie_id):
                 'message': 'Erreur de validation.',
             }, status=400)
         messages.error(request, 'Erreur de validation.')
-        return redirect('projets:base_donnees')
+        return redirect('projets:data_view')
 
     form.save()
 
@@ -265,7 +271,7 @@ def modifier_categorie_charge(request, categorie_id):
         })
 
     messages.success(request, 'Catégorie modifiée.')
-    return redirect('projets:base_donnees')
+    return redirect('projets:data_view')
 
 
 @require_POST
@@ -281,7 +287,7 @@ def supprimer_categorie_charge(request, categorie_id):
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'message': msg}, status=400)
         messages.error(request, msg)
-        return redirect('projets:base_donnees')
+        return redirect('projets:data_view')
 
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({
@@ -290,7 +296,7 @@ def supprimer_categorie_charge(request, categorie_id):
         })
 
     messages.success(request, f'Catégorie « {nom} » supprimée avec succès.')
-    return redirect('projets:base_donnees')
+    return redirect('projets:data_view')
 
 
 @chef_projet_required
@@ -341,7 +347,7 @@ def supprimer_ingenieur(request, ingenieur_id):
                 'message': 'Impossible de supprimer : cet ingénieur est utilisé dans un projet.',
             }, status=400)
         messages.error(request, 'Impossible de supprimer cet ingénieur.')
-        return redirect('projets:base_donnees')
+        return redirect('projets:data_view')
 
     # Réponse JSON pour AJAX
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -352,7 +358,7 @@ def supprimer_ingenieur(request, ingenieur_id):
 
     # Fallback classique
     messages.success(request, f'Ingénieur « {nom} » supprimé avec succès.')
-    return redirect('projets:base_donnees')
+    return redirect('projets:data_view')
 
 
 @chef_projet_required

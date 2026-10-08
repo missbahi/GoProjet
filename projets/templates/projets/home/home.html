@@ -4,23 +4,15 @@
 {% block title %}Accueil - GoProjet{% endblock %}
 {% block page_title %}Tableau de bord{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'projets/css/home.css' %}">
-{% endblock %}
-
 {% block content %}
     {% include "projets/home/_home_content.html" %}
 {% endblock %}
 
 {% block extra_js %}
-    <script src="{% static 'projets/js/profile-manager.js' %}" defer></script>
-    <script src="{% static 'projets/js/modals.js' %}"></script>
-    <script src="{% static 'projets/js/notification-handler.js' %}"></script>
-
-    <!-- Scripts pour les graphiques -->
+    {{ block.super }}
+    <script src="{% static 'projets/js/modals.js' %}" defer></script>
     <script src="{% static 'projets/js/chart-utils.js' %}" defer></script>
     <script src="{% static 'projets/js/charts.js' %}" defer></script>
-    <script src="{% static 'projets/js/home.js' %}" defer></script>
 
     <script>
         window.CSRF_TOKEN = '{{ csrf_token }}';

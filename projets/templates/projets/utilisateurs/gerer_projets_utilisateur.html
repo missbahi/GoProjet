@@ -4,14 +4,6 @@
 {% block title %}Gérer les projets – {{ utilisateur.username }}{% endblock %}
 {% block page_title %}Gérer les projets{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'projets/css/utilisateurs.css' %}">
-{% endblock %}
-
 {% block content %}
     {% include "projets/utilisateurs/_gerer_projets_utilisateur_content.html" %}
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'projets/js/utilisateurs.js' %}"></script>
 {% endblock %}

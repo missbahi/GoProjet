@@ -9,9 +9,11 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-    <script src="{% static 'projets/js/theme-switcher.js' %}"></script>
+
+    <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/components.css' %}">
 
     <script>
         tailwind.config = {
@@ -39,13 +41,6 @@
 
     <style>
         /* Transitions et états globaux */
-        #taches-container {
-            transition: opacity 0.3s ease;
-        }
-        #taches-container.updating {
-            opacity: 0.5;
-            pointer-events: none;
-        }
         select:focus {
             border-color: #3b82f6;
             box-shadow: 0 0 0 1px #3b82f6;
@@ -63,7 +58,6 @@
                 transform: translateX(0);
             }
         }
-
         .message-item {
             animation: slide-in 0.3s ease-out;
         }
@@ -73,7 +67,6 @@
 </head>
 <body class="h-full">
 
-     <!-- ⚡ Messages Django -->
     {% include "projets/home/_messages.html" %}
 
     <div class="flex flex-col min-h-full">
@@ -92,67 +85,13 @@
 
     </div>
 
-    <!-- Conteneur pour les modals HTMX -->
+    <!-- Conteneurs pour les modals HTMX -->
     <div id="modals-container"></div>
     <div id="modals-nested-container"></div>
 
-    <script>
-    // ============================================================
-    // Notifications flash côté client
-    // ============================================================
-    window.showNotification = function(message, type = 'success', duration = 5000) {
-        let container = document.getElementById('messages-container');
+    <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
+    <script src="{% static 'projets/js/toast.js' %}" defer></script>
 
-        // Créer le conteneur s'il n'existe pas
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'messages-container';
-            container.className = 'fixed bottom-4 right-4 z-[9999] space-y-2 w-[calc(100%-2rem)] max-w-sm pointer-events-none';
-            document.body.appendChild(container);
-        }
-
-        const styles = {
-            success: 'bg-green-900/95 border-green-600 text-green-100',
-            error:   'bg-red-900/95 border-red-600 text-red-100',
-            warning: 'bg-yellow-900/95 border-yellow-600 text-yellow-100',
-            info:    'bg-blue-900/95 border-blue-600 text-blue-100',
-        };
-        const icons = {
-            success: 'fa-check-circle',
-            error:   'fa-circle-exclamation',
-            warning: 'fa-triangle-exclamation',
-            info:    'fa-circle-info',
-        };
-
-        const el = document.createElement('div');
-        el.className = `message-item pointer-events-auto px-4 py-3 rounded-lg shadow-2xl border flex items-start gap-3 transition-all duration-300 ${styles[type] || styles.info}`;
-        el.innerHTML = `
-            <i class="fas ${icons[type] || icons.info} mt-0.5 flex-shrink-0"></i>
-            <div class="flex-1 text-sm leading-snug">${message}</div>
-            <button type="button" class="text-current opacity-60 hover:opacity-100 transition flex-shrink-0 ml-1">
-                <i class="fas fa-times"></i>
-            </button>
-        `;
-
-        el.querySelector('button').addEventListener('click', () => {
-            el.style.opacity = '0';
-            el.style.transform = 'translateX(100%)';
-            setTimeout(() => el.remove(), 300);
-        });
-
-        container.appendChild(el);
-
-        setTimeout(() => {
-            if (el.parentElement) {
-                el.style.opacity = '0';
-                el.style.transform = 'translateX(100%)';
-                setTimeout(() => el.remove(), 300);
-            }
-        }, duration);
-    };
-    </script>
-
-    <!-- JS commun (menu utilisateur, fallbacks) -->
     <script>
         (function() {
             const btn = document.getElementById('userMenuBtn');
@@ -188,7 +127,6 @@
         }
     </script>
 
-    <!-- JS pour la gestion des messages -->
     <script>
         (function() {
             'use strict';
@@ -207,14 +145,11 @@
                 if (!container) return;
 
                 container.querySelectorAll('.message-item').forEach(el => {
-                    // Fermeture auto
                     setTimeout(() => dismissMessage(el), DELAY_MS);
-                    // Fermeture manuelle
                     const btn = el.querySelector('button');
                     if (btn) btn.addEventListener('click', () => dismissMessage(el));
                 });
 
-                // Nettoyer le conteneur s'il devient vide
                 const observer = new MutationObserver(() => {
                     if (container.children.length === 0) {
                         container.remove();
@@ -230,9 +165,8 @@
                 initMessages();
             }
         })();
-
     </script>
-    
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

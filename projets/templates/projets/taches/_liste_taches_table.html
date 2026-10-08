@@ -1,12 +1,14 @@
+{# projets/templates/projets/taches/_liste_taches_table.html #}
+
 <div class="app-card overflow-x-auto">
-    <table class="taches-table min-w-full">
+    <table class="app-table">
         <thead>
             <tr>
-                <th>Titre</th>
-                <th>Projet</th>
-                <th>Responsable</th>
-                <th>Priorité</th>
-                <th>Statut</th>
+                <th class="text-left">Titre</th>
+                <th class="text-left">Projet</th>
+                <th class="text-left">Responsable</th>
+                <th class="text-left">Priorité</th>
+                <th class="text-center">Statut</th>
                 <th class="text-center">Avancement</th>
                 <th class="text-center">Actions</th>
             </tr>
@@ -24,33 +26,33 @@
                 <td>{{ tache.projet.nom }}</td>
                 <td>{{ tache.responsable.username|default:"—" }}</td>
                 <td>{{ tache.get_priorite_display }}</td>
-                <td>
+                <td class="text-center">
                     {% if tache.terminee %}
-                        <span class="badge-terminee">Terminée</span>
+                        <span class="app-badge app-badge-success">Terminée</span>
                     {% else %}
-                        <span class="badge-en-cours">En cours</span>
+                        <span class="app-badge app-badge-info">En cours</span>
                     {% endif %}
                 </td>
                 <td class="text-center">
                     <div class="flex items-center gap-2 justify-center">
-                        <div class="w-20 h-2 rounded-full overflow-hidden" style="background-color: var(--bg-elevated);">
-                            <div class="h-full" style="width: {{ tache.avancement }}%; background-color: var(--accent-primary);"></div>
+                        <div class="w-20 h-2 rounded-full overflow-hidden"
+                             style="background-color: var(--bg-elevated);">
+                            <div class="h-full"
+                                 style="width: {{ tache.avancement }}%; background-color: var(--accent-primary);"></div>
                         </div>
-                        <span class="text-sm">{{ tache.avancement }}%</span>
+                        <span class="text-sm" style="color: var(--text-primary);">{{ tache.avancement }}%</span>
                     </div>
                 </td>
-                <td class="text-center">
+                <td class="text-center space-x-2">
                     <button type="button"
-                            onclick="openTaskModal({{ tache.id }}, {{ tache.projet_id }})"
-                            class="p-2 rounded-lg"
-                            style="color: var(--accent-info);"
+                            onclick="openTaskModal({{ tache.id }}, {{ tache.projet_id }}, '{{ tache.projet.nom|escapejs }}')"
+                            class="app-action-btn app-action-edit"
                             title="Modifier">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button type="button"
                             onclick="deleteTask({{ tache.id }}, {{ tache.projet_id }})"
-                            class="p-2 rounded-lg"
-                            style="color: var(--accent-danger);"
+                            class="app-action-btn app-action-delete"
                             title="Supprimer">
                         <i class="fas fa-trash"></i>
                     </button>
