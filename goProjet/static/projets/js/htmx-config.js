@@ -111,8 +111,8 @@
     document.addEventListener('DOMContentLoaded', function () {
         const family = document.getElementById('main-content')?.dataset.family;
         if (family) {
-            loaded.add(family); // Marqué comme déjà présent
-            console.log(`[HTMX] Famille initiale : ${family}`);
+            loaded.add(family); 
+            // console.log(`[HTMX] Famille initiale : ${family}`);
         }
     });
 

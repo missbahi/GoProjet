@@ -3,12 +3,11 @@
     'use strict';
 
     // ═══════════════════════════════════════════════════════════
-    // MISE À JOUR DE L'ITEM ACTIF DANS LA SIDEBAR
+    // MISE À JOUR DE L'ITEM ACTIF
     // ═══════════════════════════════════════════════════════════
     function updateSidebarActive() {
         const currentPath = window.location.pathname.replace(/\/$/, '') || '/';
 
-        // Parcourt tous les liens de la sidebar (desktop + mobile)
         document.querySelectorAll('.sidebar-item').forEach(item => {
             item.classList.remove('active');
 
@@ -19,7 +18,6 @@
                 const linkPath = new URL(href, window.location.origin)
                     .pathname.replace(/\/$/, '') || '/';
 
-                // Match exact OU current path commence par linkPath + '/'
                 const isExact = linkPath === currentPath;
                 const isPrefix = linkPath !== '/' && currentPath.startsWith(linkPath + '/');
 
@@ -33,19 +31,71 @@
     }
 
     // ═══════════════════════════════════════════════════════════
-    // ÉCOUTEURS D'ÉVÉNEMENTS
+    // OUVERTURE / FERMETURE DE LA SIDEBAR MOBILE
     // ═══════════════════════════════════════════════════════════
+    function openMobileSidebar() {
+        const sidebar = document.getElementById('mobileSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+        document.body.style.overflow = 'hidden';
+    }
 
-    // 1. Au chargement initial
+    function closeMobileSidebar() {
+        const sidebar = document.getElementById('mobileSidebar');
+        const overlay = document.getElementById('sidebarOverlay');
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+        document.body.style.overflow = '';
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // DÉLÉGATION DES CLICS (capture phase, survit à tout)
+    // ═══════════════════════════════════════════════════════════
+    document.addEventListener('click', function (e) {
+        // 1. Ouverture : hamburger
+        const toggle = e.target.closest('#sidebarToggle, #mobileMenuBtn');
+        if (toggle) {
+            e.preventDefault();
+            openMobileSidebar();
+            return;
+        }
+
+        // 2. Fermeture : croix ou overlay
+        if (e.target.closest('#mobileSidebarClose') || e.target.closest('#sidebarOverlay')) {
+            e.preventDefault();
+            closeMobileSidebar();
+            return;
+        }
+
+        // 3. Fermeture auto après clic sur un lien de la sidebar mobile
+        if (e.target.closest('#mobileSidebar a')) {
+            closeMobileSidebar();
+        }
+    }, true); // ← CAPTURE PHASE
+
+    // Échap ferme la sidebar mobile
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeMobileSidebar();
+    });
+
+    // Reset au redimensionnement (retour desktop)
+    window.addEventListener('resize', function () {
+        if (window.innerWidth >= 768) closeMobileSidebar();
+    });
+
+    // ═══════════════════════════════════════════════════════════
+    // ÉCOUTEURS POUR L'ITEM ACTIF
+    // ═══════════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', updateSidebarActive);
-
-    // 2. Après chaque swap HTMX
     document.body.addEventListener('htmx:afterSwap', updateSidebarActive);
-
-    // 3. Après que l'URL a changé (navigation HTMX)
     document.body.addEventListener('htmx:pushedIntoHistory', updateSidebarActive);
-
-    // 4. Fallback : après navigation classique
     window.addEventListener('popstate', updateSidebarActive);
+
+    // ═══════════════════════════════════════════════════════════
+    // API GLOBALE (pour debug ou appels externes)
+    // ═══════════════════════════════════════════════════════════
+    window.openMobileSidebar = openMobileSidebar;
+    window.closeMobileSidebar = closeMobileSidebar;
 
 })();
