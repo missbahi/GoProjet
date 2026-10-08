@@ -96,7 +96,7 @@ def liste_projets(request):
             vue = 'tableau'
     if vue not in ('tableau', 'cartes'):
         vue = 'tableau'
-
+ 
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
 
     projets = (
@@ -198,7 +198,7 @@ def ajouter_projet_modal(request):
         return redirect('projets:liste_projets')
 
     form = ProjetForm(user=request.user)
-    return render(request, 'projets/modals/ajouter_projet_modal.html', {
+    return render(request, 'projets/projets/ajouter_projet_modal.html', {
         'form': form,
         'statuts': Projet.Statut.choices,
     })

@@ -96,7 +96,7 @@ projets_urlpatterns = [
 ]
 
 # Gestion de la base de données
-base_donnees_urlpatterns = [
+datas_urlpatterns = [
     path('data_view/', data_views.data_view, name='data_view'),
     # Gestion des ingénieurs
     path('ingenieurs/ajouter/', data_views.ajouter_ingenieur, name='ajouter_ingenieur'),
@@ -291,7 +291,7 @@ notifications_urlpatterns = [
 urlpatterns = commun_urlpatterns 
 urlpatterns += suivi_urlpatterns
 urlpatterns += projets_urlpatterns
-urlpatterns += base_donnees_urlpatterns
+urlpatterns += datas_urlpatterns
 urlpatterns += atelier_urlpatterns
 urlpatterns += tache_urlpatterns
 urlpatterns += attachement_urlpatterns

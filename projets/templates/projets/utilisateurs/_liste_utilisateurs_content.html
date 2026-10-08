@@ -1,75 +1,77 @@
 {% load static %}
-<div class="mx-auto max-w-6xl">
+<div data-family="app">
+    <div class="mx-auto max-w-6xl">
 
-    <!-- En-tête -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div>
-            <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2"
-                style="color: var(--accent-primary);">
-                <i class="fas fa-users"></i>
-                Utilisateurs
-            </h1>
-            <p class="text-sm mt-1" style="color: var(--text-secondary);">
-                {{ page_obj.paginator.count }} utilisateur{{ page_obj.paginator.count|pluralize }}
-            </p>
-        </div>
-
-        <a href="{% url 'projets:ajouter_utilisateur' %}"
-           hx-get="{% url 'projets:ajouter_utilisateur' %}"
-           hx-target="#main-content"
-           hx-swap="innerHTML swap:150ms settle:150ms show:top"
-           hx-push-url="true"
-           hx-indicator="#htmx-progress"
-           class="app-btn-primary text-white px-4 py-2 rounded-lg flex items-center gap-2">
-            <i class="fas fa-plus"></i>
-            <span>Ajouter un utilisateur</span>
-        </a>
-    </div>
-
-    <!-- Filtres + recherche -->
-    <div class="app-card p-4 mb-6">
-        <div class="flex flex-col lg:flex-row gap-3">
-
-            <!-- Recherche -->
-            <div class="relative flex-1">
-                <input type="text"
-                       name="search"
-                       id="search-utilisateurs"
-                       value="{{ search }}"
-                       placeholder="Rechercher par nom, prénom, email..."
-                       class="app-input pl-10"
-                       hx-get="{% url 'projets:liste_utilisateurs' %}"
-                       hx-trigger="keyup changed delay:400ms, search"
-                       hx-target="#liste-utilisateurs-container"
-                       hx-swap="innerHTML"
-                       hx-include="[name='role']">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2"
-                   style="color: var(--text-muted);"></i>
+        <!-- En-tête -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2"
+                    style="color: var(--accent-primary);">
+                    <i class="fas fa-users"></i>
+                    Utilisateurs
+                </h1>
+                <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                    {{ page_obj.paginator.count }} utilisateur{{ page_obj.paginator.count|pluralize }}
+                </p>
             </div>
 
-            <!-- Filtre rôle -->
-            <select name="role"
-                    class="app-input lg:w-64"
-                    hx-get="{% url 'projets:liste_utilisateurs' %}"
-                    hx-trigger="change"
-                    hx-target="#liste-utilisateurs-container"
-                    hx-swap="innerHTML"
-                    hx-include="[name='search']">
-                <option value="">Tous les rôles</option>
-                <option value="SUPERUSER" {% if role_filter == 'SUPERUSER' %}selected{% endif %}>Super Admin</option>
-                <option value="GERANT" {% if role_filter == 'GERANT' %}selected{% endif %}>Chef de projet</option>
-                <option value="CHEF_CHANTIER" {% if role_filter == 'CHEF_CHANTIER' %}selected{% endif %}>Chef de chantier</option>
-                <option value="POINTEUR" {% if role_filter == 'POINTEUR' %}selected{% endif %}>Pointeur</option>
-                <option value="STAFF" {% if role_filter == 'STAFF' %}selected{% endif %}>Staff</option>
-                <option value="UTILISATEUR" {% if role_filter == 'UTILISATEUR' %}selected{% endif %}>Utilisateur</option>
-                <option value="INACTIF" {% if role_filter == 'INACTIF' %}selected{% endif %}>Inactifs</option>
-            </select>
+            <a href="{% url 'projets:ajouter_utilisateur' %}"
+            hx-get="{% url 'projets:ajouter_utilisateur' %}"
+            hx-target="#main-content"
+            hx-swap="innerHTML swap:150ms settle:150ms show:top"
+            hx-push-url="true"
+            hx-indicator="#htmx-progress"
+            class="app-btn-primary text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                <i class="fas fa-plus"></i>
+                <span>Ajouter un utilisateur</span>
+            </a>
         </div>
-    </div>
 
-    <!-- Liste des utilisateurs -->
-    <div id="liste-utilisateurs-container">
-        {% include "projets/utilisateurs/_liste_utilisateurs_table.html" %}
-    </div>
+        <!-- Filtres + recherche -->
+        <div class="app-card p-4 mb-6">
+            <div class="flex flex-col lg:flex-row gap-3">
 
+                <!-- Recherche -->
+                <div class="relative flex-1">
+                    <input type="text"
+                        name="search"
+                        id="search-utilisateurs"
+                        value="{{ search }}"
+                        placeholder="Rechercher par nom, prénom, email..."
+                        class="app-input pl-10"
+                        hx-get="{% url 'projets:liste_utilisateurs' %}"
+                        hx-trigger="keyup changed delay:400ms, search"
+                        hx-target="#liste-utilisateurs-container"
+                        hx-swap="innerHTML"
+                        hx-include="[name='role']">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2"
+                    style="color: var(--text-muted);"></i>
+                </div>
+
+                <!-- Filtre rôle -->
+                <select name="role"
+                        class="app-input lg:w-64"
+                        hx-get="{% url 'projets:liste_utilisateurs' %}"
+                        hx-trigger="change"
+                        hx-target="#liste-utilisateurs-container"
+                        hx-swap="innerHTML"
+                        hx-include="[name='search']">
+                    <option value="">Tous les rôles</option>
+                    <option value="SUPERUSER" {% if role_filter == 'SUPERUSER' %}selected{% endif %}>Super Admin</option>
+                    <option value="GERANT" {% if role_filter == 'GERANT' %}selected{% endif %}>Chef de projet</option>
+                    <option value="CHEF_CHANTIER" {% if role_filter == 'CHEF_CHANTIER' %}selected{% endif %}>Chef de chantier</option>
+                    <option value="POINTEUR" {% if role_filter == 'POINTEUR' %}selected{% endif %}>Pointeur</option>
+                    <option value="STAFF" {% if role_filter == 'STAFF' %}selected{% endif %}>Staff</option>
+                    <option value="UTILISATEUR" {% if role_filter == 'UTILISATEUR' %}selected{% endif %}>Utilisateur</option>
+                    <option value="INACTIF" {% if role_filter == 'INACTIF' %}selected{% endif %}>Inactifs</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Liste des utilisateurs -->
+        <div id="liste-utilisateurs-container">
+            {% include "projets/utilisateurs/_liste_utilisateurs_table.html" %}
+        </div>
+
+    </div>
 </div>

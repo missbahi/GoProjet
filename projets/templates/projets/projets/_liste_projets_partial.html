@@ -1,5 +1,7 @@
-{% if vue == 'cartes' %}
-    {% include "projets/projets/_projets_cartes.html" %}
-{% else %}
-    {% include "projets/projets/_projets_tableau.html" %}
-{% endif %}
+<div data-family="app">
+    {% if vue == 'cartes' %}
+        {% include "projets/projets/_projets_cartes.html" %}
+    {% else %}
+        {% include "projets/projets/_projets_tableau.html" %}
+    {% endif %}
+</div>

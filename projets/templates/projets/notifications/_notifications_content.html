@@ -1,163 +1,165 @@
 {% load static i18n %}
-<div class="mx-auto max-w-6xl">
+<div data-family="app"></div>
+    <div class="mx-auto max-w-6xl">
 
-    <!-- En-tête -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-            <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-3"
-                style="color: var(--accent-primary);">
-                <i class="fas fa-bell"></i>
-                Notifications
-                {% if unread_count > 0 %}
-                <span class="text-sm font-bold px-3 py-1 rounded-full"
-                      style="background-color: var(--accent-danger); color: white;">
-                    {{ unread_count }} non lue{{ unread_count|pluralize }}
-                </span>
-                {% endif %}
-            </h1>
-            <p class="mt-2 text-sm" style="color: var(--text-secondary);">
-                Gérez vos notifications individuellement ou par lot
-            </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-            <button type="button" id="refreshBtn"
-                    class="app-btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
-                <i class="fas fa-sync-alt"></i>
-                Actualiser
-            </button>
-        </div>
-    </div>
-
-    <!-- Filtres + actions groupées -->
-    <div class="app-card p-4 mb-6">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-
-            <!-- Filtres -->
-            <div class="flex flex-wrap gap-2">
-                <span class="text-sm self-center" style="color: var(--text-muted);">Filtrer :</span>
-
-                <a href="?filter=all"
-                   hx-get="?filter=all"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="filter-pill {% if filter == 'all' %}active{% endif %}">
-                    Toutes ({{ total_count }})
-                </a>
-                <a href="?filter=unread"
-                   hx-get="?filter=unread"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="filter-pill {% if filter == 'unread' %}active{% endif %}">
-                    Non lues ({{ unread_count }})
-                </a>
-                <a href="?filter=read"
-                   hx-get="?filter=read"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="filter-pill {% if filter == 'read' %}active{% endif %}">
-                    Lues ({{ read_count }})
-                </a>
-                <a href="?filter=today"
-                   hx-get="?filter=today"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="filter-pill {% if filter == 'today' %}active{% endif %}">
-                    Aujourd'hui
-                </a>
-                <a href="?filter=priority"
-                   hx-get="?filter=priority"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="filter-pill {% if filter == 'priority' %}active{% endif %}">
-                    <i class="fas fa-exclamation-triangle mr-1"></i>
-                    Prioritaires
-                </a>
+        <!-- En-tête -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-3"
+                    style="color: var(--accent-primary);">
+                    <i class="fas fa-bell"></i>
+                    Notifications
+                    {% if unread_count > 0 %}
+                    <span class="text-sm font-bold px-3 py-1 rounded-full"
+                        style="background-color: var(--accent-danger); color: white;">
+                        {{ unread_count }} non lue{{ unread_count|pluralize }}
+                    </span>
+                    {% endif %}
+                </h1>
+                <p class="mt-2 text-sm" style="color: var(--text-secondary);">
+                    Gérez vos notifications individuellement ou par lot
+                </p>
             </div>
 
-            <!-- Actions groupées -->
-            <div class="flex flex-wrap gap-2">
-                <div class="flex items-center gap-2">
-                    <input type="checkbox" id="selectAll"
-                           class="rounded"
-                           style="accent-color: var(--accent-primary);">
-                    <label for="selectAll" class="text-sm" style="color: var(--text-secondary);">
-                        Tout sélectionner
-                    </label>
-                </div>
-
-                <div class="flex items-center gap-2 hidden" id="bulkActions">
-                    <span class="text-sm" id="selectedCount" style="color: var(--text-muted);"></span>
-
-                    <button type="button" id="markSelectedRead"
-                            class="app-btn-primary text-white px-3 py-1.5 rounded text-sm">
-                        <i class="fas fa-check mr-1"></i> Marquer lu
-                    </button>
-
-                    <button type="button" id="deleteSelected"
-                            class="px-3 py-1.5 rounded text-sm text-white"
-                            style="background-color: var(--accent-danger);">
-                        <i class="fas fa-trash mr-1"></i> Supprimer
-                    </button>
-                </div>
-
-                <button type="button" id="markAllRead"
-                        class="app-btn-secondary px-4 py-2 rounded-lg">
-                    <i class="fas fa-check-double mr-2"></i> Tout marquer lu
-                </button>
-
-                <button type="button" id="deleteAllRead"
-                        class="app-btn-secondary px-4 py-2 rounded-lg">
-                    <i class="fas fa-trash-alt mr-2"></i> Supprimer les lues
+            <div class="flex items-center gap-2">
+                <button type="button" id="refreshBtn"
+                        class="app-btn-secondary px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualiser
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- Liste des notifications -->
-    <div id="notifications-container" class="app-card overflow-hidden">
-        {% include "projets/notifications/_notifications_list.html" %}
-    </div>
+        <!-- Filtres + actions groupées -->
+        <div class="app-card p-4 mb-6">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
 
-    <!-- Pagination -->
-    {% if notifications.has_other_pages %}
-    <div class="mt-6 flex justify-center">
-        <nav class="flex items-center gap-2">
-            {% if notifications.has_previous %}
-            <a href="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-               hx-get="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-               hx-target="#notifications-container"
-               hx-swap="innerHTML"
-               class="app-btn-pagination">
-                <i class="fas fa-chevron-left"></i>
-            </a>
-            {% endif %}
+                <!-- Filtres -->
+                <div class="flex flex-wrap gap-2">
+                    <span class="text-sm self-center" style="color: var(--text-muted);">Filtrer :</span>
 
-            {% for num in notifications.paginator.page_range %}
-                {% if notifications.number == num %}
-                <span class="app-pagination-current">{{ num }}</span>
-                {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
-                <a href="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
-                   hx-get="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
-                   hx-target="#notifications-container"
-                   hx-swap="innerHTML"
-                   class="app-btn-pagination">
-                    {{ num }}
+                    <a href="?filter=all"
+                    hx-get="?filter=all"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="filter-pill {% if filter == 'all' %}active{% endif %}">
+                        Toutes ({{ total_count }})
+                    </a>
+                    <a href="?filter=unread"
+                    hx-get="?filter=unread"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="filter-pill {% if filter == 'unread' %}active{% endif %}">
+                        Non lues ({{ unread_count }})
+                    </a>
+                    <a href="?filter=read"
+                    hx-get="?filter=read"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="filter-pill {% if filter == 'read' %}active{% endif %}">
+                        Lues ({{ read_count }})
+                    </a>
+                    <a href="?filter=today"
+                    hx-get="?filter=today"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="filter-pill {% if filter == 'today' %}active{% endif %}">
+                        Aujourd'hui
+                    </a>
+                    <a href="?filter=priority"
+                    hx-get="?filter=priority"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="filter-pill {% if filter == 'priority' %}active{% endif %}">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>
+                        Prioritaires
+                    </a>
+                </div>
+
+                <!-- Actions groupées -->
+                <div class="flex flex-wrap gap-2">
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" id="selectAll"
+                            class="rounded"
+                            style="accent-color: var(--accent-primary);">
+                        <label for="selectAll" class="text-sm" style="color: var(--text-secondary);">
+                            Tout sélectionner
+                        </label>
+                    </div>
+
+                    <div class="flex items-center gap-2 hidden" id="bulkActions">
+                        <span class="text-sm" id="selectedCount" style="color: var(--text-muted);"></span>
+
+                        <button type="button" id="markSelectedRead"
+                                class="app-btn-primary text-white px-3 py-1.5 rounded text-sm">
+                            <i class="fas fa-check mr-1"></i> Marquer lu
+                        </button>
+
+                        <button type="button" id="deleteSelected"
+                                class="px-3 py-1.5 rounded text-sm text-white"
+                                style="background-color: var(--accent-danger);">
+                            <i class="fas fa-trash mr-1"></i> Supprimer
+                        </button>
+                    </div>
+
+                    <button type="button" id="markAllRead"
+                            class="app-btn-secondary px-4 py-2 rounded-lg">
+                        <i class="fas fa-check-double mr-2"></i> Tout marquer lu
+                    </button>
+
+                    <button type="button" id="deleteAllRead"
+                            class="app-btn-secondary px-4 py-2 rounded-lg">
+                        <i class="fas fa-trash-alt mr-2"></i> Supprimer les lues
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des notifications -->
+        <div id="notifications-container" class="app-card overflow-hidden">
+            {% include "projets/notifications/_notifications_list.html" %}
+        </div>
+
+        <!-- Pagination -->
+        {% if notifications.has_other_pages %}
+        <div class="mt-6 flex justify-center">
+            <nav class="flex items-center gap-2">
+                {% if notifications.has_previous %}
+                <a href="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                hx-get="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                hx-target="#notifications-container"
+                hx-swap="innerHTML"
+                class="app-btn-pagination">
+                    <i class="fas fa-chevron-left"></i>
                 </a>
                 {% endif %}
-            {% endfor %}
 
-            {% if notifications.has_next %}
-            <a href="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-               hx-get="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-               hx-target="#notifications-container"
-               hx-swap="innerHTML"
-               class="app-btn-pagination">
-                <i class="fas fa-chevron-right"></i>
-            </a>
-            {% endif %}
-        </nav>
+                {% for num in notifications.paginator.page_range %}
+                    {% if notifications.number == num %}
+                    <span class="app-pagination-current">{{ num }}</span>
+                    {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
+                    <a href="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
+                    hx-get="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
+                    hx-target="#notifications-container"
+                    hx-swap="innerHTML"
+                    class="app-btn-pagination">
+                        {{ num }}
+                    </a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if notifications.has_next %}
+                <a href="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                hx-get="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                hx-target="#notifications-container"
+                hx-swap="innerHTML"
+                class="app-btn-pagination">
+                    <i class="fas fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+
     </div>
-    {% endif %}
-
 </div>

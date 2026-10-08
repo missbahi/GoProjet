@@ -186,3 +186,6 @@
         max-width: 100%;
     }
 }
+.modal-tache.hidden {
+    display: none !important;
+}
