@@ -1,5 +1,7 @@
 {% load static %}
-<div class="sidebar w-72 flex-shrink-0 md:block hidden">
+<div class="sidebar w-72 flex-shrink-0 md:block hidden flex flex-col h-full">
+
+    <!-- En-tête -->
     <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
         <a href="{% url 'projets:landing' %}" class="inline-block">
             <img src="{% static 'images/logo-goprojet.svg' %}"
@@ -9,7 +11,10 @@
         <p class="text-sm mt-2 sidebar-logo-text">Gestion des projets BTP</p>
     </div>
 
-    <nav class="p-4">
+    <!-- Navigation (scrollable) -->
+    <nav class="p-4 flex-1 overflow-y-auto">
+
+        <!-- Menu Principal -->
         <div class="mb-6">
             <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Menu Principal</p>
             <ul class="space-y-2 text-lg">
@@ -24,7 +29,6 @@
                         <i class="fas fa-tachometer-alt"></i>
                         <span>Tableau de bord</span>
                     </a>
-                    
                 </li>
                 <li>
                     <a href="{% url 'projets:liste_projets' %}"
@@ -53,29 +57,10 @@
             </ul>
         </div>
 
+        <!-- Paramètres -->
         <div class="mb-6">
             <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Paramètres</p>
             <ul class="space-y-2 text-lg">
-                {% if user.is_superuser or profile.role == 'GERANT' or profile.role == 'CHEF_PROJET' %}
-                <li>
-                    <a href="{% url 'projets:data_view' %}"
-                        class="sidebar-item {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="fas fa-database"></i>
-                        <span>Configuration</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{% url 'projets:liste_utilisateurs' %}"
-                        hx-get="{% url 'projets:liste_utilisateurs' %}"
-                        hx-target="#main-content"
-                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                        hx-push-url="true"
-                        hx-indicator="#htmx-progress"
-                        class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
-                        <i class="fas fa-users"></i>
-                        <span>Administration</span>
-                    </a>
-                </li>
                 {% if user.is_superuser %}
                 <li>
                     <a href="{% url 'projets:gerer_dossiers' %}"
@@ -90,14 +75,43 @@
                     </a>
                 </li>
                 {% endif %}
-                {% endif %}
+                {% if user.is_superuser or user.profile.role == 'GERANT' or user.profile.role == 'CHEF_PROJET' %}
                 <li>
-                    <a href="{% url 'projets:apropos' %}" class="sidebar-item">
-                        <i class="fas fa-info-circle"></i>
-                        <span>À propos</span>
+                    <a href="{% url 'projets:liste_utilisateurs' %}"
+                        hx-get="{% url 'projets:liste_utilisateurs' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-users"></i>
+                        <span>Administration</span>
                     </a>
                 </li>
+                {% endif %}
             </ul>
         </div>
     </nav>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Section FIXE EN BAS
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="p-4" style="border-top: 1px solid var(--border-default);">
+
+        <!-- À propos (avec bordure de séparation au-dessus) -->
+        <a href="{% url 'projets:apropos' %}" class="sidebar-item">
+            <i class="fas fa-info-circle"></i>
+            <span>À propos</span>
+        </a>
+
+        <!-- Configuration (tout en bas) -->
+        {% if user.is_superuser or user.profile.role == 'GERANT' or user.profile.role == 'CHEF_PROJET' %}
+        <a href="{% url 'projets:data_view' %}"
+           class="sidebar-item mt-2 {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
+            <i class="fas fa-database"></i>
+            <span>Configuration</span>
+        </a>
+        {% endif %}
+
+    </div>
 </div>
