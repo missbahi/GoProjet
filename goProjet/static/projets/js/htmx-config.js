@@ -41,10 +41,12 @@
         project: {
             css: [
                 '/static/projets/css/dashboard.css',
+                '/static/projets/css/documents.css',
             ],
             js: [
                 '/static/projets/js/dashboard.js',
                 '/static/projets/js/taches.js',
+                '/static/projets/js/documents.js',
             ],
         },
     };

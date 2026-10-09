@@ -839,32 +839,103 @@ class OrdreServiceForm(forms.ModelForm):
             self.fields['statut'].initial = 'BROUILLON'
 
 class DocumentAdministratifForm(forms.ModelForm):
+    """
+    Formulaire pour ajouter/modifier un document administratif.
+
+    ⚡ 'projet' et 'original_filename' NE sont PAS dans le formulaire :
+       - projet : défini par la vue (depuis l'URL)
+       - original_filename : auto-rempli depuis le fichier uploadé
+
+    ⚡ Les 'choices' de type_document viennent du modèle (pas de redéfinition).
+    """
+
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 Mo
+    ALLOWED_EXTENSIONS = [
+        # Documents
+        '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+        '.txt', '.csv', '.odt', '.ods',
+        # Images
+        '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp',
+        # Vidéos (chantier)
+        '.mp4', '.mov', '.avi', '.mkv',
+        # Archives
+        '.zip', '.rar', '.7z',
+    ]
+
     class Meta:
         model = DocumentAdministratif
-        fields = ['projet', 'type_document', 'fichier', 'date_remise', 'description', 'original_filename']
+        fields = ['type_document', 'date_remise', 'description', 'fichier']
+
         widgets = {
+            'type_document': forms.Select(attrs={
+                'class': 'app-modal-input',
+                'required': 'required',
+            }),
+            'date_remise': forms.DateInput(attrs={
+                'class': 'app-modal-input',
+                'type': 'date',
+            }),
+            'description': forms.Textarea(attrs={
+                'class': 'app-modal-input',
+                'rows': 3,
+                'placeholder': 'Description optionnelle…',
+            }),
             'fichier': forms.FileInput(attrs={
-            'accept': 'image/*,video/*,.pdf,.doc,.docx',
-            'capture': 'environment',  # 'environment' pour caméra arrière, 'user' pour frontale
-            'multiple': False,
+                'class': 'app-modal-input',
+                # Filtre le file picker selon le type
+                'accept': (
+                    '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,'
+                    '.jpg,.jpeg,.png,.gif,.webp,.svg,'
+                    '.mp4,.mov,.avi,'
+                    '.txt,.csv,.zip,.rar,.7z'
+                ),
+                # ⚡ PAS de 'capture' → l'utilisateur peut choisir photo OU fichier
+                # ⚡ PAS de 'multiple' → un seul fichier (défaut)
             }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        choices = DocumentAdministratif.TYPE_CHOICES
-        self.fields['type_document'].widget = forms.Select(choices=choices)
-        # Adapté pour mobile
-        self.fields['fichier'].widget.attrs.update({
-            'accept': 'image/*,video/*,.pdf,.doc,.docx',
-            'capture': 'environment',  # 'environment' pour caméra arrière, 'user' pour frontale
-            'multiple': False,  # Pour iOS/Android, évitez multiple sur mobile
-        })
-        
-        self.fields['type_document'].widget.attrs.update({
-            'class': 'form-select',
-            'required': 'required',
-        })
+        # ⚡ Rendre type_document obligatoire (le modèle autorise '', mais on force le choix)
+        self.fields['type_document'].required = True
+        self.fields['type_document'].error_messages = {
+            'required': 'Veuillez sélectionner un type de document.',
+        }
+
+    def clean_fichier(self):
+        """
+        Validation centralisée du fichier :
+          - Obligatoire en création
+          - Taille < MAX_FILE_SIZE (10 Mo)
+          - Extension dans ALLOWED_EXTENSIONS
+        """
+        fichier = self.cleaned_data.get('fichier')
+
+        # Modification : fichier déjà présent + pas de nouveau fichier → garder l'ancien
+        if not fichier and self.instance and self.instance.pk and self.instance.fichier:
+            return self.instance.fichier
+
+        if not fichier:
+            raise forms.ValidationError("Le fichier est obligatoire.")
+
+        # Taille
+        if fichier.size > self.MAX_FILE_SIZE:
+            taille_mo = fichier.size / (1024 * 1024)
+            max_mo = self.MAX_FILE_SIZE // (1024 * 1024)
+            raise forms.ValidationError(
+                f"Le fichier ne doit pas dépasser {max_mo} Mo "
+                f"(actuel : {taille_mo:.1f} Mo)."
+            )
+
+        # Extension
+        ext = os.path.splitext(fichier.name)[1].lower()
+        if ext not in self.ALLOWED_EXTENSIONS:
+            exts = ', '.join(sorted(self.ALLOWED_EXTENSIONS))
+            raise forms.ValidationError(
+                f"Extension « {ext} » non autorisée. Autorisées : {exts}"
+            )
+
+        return fichier
 
 class RapportJournalierForm(forms.ModelForm):
     class Meta:

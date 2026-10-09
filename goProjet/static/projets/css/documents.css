@@ -1,0 +1,279 @@
+/* static/projets/css/documents.css */
+/* ============================================================
+   MODULE DOCUMENTS ADMINISTRATIFS
+   ============================================================ */
+
+/* ══════════════════════════════════════════════════════════════
+   Breadcrumb
+   ══════════════════════════════════════════════════════════════ */
+.doc-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+.doc-breadcrumb a {
+    color: var(--text-secondary);
+    transition: color 0.15s;
+}
+.doc-breadcrumb a:hover {
+    color: var(--accent-primary);
+}
+.doc-breadcrumb i {
+    font-size: 0.65rem;
+    opacity: 0.5;
+}
+.doc-breadcrumb .current {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Bouton toggle "Ajouter un document"
+   ══════════════════════════════════════════════════════════════ */
+.doc-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    margin-bottom: 1.25rem;
+
+    background-color: transparent;
+    color: var(--accent-primary);
+    border: 2px dashed var(--border-default);
+    border-radius: 0.5rem;
+
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+
+    transition: all 0.2s ease;
+}
+
+.doc-toggle-btn:hover {
+    border-color: var(--accent-primary);
+    background-color: rgba(34, 211, 238, 0.05);
+}
+
+.doc-toggle-btn:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.doc-toggle-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: rgba(34, 211, 238, 0.15);
+    transition: background-color 0.2s ease, transform 0.3s ease;
+}
+
+.doc-toggle-btn:hover .doc-toggle-icon-wrap {
+    background-color: rgba(34, 211, 238, 0.25);
+    transform: rotate(90deg);
+}
+
+.doc-toggle-icon { font-size: 0.8rem; }
+
+.doc-toggle-label {
+    flex: 1;
+    text-align: left;
+}
+
+.doc-toggle-chevron {
+    font-size: 0.75rem;
+    opacity: 0.6;
+    transition: transform 0.3s ease;
+}
+
+.doc-toggle-btn[aria-expanded="true"] {
+    border-style: solid;
+    border-color: var(--accent-primary);
+    background-color: rgba(34, 211, 238, 0.05);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: 0;
+}
+.doc-toggle-btn[aria-expanded="true"] .doc-toggle-chevron {
+    transform: rotate(180deg);
+}
+.doc-toggle-btn[aria-expanded="true"] .doc-toggle-icon-wrap {
+    transform: rotate(45deg);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Panneau formulaire (fade-in / fade-out)
+   ══════════════════════════════════════════════════════════════ */
+.doc-add-panel {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-10px);
+    transition:
+        max-height 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.3s ease,
+        transform 0.3s ease;
+    margin-bottom: 1.25rem;
+}
+
+.doc-add-panel.open {
+    max-height: 1500px;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.doc-add-panel.open .app-card {
+    animation: docFadeIn 0.35s ease-out;
+}
+
+@keyframes docFadeIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   File picker (input file classique stylisé)
+   ══════════════════════════════════════════════════════════════ */
+.doc-file-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+
+    transition: background-color 0.15s, border-color 0.15s;
+    max-width: 100%;
+}
+.doc-file-picker:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-primary);
+}
+.doc-file-picker #doc-file-picker-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 280px;
+}
+
+.doc-file-feedback {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: rgba(16, 185, 129, 0.1);
+    border-left: 3px solid var(--accent-success);
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    color: var(--accent-success);
+}
+.doc-file-feedback.hidden { display: none; }
+.doc-file-feedback .doc-file-size {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Liste des documents (lignes compactes)
+   ══════════════════════════════════════════════════════════════ */
+.doc-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.doc-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    padding: 0.875rem 1rem;
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+
+    transition: background-color 0.15s, border-color 0.15s;
+}
+.doc-row:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--accent-primary);
+}
+
+.doc-row-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: rgba(34, 211, 238, 0.08);
+    font-size: 1.25rem;
+}
+
+.doc-row-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.doc-row-title {
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.doc-row-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 0.125rem;
+}
+
+.doc-row-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+/* Responsive : empiler sur mobile */
+@media (max-width: 640px) {
+    .doc-toggle-btn {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+    }
+    .doc-toggle-icon-wrap {
+        width: 24px;
+        height: 24px;
+    }
+
+    .doc-row {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .doc-row-info {
+        flex-basis: calc(100% - 56px);
+    }
+    .doc-row-actions {
+        flex-basis: 100%;
+        justify-content: flex-end;
+    }
+}

@@ -12,7 +12,6 @@ from django.http import (
     FileResponse,
     Http404,
     HttpResponse,
-    HttpResponseBadRequest,
     HttpResponseForbidden,
     HttpResponseNotFound,
     HttpResponseRedirect,
@@ -25,7 +24,7 @@ from django.views import View
 from projets.decorators import can_view_projet, modules_projet_required
 from projets.forms import DocumentAdministratifForm, OrdreServiceForm
 from projets.models import DocumentAdministratif, OrdreService, Projet, TypeOrdreService
-
+from django.views.decorators.http import require_POST
 
 VIEWABLE_TYPES = {
     '.pdf': 'application/pdf',
@@ -76,7 +75,6 @@ def clean_url(url, replace_https=True):
     return url
 
 
-@login_required
 @can_view_projet
 def secure_download(request, model_name, object_id):
     """
@@ -117,6 +115,7 @@ def secure_download(request, model_name, object_id):
         return HttpResponseRedirect(url)
 
 
+@can_view_projet
 def download_document(request, model_name, object_id):
     model = apps.get_model('projets', model_name)
     if not model:
@@ -145,6 +144,7 @@ def download_document(request, model_name, object_id):
     return HttpResponseRedirect(secure_url)
 
 
+@can_view_projet
 def delete_document(request, model_name, object_id):
     model = apps.get_model('projets', model_name)
     if not model:
@@ -216,28 +216,49 @@ def serve_file_with_original_name(file_field, original_filename):
 @modules_projet_required
 def documents_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    documents = projet.documents_administratifs.all()
-    return render(
-        request,
-        'projets/documents/documents_administratifs.html',
-        {'projet': projet, 'documents': documents},
+
+    documents = (
+        projet.documents_administratifs
+        .select_related('projet')
+        .order_by('-date_remise', '-id')
     )
 
+    ctx = {
+        'projet': projet,
+        'documents': documents,
+    }
 
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/documents/_documents_content.html', ctx)
+
+    return render(request, 'projets/documents/documents_administratifs.html', ctx)
+
+
+@require_POST
 @modules_projet_required
 def supprimer_document(request, projet_id, document_id):
-    if request.method == 'POST':
-        document = get_object_or_404(DocumentAdministratif, id=document_id, projet_id=projet_id)
-        nom_document = document.type_document
+    document = get_object_or_404(
+        DocumentAdministratif, id=document_id, projet_id=projet_id
+    )
+    nom = document.type_document
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
-        try:
-            document.delete()
-            messages.success(request, f"Le document '{nom_document}' a été supprimé avec succès.")
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la suppression du document: {str(e)}")
-
+    try:
+        document.delete()
+    except Exception as e:
+        msg = f"Erreur lors de la suppression : {e}"
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': msg}, status=500)
+        messages.error(request, msg)
         return redirect('projets:documents', projet_id=projet_id)
 
+    msg = f"Document « {nom} » supprimé avec succès."
+
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
     return redirect('projets:documents', projet_id=projet_id)
 
 
@@ -248,9 +269,51 @@ def telecharger_document(request, document_id):
         messages.error(request, f"Erreur lors du téléchargement du fichier: {str(e)}")
         raise Http404("Erreur lors du téléchargement du document")
 
-
+@require_POST
 @modules_projet_required
 def ajouter_document(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    form = DocumentAdministratifForm(request.POST, request.FILES)
+
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if not form.is_valid():
+        if is_xhr:
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors.get_json_data(),
+                'message': 'Erreur de validation.',
+            }, status=400)
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{field}: {error}")
+        return redirect('projets:documents', projet_id=projet_id)
+
+    try:
+        document = form.save(commit=False)
+        document.projet = projet
+        document.original_filename = request.FILES['fichier'].name
+        document.save()
+
+        message = f"Document « {document.type_document} » ajouté avec succès."
+
+        if is_xhr:
+            return JsonResponse({'success': True, 'message': message})
+
+        messages.success(request, message)
+
+    except Exception as e:
+        error_msg = f"Erreur lors de l'ajout : {e}"
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': error_msg}, status=500)
+        messages.error(request, error_msg)
+
+    return redirect('projets:documents', projet_id=projet_id)
+
+
+
+@modules_projet_required
+def ajouter_document1(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
 
     if request.method == 'POST':

@@ -1,0 +1,253 @@
+{# projets/templates/projets/documents/_documents_content.html #}
+{% load static %}
+{% load formatters %}
+
+<div data-family="project" class="max-w-6xl mx-auto">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         En-tête
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-file-contract mr-2"></i>
+            Documents administratifs
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Gestion des documents administratifs du projet
+        </p>
+    </div>
+
+    <!-- Breadcrumb -->
+    <nav class="doc-breadcrumb mb-6">
+        <a href="{% url 'projets:liste_projets' %}">Projets</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
+        <i class="fas fa-chevron-right"></i>
+        <span class="current">Documents</span>
+    </nav>
+
+    <!-- Infos projet -->
+    <div class="app-card p-4 md:p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="space-y-2">
+                <p><strong style="color: var(--text-primary);">Numéro de marché :</strong> {{ projet.numero }}</p>
+                <p><strong style="color: var(--text-primary);">Objet :</strong> {{ projet.objet }}</p>
+            </div>
+            <div class="space-y-2">
+                <p><strong style="color: var(--text-primary);">Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
+                <p>
+                    <strong style="color: var(--text-primary);">Statut :</strong>
+                    <span class="app-badge app-badge-info">{{ projet.get_statut_display }}</span>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton toggle -->
+    <button type="button"
+            id="doc-toggle-add"
+            class="doc-toggle-btn"
+            aria-expanded="false"
+            aria-controls="doc-add-panel">
+        <span class="doc-toggle-icon-wrap">
+            <i class="fas fa-plus doc-toggle-icon"></i>
+        </span>
+        <span class="doc-toggle-label">Ajouter un document</span>
+        <i class="fas fa-chevron-down doc-toggle-chevron"></i>
+    </button>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Formulaire d'ajout (pliable)
+         ═══════════════════════════════════════════════════════════ -->
+    <div id="doc-add-panel" class="doc-add-panel">
+        <div class="app-card p-4 md:p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
+                    style="color: var(--accent-primary);">
+                    <i class="fas fa-upload"></i>
+                    Nouveau document
+                </h3>
+                <button type="button"
+                        id="doc-close-add"
+                        class="app-action-btn"
+                        title="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="documentAddForm"
+                  method="post"
+                  enctype="multipart/form-data"
+                  action="{% url 'projets:ajouter_document' projet.id %}"
+                  class="space-y-4">
+
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="id_type_document" class="app-modal-label">Type de document *</label>
+                        <select class="app-modal-input" id="id_type_document" name="type_document" required>
+                            <option value="">Sélectionner un type...</option>
+                            <option value="Attestation">Attestation</option>
+                            <option value="Attestation d'enregistrement">Attestation d'enregistrement</option>
+                            <option value="Attestation de conformité">Attestation de conformité</option>
+                            <option value="Attestation d'assurance">Attestation d'assurance</option>
+                            <option value="Assurance">Assurance</option>
+                            <option value="Caution provisoire">Caution provisoire</option>
+                            <option value="Caution définitive">Caution définitive</option>
+                            <option value="Bon de commande">Bon de commande</option>
+                            <option value="CPS">Cahier des prescriptions spéciales (CPS)</option>
+                            <option value="CPS avenant">CPS d'avenant</option>
+                            <option value="Cahier des charges">Cahier des charges (CDC)</option>
+                            <option value="Contrat">Contrat</option>
+                            <option value="Contrat de sous-traitance">Contrat de sous-traitance</option>
+                            <option value="Cahier des clauses techniques">Cahier des clauses techniques (CCT)</option>
+                            <option value="CCTP">Cahier des clauses techniques particulières (CCTP)</option>
+                            <option value="CCAP">Cahier des clauses administratives particulières (CCAP)</option>
+                            <option value="Cahier des clauses administratives">Cahier des clauses administratives (CCA)</option>
+                            <option value="BDP">Bordereau des prix (BDP)</option>
+                            <option value="Contrat de garantie">Contrat de garantie</option>
+                            <option value="Convention">Convention</option>
+                            <option value="Autorisation">Autorisation</option>
+                            <option value="Rapport">Rapport</option>
+                            <option value="Procès-verbal">Procès-verbal (PV)</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="id_date_remise" class="app-modal-label">Date de remise</label>
+                        <input type="date" class="app-modal-input" id="id_date_remise" name="date_remise">
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label for="id_description" class="app-modal-label">Description</label>
+                        <input type="text" class="app-modal-input" id="id_description" name="description"
+                               placeholder="Description optionnelle…">
+                    </div>
+                </div>
+
+                <!-- Fichier : input classique stylisé -->
+                <div>
+                    <label class="app-modal-label">Fichier *</label>
+
+                    <label class="doc-file-picker" for="id_fichier">
+                        <i class="fas fa-paperclip"></i>
+                        <span id="doc-file-picker-label">Choisir un fichier…</span>
+                    </label>
+
+                    <input type="file"
+                           class="hidden"
+                           id="id_fichier"
+                           name="fichier"
+                           required
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif,.webp,.txt,.csv">
+
+                    <div id="doc-file-feedback" class="doc-file-feedback hidden">
+                        <i class="fas fa-check-circle"></i>
+                        <span id="doc-file-name"></span>
+                        <span id="doc-file-size" class="doc-file-size"></span>
+                    </div>
+
+                    <p class="text-xs mt-1" style="color: var(--text-muted);">
+                        PDF, DOC, DOCX, XLS, XLSX, JPG, PNG · Max 10 Mo
+                    </p>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="app-btn-primary">
+                        <i class="fas fa-plus mr-2"></i> Ajouter le document
+                    </button>
+                    <button type="button" id="doc-cancel-add" class="app-btn-secondary">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         Liste des documents (lignes)
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="app-card p-4 md:p-6">
+        <div class="flex justify-between items-center mb-4 flex-col sm:flex-row gap-3">
+            <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
+                style="color: var(--accent-primary);">
+                <i class="fas fa-folder"></i>
+                Documents existants
+            </h3>
+            <span class="app-badge app-badge-info">
+                {{ documents.count }} document(s)
+            </span>
+        </div>
+
+        {% if documents %}
+            <div class="doc-list">
+                {% for document in documents %}
+                <div class="doc-row">
+                    <!-- Icône par type -->
+                    <div class="doc-row-icon">
+                        {% with ext=document.fichier.name|slice:"-4:"|lower %}
+                            {% if '.pdf' in ext %}
+                                <i class="fas fa-file-pdf" style="color: #dc2626;"></i>
+                            {% elif '.doc' in ext %}
+                                <i class="fas fa-file-word" style="color: #2563eb;"></i>
+                            {% elif '.xls' in ext %}
+                                <i class="fas fa-file-excel" style="color: #059669;"></i>
+                            {% elif '.jpg' in ext or '.png' in ext or '.gif' in ext or '.jpeg' in ext %}
+                                <i class="fas fa-file-image" style="color: #d97706;"></i>
+                            {% else %}
+                                <i class="fas fa-file" style="color: var(--text-muted);"></i>
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+
+                    <!-- Infos -->
+                    <div class="doc-row-info">
+                        <div class="doc-row-title">{{ document.type_document }}</div>
+                        <div class="doc-row-meta">
+                            {{ document.get_file_name|default:document.fichier.name|truncatechars:40 }}
+                            {% if document.fichier.size %}· {{ document.fichier.size|filesizeformat }}{% endif %}
+                            {% if document.date_remise %}· {{ document.date_remise|date:"d/m/Y" }}{% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="doc-row-actions">
+                        <a href="{% url 'projets:download_document' 'DocumentAdministratif' document.id %}?download=false"
+                           target="_blank"
+                           class="app-action-btn"
+                           style="background-color: var(--accent-warning); color: var(--text-inverse);"
+                           title="Voir">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'projets:download_document' 'DocumentAdministratif' document.id %}?download=true"
+                           class="app-action-btn"
+                           style="background-color: var(--accent-success); color: var(--text-inverse);"
+                           title="Télécharger">
+                            <i class="fas fa-download"></i>
+                        </a>
+                        <button type="button"
+                                class="app-action-btn doc-delete-btn"
+                                data-document-id="{{ document.id }}"
+                                data-document-nom="{{ document.type_document|escapejs }}"
+                                style="background-color: var(--accent-danger); color: var(--text-inverse);"
+                                title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-8">
+                <i class="fas fa-folder-open text-4xl md:text-6xl mb-4" style="color: var(--text-muted);"></i>
+                <p class="text-base md:text-lg" style="color: var(--text-secondary);">
+                    Aucun document administratif n'a été ajouté pour ce projet.
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
