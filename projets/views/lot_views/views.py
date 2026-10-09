@@ -10,6 +10,7 @@ from projets.decorators import chef_projet_required
 from projets.exporters import ExcelExporter
 from projets.manager import LigneHierarchique
 from projets.models import LigneBordereau, LotProjet, Projet
+from django.views.decorators.http import require_POST
 
 
 @chef_projet_required
@@ -156,67 +157,6 @@ def _parse_taux_tva(raw_value):
     return taux
 
 
-@chef_projet_required
-def modifier_lot(request, projet_id, lot_id):
-    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
-
-    if request.method == "POST":
-        nouveau_nom = request.POST.get("nom", "").strip()
-
-        if not nouveau_nom:
-            messages.error(request, "Le nom du lot ne peut pas être vide")
-        else:
-            try:
-                taux_tva = _parse_taux_tva(request.POST.get('taux_tva'))
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect('projets:lots_projet', projet_id=projet_id)
-            lot.nom = nouveau_nom
-            lot.description = request.POST.get("description", "").strip()
-            lot.taux_tva = taux_tva
-            lot.save()
-            messages.success(request, "Le nom du lot a été mis à jour avec succès")
-            return redirect('projets:lots_projet', projet_id=projet_id)
-
-    context = {
-        'lot': lot,
-        'projet_id': projet_id,
-    }
-    return render(request, 'projets/lots/modifier_lot.html', context)
-
-
-@chef_projet_required
-def supprimer_lot(request, projet_id, lot_id):
-    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
-    if request.method == 'POST':
-        lot.delete()
-    return redirect('projets:lots_projet', projet_id=projet_id)
-
-
-@chef_projet_required
-def lots_projet(request, projet_id):
-    projet = get_object_or_404(Projet, id=projet_id)
-
-    if request.method == "POST":
-        nom_lot = request.POST.get("nom")
-        if nom_lot:
-            try:
-                taux_tva = _parse_taux_tva(request.POST.get('taux_tva', '20'))
-            except ValueError as e:
-                messages.error(request, str(e))
-                return redirect('projets:lots_projet', projet_id=projet_id)
-            LotProjet.objects.create(
-                projet=projet,
-                nom=nom_lot,
-                description=request.POST.get('description', '').strip(),
-                taux_tva=taux_tva,
-            )
-
-        return redirect('projets:lots_projet', projet_id=projet_id)
-    lots = LotProjet.objects.filter(projet=projet).order_by('id')
-
-    return render(request, 'projets/lots/lots_projet.html', {'projet': projet, 'lots': lots})
-
 def _preparer_contexte_bordereau(projet):
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
     lots_data = []
@@ -258,6 +198,110 @@ def _preparer_contexte_bordereau(projet):
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
     }
+
+
+@chef_projet_required
+def lots_projet(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    lots = LotProjet.objects.filter(projet=projet).order_by('id')
+
+    ctx = {'projet': projet, 'lots': lots}
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/lots/_lots_content.html', ctx)
+
+    return render(request, 'projets/lots/lots_projet.html', ctx)
+
+
+@require_POST
+@chef_projet_required
+def ajouter_lot(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    nom_lot = request.POST.get("nom", "").strip()
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if not nom_lot:
+        msg = "Le nom du lot ne peut pas être vide."
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('projets:lots_projet', projet_id=projet_id)
+
+    try:
+        taux_tva = _parse_taux_tva(request.POST.get('taux_tva', '20'))
+    except ValueError as e:
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+        messages.error(request, str(e))
+        return redirect('projets:lots_projet', projet_id=projet_id)
+
+    lot = LotProjet.objects.create(
+        projet=projet,
+        nom=nom_lot,
+        description=request.POST.get('description', '').strip(),
+        taux_tva=taux_tva,
+    )
+
+    msg = f"Lot « {lot.nom} » ajouté avec succès."
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
+    return redirect('projets:lots_projet', projet_id=projet_id)
+
+
+@require_POST
+@chef_projet_required
+def modifier_lot(request, projet_id, lot_id):
+    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    nouveau_nom = request.POST.get("nom", "").strip()
+
+    if not nouveau_nom:
+        msg = "Le nom du lot ne peut pas être vide."
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': msg}, status=400)
+        messages.error(request, msg)
+        return redirect('projets:lots_projet', projet_id=projet_id)
+
+    try:
+        taux_tva = _parse_taux_tva(request.POST.get('taux_tva'))
+    except ValueError as e:
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': str(e)}, status=400)
+        messages.error(request, str(e))
+        return redirect('projets:lots_projet', projet_id=projet_id)
+
+    lot.nom = nouveau_nom
+    lot.description = request.POST.get("description", "").strip()
+    lot.taux_tva = taux_tva
+    lot.save()
+
+    msg = f"Lot « {lot.nom} » modifié avec succès."
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
+    return redirect('projets:lots_projet', projet_id=projet_id)
+
+
+@require_POST
+@chef_projet_required
+def supprimer_lot(request, projet_id, lot_id):
+    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
+    nom = lot.nom
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    lot.delete()
+
+    msg = f"Lot « {nom} » supprimé avec succès."
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
+    return redirect('projets:lots_projet', projet_id=projet_id)
+
 
 @login_required
 @chef_projet_required

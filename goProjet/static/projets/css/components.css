@@ -209,7 +209,18 @@
     color: var(--text-primary);
     padding: 1.5rem;
     border-radius: 0.5rem;
-    box-shadow: var(--shadow-lg);
+
+    border: 1px solid var(--border-default);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.15),
+        0 20px 60px rgba(0, 0, 0, 0.10);
+}
+
+[data-theme="light"] .app-modal {
+    border-color: var(--border-strong);
+    box-shadow:
+        0 8px 24px rgba(0, 0, 0, 0.12),
+        0 24px 64px rgba(0, 0, 0, 0.18);
 }
 
 /* Header */

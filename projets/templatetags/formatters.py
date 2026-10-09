@@ -53,6 +53,7 @@ def format_percentage(value):
         return f"{number:,.0f} %".replace(",", " ").replace(".", ",")
     except (ValueError, TypeError):
         return "0 %"
+
 @register.filter
 def calculate_amount(quantity, unit_price):
     """
@@ -77,3 +78,22 @@ def amount_ttc(amount_ht, tva_rate=0.2):
         return f"{number:,.2f}".replace(",", " ").replace(".", ",")
     except (ValueError, TypeError):
         return 0.00
+
+@register.filter
+def raw_number(value):
+    """
+    Retourne un nombre au format brut (point décimal, sans séparateur de milliers).
+    Utile pour les attributs data-* lus par <input type="number"> ou JS.
+
+    Usage:
+        data-lot-taux-tva="{{ lot.taux_tva|raw_number }}"
+        → "20.00" (au lieu de "20,00")
+    """
+    if value is None or value == '':
+        return ''
+    try:
+        number = float(value)
+        # Pas de séparateur de milliers, point décimal, on enlève les zéros inutiles
+        return f"{number:.2f}".rstrip('0').rstrip('.')
+    except (ValueError, TypeError):
+        return ''

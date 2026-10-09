@@ -1,0 +1,185 @@
+{% load static %}
+
+<div data-family="project" class="max-w-6xl mx-auto">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-cubes mr-2"></i>
+            Lots / Bordereau des prix
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Gestion des lots et bordereaux de prix
+        </p>
+    </div>
+
+    {# ═══════ Breadcrumb ═══════ #}
+    <nav class="doc-breadcrumb mb-6">
+        <a href="{% url 'projets:liste_projets' %}">Projets</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
+        <i class="fas fa-chevron-right"></i>
+        <span class="current">Lots / Bordereau</span>
+    </nav>
+
+    {# ═══════ Boutons d'action globaux ═══════ #}
+    {% if lots %}
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button type="button"
+                id="lot-apercu-btn"
+                data-url="{% url 'projets:apercu_impression_bordereau' projet.id %}"
+                class="app-btn-primary">
+            <i class="fas fa-eye mr-2"></i> Aperçu Bordereau
+        </button>
+        <a href="{% url 'projets:export_bordereau_excel' projet.id %}"
+           class="app-btn-secondary">
+            <i class="fas fa-file-excel mr-2"></i> Export Excel
+        </a>
+    </div>
+    {% endif %}
+
+    {# ═══════ Bouton toggle "Ajouter un lot" ═══════ #}
+    <button type="button"
+            id="lot-toggle-add"
+            class="doc-toggle-btn"
+            aria-expanded="false"
+            aria-controls="lot-add-panel">
+        <span class="doc-toggle-icon-wrap">
+            <i class="fas fa-plus doc-toggle-icon"></i>
+        </span>
+        <span class="doc-toggle-label">Ajouter un nouveau lot</span>
+        <i class="fas fa-chevron-down doc-toggle-chevron"></i>
+    </button>
+
+    {# ═══════ Formulaire d'ajout pliable ═══════ #}
+    <div id="lot-add-panel" class="doc-add-panel">
+        <div class="app-card p-4 md:p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
+                    style="color: var(--accent-primary);">
+                    <i class="fas fa-plus-circle"></i>
+                    Nouveau lot
+                </h3>
+                <button type="button" id="lot-close-add" class="app-action-btn" title="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="lotAddForm"
+                  method="post"
+                  action="{% url 'projets:ajouter_lot' projet.id %}"
+                  class="space-y-4">
+                {% csrf_token %}
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="id_lot_nom" class="app-modal-label">Nom du lot *</label>
+                        <input type="text" id="id_lot_nom" name="nom"
+                               class="app-modal-input" required
+                               placeholder="Ex: Lot unique, Avenant 01, Terrassements…">
+                    </div>
+                    <div>
+                        <label for="id_lot_description" class="app-modal-label">Description</label>
+                        <input type="text" id="id_lot_description" name="description"
+                               class="app-modal-input"
+                               placeholder="Description optionnelle…">
+                    </div>
+                    <div>
+                        <label for="id_lot_taux_tva" class="app-modal-label">Taux TVA (%)</label>
+                        <input type="number" id="id_lot_taux_tva" name="taux_tva"
+                               class="app-modal-input"
+                               step="0.01" min="0" max="100" value="20">
+                        <p class="text-xs mt-1" style="color: var(--text-muted);">
+                            0 = lot hors TVA.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="flex gap-2">
+                    <button type="submit" class="app-btn-primary">
+                        <i class="fas fa-plus mr-2"></i> Ajouter le lot
+                    </button>
+                    <button type="button" id="lot-cancel-add" class="app-btn-secondary">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# ═══════ Liste des lots ═══════ #}
+    {% if lots %}
+        <div class="space-y-4">
+            {% for lot in lots %}
+                {% include "projets/lots/_lot_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="app-card p-6 md:p-8 text-center">
+            <i class="fas fa-inbox text-4xl md:text-6xl mb-4" style="color: var(--text-muted);"></i>
+            <h3 class="text-lg md:text-xl font-semibold mb-2" style="color: var(--text-secondary);">
+                Aucun lot défini
+            </h3>
+            <p class="text-sm md:text-base" style="color: var(--text-muted);">
+                Commencez par ajouter un lot pour ce projet.
+            </p>
+        </div>
+    {% endif %}
+
+    {# ═══════ Modal d'édition ═══════ #}
+    <div id="lot-edit-modal" class="modal">
+        <div class="app-modal">
+            <div class="app-modal-header">
+                <h3 class="app-modal-title"><i class="fas fa-pen mr-2"></i>Modifier le lot</h3>
+                <button type="button" data-modal-close class="app-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="lotEditForm" data-lot-edit-form>
+                {% csrf_token %}
+                <input type="hidden" name="lot_id" id="edit_lot_id">
+
+                <div class="app-modal-field">
+                    <label class="app-modal-label">Nom du lot *</label>
+                    <input type="text" name="nom" id="edit_lot_nom" class="app-modal-input" required>
+                </div>
+                <div class="app-modal-field">
+                    <label class="app-modal-label">Description</label>
+                    <input type="text" name="description" id="edit_lot_description" class="app-modal-input">
+                </div>
+                <div class="app-modal-field">
+                    <label class="app-modal-label">Taux TVA (%)</label>
+                    <input type="number" name="taux_tva" id="edit_lot_taux_tva"
+                           class="app-modal-input" step="0.01" min="0" max="100">
+                    <p class="text-xs mt-1" style="color: var(--text-muted);">
+                        0 = lot hors TVA. Vide = hérite du taux du projet.
+                    </p>
+                </div>
+
+                <div class="app-modal-footer">
+                    <button type="button" data-modal-close class="app-modal-btn app-modal-btn-cancel">
+                        Annuler
+                    </button>
+                    <button type="submit" class="app-modal-btn app-modal-btn-submit">
+                        <i class="fas fa-save mr-2"></i> Enregistrer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {# Overlay de chargement pour l'aperçu #}
+    <div id="lot-loading-overlay" class="lot-loading-overlay">
+        <div class="lot-loading-content">
+            <div class="lot-loading-rings">
+                <div class="lot-ring lot-ring-1"></div>
+                <div class="lot-ring lot-ring-2"></div>
+                <div class="lot-ring lot-ring-3"></div>
+            </div>
+            <p class="lot-loading-text">Génération de l'aperçu…</p>
+            <p class="lot-loading-subtext">Le document va s'ouvrir dans un nouvel onglet</p>
+        </div>
+    </div>
+</div>

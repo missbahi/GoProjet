@@ -87,6 +87,7 @@ projets_urlpatterns = [
 
     path('projet/<int:projet_id>/lot/<int:lot_id>/modifier/', lot_views.modifier_lot, name='modifier_lot'),
     path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', lot_views.supprimer_lot, name='supprimer_lot'),
+    path('projet/<int:projet_id>/lots/ajouter/', lot_views.ajouter_lot, name='ajouter_lot'),
     path('api/projet/lots/<int:projet_id>/export-excel/', lot_views.export_bordereau_excel, name='export_bordereau_excel'),
 
     path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', lot_views.saisie_bordereau, name='saisie_bordereau'),

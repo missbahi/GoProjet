@@ -2,11 +2,11 @@
 (function () {
     'use strict';
 
-    if (window.__tachesInitialized) {
-        console.warn('[taches] déjà initialisé, skip');
+    if (window.__htmxConfigInitialized) {
+        console.warn('[htmx-config] déjà initialisé, skip');
         return;
     }
-    window.__tachesInitialized = true;
+    window.__htmxConfigInitialized = true;
 
     // ═══════════════════════════════════════════════════════════
     // CONFIGURATION GLOBALE HTMX
@@ -42,11 +42,13 @@
             css: [
                 '/static/projets/css/dashboard.css',
                 '/static/projets/css/documents.css',
+                '/static/projets/css/lots.css',  
             ],
             js: [
                 '/static/projets/js/dashboard.js',
                 '/static/projets/js/taches.js',
                 '/static/projets/js/documents.js',
+                '/static/projets/js/lots.js', 
             ],
         },
     };
@@ -113,8 +115,7 @@
     document.addEventListener('DOMContentLoaded', function () {
         const family = document.getElementById('main-content')?.dataset.family;
         if (family) {
-            loaded.add(family); 
-            // console.log(`[HTMX] Famille initiale : ${family}`);
+            loadFamilyAssets(family); 
         }
     });
 

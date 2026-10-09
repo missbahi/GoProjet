@@ -125,6 +125,8 @@
     /* ---- Scrollbar ---- */
     --scrollbar-track:  #E5E7EA;
     --scrollbar-thumb:  #8A8E92;
+    /* ---- Modales ---- */
+    --modal-overlay: rgba(15, 23, 42, 0.5);
 }
 
 /* ============================================================

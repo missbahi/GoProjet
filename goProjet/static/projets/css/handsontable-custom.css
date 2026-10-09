@@ -1,71 +1,174 @@
-/* static/css/handsontable-custom.css */
-/* ===== STYLES GÉNÉRAUX HANDSONTABLE ===== */      
+/* static/projets/css/handsontable-custom.css */
+/* ============================================================
+   HANDSONTABLE — Styles personnalisés (thème clair/sombre)
+   ============================================================ */
+
+/* ══════════════════════════════════════════════════════════════
+   CONTENEUR GÉNÉRAL
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom {
     background: transparent !important;
     border: none !important;
     font-family: 'Segoe UI', system-ui, sans-serif !important;
 }
 
-/* ===== EN-TÊTES DE COLONNES ===== */
+/* ══════════════════════════════════════════════════════════════
+   EN-TÊTES DE COLONNES
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom thead th {
-    background: #374151 !important;
-    color: #22d3ee !important;
-    border:none !important;
-    border-right: 1px solid rgba(144, 161, 185, 0.15) !important; 
+    background: var(--table-header-bg) !important;
+    color: var(--accent-primary) !important;
+    border: none !important;
+    border-right: 1px solid var(--border-default) !important;
     font-weight: 600 !important;
     font-size: 13px !important;
     text-transform: uppercase !important;
-    /* min-height: 35px !important; */
     height: 45px !important;
     text-align: center !important;
     vertical-align: middle !important;
-} 
+}
 
-/* ===== CORPS DU TABLEAU ===== */
+/* ══════════════════════════════════════════════════════════════
+   EN-TÊTES DE LIGNES (colonne figée à gauche)
+   ══════════════════════════════════════════════════════════════ */
+.handsontable-custom .ht_clone_left th,
+.handsontable-custom .ht_clone_top_left_corner th {
+    background-color: var(--table-header-bg) !important;
+    color: var(--accent-primary) !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    vertical-align: middle !important;
+    border-top: 1px solid var(--border-default) !important;
+    border-bottom: 1px solid var(--border-default) !important;
+    border-left: 1px solid var(--border-default) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CORPS DU TABLEAU
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom tbody td {
-    background: #3B3B3B!important;
-    border: 1px solid rgba(144, 161, 185, 0.15) !important; 
-    color: #E5E7EB !important;
-    transition: all 0.2s ease !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-default) !important;
+    color: var(--text-primary) !important;
+    transition: background-color 0.15s ease, color 0.15s ease !important;
     vertical-align: middle !important;
     font-size: 12px !important;
 }
 
 /* Alternance des lignes */
 .handsontable-custom tbody tr:nth-child(even) td {
-    background: #363636;
+    background: var(--bg-elevated) !important;
 }
 
 .handsontable-custom td:last-child {
     font-size: 12px !important;
 }
 
-/* ===== LIGNES DE TITRE ===== */
+/* ══════════════════════════════════════════════════════════════
+   LIGNES DE TITRE (niveau hiérarchique)
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom .title-row {
-    color: #22d3ee !important;
+    color: var(--accent-primary) !important;
     font-weight: 700 !important;
     font-size: 15px !important;
 }
 
+/* Couleurs par niveau (optionnel) */
+.handsontable-custom .title-row.title-row-level-0 { color: #f59e0b !important; }
+.handsontable-custom .title-row.title-row-level-1 { color: var(--accent-primary) !important; }
+.handsontable-custom .title-row.title-row-level-2 { color: #a78bfa !important; }
+.handsontable-custom .title-row.title-row-level-3 { color: var(--accent-success) !important; }
+.handsontable-custom .title-row.title-row-level-4 { color: #f472b6 !important; }
+
+/* ══════════════════════════════════════════════════════════════
+   ALIGNEMENT
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom .htCenter {
     text-align: center !important;
 }
-/* Style des cellules sélectionnées avec le thème cyan */
+
+/* ══════════════════════════════════════════════════════════════
+   SÉLECTION (bordures et zone)
+   ══════════════════════════════════════════════════════════════ */
 .handsontable-custom .wtBorder.current {
-    border: 1px solid #22d3ee !important;
+    border: 1px solid var(--accent-primary) !important;
 }
 
 .handsontable-custom .wtBorder.area {
-    background: rgba(34, 211, 238, 0.25) !important;
-    border: 1px solid #0ea5e9 !important;
+    background: rgba(34, 211, 238, 0.15) !important;
+    border: 1px solid var(--accent-primary) !important;
 }
 
+[data-theme="light"] .handsontable-custom .wtBorder.area {
+    background: rgba(14, 165, 233, 0.12) !important;
+}
+
+/* Cellule courante */
+.handsontable-custom .htCore .current {
+    background: rgba(34, 211, 238, 0.08) !important;
+}
+[data-theme="light"] .handsontable-custom .htCore .current {
+    background: rgba(14, 165, 233, 0.08) !important;
+}
+
+/* Animation d'highlight */
 @keyframes highlightCustom {
-    0% { background-color: rgba(34, 211, 238, 0.3) !important; }
+    0%   { background-color: rgba(34, 211, 238, 0.3) !important; }
     100% { background-color: transparent !important; }
 }
 
-/* ===== RESPONSIVE ===== */
+/* ══════════════════════════════════════════════════════════════
+   TRIANGLES EXPAND/COLLAPSE (hiérarchie)
+   ══════════════════════════════════════════════════════════════ */
+.toggle-triangle {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 4px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+    vertical-align: middle;
+    line-height: 1;
+}
+
+.triangle-collapsed::before {
+    display: inline-block;
+    content: "▶ ";
+    color: var(--accent-primary);
+    font-size: 10px;
+}
+
+.triangle-expanded::before {
+    display: inline-block;
+    content: "▼ ";
+    color: var(--accent-primary);
+    font-size: 10px;
+}
+
+.toggle-triangle:hover::before {
+    color: var(--accent-success) !important;
+    transform: scale(1.1);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CELLULES MONTANT (mise en évidence)
+   ══════════════════════════════════════════════════════════════ */
+.handsontable-custom .montant-cell {
+    font-weight: 600 !important;
+    color: var(--accent-success) !important;
+    font-size: 13px !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   NO SCROLL — hauteur dynamique
+   ══════════════════════════════════════════════════════════════ */
+.handsontable-custom .wtHolder {
+    overflow-y: hidden !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
     .handsontable-custom thead th {
         height: 50px !important;
@@ -73,21 +176,19 @@
         font-size: 12px !important;
         padding: 8px 4px !important;
     }
-}
-/* ===== EN-TÊTES DE LIGNES ===== */
-.handsontable-custom .ht_clone_left th,
-.handsontable-custom .ht_clone_top_left_corner th {
-    background-color: #374151 !important;
-    color: #22d3ee !important;
-    font-weight: 600 !important;
-    font-size: 16px !important;
-    vertical-align: middle !important;
-    border-bottom: 1px solid rgba(144, 161, 185, 0.15) !important;  
-    border-top: 1px solid rgba(144, 161, 185, 0.15) !important; 
-    border-left: 1px solid rgba(144, 161, 185, 0.15) !important; 
-}
 
-/* no scroll handsontable */
-.handsontable-custom .wtHolder {
-    overflow-y: hidden !important;
+    .handsontable-custom tbody td {
+        font-size: 11px !important;
+        padding: 8px 4px !important;
+    }
+
+    .toggle-triangle {
+        width: 10px;
+        height: 10px;
+    }
+
+    .triangle-collapsed::before,
+    .triangle-expanded::before {
+        font-size: 8px;
+    }
 }

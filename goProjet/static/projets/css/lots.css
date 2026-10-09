@@ -1,0 +1,147 @@
+/* static/projets/css/lots.css */
+/* ============================================================
+   MODULE LOTS / BORDEREAU DES PRIX
+   ============================================================ */
+
+/* ══════════════════════════════════════════════════════════════
+   Breadcrumb (réutilise les styles documents)
+   ══════════════════════════════════════════════════════════════ */
+.doc-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+.doc-breadcrumb a { color: var(--text-secondary); transition: color 0.15s; }
+.doc-breadcrumb a:hover { color: var(--accent-primary); }
+.doc-breadcrumb i { font-size: 0.65rem; opacity: 0.5; }
+.doc-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+
+/* ══════════════════════════════════════════════════════════════
+   Bouton toggle (réutilise .doc-toggle-btn / .doc-add-panel)
+   ══════════════════════════════════════════════════════════════ */
+/* Voir documents.css pour .doc-toggle-btn, .doc-add-panel */
+
+/* ══════════════════════════════════════════════════════════════
+   Styles spécifiques aux lots
+   ══════════════════════════════════════════════════════════════ */
+.app-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s, opacity 0.15s;
+}
+.app-btn:hover { opacity: 0.9; }
+
+/* ══════════════════════════════════════════════════════════════
+   Overlay de chargement (aperçu bordereau)
+   ══════════════════════════════════════════════════════════════ */
+.lot-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+
+    display: none;
+    align-items: center;
+    justify-content: center;
+
+    background-color: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.lot-loading-overlay.visible {
+    display: flex;
+    opacity: 1;
+}
+
+.lot-loading-content {
+    text-align: center;
+    color: white;
+    padding: 2rem 3rem;
+    border-radius: 1rem;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    animation: lotLoadingFadeIn 0.4s ease-out;
+}
+
+@keyframes lotLoadingFadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to   { opacity: 1; transform: scale(1); }
+}
+
+/* Anneaux concentriques animés */
+.lot-loading-rings {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+}
+
+.lot-ring {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 3px solid transparent;
+}
+
+.lot-ring-1 {
+    width: 80px;
+    height: 80px;
+    border-top-color: var(--accent-primary, #22d3ee);
+    border-right-color: var(--accent-primary, #22d3ee);
+    animation: lotSpin 1s linear infinite;
+}
+
+.lot-ring-2 {
+    width: 60px;
+    height: 60px;
+    border-bottom-color: var(--accent-green, #2B9C62);
+    border-left-color: var(--accent-green, #2B9C62);
+    animation: lotSpin 1.4s linear infinite reverse;
+}
+
+.lot-ring-3 {
+    width: 40px;
+    height: 40px;
+    border-top-color: #a78bfa;
+    border-right-color: #a78bfa;
+    animation: lotSpin 0.8s linear infinite;
+}
+
+@keyframes lotSpin {
+    to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+.lot-loading-text {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: white;
+    animation: lotPulse 1.5s ease-in-out infinite;
+}
+
+.lot-loading-subtext {
+    font-size: 0.875rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+@keyframes lotPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.6; }
+}
