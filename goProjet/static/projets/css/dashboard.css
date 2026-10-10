@@ -15,6 +15,64 @@
 @media (min-width: 768px) {
     .project-dashboard-card { padding: 1.5rem; }
 }
+/* ══════════════════════════════════════════════════════════════
+   Bouton crayon — apparaît au survol de la carte projet
+   ══════════════════════════════════════════════════════════════ */
+.project-edit-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 32px;
+    height: 32px;
+    padding: 0;
+
+    background-color: transparent;
+    border: none;
+    border-radius: 50%;
+
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    cursor: pointer;
+
+    /* ⚡ Invisible au repos */
+    opacity: 0;
+    transform: scale(0.85);
+    transition: color 0.15s, background-color 0.15s, opacity 0.2s, transform 0.2s;
+}
+
+/* ⚡ Apparaît au survol de la carte projet */
+.project-dashboard-card:hover .project-edit-hint {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* Survol du crayon lui-même */
+.project-edit-hint:hover {
+    color: var(--accent-primary);
+    background-color: rgba(34, 211, 238, 0.1);
+    transform: scale(1.05);
+}
+
+/* ⚡ Accessibilité : toujours visible au focus clavier */
+.project-edit-hint:focus-visible {
+    opacity: 1;
+    transform: scale(1);
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.project-edit-hint:active {
+    transform: scale(0.95);
+}
+
+/* ⚡ Mobile : visible en permanence (pas de hover tactile) */
+@media (hover: none) {
+    .project-edit-hint {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+}
 
 /* ══════════════════════════════════════════════════════════════
    BOUTON D'ACCÈS AUX MODULES

@@ -371,3 +371,203 @@
     box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
 }
 .app-input-error { border-color: var(--accent-danger) !important; }
+
+/* ============================================================
+   Modal projet — design avec contraste et hover marqués
+   ============================================================ */
+
+/* ---- Conteneur du modal ---- */
+.modal-projet > div {
+    animation: modalEnter 0.3s ease-out;
+}
+
+/* ---- Champs de formulaire ---- */
+.modal-projet input,
+.modal-projet select,
+.modal-projet textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+    /* Thème sombre par défaut */
+    background-color: #1F2937;
+    border: 1.5px solid #4B5563;
+    color: #FFFFFF;
+}
+
+.modal-projet input::placeholder,
+.modal-projet textarea::placeholder {
+    color: #6B7280;
+}
+
+/* Hover : bordure verte + fond légèrement éclairci */
+.modal-projet input:hover,
+.modal-projet select:hover,
+.modal-projet textarea:hover {
+    border-color: var(--accent-green);
+    background-color: #263041;
+}
+
+/* Focus : bordure verte vive + halo */
+.modal-projet input:focus,
+.modal-projet select:focus,
+.modal-projet textarea:focus {
+    outline: none;
+    border-color: var(--accent-green);
+    background-color: #1F2937;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.25);
+}
+
+/* Champs en erreur */
+.modal-projet input.app-input-error,
+.modal-projet select.app-input-error,
+.modal-projet textarea.app-input-error {
+    border-color: var(--accent-danger);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+}
+
+/* Selects : flèche visible */
+.modal-projet select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239CA3AF' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+}
+
+/* Case à cocher / switch : style conservé */
+.modal-projet input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+}
+
+/* ============================================================
+   THÈME CLAIR — Surcharges
+   ============================================================ */
+[data-theme="light"] .modal-projet input,
+[data-theme="light"] .modal-projet select,
+[data-theme="light"] .modal-projet textarea {
+    background-color: #FFFFFF;
+    border-color: #D4D6D8;
+    color: #1F2023;
+}
+
+[data-theme="light"] .modal-projet input::placeholder,
+[data-theme="light"] .modal-projet textarea::placeholder {
+    color: #8A8E92;
+}
+
+[data-theme="light"] .modal-projet input:hover,
+[data-theme="light"] .modal-projet select:hover,
+[data-theme="light"] .modal-projet textarea:hover {
+    border-color: var(--accent-green);
+    background-color: #F5F6F8;
+}
+
+[data-theme="light"] .modal-projet input:focus,
+[data-theme="light"] .modal-projet select:focus,
+[data-theme="light"] .modal-projet textarea:focus {
+    border-color: var(--accent-green);
+    background-color: #FFFFFF;
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.2);
+}
+
+[data-theme="light"] .modal-projet select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2354585C' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+}
+
+/* ============================================================
+   Scrollbar du formulaire
+   ============================================================ */
+.modal-projet-form::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-projet-form::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 4px;
+}
+.modal-projet-form::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 4px;
+}
+.modal-projet-form::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-green);
+}
+
+/* ============================================================
+   Animation d'entrée
+   ============================================================ */
+@keyframes modalEnter {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+/* ---- Boutons du modal ---- */
+.modal-btn-cancel {
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    transition: all 0.15s ease;
+}
+.modal-btn-cancel:hover {
+    background-color: var(--bg-hover);
+    border-color: var(--border-strong);
+}
+
+.btn-save-projet {
+    background-color: var(--accent-green);
+    color: white;
+    border: 1px solid var(--accent-green-dark);
+    transition: all 0.15s ease;
+}
+.btn-save-projet:hover {
+    background-color: var(--accent-green-dark);
+    box-shadow: 0 4px 12px rgba(43, 156, 98, 0.3);
+    transform: translateY(-1px);
+}
+.btn-save-projet:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+/* ---- Switch "révisable" ---- */
+.modal-switch-track {
+    width: 3rem;
+    height: 1.5rem;
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 9999px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.modal-switch-track::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 1.25rem;
+    height: 1.25rem;
+    background-color: white;
+    border: 1px solid var(--border-default);
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+}
+
+.modal-switch input:checked ~ .modal-switch-track {
+    background-color: var(--accent-green);
+    border-color: var(--accent-green-dark);
+}
+
+.modal-switch input:checked ~ .modal-switch-track::after {
+    transform: translateX(1.5rem);
+}
+
+.modal-switch:hover .modal-switch-track {
+    border-color: var(--accent-green);
+}
+
+.modal-switch input:focus ~ .modal-switch-track {
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.25);
+}

@@ -326,7 +326,7 @@ def dashboard_projet(request, projet_id):
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
 
-    return render(request, 'projets/projets/dashboard_projet/dashboard.html', {
+    return render(request, 'projets/dashboard_projet/dashboard.html', {
         'can_handler': can_handler,
         'projet': projet,
         'lots': lots,

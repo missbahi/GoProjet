@@ -35,7 +35,6 @@
                 '/static/projets/js/home.js',
                 '/static/projets/js/notifications.js',
                 '/static/projets/js/utilisateurs.js',
-                '/static/projets/js/modals.js',
             ],
         },
         project: {

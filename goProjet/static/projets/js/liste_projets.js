@@ -175,53 +175,53 @@
         return el ? el.value : '';
     }
 
-    // ============================================================
-    // Gestion générique des modals
-    // ============================================================
-    window.closeModal = function(modalId, options = {}) {
-        const modal = document.getElementById(modalId);
-        if (!modal) return;
+    // // ============================================================
+    // // Gestion générique des modals
+    // // ============================================================
+    // window.closeModal = function(modalId, options = {}) {
+    //     const modal = document.getElementById(modalId);
+    //     if (!modal) return;
 
-        modal.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => {
-            // Si le modal est dans #modals-container, on vide le conteneur
-            const container = document.getElementById('modals-container');
-            if (container && container.contains(modal)) {
-                container.innerHTML = '';
-            } else {
-                modal.remove();
-            }
-            document.body.classList.remove('overflow-hidden');
+    //     modal.classList.add('opacity-0', 'scale-95');
+    //     setTimeout(() => {
+    //         // Si le modal est dans #modals-container, on vide le conteneur
+    //         const container = document.getElementById('modals-container');
+    //         if (container && container.contains(modal)) {
+    //             container.innerHTML = '';
+    //         } else {
+    //             modal.remove();
+    //         }
+    //         document.body.classList.remove('overflow-hidden');
 
-            if (options.reload) window.location.reload();
-            if (options.message) {
-                if (window.showNotification) {
-                    window.showNotification(options.message, options.type || 'success');
-                }
-            }
-        }, 200);
-    };
+    //         if (options.reload) window.location.reload();
+    //         if (options.message) {
+    //             if (window.showNotification) {
+    //                 window.showNotification(options.message, options.type || 'success');
+    //             }
+    //         }
+    //     }, 200);
+    // };
 
-    // Fermeture avec Échap
-    document.addEventListener('keydown', function(e) {
-        if (e.key !== 'Escape') return;
-        const container = document.getElementById('modals-container');
-        if (!container) return;
-        const openModals = container.querySelectorAll(':scope > div[id]');
-        openModals.forEach(modal => {
-            if (modal.id) window.closeModal(modal.id);
-        });
-    });
+    // // Fermeture avec Échap
+    // document.addEventListener('keydown', function(e) {
+    //     if (e.key !== 'Escape') return;
+    //     const container = document.getElementById('modals-container');
+    //     if (!container) return;
+    //     const openModals = container.querySelectorAll(':scope > div[id]');
+    //     openModals.forEach(modal => {
+    //         if (modal.id) window.closeModal(modal.id);
+    //     });
+    // });
 
-    // Fermeture par clic sur le backdrop
-    document.addEventListener('click', function(e) {
-        const container = document.getElementById('modals-container');
-        if (!container) return;
-        const modal = e.target.closest('#modals-container > div.fixed.inset-0');
-        if (!modal) return;
-        if (e.target !== modal) return; // clic à l'intérieur → ignorer
-        if (modal.id) window.closeModal(modal.id);
-    });
+    // // Fermeture par clic sur le backdrop
+    // document.addEventListener('click', function(e) {
+    //     const container = document.getElementById('modals-container');
+    //     if (!container) return;
+    //     const modal = e.target.closest('#modals-container > div.fixed.inset-0');
+    //     if (!modal) return;
+    //     if (e.target !== modal) return; // clic à l'intérieur → ignorer
+    //     if (modal.id) window.closeModal(modal.id);
+    // });
 
 })();
 // ============================================================
