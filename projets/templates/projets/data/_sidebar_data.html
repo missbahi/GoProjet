@@ -32,18 +32,6 @@
                         <span>Chefs de projets</span>
                     </button>
                 </li>
-
-                <li>
-                    <button type="button"
-                            data-config-menu
-                            data-config-target="menu-clients"
-                            data-config-url="{% url 'projets:partial_clients' %}"
-                            class="sidebar-item w-full text-left">
-                        <i class="fas fa-users"></i>
-                        <span>Maîtres d'ouvrages</span>
-                    </button>
-                </li>
-
                 <li>
                     <button type="button"
                             data-config-menu
@@ -54,7 +42,6 @@
                         <span>Entreprises</span>
                     </button>
                 </li>
-
                 <li>
                     <button type="button"
                             data-config-menu
@@ -65,7 +52,16 @@
                         <span>Types de matériel</span>
                     </button>
                 </li>
-
+                 <li>
+                    <button type="button"
+                            data-config-menu
+                            data-config-target="menu-clients"
+                            data-config-url="{% url 'projets:partial_clients' %}"
+                            class="sidebar-item w-full text-left">
+                        <i class="fas fa-users"></i>
+                        <span>Maîtres d'ouvrages</span>
+                    </button>
+                </li>
                 <li>
                     <button type="button"
                             data-config-menu

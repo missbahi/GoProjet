@@ -8,9 +8,10 @@ from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, transaction
 from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce
-from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 
 from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required
 from projets.forms import (
@@ -20,7 +21,12 @@ from projets.forms import (
     SituationMensuelleForm, StockRapportJournalierFormSet,
     StockSituationMensuelleFormSet,
 )
-from projets.models import *
+from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuelle, DepenseSituationMensuelle, 
+                            DocumentSituationMensuelle, StockSituationMensuelle, RapportJournalier)
+from projets.models.projet import Dossier
+from projets.models.ressources import Consommable, Fourniture, Location, Personnel, SousTraitance
+from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
+
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +119,7 @@ def rapports_journaliers(request, projet_id):
             Sum('depenses__montant'), Value(Decimal('0.00'))
         )
     ).prefetch_related('depenses')
-    return render(request, 'projets/suivi/rapports_journaliers.html', {
+    return render(request, 'projets/rapports/rapports_journaliers.html', {
         'projet': projet,
         'rapports': rapports,
     })
@@ -172,7 +178,7 @@ def ajouter_rapport_journalier(request, projet_id):
                 error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
             
             messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
-            return render(request, 'projets/suivi/ajouter_rapport_journalier.html', {
+            return render(request, 'projets/rapports/ajouter_rapport_journalier.html', {
                 'projet': projet,
                 'form': form,
                 'depenses': depenses,
@@ -187,7 +193,7 @@ def ajouter_rapport_journalier(request, projet_id):
     })
     depenses = DepenseRapportJournalierFormSet()
     stocks = StockRapportJournalierFormSet()
-    return render(request, 'projets/suivi/ajouter_rapport_journalier.html', {
+    return render(request, 'projets/rapports/ajouter_rapport_journalier.html', {
         'projet': projet,
         'form': form,
         'depenses': depenses,
@@ -220,12 +226,11 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         if depenses_categorie:
             total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
             depenses_groupees.append((category.code, category.nom, depenses_categorie, total))
-    return render(request, 'projets/suivi/detail_rapport_journalier.html', {
+    return render(request, 'projets/rapports/detail_rapport_journalier.html', {
         'projet': projet,
         'rapport': rapport,
         'depenses_groupees': depenses_groupees,
     })
-
 
 def _referentiel_depenses():
     """Entrées du référentiel (base de données) proposées par catégorie de dépense."""
@@ -260,7 +265,6 @@ def _referentiel_depenses():
         ),
     }
 
-
 def _grouper_depenses_par_categorie(depenses_formset):
     categories = list(CategorieCharge.objects.filter(actif=True))
     existing_ids = {
@@ -291,7 +295,6 @@ def _grouper_depenses_par_categorie(depenses_formset):
         )
         for category in categories
     ]
-
 
 @login_required
 @can_edit_projet
@@ -340,7 +343,7 @@ def formulaire_rapport_journalier(request, projet_id):
                 error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
             
             messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
-            return render(request, 'projets/suivi/_formulaire_rapport_journalier.html', {
+            return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
                 'projet': projet,
                 'form': form,
                 'depenses': depenses,
@@ -360,14 +363,13 @@ def formulaire_rapport_journalier(request, projet_id):
     
     depenses_groupees = _grouper_depenses_par_categorie(depenses)
     
-    return render(request, 'projets/suivi/_formulaire_rapport_journalier.html', {
+    return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
         'projet': projet,
         'form': form,
         'depenses': depenses,
         'stocks': stocks,
         'depenses_groupees': depenses_groupees,
     })
-
 
 @login_required
 @can_edit_projet
@@ -394,7 +396,7 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
             messages.success(request, 'Rapport journalier modifié.')
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
         messages.error(request, "Le rapport journalier n'a pas pu être modifié. Vérifiez les informations saisies.")
-        return render(request, 'projets/suivi/modifier_rapport_journalier.html', {
+        return render(request, 'projets/rapports/modifier_rapport_journalier.html', {
             'projet': projet,
             'rapport': rapport,
             'form': form,
@@ -410,7 +412,7 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
         depenses = DepenseRapportJournalierFormSet(instance=rapport)
         stocks = StockRapportJournalierFormSet(instance=rapport)
 
-    return render(request, 'projets/suivi/modifier_rapport_journalier.html', {
+    return render(request, 'projets/rapports/modifier_rapport_journalier.html', {
         'projet': projet,
         'rapport': rapport,
         'form': form,
@@ -418,7 +420,6 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
         'stocks': stocks,
         'depenses_groupees': _grouper_depenses_par_categorie(depenses),
     })
-
 
 @login_required
 @can_edit_projet
@@ -429,7 +430,6 @@ def supprimer_rapport_journalier(request, projet_id, rapport_id):
         rapport.delete()
         messages.success(request, 'Rapport journalier supprimé.')
     return redirect('projets:rapports_journaliers', projet_id=projet_id)
-
 
 @login_required
 @can_edit_projet
@@ -446,30 +446,48 @@ def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
             messages.info(request, 'Aucun document à supprimer.')
     return redirect('projets:modifier_rapport_journalier', projet_id=projet_id, rapport_id=rapport_id)
 
-
 @login_required
-@chef_projet_required
+@chef_projet_required 
 def situations_mensuelles(request, projet_id):
-    projet = _projet_travaux_or_403(projet_id)
-    depenses_total = DepenseSituationMensuelle.objects.filter(
-        situation_id=OuterRef('pk')
-    ).values('situation_id').annotate(total=Sum('montant')).values('total')
-    stocks_total = StockSituationMensuelle.objects.filter(
-        situation_id=OuterRef('pk')
-    ).values('situation_id').annotate(total=Sum('valeur')).values('total')
-    situations = projet.situations_mensuelles.annotate(
-        total_depenses_annotated=Coalesce(
-            Subquery(depenses_total), Value(Decimal('0.00'))
-        ),
-        total_stock_annotated=Coalesce(
-            Subquery(stocks_total), Value(Decimal('0.00'))
-        ),
-    ).prefetch_related('depenses', 'stocks')
-    return render(request, 'projets/suivi/situations_mensuelles.html', {
+    projet = get_object_or_404(Projet, id=projet_id)
+    situations = projet.situations_mensuelles.all()
+
+    ctx = {
         'projet': projet,
         'situations': situations,
-    })
+    }
 
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/situations/_situations_content.html', ctx)
+
+    return render(request, 'projets/situations/situations_mensuelles.html', ctx)
+
+
+@require_POST
+@chef_projet_required
+def supprimer_situation_mensuelle(request, projet_id, situation_id):
+    situation = get_object_or_404(
+        SituationMensuelle, id=situation_id, projet_id=projet_id
+    )
+    periode = f"{situation.mois:02d}/{situation.annee}"
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    try:
+        situation.delete()
+    except Exception as e:
+        msg = f"Erreur lors de la suppression : {e}"
+        if is_xhr:
+            return JsonResponse({'success': False, 'message': msg}, status=500)
+        messages.error(request, msg)
+        return redirect('projets:situations_mensuelles', projet_id=projet_id)
+
+    msg = f"Situation {periode} supprimée avec succès."
+
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
+    return redirect('projets:situations_mensuelles', projet_id=projet_id)
 
 @login_required
 @chef_projet_required
@@ -505,7 +523,7 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
     total_depenses = situation.total_depenses or Decimal('0.00')
     marge = chiffre_affaires - total_depenses
     taux_marge = (marge / chiffre_affaires * Decimal('100')) if chiffre_affaires else None
-    return render(request, 'projets/suivi/apercu_situation_mensuelle.html', {
+    return render(request, 'projets/situations/apercu_situation_mensuelle.html', {
         'projet': projet,
         'situation': situation,
         'recettes': recettes,
@@ -633,7 +651,7 @@ def ajouter_situation_mensuelle(request, projet_id):
         recettes = _recettes_formset()
         documents = DocumentSituationMensuelleFormSet()
 
-    return render(request, 'projets/suivi/ajouter_situation_mensuelle.html', {
+    return render(request, 'projets/situations/ajouter_situation_mensuelle.html', {
         'projet': projet,
         'form': form,
         'depenses': depenses,
@@ -710,7 +728,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         stocks = StockSituationMensuelleFormSet(instance=situation)
         recettes = _recettes_formset(situation=situation)
         documents = DocumentSituationMensuelleFormSet(instance=situation)
-    return render(request, 'projets/suivi/modifier_situation_mensuelle.html', {
+    return render(request, 'projets/situations/modifier_situation_mensuelle.html', {
         'projet': projet, 'situation': situation, 'form': form,
         'depenses': depenses, 'stocks': stocks,
         'recettes': recettes,
@@ -718,17 +736,6 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         'documents': documents,
         'validation_errors': validation_errors if request.method == 'POST' else [],
     })
-
-
-@login_required
-@chef_projet_required
-def supprimer_situation_mensuelle(request, projet_id, situation_id):
-    projet = _projet_travaux_or_403(projet_id)
-    situation = get_object_or_404(SituationMensuelle, id=situation_id, projet=projet)
-    if request.method == 'POST':
-        situation.delete()
-        messages.success(request, 'Situation mensuelle supprimée.')
-    return redirect('projets:situations_mensuelles', projet_id=projet.id)
 
 
 @login_required

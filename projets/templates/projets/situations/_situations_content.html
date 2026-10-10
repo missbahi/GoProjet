@@ -1,0 +1,62 @@
+{# projets/templates/projets/situations/_situations_content.html #}
+{% load static %}
+
+<div data-family="project" class="max-w-6xl mx-auto">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-calendar-check mr-2"></i>
+            Situations mensuelles
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Suivi du chiffre d'affaires, des charges et des stocks par mois
+        </p>
+    </div>
+
+    {# ═══════ Breadcrumb ═══════ #}
+    <nav class="doc-breadcrumb mb-6">
+        <a href="{% url 'projets:liste_projets' %}">Projets</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
+        <i class="fas fa-chevron-right"></i>
+        <span class="current">Situations mensuelles</span>
+    </nav>
+
+    {# ═══════ Actions ═══════ #}
+    <div class="flex flex-wrap justify-end gap-2 mb-6">
+        <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}"
+           class="app-btn-primary">
+            <i class="fas fa-plus-circle mr-2"></i> Nouvelle situation
+        </a>
+    </div>
+
+    {# ═══════ Liste des situations ═══════ #}
+    {% if situations %}
+        <div class="space-y-4">
+            {% for situation in situations %}
+                {% include "projets/situations/_situation_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="app-card p-8 md:p-12 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full mb-4"
+                 style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+                <i class="fas fa-calendar-times text-2xl" style="color: var(--text-muted);"></i>
+            </div>
+            <h3 class="text-lg font-semibold mb-2" style="color: var(--text-primary);">
+                Aucune situation mensuelle
+            </h3>
+            <p class="text-sm mb-6" style="color: var(--text-secondary);">
+                Commencez par créer une nouvelle situation.
+            </p>
+            <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}"
+               class="app-btn-primary inline-flex">
+                <i class="fas fa-plus-circle mr-2"></i> Créer une situation
+            </a>
+        </div>
+    {% endif %}
+
+</div>

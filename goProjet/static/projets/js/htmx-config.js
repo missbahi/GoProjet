@@ -43,12 +43,14 @@
                 '/static/projets/css/dashboard.css',
                 '/static/projets/css/documents.css',
                 '/static/projets/css/lots.css',  
+                '/static/projets/css/situations.css',
             ],
             js: [
                 '/static/projets/js/dashboard.js',
                 '/static/projets/js/taches.js',
                 '/static/projets/js/documents.js',
                 '/static/projets/js/lots.js', 
+                '/static/projets/js/situations.js',
             ],
         },
     };

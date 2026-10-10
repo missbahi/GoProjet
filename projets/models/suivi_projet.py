@@ -24,11 +24,6 @@ class ActiviteTravauxMixin:
 def rapport_journalier_document_upload_path(instance, filename):
     return f'rapports_journaliers/projet_{instance.projet_id}/{instance.date}/{filename}'
 
-
-def situation_mensuelle_document_upload_path(instance, filename):
-    situation = instance.situation
-    return f'situations_mensuelles/projet_{situation.projet_id}/{situation.annee}-{situation.mois:02d}/{filename}'
-
 class RapportJournalier(ActiviteTravauxMixin, models.Model):
     projet = models.ForeignKey(
         Projet, on_delete=models.CASCADE, related_name='rapports_journaliers',
@@ -219,6 +214,11 @@ class ReleveMateriel(models.Model):
 
     def __str__(self):
         return f"{self.materiel} - {self.get_etat_display()} ({self.heures}h)"
+
+# situation mensuelle
+def situation_mensuelle_document_upload_path(instance, filename):
+    situation = instance.situation
+    return f'situations_mensuelles/projet_{situation.projet_id}/{situation.annee}-{situation.mois:02d}/{filename}'
 
 class SituationMensuelle(ActiviteTravauxMixin, models.Model):
     projet = models.ForeignKey(

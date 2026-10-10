@@ -425,9 +425,6 @@
         outline: 2px solid #5e9eb6;
         outline-offset: 2px;
     }
-</style>
-
-<style>
     .document-file-input {
         position: fixed;
         left: -10000px;
@@ -435,6 +432,29 @@
         width: 1px;
         height: 1px;
         opacity: 0;
+    }
+    /* ══════════════════════════════════════════════════════════════
+    THÈME CLAIR — Patch minimal
+    ══════════════════════════════════════════════════════════════ */
+    [data-theme="light"] .situation-section {
+        background: var(--bg-surface);
+        border-color: var(--border-default);
+    }
+    [data-theme="light"] .situation-section-header {
+        border-bottom-color: var(--border-default);
+    }
+    [data-theme="light"] .situation-section > .grid input:not([type="hidden"]):not([type="file"]),
+    [data-theme="light"] .situation-section > .grid select,
+    [data-theme="light"] .situation-section > .grid textarea {
+        background: var(--input-bg);
+        color: var(--input-text);
+        border-color: var(--input-border);
+    }
+    [data-theme="light"] .situation-section > .grid input:focus,
+    [data-theme="light"] .situation-section > .grid select:focus,
+    [data-theme="light"] .situation-section > .grid textarea:focus {
+        border-color: var(--input-focus);
+        box-shadow: 0 0 0 3px rgba(43, 156, 98, .15);
     }
 </style>
 
@@ -624,7 +644,7 @@
                             </thead>
                             <tbody id="expenseBody-{{ value }}">
                                 {% for item in category_forms %}
-                                {% include "projets/suivi/_depense_situation_row.html" with depense_form=item %}
+                                {% include "projets/situations/_depense_situation_row.html" with depense_form=item %}
                                 {% for field in item.visible_fields %}
                                 {% for error in field.errors %}
                                 <tr>
@@ -706,7 +726,7 @@
                 </div>
             </div>
             <template id="expenseTemplate-{{ value }}">
-                {% include "projets/suivi/_depense_situation_row.html" with depense_form=depenses.empty_form force_categorie=value %}
+                {% include "projets/situations/_depense_situation_row.html" with depense_form=depenses.empty_form force_categorie=value %}
             </template>
             {% endfor %}
         </div>
@@ -741,7 +761,7 @@
                 </thead>
                 <tbody id="stockBody">
                     {% for item in stocks %}
-                    {% include "projets/suivi/_stock_situation_row.html" with stock_form=item %}
+                    {% include "projets/situations/_stock_situation_row.html" with stock_form=item %}
                     {% endfor %}
                 </tbody>
             </table>
@@ -755,7 +775,7 @@
                     aria-label="Ajouter un stock"><img src="{% static 'icons/add_empty_line.png' %}" alt="" class="h-5 w-5" aria-hidden="true"></button>
         </div>
         <template id="stockTemplate">
-            {% include "projets/suivi/_stock_situation_row.html" with stock_form=stocks.empty_form %}
+            {% include "projets/situations/_stock_situation_row.html" with stock_form=stocks.empty_form %}
         </template>
     </section>
     <!-- Résultats de la situation -->

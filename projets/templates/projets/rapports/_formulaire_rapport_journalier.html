@@ -216,7 +216,7 @@
                   </tr>
                 </thead>
                 <tbody id="depense-tbody-{{ value }}">
-                  {% for depense_form in categorie_forms %}{% include 'projets/suivi/_depense_row.html' with depense_form=depense_form options=options %}{% endfor %}
+                  {% for depense_form in categorie_forms %}{% include 'projets/rapports/_depense_row.html' with depense_form=depense_form options=options %}{% endfor %}
                 </tbody>
               </table>
               <button type="button" class="depense-add-btn btn-info mt-2 px-3 py-1 rounded text-xs font-medium" data-categorie="{{ value }}">
@@ -225,7 +225,7 @@
             </div>
           </div>
           <template id="depense-empty-form-template-{{ value }}">
-            {% include 'projets/suivi/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value force_categorie_charge=category_id options=options %}
+            {% include 'projets/rapports/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value force_categorie_charge=category_id options=options %}
           </template>
           <script id="referentiel-data-{{ value }}" type="application/json">
           [
@@ -270,7 +270,7 @@
               </tr>
             </thead>
             <tbody id="stock-tbody">
-              {% for stock_form in stocks.forms %}{% include 'projets/suivi/_stock_row.html' with stock_form=stock_form %}{% endfor %}
+              {% for stock_form in stocks.forms %}{% include 'projets/rapports/_stock_row.html' with stock_form=stock_form %}{% endfor %}
             </tbody>
           </table>
           <button type="button" id="stock-add-btn" class="btn-info mt-2 px-3 py-1 rounded text-xs font-medium">
@@ -279,7 +279,7 @@
         </div>
       </div>
       <template id="stock-empty-form-template">
-        {% include 'projets/suivi/_stock_row.html' with stock_form=stocks.empty_form %}
+        {% include 'projets/rapports/_stock_row.html' with stock_form=stocks.empty_form %}
       </template>
     </div>
 

@@ -1,0 +1,40 @@
+{# projets/templates/projets/situations/modifier_situation_mensuelle.html #}
+{% extends "projets/home/base_project.html" %}
+{% load static %}
+
+{% block title %}Modifier la situation – {{ projet.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-pen mr-2"></i>Modifier la situation{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+
+    {# ═══════ Breadcrumb ═══════ #}
+    <nav class="doc-breadcrumb mb-6">
+        <a href="{% url 'projets:liste_projets' %}">Projets</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:situations_mensuelles' projet.id %}">Situations mensuelles</a>
+        <i class="fas fa-chevron-right"></i>
+        <span class="current">{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}</span>
+    </nav>
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-pen mr-2"></i>
+            Modifier la situation {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}
+        </h1>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="far fa-folder-open"></i>
+            {{ projet.nom }}
+        </p>
+    </div>
+
+    {# ═══════ Formulaire ═══════ #}
+    <div class="app-card p-4 md:p-6">
+        {% include 'projets/situations/_formulaire_situation_mensuelle.html' %}
+    </div>
+
+</div>
+{% endblock %}

@@ -52,12 +52,14 @@ suivi_urlpatterns = [
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/', reporting_views.detail_rapport_journalier, name='detail_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/modifier/', reporting_views.modifier_rapport_journalier, name='modifier_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/supprimer/', reporting_views.supprimer_rapport_journalier, name='supprimer_rapport_journalier'),
+    
     path('projet/<int:projet_id>/situations-mensuelles/', reporting_views.situations_mensuelles, name='situations_mensuelles'),
     path('projet/<int:projet_id>/situations-mensuelles/ajouter/', reporting_views.ajouter_situation_mensuelle, name='ajouter_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/apercu/', reporting_views.apercu_situation_mensuelle, name='apercu_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/modifier/', reporting_views.modifier_situation_mensuelle, name='modifier_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer/', reporting_views.supprimer_situation_mensuelle, name='supprimer_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer-document/', reporting_views.supprimer_document_situation_mensuelle, name='supprimer_document_situation_mensuelle'),
+    
     path('projet/<int:projet_id>/suivi/', suivi_views.suivi_execution, name='suivi_execution'),
     path('projet/<int:projet_id>/suivi/ajouter/', suivi_views.ajouter_suivi, name='ajouter_suivi'),
     path('projet/<int:projet_id>/suivi/supprimer/<int:suivi_id>/', suivi_views.supprimer_suivi, name='supprimer_suivi'),
@@ -97,7 +99,7 @@ projets_urlpatterns = [
 ]
 
 # Gestion de la base de données
-datas_urlpatterns = [
+data_urlpatterns = [
     path('data_view/', data_views.data_view, name='data_view'),
     # Gestion des ingénieurs
     path('ingenieurs/ajouter/', data_views.ajouter_ingenieur, name='ajouter_ingenieur'),
@@ -292,7 +294,7 @@ notifications_urlpatterns = [
 urlpatterns = commun_urlpatterns 
 urlpatterns += suivi_urlpatterns
 urlpatterns += projets_urlpatterns
-urlpatterns += datas_urlpatterns
+urlpatterns += data_urlpatterns
 urlpatterns += atelier_urlpatterns
 urlpatterns += tache_urlpatterns
 urlpatterns += attachement_urlpatterns

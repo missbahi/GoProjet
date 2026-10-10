@@ -1,0 +1,19 @@
+{% extends "projets/home/base_project.html" %}
+{% load static %}
+
+{% block title %}Situations mensuelles – {{ projet.nom }}{% endblock %}
+{% block page_title %}<i class="fas fa-calendar-check mr-2"></i>Situations mensuelles{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'projets/css/situations.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% include "projets/situations/_situations_content.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'projets/js/situations.js' %}" defer></script>
+{% endblock %}

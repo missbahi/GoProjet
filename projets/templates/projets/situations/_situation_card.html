@@ -1,0 +1,93 @@
+{# projets/templates/projets/situations/_situation_card.html #}
+{% load l10n %}
+
+<article class="app-card overflow-hidden" id="situation-{{ situation.id }}">
+
+    {# ═══════ En-tête de la carte ═══════ #}
+    <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3"
+         style="background-color: var(--bg-elevated); border-bottom: 1px solid var(--border-default);">
+
+        <div class="flex items-center gap-4 flex-wrap">
+            <div class="flex items-center gap-2">
+                <i class="far fa-calendar-alt" style="color: var(--accent-primary);"></i>
+                <span class="font-semibold text-lg" style="color: var(--text-primary);">
+                    {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}
+                </span>
+            </div>
+            <span class="text-sm flex items-center gap-1.5" style="color: var(--text-secondary);">
+                <i class="far fa-clock"></i>
+                {{ situation.date_debut|date:'d/m/Y' }}
+                <i class="fas fa-arrow-right text-xs mx-0.5" style="color: var(--text-muted);"></i>
+                {{ situation.date_fin|date:'d/m/Y' }}
+            </span>
+        </div>
+
+        {# ═══════ Actions ═══════ #}
+        <div class="flex items-center gap-1">
+            <a href="{% url 'projets:apercu_situation_mensuelle' projet.id situation.id %}"
+               class="app-action-btn"
+               title="Aperçu">
+                <i class="fas fa-eye"></i>
+            </a>
+            <a href="{% url 'projets:modifier_situation_mensuelle' projet.id situation.id %}"
+               class="app-action-btn"
+               style="color: var(--accent-warning);"
+               title="Modifier">
+                <i class="fas fa-pen"></i>
+            </a>
+            <button type="button"
+                    class="app-action-btn situation-delete-btn"
+                    data-situation-id="{{ situation.id }}"
+                    data-situation-periode="{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}"
+                    style="color: var(--accent-danger);"
+                    title="Supprimer">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    </div>
+
+    {# ═══════ Métriques + Observations ═══════ #}
+    <div class="px-5 py-4">
+
+        <div class="flex flex-wrap gap-2 text-sm">
+            <span class="app-badge app-badge-info inline-flex items-center gap-2">
+                <i class="fas fa-arrow-up text-xs"></i>
+                Produits : {{ situation.chiffre_affaires|floatformat:'2g' }} DH
+            </span>
+            <span class="app-badge app-badge-warning inline-flex items-center gap-2">
+                <i class="fas fa-arrow-down text-xs"></i>
+                Charges : {{ situation.total_depenses|floatformat:'2g' }} DH
+            </span>
+            <span class="app-badge app-badge-success inline-flex items-center gap-2">
+                <i class="fas fa-boxes text-xs"></i>
+                Stocks : {{ situation.total_stock|floatformat:'2g' }} DH
+            </span>
+        </div>
+
+        {% if situation.observations %}
+        <div class="mt-3 text-sm rounded-lg px-3 py-2 flex items-start gap-2"
+             style="background-color: var(--bg-elevated); border: 1px solid var(--border-default); color: var(--text-secondary);">
+            <i class="fas fa-quote-left text-xs mt-0.5" style="color: var(--text-muted);"></i>
+            <span>{{ situation.observations }}</span>
+        </div>
+        {% endif %}
+
+        {% if situation.documents.all %}
+        <div class="mt-3 flex flex-wrap items-center gap-2">
+            <span class="text-xs font-medium uppercase tracking-wider mr-1"
+                  style="color: var(--text-muted);">Documents</span>
+            {% for document in situation.documents.all %}
+            <a href="{% url 'projets:download_document' 'DocumentSituationMensuelle' document.id %}?download=false"
+               target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+               style="background-color: var(--bg-elevated); color: var(--text-primary); border: 1px solid var(--border-default);">
+                <i class="fas fa-file-pdf" style="color: var(--accent-danger);"></i>
+                {{ document.nom }}
+            </a>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+    </div>
+
+</article>
