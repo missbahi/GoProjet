@@ -1,0 +1,139 @@
+{# projets/templates/projets/ordres_service/_os_card.html #}
+
+<div class="app-card p-4 md:p-6" id="os-{{ ordre.id }}">
+
+    {# En-tête de la carte #}
+    <div class="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+        <div class="flex-1 w-full">
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+                <span class="app-badge app-badge-info">{{ ordre.type_os.code }}</span>
+                <span class="app-badge
+                    {% if ordre.statut == 'NOTIFIE' %}app-badge-success
+                    {% elif ordre.statut == 'BROUILLON' %}app-badge-muted
+                    {% else %}app-badge-danger{% endif %}">
+                    {{ ordre.get_statut_display }}
+                </span>
+                <span class="text-xs" style="color: var(--text-muted);">
+                    Séquence: {{ ordre.ordre_sequence }}
+                </span>
+            </div>
+            <h3 class="text-lg md:text-xl font-semibold mb-1 break-words"
+                style="color: var(--accent-primary);">
+                {{ ordre.titre }}
+            </h3>
+            <p class="font-medium text-sm md:text-base" style="color: var(--accent-green);">
+                {{ ordre.reference }}
+            </p>
+            <p class="text-xs md:text-sm mt-1" style="color: var(--text-muted);">
+                {{ ordre.type_os.nom }}
+            </p>
+        </div>
+    </div>
+
+    {# Informations supplémentaires #}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs md:text-sm"
+         style="color: var(--text-secondary);">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-calendar text-xs"></i>
+            <span>Publié: {{ ordre.date_publication|date:"d/m/Y" }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-hourglass-end text-xs"></i>
+            <span>Limite: {{ ordre.date_limite|date:"d/m/Y"|default:"-" }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            <i class="fas fa-clock text-xs"></i>
+            <span>Effet: {{ ordre.date_effet|date:"d/m/Y"|default:"-" }}</span>
+        </div>
+        <div class="flex items-center gap-2">
+            {% if ordre.fichier %}
+                <i class="fas fa-file text-xs" style="color: var(--accent-success);"></i>
+                <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=true"
+                   target="_blank" style="color: var(--accent-primary); text-decoration: underline;">
+                    Télécharger
+                </a>
+                <a href="{% url 'projets:download_document' 'OrdreService' ordre.id %}?download=false"
+                   target="_blank" style="color: var(--accent-primary); text-decoration: underline;">
+                    Voir
+                </a>
+            {% else %}
+                <i class="fas fa-file text-xs" style="color: var(--text-muted);"></i>
+                <span style="color: var(--text-muted);">Aucun document</span>
+            {% endif %}
+        </div>
+    </div>
+
+    {# Champs spécifiques #}
+    {% if ordre.duree_extension %}
+    <div class="mt-2 text-xs md:text-sm">
+        <span style="color: var(--accent-warning);">
+            ⏱️ Extension: {{ ordre.duree_extension }} jours
+        </span>
+    </div>
+    {% endif %}
+    {% if ordre.montant_supplementaire %}
+    <div class="mt-1 text-xs md:text-sm">
+        <span style="color: var(--accent-success);">
+            💰 Supplément: {{ ordre.montant_supplementaire }} DH
+        </span>
+    </div>
+    {% endif %}
+
+    {# Actions #}
+    <div class="flex flex-wrap gap-2 mt-4 pt-4"
+         style="border-top: 1px solid var(--border-default);">
+
+        {% if ordre.statut == 'BROUILLON' %}
+        <form method="POST"
+              action="{% url 'projets:notifier_ordre_service' projet.id ordre.id %}"
+              class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="app-btn-primary"
+                    onclick="return confirm('Notifier cet ordre de service ?')">
+                <i class="fas fa-paper-plane"></i>
+                <span class="hidden sm:inline ml-2">Notifier</span>
+            </button>
+        </form>
+        {% endif %}
+
+        <a href="{% url 'projets:details_ordre_service' projet.id ordre.id %}"
+           class="app-btn-primary"
+           title="Voir les détails">
+            <i class="fas fa-eye"></i>
+            <span class="hidden sm:inline ml-2">Détails</span>
+        </a>
+
+        <a href="{% url 'projets:modifier_ordre_service' projet.id ordre.id %}"
+           class="app-btn-secondary"
+           title="Modifier">
+            <i class="fas fa-edit"></i>
+            <span class="hidden sm:inline ml-2">Modifier</span>
+        </a>
+
+        {% if ordre.statut == 'BROUILLON' %}
+        <a href="{% url 'projets:supprimer_ordre_service' projet.id ordre.id %}"
+           class="app-btn"
+           style="background-color: var(--accent-danger); color: var(--text-inverse);"
+           title="Supprimer"
+           onclick="return confirm('Supprimer cet ordre de service ?')">
+            <i class="fas fa-trash"></i>
+            <span class="hidden sm:inline ml-2">Supprimer</span>
+        </a>
+        {% else %}
+        <form method="POST"
+              action="{% url 'projets:annuler_ordre_service' projet.id ordre.id %}"
+              class="inline">
+            {% csrf_token %}
+            <button type="submit"
+                    class="app-btn"
+                    style="background-color: var(--accent-danger); color: var(--text-inverse);"
+                    onclick="return confirm('Annuler cet ordre de service ?')">
+                <i class="fas fa-times"></i>
+                <span class="hidden sm:inline ml-2">Annuler</span>
+            </button>
+        </form>
+        {% endif %}
+
+    </div>
+</div>

@@ -1,0 +1,90 @@
+/* static/projets/css/ordres_service.css */
+/* ============================================================
+   MODULE ORDRES DE SERVICE
+   ============================================================ */
+
+/* ══════════════════════════════════════════════════════════════
+   Breadcrumb (réutilise les styles docs / lots / situations)
+   ══════════════════════════════════════════════════════════════ */
+.doc-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+.doc-breadcrumb a { color: var(--text-secondary); transition: color 0.15s; }
+.doc-breadcrumb a:hover { color: var(--accent-primary); }
+.doc-breadcrumb i { font-size: 0.65rem; opacity: 0.5; }
+.doc-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
+
+/* ══════════════════════════════════════════════════════════════
+   Filtres par statut
+   ══════════════════════════════════════════════════════════════ */
+.app-btn-active {
+    background-color: var(--accent-primary) !important;
+    color: var(--text-inverse) !important;
+    border-color: var(--accent-primary) !important;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Input date référence — largeur fixe
+   ══════════════════════════════════════════════════════════════ */
+#date-reference {
+    max-width: 150px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Animation pulse pour le focus automatique
+   ══════════════════════════════════════════════════════════════ */
+.form-control.auto-focused {
+    animation: pulseFocus 2s ease-in-out;
+}
+@keyframes pulseFocus {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+    50%  { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+/* ══════════════════════════════════════════════════════════════
+   Animation résultat jours découlés
+   ══════════════════════════════════════════════════════════════ */
+#jours-resultat {
+    transition: all 0.3s ease;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   Animation pulse sur focus automatique
+   ══════════════════════════════════════════════════════════════ */
+.form-control.auto-focused {
+    animation: pulseFocus 2s ease-in-out;
+}
+@keyframes pulseFocus {
+    0%   { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+    50%  { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+/* Petit effet de scale quand la valeur change */
+#jours-resultat.changed {
+    animation: jourPop 0.4s ease-out;
+}
+@keyframes jourPop {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); color: var(--accent-success); }
+    100% { transform: scale(1); }
+}
+/* ══════════════════════════════════════════════════════════════
+   Breadcrumb
+   ══════════════════════════════════════════════════════════════ */
+.doc-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+}
+.doc-breadcrumb a { color: var(--text-secondary); transition: color 0.15s; }
+.doc-breadcrumb a:hover { color: var(--accent-primary); }
+.doc-breadcrumb i { font-size: 0.65rem; opacity: 0.5; }
+.doc-breadcrumb .current { color: var(--text-primary); font-weight: 500; }

@@ -1,10 +1,12 @@
 {% load static %}
 
-<div class="w-full h-full flex flex-col">
+<div class="w-full h-full flex flex-col"
+     data-page-title="Configuration"
+     data-page-icon="fa-home">
 
     <!-- Zone de contenu dynamique (cible HTMX) -->
-<div id="content-area" class="data-content-area">
-    {% include "projets/data/_home_data_empty.html" %}
-</div>
+        <div id="content-area" class="data-content-area">
+            {% include "projets/data/_home_data_empty.html" %}
+        </div>
 
 </div>

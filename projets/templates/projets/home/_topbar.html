@@ -7,8 +7,9 @@
             <button id="sidebarToggle" class="md:hidden text-[#2B9C62]">
                 <i class="fas fa-bars text-xl"></i>
             </button>
-            <h2 id="topbar-title" class="text-lg md:text-xl font-semibold truncate">
-                <i class="fas fa-home mr-2"></i>{% block page_title %}Tableau de bord{% endblock %}
+            <h2 id="topbar-title" class="text-lg md:text-xl font-semibold truncate flex items-center gap-2">
+                <i id="topbar-title-icon" class="fas"></i>
+                <span id="topbar-title-text"></span>
             </h2>
         </div>
 

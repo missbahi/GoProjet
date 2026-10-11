@@ -1,0 +1,170 @@
+{# projets/templates/projets/ordres_service/_os_form_panel.html #}
+
+<div class="app-card p-4 md:p-6 mb-6">
+    <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
+            style="color: var(--accent-primary);">
+            <i class="fas fa-plus-circle"></i>
+            {% if ordre_a_modifier %}Modifier l'ordre de service{% else %}Nouvel ordre de service{% endif %}
+        </h3>
+        <button type="button" id="os-close-add" class="app-action-btn" title="Fermer">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" id="ordreServiceForm" class="space-y-4">
+        {% csrf_token %}
+
+        {% if ordre_a_modifier %}
+        <input type="hidden" name="ordre_id" value="{{ ordre_a_modifier.id }}">
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label for="type_os" class="app-modal-label">Type d'OS *</label>
+                <select id="type_os" name="type_os" class="app-modal-input" required>
+                    <option value="">Sélectionnez un type</option>
+                    {% for type in types_disponibles %}
+                    <option value="{{ type.id }}"
+                            {% if ordre_a_modifier and ordre_a_modifier.type_os.id == type.id %}selected{% endif %}
+                            data-code="{{ type.code }}">
+                        {{ type.code }} - {{ type.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="type_os_info" class="mt-2 text-xs md:text-sm hidden"
+                     style="color: var(--text-secondary);">
+                    <div id="prerequis_info"></div>
+                    <div id="unicite_info"></div>
+                </div>
+
+                <div class="mt-3">
+                    <label for="statut" class="app-modal-label">Statut *</label>
+                    <select id="statut" name="statut" class="app-modal-input" required>
+                        <option value="BROUILLON" {% if not ordre_a_modifier or ordre_a_modifier.statut == 'BROUILLON' %}selected{% endif %}>
+                            Brouillon
+                        </option>
+                        <option value="NOTIFIE" {% if ordre_a_modifier and ordre_a_modifier.statut == 'NOTIFIE' %}selected{% endif %}>
+                            Notifié
+                        </option>
+                        <option value="ANNULE" {% if ordre_a_modifier and ordre_a_modifier.statut == 'ANNULE' %}selected{% endif %}>
+                            Annulé
+                        </option>
+                    </select>
+                    <p class="text-xs md:text-sm mt-1" style="color: var(--text-muted);">
+                        <i class="fas fa-info-circle"></i>
+                        Par défaut : "Brouillon". Le passage en "Notifié" déclenche les validations métier.
+                    </p>
+                </div>
+            </div>
+
+            <div>
+                <label for="reference" class="app-modal-label">Référence *</label>
+                <input type="text" id="reference" name="reference"
+                       class="app-modal-input" required
+                       {% if ordre_a_modifier %}value="{{ ordre_a_modifier.reference }}"{% endif %}
+                       placeholder="Ex: OS-2024-001">
+
+                <div class="mt-3">
+                    <label for="titre" class="app-modal-label">Titre *</label>
+                    <input type="text" id="titre" name="titre"
+                           class="app-modal-input" required
+                           {% if ordre_a_modifier %}value="{{ ordre_a_modifier.titre }}"{% endif %}
+                           placeholder="Ex: Ordre de service pour travaux de terrassement">
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
+                <label for="date_publication" class="app-modal-label">Date de publication *</label>
+                <input type="date" id="date_publication" name="date_publication"
+                       class="app-modal-input" required
+                       {% if ordre_a_modifier %}value="{{ ordre_a_modifier.date_publication|date:'Y-m-d' }}"{% endif %}>
+            </div>
+            <div>
+                <label for="date_limite" class="app-modal-label">Date limite</label>
+                <input type="date" id="date_limite" name="date_limite"
+                       class="app-modal-input"
+                       {% if ordre_a_modifier and ordre_a_modifier.date_limite %}value="{{ ordre_a_modifier.date_limite|date:'Y-m-d' }}"{% endif %}>
+            </div>
+            <div>
+                <label for="date_effet" class="app-modal-label">Date d'effet</label>
+                <input type="date" id="date_effet" name="date_effet"
+                       class="app-modal-input"
+                       {% if ordre_a_modifier and ordre_a_modifier.date_effet %}value="{{ ordre_a_modifier.date_effet|date:'Y-m-d' }}"{% endif %}>
+            </div>
+        </div>
+
+        <div>
+            <label for="description" class="app-modal-label">Description *</label>
+            <textarea id="description" name="description"
+                      class="app-modal-input" rows="4" required
+                      placeholder="Description détaillée de l'ordre de service...">{% if ordre_a_modifier %}{{ ordre_a_modifier.description }}{% endif %}</textarea>
+        </div>
+
+        {# Champs conditionnels #}
+        <div id="champs_conditionnels" class="hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                <div id="champ_duree" class="hidden">
+                    <label for="duree_extension" class="app-modal-label">Durée d'extension (jours)</label>
+                    <input type="number" id="duree_extension" name="duree_extension"
+                           class="app-modal-input"
+                           {% if ordre_a_modifier and ordre_a_modifier.duree_extension %}value="{{ ordre_a_modifier.duree_extension }}"{% endif %}
+                           placeholder="Durée en jours">
+                </div>
+                <div id="champ_montant" class="hidden">
+                    <label for="montant_supplementaire" class="app-modal-label">Montant supplémentaire (DH)</label>
+                    <input type="number" step="0.01" id="montant_supplementaire" name="montant_supplementaire"
+                           class="app-modal-input" min="0" max="9999999.99"
+                           {% if ordre_a_modifier and ordre_a_modifier.montant_supplementaire %}value="{{ ordre_a_modifier.montant_supplementaire }}"{% else %}value="0.00"{% endif %}
+                           placeholder="Montant en DH">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <label for="fichier" class="app-modal-label">Document joint</label>
+            <input type="file" id="fichier" name="fichier"
+                   class="app-modal-input"
+                   onchange="updateOriginalFilename(this)">
+            <input type="hidden" id="original_filename" name="original_filename"
+                   value="{{ ordre_a_modifier.original_filename|default:'' }}">
+
+            {% if ordre_a_modifier and ordre_a_modifier.fichier %}
+            <div class="mt-2 flex items-center gap-3 text-sm" style="color: var(--accent-success);">
+                <i class="fas fa-file"></i>
+                <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=true"
+                   target="_blank" style="color: var(--accent-primary); text-decoration: underline;">
+                    Télécharger
+                </a>
+                <a href="{% url 'projets:download_document' 'OrdreService' ordre_a_modifier.id %}?download=false"
+                   target="_blank" style="color: var(--accent-primary); text-decoration: underline;">
+                    Voir
+                </a>
+                <label class="flex items-center gap-2" style="color: var(--text-secondary);">
+                    <input type="checkbox" name="supprimer_document" value="1">
+                    Supprimer
+                </label>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <button type="submit"
+                    id="ordreServiceSubmitBtn"
+                    class="app-btn-primary">
+                <i class="fas fa-save ordre-service-submit-icon"></i>
+                <i class="fas fa-spinner fa-spin ordre-service-submit-spinner hidden"></i>
+                <span class="ordre-service-submit-label ml-2">
+                    {% if ordre_a_modifier %}Modifier{% else %}Ajouter{% endif %} l'ordre de service
+                </span>
+            </button>
+            {% if ordre_a_modifier %}
+            <a href="{% url 'projets:ordres_service' projet.id %}" class="app-btn-secondary">
+                <i class="fas fa-times mr-2"></i> Annuler
+            </a>
+            {% endif %}
+        </div>
+    </form>
+</div>

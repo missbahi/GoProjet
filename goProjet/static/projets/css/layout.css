@@ -88,3 +88,10 @@
 
 /* ---------- Toggle thème ---------- */
 [data-theme-toggle] { cursor: pointer; }
+
+#topbar-title {
+    transition: opacity 0.2s ease;
+}
+#topbar-title.updating {
+    opacity: 0;
+}

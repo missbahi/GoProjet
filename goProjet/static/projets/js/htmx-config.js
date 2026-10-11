@@ -27,6 +27,7 @@
                 '/static/projets/css/taches.css',
                 '/static/projets/css/notifications.css',
                 '/static/projets/css/utilisateurs.css',
+                '/static/projets/css/ordres_service.css'
             ],
             js: [
                 '/static/projets/js/dossiers.js',
@@ -35,6 +36,7 @@
                 '/static/projets/js/home.js',
                 '/static/projets/js/notifications.js',
                 '/static/projets/js/utilisateurs.js',
+                '/static/projets/js/ordres_service.js',
             ],
         },
         project: {

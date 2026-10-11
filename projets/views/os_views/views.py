@@ -370,7 +370,6 @@ class AfficherDocumentView(View):
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     ordres_service = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
-
     ordre_a_modifier = None
     if 'modifier_ordre' in request.GET:
         ordre_id = request.GET.get('modifier_ordre')
@@ -479,6 +478,11 @@ def ordres_service(request, projet_id):
         'types_disponibles': types_disponibles,
         'form': form,
     }
+
+    # ⚡ Rendu conditionnel HTMX (uniquement en GET)
+    if request.method == 'GET' and request.headers.get('HX-Request'):
+        return render(request, 'projets/ordres_service/_ordres_service_content.html', context)
+
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
 
@@ -565,17 +569,26 @@ def supprimer_ordre_service(request, projet_id, ordre_id):
     return render(request, 'projets/ordres_service/supprimer_ordre_service.html', context)
 
 
+@login_required
 @modules_projet_required
 def details_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
+    ordre = get_object_or_404(
+        OrdreService.objects.select_related('type_os'),
+        id=ordre_id,
+        projet=projet,
+    )
 
-    context = {
+    ctx = {
         'projet': projet,
         'ordre': ordre,
     }
-    return render(request, 'projets/ordres_service/details_ordre_service.html', context)
 
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/ordres_service/_os_details_content.html', ctx)
+
+    return render(request, 'projets/ordres_service/details_ordre_service.html', ctx)
 
 @modules_projet_required
 def notifier_ordre_service(request, projet_id, ordre_id):

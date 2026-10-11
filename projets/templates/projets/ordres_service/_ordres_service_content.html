@@ -1,0 +1,173 @@
+{# projets/templates/projets/ordres_service/_ordres_service_content.html #}
+{% load static %}
+
+<div data-family="project" class="max-w-6xl mx-auto"
+     data-page-title="Ordres de service"
+     data-page-icon="fa-file-contract">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-file-contract mr-2"></i>
+            Ordres de service
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Gestion des ordres de service avec contraintes métier
+        </p>
+    </div>
+
+    {# ═══════ Breadcrumb ═══════ #}
+    <nav class="doc-breadcrumb mb-6">
+        <a href="{% url 'projets:liste_projets' %}">Projets</a>
+        <i class="fas fa-chevron-right"></i>
+        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
+        <i class="fas fa-chevron-right"></i>
+        <span class="current">Ordres de service</span>
+    </nav>
+
+    {# ═══════ Section Calcul jours découlés ═══════ #}
+    <div class="app-card p-4 mb-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex-1">
+                <h3 class="text-base font-semibold mb-1 flex items-center gap-2"
+                    style="color: var(--accent-primary);">
+                    <i class="fas fa-calculator"></i>
+                    Calcul des jours découlés
+                </h3>
+                <p class="text-xs md:text-sm" style="color: var(--text-secondary);">
+                    Calcul du nombre de jours de travaux effectifs depuis le démarrage
+                </p>
+            </div>
+            <div class="flex flex-row items-start justify-between gap-3 sm:gap-4 w-full sm:w-auto">
+                <div class="flex flex-col">
+                    <label for="date-reference" class="text-xs md:text-sm font-medium mb-1 whitespace-nowrap"
+                           style="color: var(--text-primary);">
+                        Date de référence
+                    </label>
+                    <input type="date"
+                           id="date-reference"
+                           class="app-modal-input w-[130px] sm:w-[150px] text-xs md:text-sm {% if not projet.marche_approuve %}opacity-50 cursor-not-allowed{% endif %}"
+                           {% if not projet.marche_approuve %}disabled{% endif %}
+                           data-url="{% url 'projets:api_jours_decoules' projet.id %}"
+                           value="{{ today|date:'Y-m-d' }}">
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="text-xs md:text-sm mb-1 whitespace-nowrap" style="color: var(--text-muted);">
+                        Jours
+                    </div>
+                    <div id="jours-resultat"
+                         class="text-lg sm:text-2xl font-bold leading-8 sm:leading-10"
+                         style="color: {% if projet.marche_approuve %}var(--accent-green){% else %}var(--text-muted){% endif %};">
+                        {% if projet.marche_approuve %}
+                            {{ projet.jours_decoules_aujourdhui|default:"0" }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="text-xs md:text-sm mb-1 whitespace-nowrap" style="color: var(--text-muted);">
+                        Fin prévisionnelle
+                    </div>
+                    <div id="date-fin-resultat"
+                         class="text-base sm:text-xl font-bold whitespace-nowrap leading-8 sm:leading-10"
+                         style="color: var(--accent-primary);">
+                        {% with date_fin=projet.date_fin_previsionnelle %}
+                            {% if date_fin %}{{ date_fin|date:'d/m/Y' }}{% else %}Non déterminée{% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {% if not projet.marche_approuve %}
+        <div class="mt-3 p-2 md:p-3 rounded-lg flex items-center gap-2"
+             style="background-color: rgba(245, 158, 11, 0.1); border: 1px solid var(--accent-warning); color: var(--accent-warning);">
+            <i class="fas fa-exclamation-triangle"></i>
+            <span class="text-xs md:text-sm">
+                Le calcul des jours n'est disponible qu'après l'approbation du marché (OSN notifié)
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    {# ═══════ Filtres par statut ═══════ #}
+    <div class="flex flex-wrap gap-2 mb-4">
+        <a href="?statut=NOTIFIE"
+           class="app-btn-secondary text-xs md:text-sm {% if request.GET.statut == 'NOTIFIE' %}app-btn-active{% endif %}">
+            Notifiés ({{ os_notifies.count }})
+        </a>
+        <a href="?statut=BROUILLON"
+           class="app-btn-secondary text-xs md:text-sm {% if request.GET.statut == 'BROUILLON' %}app-btn-active{% endif %}">
+            Brouillons ({{ os_brouillons.count }})
+        </a>
+        <a href="?statut=ANNULE"
+           class="app-btn-secondary text-xs md:text-sm {% if request.GET.statut == 'ANNULE' %}app-btn-active{% endif %}">
+            Annulés ({{ os_annules.count }})
+        </a>
+        <a href="?"
+           class="app-btn-secondary text-xs md:text-sm {% if not request.GET.statut %}app-btn-active{% endif %}">
+            Tous ({{ os_notifies.count|add:os_brouillons.count|add:os_annules.count }})
+        </a>
+    </div>
+
+    {# ═══════ Bouton toggle ═══════ #}
+    <button type="button"
+            id="os-toggle-add"
+            class="doc-toggle-btn"
+            aria-expanded="{% if ordre_a_modifier %}true{% elif not ordres_service %}true{% else %}false{% endif %}"
+            aria-controls="os-add-panel">
+        <span class="doc-toggle-icon-wrap">
+            <i class="fas fa-plus doc-toggle-icon"></i>
+        </span>
+        <span class="doc-toggle-label" id="os-toggle-label">
+            {% if ordre_a_modifier %}
+                Modifier l'ordre de service
+            {% elif not ordres_service %}
+                Ajouter le premier OS
+            {% else %}
+                Ajouter un OS
+            {% endif %}
+        </span>
+        <i class="fas fa-chevron-down doc-toggle-chevron"></i>
+    </button>
+
+    {# ═══════ Formulaire pliable ═══════ #}
+    <div id="os-add-panel" class="doc-add-panel {% if ordre_a_modifier or not ordres_service %}open{% endif %}">
+        {% include "projets/ordres_service/_os_form_panel.html" %}
+    </div>
+
+    {# ═══════ Liste des ordres ═══════ #}
+    {% if ordres_service %}
+        <div class="space-y-3 md:space-y-4">
+            {% for ordre in ordres_service %}
+                {% include "projets/ordres_service/_os_card.html" %}
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="app-card p-6 md:p-8 text-center">
+            <i class="fas fa-inbox text-4xl md:text-6xl mb-4" style="color: var(--text-muted);"></i>
+            <h3 class="text-lg md:text-xl font-semibold mb-2" style="color: var(--text-secondary);">
+                Aucun ordre de service
+            </h3>
+            <p class="text-sm md:text-base" style="color: var(--text-muted);">
+                Commencez par ajouter un ordre de service pour ce projet.
+            </p>
+        </div>
+    {% endif %}
+<script>
+window.TYPES_OS_DATA = {
+    {% for type in types_disponibles %}
+    '{{ type.id }}': {
+        code: '{{ type.code }}',
+        prerequis: [{% for p in type.precedent_obligatoire.all %}'{{ p.code }}'{% if not forloop.last %},{% endif %}{% endfor %}],
+        unique: {{ type.unique_dans_projet|yesno:"true,false" }},
+        showDuree: {% if type.code == "OSA" or type.code == "OSR" %}true{% else %}false{% endif %},
+        showMontant: {% if type.code == "OSC10" or type.code == "OSV" %}true{% else %}false{% endif %}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+};
+</script>
+</div>

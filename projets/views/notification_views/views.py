@@ -24,7 +24,6 @@ def liste_notifications(request):
     ).order_by('-prioritaire', '-date_creation').select_related(
         'projet', 'tache', 'tache__projet'
     )
-
     # Filtres
     filter_type = request.GET.get('filter', 'all')
     if filter_type == 'unread':
@@ -54,11 +53,9 @@ def liste_notifications(request):
         'read_count': read_count,
         'total_count': all_qs.count(),
     }
-
     # ⚡ Rendu conditionnel HTMX
     if request.headers.get('HX-Request'):
         hx_target = request.headers.get('HX-Target', '')
-
         # Clic sur un filtre ou pagination → juste la liste
         if hx_target == 'notifications-container':
             return render(
@@ -66,7 +63,6 @@ def liste_notifications(request):
                 'projets/notifications/_notifications_list.html',
                 context,
             )
-
         # Clic depuis la cloche ou la sidebar → fragment complet
         return render(
             request,

@@ -1,3 +1,4 @@
+/* static/projets/js/common.js */
 (function() {
     'use strict';
 
@@ -121,5 +122,64 @@
                 + encodeURIComponent(username)
                 + '&background=10B981&color=fff&size=64';
     };
+
+})();
+
+
+/* ═══════════════════════════════════════════════════════════════
+   TOPBAR — Titre dynamique selon le module courant
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    // Garde anti-double-init
+    if (window.__topbarTitleInitialized) return;
+    window.__topbarTitleInitialized = true;
+
+    function updateTopbarTitle() {
+        const mainContent = document.getElementById('main-content');
+        if (!mainContent) return;
+
+        // Cherche le wrapper avec data-page-title
+        const wrapper = mainContent.querySelector('[data-page-title]');
+        if (!wrapper) return;
+
+        const title = wrapper.dataset.pageTitle;
+        const icon = wrapper.dataset.pageIcon || 'fa-home';
+
+        const titleEl = document.getElementById('topbar-title');
+        const textEl = document.getElementById('topbar-title-text');
+        const iconEl = document.getElementById('topbar-title-icon');
+
+        if (!textEl || !iconEl) return;
+
+        // Ne rien faire si le titre n'a pas changé
+        if (textEl.textContent.trim() === title) return;
+
+        // Fade out
+        titleEl?.classList.add('updating');
+
+        setTimeout(() => {
+            textEl.textContent = title;
+            iconEl.className = `fas ${icon}`;
+            document.title = `${title} – GoProjet`;
+
+            // Fade in
+            titleEl?.classList.remove('updating');
+        }, 150);
+    }
+
+    // 1. Au chargement initial
+    document.addEventListener('DOMContentLoaded', updateTopbarTitle);
+
+    // 2. Après chaque swap HTMX
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+        if (e.detail.target.id === 'main-content') {
+            updateTopbarTitle();
+        }
+    });
+
+    // 3. Après retour arrière navigateur
+    window.addEventListener('popstate', updateTopbarTitle);
 
 })();
