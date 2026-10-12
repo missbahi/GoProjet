@@ -1,0 +1,501 @@
+{% load formatters navigation %}
+{% breadcrumb %}
+
+<div class="attachment-workflow-page attachment-page--detail_attachement" data-family="project" data-page-title="Détails Attachement" data-page-icon="fa-file-contract">
+    <div class="container">
+        <!-- En-tête -->
+        <div class="mb-6">
+            <h1 class="app-section-title mb-2">
+                <i class="fas fa-file-contract mr-2"></i>
+                Attachement {{ attachement.numero }}
+            </h1> 
+            <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ attachement.projet.nom }}</h2>
+            <p class="text-sm flex flex-wrap items-center gap-2" style="color: var(--text-secondary);">
+                <i class="fas fa-info-circle"></i>
+                Détail de l’attachement
+                <span class="app-badge
+                    {% if attachement.statut == 'VALIDE' %}app-badge-success
+                    {% elif attachement.statut == 'REFUSE' %}app-badge-danger
+                    {% elif attachement.statut == 'SIGNE' or attachement.statut == 'TRANSMIS' %}app-badge-info
+                    {% elif attachement.statut == 'MODIFIE' %}app-badge-warning
+                    {% else %}app-badge-muted{% endif %}">
+                    {{ attachement.get_statut_display }}
+                </span>
+            </p>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="nav-container no-print">
+            <div class="action-buttons">
+                {% if attachement.est_validable %}
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" class="btn btn-validation">
+                        <i class="fas fa-clipboard-check"></i>
+                        Processus de Validation
+                    </a>
+                {% elif attachement.peut_reouvrir %}
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" class="btn btn-success">
+                        <i class="fas fa-eye"></i>
+                        Voir le processus
+                    </a>
+                {% elif attachement.ferme %}
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" class="btn btn-ferme">
+                        <i class="fas fa-eye"></i>
+                        Consulter
+                    </a>
+                {% else %}
+                    <a href="{% url 'projets:validation_attachement' attachement.id %}" class="btn btn-validation">
+                        <i class="fas fa-clipboard-check"></i>
+                        Voir validation
+                    </a>
+                {% endif %}
+                
+                <a href="{% url 'projets:modifier_attachement' attachement.id %}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i>
+                    Modifier
+                </a>
+                
+                <button onclick="exportPDF()" class="btn btn-success">
+                    <i class="fas fa-file-pdf"></i>
+                    PDF
+                </button>
+                <button onclick="exportExcel()" class="btn btn-success">
+                    <i class="fas fa-file-excel"></i>
+                    Excel
+                </button>
+            </div>
+        </nav>
+
+        <!-- Informations de l'attachement -->
+        <section class="info-card">
+            <div class="info-grid">
+                <div>
+                    <div class="info-item">
+                        <i class="fas fa-hashtag info-icon text-cyan-400"></i>
+                        <div class="info-content">
+                            <div class="info-label">Numéro d'attachement</div>
+                            <div class="info-value">{{ attachement.numero }}</div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar-alt info-icon text-green-400"></i>
+                        <div class="info-content">
+                            <div class="info-label">Date d'établissement</div>
+                            <div class="info-value">{{ attachement.date_etablissement|date:"d/m/Y" }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <i class="fas fa-calendar-check info-icon text-green-400"></i>
+                        <div class="info-content">
+                            <div class="info-label">Période</div>
+                            <div class="info-value">
+                                Du {{ attachement.date_debut_periode|date:"d/m/Y" }} au {{ attachement.date_fin_periode|date:"d/m/Y" }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <i class="fas fa-clock info-icon text-blue-400"></i>
+                        <div class="info-content">
+                            <div class="info-label">Date de création</div>
+                            <div class="info-value">{{ attachement.date_creation|date:"d/m/Y H:i" }}</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="info-item">
+                        <i class="fas fa-comments info-icon text-gray-400"></i>
+                        <div class="info-content">
+                            <div class="info-label">Observations</div>
+                            <div class="info-value">{{ attachement.observations|default:"Aucune observation"|truncatechars:100 }}</div>
+                        </div>
+                    </div>
+                    {% if attachement.fichier %}
+                    <div class="info-item">
+                        <i class="fa-solid fa-file text-green-400 text-lg sm:text-xl rounded-lg mt-2 sm:mt-0"></i>
+                        <div class="info-content">
+                            <div class="info-label">Fichier joint</div>
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true"  
+                               target="_blank" 
+                               class="info-value hover:text-cyan-300 transition-colors">
+                               <i class="fas fa-download text-cyan-400 ml-1"></i> Télécharger
+                            </a>
+                            <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false"  
+                               target="_blank" 
+                               class="info-value hover:text-cyan-300 transition-colors">
+                               <i class="fas fa-eye text-cyan-400 ml-1"></i> Voir
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div> 
+            </div>
+        </section>
+
+        <!-- Résumé financier -->
+        <!-- <section class="summary-card no-print">
+            <h2 class="summary-title">
+                <i class="fas fa-chart-bar"></i>
+                Résumé de l'Attachement
+            </h2>
+            <div class="stats-grid"> -->
+                <!-- <div class="stat-item">
+                    <span>Total lots :</span>
+                    <span class="stat-value">{{ total_lots }}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total lignes :</span>
+                    <span class="stat-value">{{ total_lignes }}</span>
+                </div> -->
+                <!-- <div class="stat-item">
+                    <span>Montant total HT :</span>
+                    <span class="stat-value">{{ montant_total|format_french_number }} MAD</span>
+                </div>
+                <div class="stat-item">
+                    <span>Montant total TTC :</span>
+                    <span class="stat-value">{{ montant_total|amount_ttc }} MAD</span>
+                </div> -->
+            <!-- </div>
+        </section> -->
+ 
+        <!-- Détail par lot -->
+        {% for lot_data in lots_data %}
+        <section class="lot-section">
+            <div class="lot-header">
+                <i class="fas fa-cube"></i>
+                <span>Lot : {{ lot_data.lot.nom }}</span>
+                <!-- <span style="margin-left: auto; font-size: 0.9rem; background: rgba(255,255,255,0.1); padding: 0.25rem 0.75rem; border-radius: 4px;">
+                    {{ lot_data.lignes_table|length }} ligne{{ lot_data.lignes_table|length|pluralize }}
+                </span> -->
+            </div>
+            <div class="table-container">
+                <table class="data-table">
+                    <colgroup>
+                        <col style="width: 90px;">
+                        <col style="width: auto;">
+                        <col class="text-center" style="width: 80px;"> 
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 120px;">
+                        <col class="text-right" style="width: 140px;">
+                        <col class="no-print text-center" style="width: 5px;">
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>N°</th>
+                            <th>Désignation</th>
+                            <th>Unité</th>
+                            <th>Quantité</th>
+                            <th>PU (DH)</th>
+                            <th>Montant (DH)</th>
+                            <th></th>
+                        </tr>
+                    </thead> 
+                    <tbody>
+                        {% for ligne in lot_data.lignes_table %}
+                            {% if ligne.designation and ligne.montant > 0 %}
+                            <tr class="niveau-{{ ligne.level }} {% if ligne.is_parent %}ligne-parent{% else %}ligne-detail{% endif %}">    
+                                <td class="ligne-numero">
+                                    {{ ligne.numero|default:"" }}
+                                </td>
+                                <td class="designation level-{{ligne.level}}">
+                                    {% if ligne.has_children %}
+                                        <strong>{{ ligne.designation }}</strong>
+                                    {% else %}
+                                        {{ ligne.designation }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if ligne.unite %}
+                                        <span class="unit px-2 py-1 rounded text-xs">{{ ligne.unite }}</span>
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right quantity ">
+                                    {% if ligne.quantite and ligne.quantite != 0 %}
+                                        {{ ligne.quantite|format_quantity }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right">
+                                    {% if ligne.prix_unitaire and ligne.prix_unitaire != 0 %}
+                                        {{ ligne.prix_unitaire|format_french_number }}
+                                    {% else %}
+                                        <span class="empty-value"></span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-right {% if ligne.is_parent %}amount-parent{% else %}amount{% endif %}">
+                                    {% if ligne.montant %}
+                                        <strong>{{ ligne.montant|format_french_number }}</strong>
+                                    {% else %}
+                                        <span class="empty-value">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="empty-state">
+                                    <i class="fas fa-inbox empty-icon"></i>
+                                    Aucune ligne d'attachement pour ce lot
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="no-print">
+                        <tr class="table-footer" style="background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);">
+                            <td colspan="4" class="text-right" style="color: white; font-weight: 700;">
+                                Total du {{ lot_data.lot.nom }} HT :
+                            </td>
+                            <td colspan="2" class="text-right" style="color: var(--text-success); font-weight: 700;">
+                                {{ lot_data.total_lot|format_currency }}
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+        {% empty %}
+        <section class="empty-state">
+            <i class="fas fa-file-contract empty-icon"></i>
+            <h3>Aucun lot trouvé</h3>
+            <p>Cet attachement ne contient aucun lot pour le moment.</p>
+        </section>
+        {% endfor %}
+    </div>
+
+    <!-- Scripts pour l'export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Gestion du toggle des enfants
+        document.querySelectorAll('.toggle-children').forEach(button => {
+            button.addEventListener('click', function() {
+                const ligneId = this.dataset.ligneId;
+                const ligneRow = this.closest('tr');
+                const level = parseInt(ligneRow.dataset.level);
+                const hasChildren = ligneRow.dataset.hasChildren === 'true';
+                
+                if (!hasChildren) return;
+                
+                // Trouver tous les enfants (niveaux suivants plus profonds)
+                let nextRow = ligneRow.nextElementSibling;
+                let childrenVisible = true;
+                
+                // Vérifier si le premier enfant est visible
+                if (nextRow && parseInt(nextRow.dataset.level) > level) {
+                    childrenVisible = nextRow.style.display !== 'none';
+                }
+                
+                // Basculer tous les enfants
+                while (nextRow && parseInt(nextRow.dataset.level) > level) {
+                    nextRow.style.display = childrenVisible ? 'none' : '';
+                    nextRow = nextRow.nextElementSibling;
+                }
+                
+                // Changer l'icône
+                const icon = this.querySelector('i');
+                icon.className = childrenVisible ? 'fas fa-caret-right' : 'fas fa-caret-down';
+            });
+        });
+
+        // Gestion de la suppression hiérarchique
+        document.querySelectorAll('.delete-parent').forEach(button => {
+            button.addEventListener('click', function() {
+                const ligneId = this.dataset.ligneId;
+                const lotId = this.dataset.lotId;
+                
+                if (confirm('Voulez-vous vraiment supprimer cette ligne parent et TOUS ses enfants ? Cette action est irréversible.')) {
+                    // Ici, vous feriez un appel AJAX pour supprimer du côté serveur
+                    console.log('Suppression hiérarchique demandée pour ligne:', ligneId, 'lot:', lotId);
+                    
+                    // Pour l'instant, on montre juste une alerte
+                    alert('Fonctionnalité de suppression à implémenter côté serveur');
+                }
+            });
+        });
+
+        // Gestion de la suppression simple
+        document.querySelectorAll('.delete-single').forEach(button => {
+            button.addEventListener('click', function() {
+                const ligneId = this.dataset.ligneId;
+                
+                if (confirm('Voulez-vous supprimer cette ligne ?')) {
+                    console.log('Suppression simple demandée pour ligne:', ligneId);
+                    alert('Fonctionnalité de suppression à implémenter côté serveur');
+                }
+            });
+        });
+
+        // Fonction pour exporter en Excel
+        function exportExcel() {
+            const wb = XLSX.utils.book_new();
+            
+            {% for lot_data in lots_data %}
+            const data{{ lot_data.lot.id }} = [
+                [`Lot : {{ lot_data.lot.nom }}`],
+                ['Niveau', 'N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'],
+                {% for ligne in lot_data.lignes_table %}
+                [
+                    'Niv. {{ ligne.level|add:1 }}',
+                    '{{ ligne.numero|default:"" }}',
+                    '{{ ligne.designation }}',
+                    '{{ ligne.unite|default:"" }}',
+                    {{ ligne.quantite|default:0 }},
+                    {{ ligne.prix_unitaire|default:0 }},
+                    {{ ligne.montant|default:0 }}
+                ],
+                {% endfor %}
+                ['', '', '', '', '', 'Total:', {{ lot_data.total_lot }}]
+            ];
+            
+            const ws{{ lot_data.lot.id }} = XLSX.utils.aoa_to_sheet(data{{ lot_data.lot.id }});
+            XLSX.utils.book_append_sheet(wb, ws{{ lot_data.lot.id }}, "Lot {{ lot_data.lot.nom }}");
+            {% endfor %}
+            
+            // Feuille de résumé
+            const summaryData = [
+                ['Résumé de l\'attachement'],
+                ['Numéro', '{{ attachement.numero }}'],
+                ['Projet', '{{ attachement.projet.nom }}'],
+                ['Période', 'Du {{ attachement.date_debut_periode|date:"d/m/Y" }} au {{ attachement.date_fin_periode|date:"d/m/Y" }}'],
+                [''],
+                ['Total lots', {{ total_lots }}],
+                ['Total lignes', {{ total_lignes }}],
+                ['Montant total HT', {{ montant_total }}],
+                ['Montant total TTC', {{ montant_total|amount_ttc }}]
+            ];
+            
+            const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Résumé");
+            
+            XLSX.writeFile(wb, "attachement_{{ attachement.numero|slugify }}.xlsx");
+        }
+
+        // Fonction pour exporter en PDF
+        function exportPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+            
+            // En-tête
+            doc.setFontSize(18);
+            doc.setTextColor(78, 205, 196);
+            doc.text("Attachement: {{ attachement.numero }}", 14, 15);
+            
+            doc.setFontSize(12);
+            doc.setTextColor(100, 100, 100);
+            doc.text("Projet: {{ attachement.projet.nom }}", 14, 22);
+            doc.text("Période: Du {{ attachement.date_debut_periode|date:'d/m/Y' }} au {{ attachement.date_fin_periode|date:'d/m/Y' }}", 14, 28);
+            doc.text("Date de création: {{ attachement.date_creation|date:'d/m/Y H:i' }}", 14, 34);
+            
+            let startY = 45;
+            const headers = ['N°', 'Désignation', 'Unité', 'Quantité', 'PU', 'Montant'];
+            
+            {% for lot_data in lots_data %}
+            // Vérifier s'il faut ajouter une nouvelle page
+            if (startY > 250) {
+                doc.addPage();
+                startY = 20;
+            }
+            
+            // Titre du lot
+            doc.setFontSize(14);
+            doc.setTextColor(44, 62, 80);
+            doc.text(`Lot : {{ lot_data.lot.nom }}`, 14, startY);
+            
+            // Préparer les données
+            const body{{ lot_data.lot.id }} = [];
+            {% for ligne in lot_data.lignes_table %}
+            // Ajouter l'indentation visuelle
+            let designation = '{{ ligne.designation }}';
+            for (let i = 0; i < {{ ligne.level }}; i++) {
+                designation = '    ' + designation;
+            }
+            
+            body{{ lot_data.lot.id }}.push([
+                '{{ ligne.numero|default:"-" }}',
+                designation,
+                '{{ ligne.unite|default:"-" }}',
+                '{{ ligne.quantite|default:0|floatformat:3 }}',
+                '{{ ligne.prix_unitaire|default:0|floatformat:2 }}',
+                '{{ ligne.montant|default:0|floatformat:2 }}'
+            ]);
+            {% endfor %}
+            
+            // Tableau
+            doc.autoTable({
+                head: [headers],
+                body: body{{ lot_data.lot.id }},
+                startY: startY + 5,
+                margin: { left: 14 },
+                styles: {
+                    fontSize: 9,
+                    textColor: [50, 50, 50],
+                    cellPadding: 3
+                },
+                headStyles: {
+                    fillColor: [44, 62, 80],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold'
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                columnStyles: {
+                    0: { cellWidth: 15 },
+                    1: { cellWidth: 'auto' },
+                    2: { cellWidth: 20 },
+                    3: { cellWidth: 25 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 30 }
+                }
+            });
+            
+            startY = doc.lastAutoTable.finalY + 10;
+            
+            // Total du lot
+            doc.setFontSize(10);
+            doc.setTextColor(44, 62, 80);
+            doc.text(`Total Lot {{ lot_data.lot.nom }}: {{ lot_data.total_lot|floatformat:2 }} MAD`, 14, startY);
+            startY += 7;
+            {% endfor %}
+            
+            // Total général
+            if (startY > 240) {
+                doc.addPage();
+                startY = 20;
+            }
+            
+            doc.setFontSize(12);
+            doc.setTextColor(78, 205, 196);
+            doc.text(`Total Général HT: {{ montant_total|floatformat:2 }} MAD`, 14, startY);
+            doc.setTextColor(46, 204, 113);
+            doc.text(`Total Général TTC: {{ montant_total|amount_ttc }} MAD`, 14, startY + 7);
+            
+            // Pied de page
+            const pageCount = doc.internal.getNumberOfPages();
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i);
+                doc.setFontSize(8);
+                doc.setTextColor(150, 150, 150);
+                doc.text(
+                    `Page ${i} sur ${pageCount} - Généré le ${new Date().toLocaleDateString('fr-FR')}`,
+                    doc.internal.pageSize.width / 2,
+                    doc.internal.pageSize.height - 10,
+                    { align: 'center' }
+                );
+            }
+            
+            doc.save("attachement_{{ attachement.numero|slugify }}.pdf");
+        }
+
+        // Fonction utilitaire pour obtenir le token CSRF
+        function getCsrfToken() {
+            return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+        }
+    </script>
+</div>

@@ -1,0 +1,127 @@
+{# projets/templates/projets/ateliers/_materiels_atelier_content.html #}
+{% load static navigation %}
+
+{% breadcrumb %}
+
+<div data-family="project"
+     data-page-title="Matériels atelier"
+     data-page-icon="fa-truck-monster">
+
+    <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-start gap-3">
+        <div>
+            <h1 class="app-section-title mb-2">
+                <i class="fas fa-truck-monster mr-2"></i>
+                Matériels — {{ atelier.code }} {{ atelier.libelle }}
+            </h1>
+            <p class="app-section-subtitle">
+                Projet : <span style="color: var(--accent-primary);">{{ projet.nom }}</span>
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <button type="button" data-add-affectation-button class="app-btn-primary">
+                <i class="fas fa-plus"></i> Affecter un matériel
+            </button>
+        </div>
+    </div>
+
+    {% if affectations %}
+    <div class="app-card p-2 overflow-x-auto">
+        <table class="app-table" id="affectationsTable">
+            <thead>
+                <tr>
+                    <th class="text-left">Matériel</th>
+                    <th class="text-left">Type</th>
+                    <th class="text-left">Date début</th>
+                    <th class="text-left">Date fin</th>
+                    <th class="text-left">Commentaire</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for aff in affectations %}
+                <tr>
+                    <td>
+                        <div class="font-medium">{{ aff.materiel.designation }}</div>
+                        {% if aff.materiel.immatriculation %}
+                            <div class="text-xs mt-0.5" style="color: var(--accent-primary);">
+                                <i class="fas fa-hashtag mr-1"></i>N° Parc {{ aff.materiel.immatriculation }}
+                            </div>
+                        {% else %}
+                            <div class="text-xs mt-0.5 italic" style="color: var(--text-muted);">
+                                — N° Parc non défini —
+                            </div>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if aff.materiel.type_materiel %}
+                            <span class="inline-flex items-center gap-2">
+                                {% if aff.materiel.type_materiel.icone %}
+                                    <img src="{% static aff.materiel.type_materiel.icone_path %}"
+                                         alt="{{ aff.materiel.type_materiel.nom }}"
+                                         class="h-6 w-6 object-contain bg-white rounded p-0.5">
+                                {% endif %}
+                                <span class="text-sm" style="color: var(--accent-green);">
+                                    {{ aff.materiel.type_materiel.nom }}
+                                </span>
+                            </span>
+                        {% else %}
+                            <span class="italic text-sm" style="color: var(--text-muted);">— Non défini —</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ aff.date_debut|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if aff.date_fin %}
+                            {{ aff.date_fin|date:"d/m/Y" }}
+                        {% else %}
+                            <span class="italic" style="color: var(--accent-primary);">En cours</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-sm" style="color: var(--text-secondary);">
+                        {{ aff.commentaire|default:"—"|truncatechars:60 }}
+                    </td>
+                    <td class="text-center">
+                        <div class="inline-flex gap-2">
+                            <button type="button"
+                                    data-edit-affectation-button
+                                    data-id="{{ aff.id }}"
+                                    data-materiel-id="{{ aff.materiel_id }}"
+                                    data-materiel-label="{{ aff.materiel.designation }}{% if aff.materiel.type_materiel %} ({{ aff.materiel.type_materiel.nom }}){% endif %}{% if aff.materiel.immatriculation %} — N° Parc {{ aff.materiel.immatriculation }}{% endif %}"
+                                    data-date-debut="{{ aff.date_debut|date:'Y-m-d' }}"
+                                    data-date-fin="{{ aff.date_fin|date:'Y-m-d' }}"
+                                    data-commentaire="{{ aff.commentaire }}"
+                                    class="app-action-btn app-action-edit"
+                                    title="Modifier">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <button type="button"
+                                    data-delete-affectation-button
+                                    data-id="{{ aff.id }}"
+                                    class="app-action-btn app-action-delete"
+                                    title="Retirer">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="app-empty-state text-center">
+        <i class="fas fa-inbox text-3xl mb-2"></i>
+        <p class="text-base md:text-lg">Aucun matériel affecté à cet atelier.</p>
+        <p class="text-sm mt-2">Cliquez sur « Affecter un matériel » pour commencer.</p>
+    </div>
+    {% endif %}
+
+    {% include "projets/ateliers/partials/modal_add_affectation.html" %}
+    {% include "projets/ateliers/partials/modal_edit_affectation.html" %}
+    {% include "projets/ateliers/partials/modal_backdrop.html" %}
+
+    <div id="affectation-config"
+         data-add-url="{% url 'projets:ajouter_affectation' atelier.id %}"
+         data-edit-template="{% url 'projets:modifier_affectation' 0 %}"
+         data-delete-template="{% url 'projets:supprimer_affectation' 0 %}">
+    </div>
+</div>

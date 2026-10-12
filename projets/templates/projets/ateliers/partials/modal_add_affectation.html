@@ -25,6 +25,9 @@ Inclus dans :
               action="{% if atelier %}{% url 'projets:ajouter_affectation' atelier.id %}{% endif %}"
               class="needs-validation" novalidate>
             {% csrf_token %}
+            <div data-affectation-errors role="alert" aria-live="assertive" hidden
+                 class="app-alert app-alert-error p-3 rounded-lg mb-3"
+                 style="color: var(--accent-danger); background: var(--bg-elevated); border: 1px solid var(--accent-danger);"></div>
             <div class="mb-3">
                 <label for="addMaterielInput" class="block text-sm font-medium text-green-300 mb-1">
                     Matériel (désignation ou N° Parc)

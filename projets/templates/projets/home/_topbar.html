@@ -1,4 +1,4 @@
-{% load static %}
+{% load static navigation %}
 <header class="app-topbar shadow-sm z-10">
     <div class="flex items-center justify-between p-4">
         
@@ -26,80 +26,7 @@
 
             {% if user.is_authenticated %}
                 <!-- Notifications -->
-                <div class="relative">
-                    <button id="notificationBtn" class="app-topbar-item relative p-2">
-                        <i class="fas fa-bell text-lg md:text-xl"></i>
-                        {% if nb_notifications > 0 %}
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                            {{ nb_notifications }}
-                        </span>
-                        {% endif %}
-                    </button>
-
-                    <div id="notificationDropdown"
-                         class="hidden absolute right-0 mt-2 w-80 md:w-96 rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto app-dropdown">
-                        <div class="px-4 py-3 app-dropdown-header">
-                            <div class="flex justify-between items-center">
-                                <p class="text-sm font-semibold">
-                                    Notifications ({{ notifications|length }})
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="max-h-72 overflow-y-auto">
-                            {% for notification in notifications|slice:":5" %}
-                            <a href="{% url 'projets:liste_notifications' %}"
-                               class="notification-item block px-4 py-3 app-dropdown-item
-                                      {% if not notification.lue %}app-dropdown-item-unread{% endif %}">
-                                <div class="flex items-start">
-                                    <div class="flex-shrink-0 mr-3">
-                                        {% if not notification.lue %}
-                                        <div class="w-2 h-2 mt-2 rounded-full bg-cyan-500"></div>
-                                        {% else %}
-                                        <div class="w-2 h-2 mt-2 rounded-full bg-gray-500"></div>
-                                        {% endif %}
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium truncate">{{ notification.titre }}</p>
-                                        <p class="text-xs mt-1 line-clamp-2">{{ notification.message|truncatechars:80 }}</p>
-                                        <div class="flex items-center justify-between mt-2">
-                                            <span class="text-xs" style="color: var(--text-muted);">{{ notification.date_creation|timesince }}</span>
-                                            {% if notification.projet %}
-                                            <span class="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded">
-                                                {{ notification.projet.reference }}
-                                            </span>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </a>
-                            {% empty %}
-                            <div class="px-4 py-4 text-center">
-                                <p class="text-sm" style="color: var(--text-muted);">Aucune notification</p>
-                            </div>
-                            {% endfor %}
-                        </div>
-
-                        <div class="px-4 py-3 app-dropdown-footer">
-                            <div class="flex justify-between">
-                                <button id="markAllReadFromDropdown" class="text-xs hover:underline" style="color: var(--accent-primary);">
-                                    <i class="fas fa-check-double mr-1"></i>
-                                    Tout marquer comme lu
-                                </button>
-                                <a href="{% url 'projets:liste_notifications' %}"
-                                    hx-get="{% url 'projets:liste_notifications' %}"
-                                    hx-target="#main-content"
-                                    hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                                    hx-push-url="true"
-                                    hx-indicator="#htmx-progress"
-                                    class="block px-4 py-2 text-sm app-dropdown-item">
-                                    <i class="fas fa-external-link-alt mr-2"></i>
-                                    Voir toutes les notifications
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% notification_panel %}
 
                 <!-- Menu utilisateur -->
                 <div class="relative">

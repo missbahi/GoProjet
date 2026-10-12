@@ -4,22 +4,6 @@
    ============================================================ */
 
 /* ══════════════════════════════════════════════════════════════
-   Breadcrumb (réutilise les styles docs / lots / situations)
-   ══════════════════════════════════════════════════════════════ */
-.doc-breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    flex-wrap: wrap;
-}
-.doc-breadcrumb a { color: var(--text-secondary); transition: color 0.15s; }
-.doc-breadcrumb a:hover { color: var(--accent-primary); }
-.doc-breadcrumb i { font-size: 0.65rem; opacity: 0.5; }
-.doc-breadcrumb .current { color: var(--text-primary); font-weight: 500; }
-
-/* ══════════════════════════════════════════════════════════════
    Filtres par statut
    ══════════════════════════════════════════════════════════════ */
 .app-btn-active {
@@ -73,18 +57,3 @@
     50%  { transform: scale(1.15); color: var(--accent-success); }
     100% { transform: scale(1); }
 }
-/* ══════════════════════════════════════════════════════════════
-   Breadcrumb
-   ══════════════════════════════════════════════════════════════ */
-.doc-breadcrumb {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    flex-wrap: wrap;
-}
-.doc-breadcrumb a { color: var(--text-secondary); transition: color 0.15s; }
-.doc-breadcrumb a:hover { color: var(--accent-primary); }
-.doc-breadcrumb i { font-size: 0.65rem; opacity: 0.5; }
-.doc-breadcrumb .current { color: var(--text-primary); font-weight: 500; }

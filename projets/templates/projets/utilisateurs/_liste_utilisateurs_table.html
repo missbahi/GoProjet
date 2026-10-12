@@ -1,7 +1,7 @@
 {% load static %}
 
 {% if utilisateurs %}
-<div class="app-card overflow-hidden">
+<div class="app-card overflow-hidden" data-user-list-page="{{ page_obj.number }}">
     <div class="overflow-x-auto">
         <table class="w-full min-w-[800px]">
             <thead style="background-color: var(--table-header-bg); color: var(--accent-green);">
@@ -105,9 +105,9 @@
                         <div class="flex justify-center gap-2">
                             <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
                                hx-get="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
-                               hx-target="#main-content"
-                               hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                               hx-push-url="true"
+                               hx-target="#user-modal-content"
+                               hx-swap="innerHTML"
+                               hx-sync="#user-management-dialog:replace"
                                hx-indicator="#htmx-progress"
                                class="action-btn"
                                title="Modifier"
@@ -116,9 +116,9 @@
                             </a>
                             <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
                                hx-get="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
-                               hx-target="#main-content"
-                               hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                               hx-push-url="true"
+                               hx-target="#user-modal-content"
+                               hx-swap="innerHTML"
+                               hx-sync="#user-management-dialog:replace"
                                hx-indicator="#htmx-progress"
                                class="action-btn"
                                title="Gérer les projets"

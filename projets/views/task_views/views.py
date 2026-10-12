@@ -12,6 +12,7 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 from projets.decorators import projets_accessibles
 from projets.forms import TacheForm
 from projets.models import Projet, Tache
+from projets.utils.navigation import crumb
 
 logger = logging.getLogger(__name__)
 
@@ -71,14 +72,15 @@ class ListeTachesView(LoginRequiredMixin, ListView):
 
         # Projet courant (None sur /taches/)
         context['projet'] = self.projet
+        context['breadcrumb_items'] = [crumb("Home", "projets:home"), crumb("Taches")]
 
         return context
 
     def render_to_response(self, context, **response_kwargs):
         """Rendu conditionnel : fragment si HTMX, page complète sinon."""
+        
         if self.request.headers.get('HX-Request'):
             hx_target = self.request.headers.get('HX-Target', '')
-            
             # Si la cible est #taches-container (refresh après ajout/suppression)
             if hx_target == 'taches-container':
                 return render(

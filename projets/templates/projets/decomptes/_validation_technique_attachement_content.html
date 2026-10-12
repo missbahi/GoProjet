@@ -1,0 +1,501 @@
+{% load static navigation %}
+{% breadcrumb %}
+
+<div class="attachment-workflow-page attachment-page--validation_technique_attachement" data-family="project" data-page-title="Validation technique" data-page-icon="fa-user-check">
+<div class="container">
+        <!-- En-tête -->
+        <header class="header-section">
+            <h1 class="main-title">{{ validation_technique.get_type_validation_display }}</h1>
+            <div class="text-lg text-cyan-300">{{ attachement.numero }} - {{ attachement.projet.nom }}</div>
+        </header>
+        
+        <!-- Navigation -->
+        <nav class="nav-buttons">
+            <div class="nav-buttons-group">
+                <a href="{% url 'projets:validation_attachement' attachement.id %}" class="btn btn-info">
+                    <i class="fas fa-arrow-left"></i> Retour au Processus de Validation de l'Attachement
+                </a>
+            </div>
+        </nav>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="glass-card">
+            {% for message in messages %}
+            <div class="message message-{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Section Étapes de Validation -->
+        <section class="glass-card">
+            <div class="flex justify-between items-center">
+                <h2 class="section-title">
+                    <i class="fas fa-list-ol"></i>
+                    Étapes de Validation ({{ etapes.count }})
+                </h2>
+                
+                {% if peut_valider %}
+                <button onclick="openAjoutEtapeModal({{ validation_technique.id }})" 
+                        class="btn btn-primary">
+                    <i class="fas fa-plus-circle"></i>
+                    Ajouter une étape
+                </button>
+                {% endif %}
+            </div>
+            
+            <div class="etapes-container">
+                {% for etape in etapes %}
+                <div class="etape-card 
+                            {% if etape.est_validee %}etape-validee
+                            {% elif forloop.last and messages and 'ajoutée' in messages.0 %}etape-nouvelle
+                            {% else %}etape-en-attente{% endif %}">
+                    
+                    <div class="etape-header">
+                        <div class="etape-title">
+                            <div class="etape-numero">{{ etape.ordre }}</div>
+                            <div class="etape-nom">{{ etape.nom }}</div>
+                            {% if etape.obligatoire %}
+                                <span class="obligatoire-badge">Obligatoire</span>
+                            {% else %}
+                                <span class="bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">Optionnelle</span>
+                            {% endif %}
+                        </div>
+                        <div class="etape-status">
+                            <span class="etape-badge {% if etape.est_validee %}etape-validee-badge{% else %}etape-attente-badge{% endif %}">
+                                {% if etape.est_validee %}
+                                    <i class="fas fa-check"></i> Validée
+                                {% else %}
+                                    <i class="fas fa-clock"></i> En attente
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Détails de l'étape -->
+                    {% if etape.valide_par %}
+                    <div class="etape-details">
+                        <div class="info-item">
+                            <span class="info-label">Validé par :</span>
+                            <span class="info-value">{{ etape.valide_par.get_full_name|default:etape.valide_par.username }}</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Le :</span>
+                            <span class="info-value">{{ etape.date_validation|date:"d/m/Y H:i" }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if etape.commentaire %}
+                    <div class="mt-3">
+                        <span class="info-label">Commentaire :</span>
+                        <div class="comment-box">
+                            {{ etape.commentaire }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    <div class="etape-actions">
+                        {% if peut_valider %}
+                            {% if not etape.est_validee %}
+                                <!-- Toutes les étapes non validées sont accessibles directement -->
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="openValidationModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-success btn-sm">
+                                        <i class="fas fa-check"></i> Valider
+                                    </button>
+                                    
+                                    {% if not etape.obligatoire %}
+                                    <button onclick="openPasserModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-warning btn-sm">
+                                        <i class="fas fa-forward"></i> Passer
+                                    </button>
+                                    {% endif %}
+                                    
+                                    <button onclick="openModificationModal({{ etape.id }}, '{{ etape.nom|escapejs }}', '{{ etape.commentaire|default:""|escapejs }}', {{ etape.obligatoire|yesno:"true,false" }})" 
+                                            class="btn btn-info btn-sm">
+                                        <i class="fas fa-edit"></i> Modifier
+                                    </button>
+                                    
+                                    <button onclick="openSuppressionModal({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-danger btn-sm">
+                                        <i class="fas fa-trash"></i> Supprimer
+                                    </button>
+                                </div>
+                            {% else %}
+                                <!-- Actions pour étape validée -->
+                                <div class="flex flex-wrap gap-2 items-center">
+                                    <span class="text-success text-sm">
+                                        <i class="fas fa-check-circle"></i> Validée le {{ etape.date_validation|date:"d/m/Y" }}
+                                        {% if etape.valide_par %}
+                                            par {{ etape.valide_par.get_full_name|default:etape.valide_par.username }}
+                                        {% endif %}
+                                    </span>
+                                    
+                                    <button onclick="reinitialiserEtape({{ etape.id }}, '{{ etape.nom|escapejs }}')" 
+                                            class="btn btn-outline-warning btn-sm">
+                                        <i class="fas fa-undo"></i> Reprendre
+                                    </button>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <!-- Si l'utilisateur ne peut pas valider -->
+                            {% if etape.est_validee %}
+                                <span class="text-success text-sm">
+                                    <i class="fas fa-check-circle"></i> Validée le {{ etape.date_validation|date:"d/m/Y" }}
+                                </span>
+                            {% else %}
+                                <span class="text-warning text-sm">
+                                    <i class="fas fa-clock"></i> En attente de validation
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fas fa-info-circle text-4xl mb-4"></i>
+                    <p class="text-lg mb-2">Aucune étape de validation définie</p>
+                    <p class="text-sm">Commencez par ajouter des étapes au processus de validation</p>
+                    {% if peut_valider %}
+                    <button onclick="openAjoutEtapeModal({{ validation_technique.id }})" 
+                            class="btn btn-primary mt-4">
+                        <i class="fas fa-plus-circle"></i>
+                        Ajouter la première étape
+                    </button>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal de Modification -->
+    <div id="modificationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">
+                <i class="fas fa-edit"></i>
+                Modifier l'Étape
+            </h3>
+            
+            <form id="modificationForm" method="POST" action="{% url 'projets:modifier_etape' etape_id=0 %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="modifNom" class="form-label">Nom de l'étape</label>
+                    <input type="text" id="modifNom" name="nom" class="form-control" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="modifCommentaire" class="form-label">Commentaire</label>
+                    <textarea id="modifCommentaire" name="commentaire" class="form-control" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" id="modifObligatoire" name="obligatoire" class="form-checkbox">
+                        <span class="form-label">Étape obligatoire</span>
+                    </label>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmation de Réinitialisation -->
+    <div id="reinitialisationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">
+                <i class="fas fa-exclamation-triangle text-warning"></i>
+                Reprendre le Processus
+            </h3>
+            
+            <div class="p-4 bg-yellow-900/30 rounded-lg mb-4">
+                <p class="text-yellow-400 font-semibold" id="reinitMessage">
+                    Êtes-vous sûr de vouloir reprendre cette étape ?
+                </p>
+                <p class="text-white text-sm mt-2">
+                    <i class="fas fa-info-circle"></i>
+                    Cette étape et toutes les étapes suivantes seront réinitialisées.
+                </p>
+            </div>
+            
+            <form id="reinitialisationForm" method="POST" action="{% url 'projets:reinitialiser_etape' etape_id=0 %}">
+                {% csrf_token %}
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Confirmer la reprise</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmation de Suppression -->
+    <div id="suppressionModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">
+                <i class="fas fa-exclamation-triangle text-red-500"></i>
+                Supprimer l'Étape
+            </h3>
+            
+            <div class="p-4 bg-red-900/30 rounded-lg mb-4 border-l-4 border-red-500">
+                <p class="text-red-400 font-semibold text-lg" id="suppressionMessage">
+                    Confirmer la suppression ?
+                </p>
+                <div class="text-white text-sm mt-3 space-y-2">
+                    <p class="flex items-center gap-2">
+                        <i class="fas fa-info-circle text-yellow-400"></i>
+                        <span>Cette action est irréversible</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                        <i class="fas fa-sync-alt text-blue-400"></i>
+                        <span>L'ordre des étapes restantes sera réorganisé automatiquement</span>
+                    </p>
+                    <p class="flex items-center gap-2">
+                        <i class="fas fa-ban text-red-400"></i>
+                        <span>Impossible de supprimer une étape validée ou la dernière étape</span>
+                    </p>
+                </div>
+            </div>
+            
+            <form id="suppressionForm" method="POST" action="{% url 'projets:supprimer_etape' etape_id=0 %}">
+                {% csrf_token %}
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Confirmer la suppression
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Validation -->
+    <div id="validationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle" class="modal-title">Validation d'Étape</h3>
+            <form id="validationForm" method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label class="form-label">Commentaire</label>
+                    <textarea name="commentaire" class="form-control" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Fichier justificatif (optionnel) :</label>
+                    <input type="file" id="fichier" name="fichier" class="form-control">
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-success">Valider</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Passer -->
+    <div id="passerModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Passer une étape</h3>
+            <form id="passerForm" method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <p class="text-warning">⚠️ Cette étape optionnelle sera marquée comme validée.</p>
+                    <label class="form-label">Justification</label>
+                    <textarea name="commentaire" class="form-control"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-warning">Passer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal d'Ajout d'Étape -->
+    <div id="ajoutEtapeModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">
+                <i class="fas fa-plus-circle"></i>
+                Ajouter une Nouvelle Étape
+            </h3>
+            
+            <form id="ajoutEtapeForm" method="POST" action="{% url 'projets:ajouter_etape' process_id=0 %}">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="nouveauNom" class="form-label">
+                        Nom de l'étape <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="nouveauNom" name="nom" class="form-control" 
+                        placeholder="Ex: Vérification des plans, Contrôle qualité..." required>
+                    <div class="text-sm text-gray-400 mt-1">
+                        Décrivez clairement l'objectif de cette étape
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="nouveauCommentaire" class="form-label">
+                        Description détaillée (optionnel)
+                    </label>
+                    <textarea id="nouveauCommentaire" name="commentaire" class="form-control" 
+                            placeholder="Précisions sur les critères de validation, documents requis..."
+                            rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="flex items-center gap-3 p-3 bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-600 transition-colors">
+                        <input type="checkbox" id="nouvelleObligatoire" name="obligatoire" 
+                            class="form-checkbox h-5 w-5 text-cyan-400" checked>
+                        <div>
+                            <span class="form-label block">Étape obligatoire</span>
+                            <span class="text-sm text-gray-400">
+                                Cette étape devra être validée pour terminer le processus
+                            </span>
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="p-3 bg-blue-900/30 rounded-lg mb-4">
+                    <div class="flex items-center gap-2 text-blue-400">
+                        <i class="fas fa-info-circle"></i>
+                        <span class="font-semibold">Information :</span>
+                    </div>
+                    <p class="text-white text-sm mt-1">
+                        La nouvelle étape sera ajoutée à la fin du processus. 
+                        L'ordre pourra être ajusté ultérieurement.
+                    </p>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Créer l'étape
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Fonction pour fermer tous les modals
+        function closeAllModals() {
+            const modals = document.querySelectorAll('.modal-overlay');
+            modals.forEach(modal => {
+                modal.style.display = 'none';
+            });
+        }
+
+        function openValidationModal(etapeId, etapeNom) {
+            closeAllModals();
+            const form = document.getElementById('validationForm');
+            form.action = "{% url 'projets:valider_etape' etape_id=0 %}".replace('0', etapeId);
+            document.getElementById('modalTitle').textContent = 'Valider : ' + etapeNom;
+            document.getElementById('validationModal').style.display = 'flex';
+        }
+
+        function openPasserModal(etapeId, etapeNom) {
+            closeAllModals();
+            const form = document.getElementById('passerForm');
+            form.action = "{% url 'projets:passer_etape' etape_id=0 %}".replace('0', etapeId);
+            document.getElementById('passerModal').style.display = 'flex';
+        }
+
+        function openModificationModal(etapeId, etapeNom, commentaire, obligatoire) {
+            closeAllModals();
+            const form = document.getElementById('modificationForm');
+            form.action = "{% url 'projets:modifier_etape' etape_id=0 %}".replace('0', etapeId);
+            
+            document.getElementById('modifNom').value = etapeNom || '';
+            document.getElementById('modifCommentaire').value = commentaire || '';
+            document.getElementById('modifObligatoire').checked = obligatoire === true || obligatoire === 'true';
+            
+            document.getElementById('modificationModal').style.display = 'flex';
+        }
+
+        function reinitialiserEtape(etapeId, etapeNom) {
+            closeAllModals();
+            const form = document.getElementById('reinitialisationForm');
+            form.action = "{% url 'projets:reinitialiser_etape' etape_id=0 %}".replace('0', etapeId);
+            
+            document.getElementById('reinitMessage').textContent = 
+                `Êtes-vous sûr de vouloir reprendre l'étape "${etapeNom}" ?`;
+            
+            document.getElementById('reinitialisationModal').style.display = 'flex';
+        }
+
+        function openSuppressionModal(etapeId, etapeNom) {
+            closeAllModals();
+            const form = document.getElementById('suppressionForm');
+            form.action = "{% url 'projets:supprimer_etape' etape_id=0 %}".replace('0', etapeId);
+            
+            document.getElementById('suppressionMessage').innerHTML = 
+                `Confirmer la suppression de l'étape <strong>"${etapeNom}"</strong> ?`;
+            
+            document.getElementById('suppressionModal').style.display = 'flex';
+        }
+
+        function openAjoutEtapeModal(processId) {
+            closeAllModals();
+            const form = document.getElementById('ajoutEtapeForm');
+            form.action = "{% url 'projets:ajouter_etape' process_id=0 %}".replace('0', processId);
+            
+            form.reset();
+            document.getElementById('nouvelleObligatoire').checked = true;
+            
+            document.getElementById('ajoutEtapeModal').style.display = 'flex';
+            
+            setTimeout(() => {
+                document.getElementById('nouveauNom').focus();
+            }, 300);
+        }
+
+        function closeModal() {
+            closeAllModals();
+        }
+
+        // Gérer la fermeture en cliquant à l'extérieur
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('modal-overlay')) {
+                closeAllModals();
+            }
+        });
+
+        // Touche Échap pour fermer
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeAllModals();
+            }
+        });
+
+        // Validation en temps réel du formulaire d'ajout
+        document.addEventListener('DOMContentLoaded', function() {
+            const ajoutForm = document.getElementById('ajoutEtapeForm');
+            if (ajoutForm) {
+                ajoutForm.addEventListener('submit', function(e) {
+                    const nom = document.getElementById('nouveauNom').value.trim();
+                    
+                    if (!nom) {
+                        e.preventDefault();
+                        alert('Veuillez saisir un nom pour l\'étape.');
+                        document.getElementById('nouveauNom').focus();
+                        return;
+                    }
+                    
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Création...';
+                    submitBtn.disabled = true;
+                });
+            }
+        });
+    </script>
+    <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
+</div>

@@ -120,6 +120,7 @@ def home(request):
         'profile': profile,
         'echeances': echeances,
         'chart_data_json': json.dumps(chart_data, cls=DjangoJSONEncoder),
+        'chart_data': chart_data,
         'projets_noms': json.dumps([projet.nom for projet in projets_utilisateur]),
         'projets_noms_recents': json.dumps([projet.nom for projet in projets_recents]),
         'projets_avancements': json.dumps([round(projet.avancement) if projet.avancement is not None else 0 for projet in projets_utilisateur]),
@@ -148,4 +149,3 @@ def page_not_found(request, exception=None):
     return render(request, 'errors/access_restricted.html', {
         'page_not_found': True,
     }, status=404)
-

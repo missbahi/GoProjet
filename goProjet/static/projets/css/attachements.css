@@ -1,0 +1,3536 @@
+/* liste_decomptes */
+
+        .attachment-workflow-page.attachment-page--liste_decomptes{ color: var(--text-primary); }
+        .attachment-page--liste_decomptes .decompte-project strong {
+            color: var(--text-primary);
+        }
+        .attachment-page--liste_decomptes .decompte-summary-label {
+            color: var(--text-secondary);
+        }
+        .attachment-page--liste_decomptes .decompte-unavailable {
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+        .attachment-workflow-page.attachment-page--liste_decomptes .decompte-card{ 
+            background: var(--bg-surface); 
+            border: 1px solid var(--border-default); 
+            border-radius: 8px; 
+            padding: 1.5rem; 
+            transition: border-color 0.2s ease;
+        }
+        .attachment-workflow-page.attachment-page--liste_decomptes .decompte-card:hover{ 
+            border-color: var(--accent-primary); 
+        }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-primary{ background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-info) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-danger{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .form-control{ 
+            background-color: var(--bg-main); 
+            border: 1px solid var(--border-default); 
+            color: var(--text-primary); 
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+        }
+        .attachment-workflow-page.attachment-page--liste_decomptes .form-control:focus{ 
+            border-color: var(--accent-primary); 
+            box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2); 
+            outline: none;
+        }       
+        .attachment-workflow-page.attachment-page--liste_decomptes .statut-badge{
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }     
+        .attachment-workflow-page.attachment-page--liste_decomptes .type-decompte-badge{ 
+            display: inline-block; 
+            padding: 0.25rem 0.5rem; 
+            border-radius: 0.375rem; 
+            font-size: 0.75rem; 
+            font-weight: 600; 
+            margin-right: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte{
+            transition: all 0.3s ease-in-out;
+            overflow: hidden;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        /* État EXPANDÉ (visible) */
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte.expanded{
+            max-height: none; /* Supprimer la limite de hauteur */
+            opacity: 1;
+            padding: 1.5rem;
+            border: 1px solid var(--border-default);
+            margin-bottom: 1rem;
+            overflow: visible; /* Permettre le défilement naturel */
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte.collapsed{
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            border: none;
+            margin-bottom: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+      
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte:focus-within{
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+        
+        .attachment-workflow-page.attachment-page--liste_decomptes .form-control.auto-focused{
+            animation: pulseFocus 2s ease-in-out;
+        }      
+        @keyframes pulseFocus {
+            0% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+        }        
+        .attachment-workflow-page.attachment-page--liste_decomptes .montant-cell{
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }        
+        .attachment-workflow-page.attachment-page--liste_decomptes .retard-badge{
+            animation: pulse 2s infinite;
+        }       
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }       
+        .attachment-workflow-page.attachment-page--liste_decomptes .alert-auto-dismiss{
+            animation: fadeOut 5s forwards;
+        }       
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }       
+        .attachment-workflow-page.attachment-page--liste_decomptes .alert-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .alert-error{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .alert-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .alert-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--liste_decomptes .auto-expand-form{
+            border-left: 4px solid #8b5cf6;
+            animation: slideInContext 0.5s ease-out;
+        }
+        @keyframes slideInContext {
+            from { 
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to { 
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .context-indicator{
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.1) 100%);
+        }
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-disabled{
+            background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--border-default) 100%);
+            color: #9CA3AF;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-disabled:hover{
+            background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--border-default) 100%);
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Optimisations responsive */
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-navigation{
+            background: var(--border-default);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-navigation:hover{
+            background: var(--bg-elevated);
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-amber{
+            background: var(--accent-warning);
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-amber:hover{
+            background: #b45309;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-purple{
+            background: #7c3aed;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .btn-purple:hover{
+            background: #6d28d9;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .navigation-container{
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .filtres-container{
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .filtre-btn{
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            border: 1px solid var(--border-default);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .attachment-workflow-page.attachment-page--liste_decomptes .filtre-btn:hover{
+            border-color: var(--accent-primary);
+            background: var(--bg-hover);
+        }
+        .attachment-page--liste_decomptes .filtre-btn[aria-current="page"] {
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+
+    @media (max-width: 768px) {
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte{
+                padding: 1rem;
+            }
+            
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte.expanded{
+                padding: 1rem;
+            }
+            
+            /* Ajuster les grilles pour mobile */
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte .grid{
+                gap: 0.75rem;
+            }
+            
+            /* Assurer que les champs soient bien visibles */
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte input,
+.attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte select,
+.attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte textarea{
+                font-size: 16px; /* Éviter le zoom automatique sur iOS */
+                min-height: 44px; /* Taille tactile minimale */
+            }
+            
+            /* Adapter les boutons pour mobile */
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte .flex-wrap{
+                justify-content: center;
+                gap: 0.5rem;
+            }
+            
+            .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte button,
+.attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte a{
+                min-height: 44px;
+                padding: 0.75rem 1rem;
+                font-size: 14px;
+            }
+        }
+    @media (max-width: 480px) {
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte{
+            padding: 0.75rem;
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+        }
+        
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte.expanded{
+            padding: 0.75rem;
+            border-left: none;
+            border-right: none;
+            border-radius: 0;
+        }
+        
+        /* Stack vertical pour les petits écrans */
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte .grid{
+            grid-template-columns: 1fr !important;
+        }
+        
+        /* Agrandir les zones de saisie */
+        .attachment-workflow-page.attachment-page--liste_decomptes .formulaire-decompte textarea{
+            min-height: 100px;
+        }
+    }
+
+.attachment-workflow-page.attachment-page--liste_decomptes <style>
+/* Conteneur principal pour les champs avec suffixe */
+.field-with-suffix{
+    position: relative;
+    width: 100%;
+}
+
+/* Style de base pour tous les inputs */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control{
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 0.75rem;
+    color: white;
+    font-size: 1rem;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-sizing: border-box;
+}
+
+/* Pour les champs numériques uniquement - alignement à droite */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"],
+.attachment-workflow-page.attachment-page--liste_decomptes input.form-control.text-right{
+    text-align: right;
+    padding-right: 3rem !important; /* Espace pour le suffixe */
+    direction: ltr; /* Garantir l'ordre gauche-droite des nombres */
+}
+
+/* Effet focus */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:focus{
+    outline: none;
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+/* Placeholder */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control::placeholder{
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Style du suffixe */
+.attachment-workflow-page.attachment-page--liste_decomptes .field-with-suffix .suffix{
+    position: absolute;
+    right: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.5);
+    pointer-events: none; /* Ne pas interférer avec les clics */
+    font-size: 0.875rem;
+    font-weight: 500;
+    z-index: 5;
+    background: transparent;
+    padding: 0 0.25rem;
+}
+
+/* Style spécifique pour les inputs number */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"]{
+    -moz-appearance: textfield; /* Firefox */
+}
+
+/* Chrome, Safari, Edge, Opera - masquer les flèches */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"]::-webkit-outer-spin-button,
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"]::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Style pour les champs avec erreur */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control.error{
+    border-color: #f87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.2);
+}
+
+/* Style pour les champs désactivés */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* Label stylisé */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-label{
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #38bdf8;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+}
+
+.attachment-workflow-page.attachment-page--liste_decomptes .form-label.required:after{
+    content: " *";
+    color: #f87171;
+}
+
+/* Helper text */
+.attachment-workflow-page.attachment-page--liste_decomptes .helper-text{
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+    margin-top: 0.375rem;
+}
+
+/* Messages d'erreur */
+.attachment-workflow-page.attachment-page--liste_decomptes .error-message{
+    color: #f87171;
+    font-size: 0.875rem;
+    margin-top: 0.375rem;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+}
+
+.attachment-workflow-page.attachment-page--liste_decomptes .error-message:before{
+    content: "⚠";
+    font-size: 0.875rem;
+}
+
+/* Animation subtile au focus */
+@keyframes subtlePulse {
+    0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+    70% { box-shadow: 0 0 0 4px rgba(6, 182, 212, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+}
+
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:focus{
+    animation: subtlePulse 0.6s ease;
+}
+
+/* Style pour le groupe de formulaire */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-group{
+    margin-bottom: 1.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .attachment-workflow-page.attachment-page--liste_decomptes .form-control{
+        padding: 0.625rem 0.875rem;
+        font-size: 0.9375rem;
+    }
+    
+    .attachment-workflow-page.attachment-page--liste_decomptes .field-with-suffix .suffix{
+        right: 0.875rem;
+        font-size: 0.8125rem;
+    }
+    
+    .attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"],
+.attachment-workflow-page.attachment-page--liste_decomptes input.form-control.text-right{
+        padding-right: 2.5rem !important;
+    }
+}
+
+/* Dark mode optimization */
+@media (prefers-color-scheme: dark) {
+    .attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="date"],
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control[type="number"]{
+        color-scheme: dark;
+    }
+}
+
+/* Hover effect (optionnel) */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:not(:disabled):hover{
+    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+/* Style pour les valeurs valides/invalides */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:valid:not(:placeholder-shown){
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+.attachment-workflow-page.attachment-page--liste_decomptes .form-control:invalid:not(:placeholder-shown){
+    border-color: rgba(248, 113, 113, 0.3);
+}
+
+/* Style spécifique pour les selects */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control{
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23cbd5e1' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 1rem center;
+    background-repeat: no-repeat;
+    background-size: 1.25em 1.25em;
+    padding-right: 2.5rem;
+    cursor: pointer;
+    
+    color: var(--input-text) !important;
+    background-color: var(--input-bg) !important;
+}
+
+/* Style pour les options dans le dropdown */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control option{
+    color: var(--input-text) !important;
+    background-color: var(--bg-elevated) !important;
+    padding: 0.5rem;
+}
+
+/* Style pour le placeholder/option par défaut */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control option[value=""]{
+    color: var(--input-placeholder) !important;
+}
+
+/* Hover sur les options */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control option:hover,
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control option:focus,
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control option:checked{
+    background-color: var(--bg-hover) !important;
+    color: var(--accent-primary) !important;
+}
+
+/* Style pour le select au focus */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control:focus{
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.2);
+    background-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Style pour le select désactivé */
+.attachment-workflow-page.attachment-page--liste_decomptes select.form-control:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Correction pour Firefox */
+@-moz-document url-prefix() {
+    select.form-control {
+        text-indent: 0.01px;
+        text-overflow: '';
+        padding-right: 2rem;
+    }
+    
+    select.form-control option {
+        background-color: var(--bg-elevated);
+        color: white;
+    }
+}
+
+/* Correction pour Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+    .attachment-workflow-page.attachment-page--liste_decomptes select.form-control{
+        -webkit-appearance: menulist;
+    }
+}
+
+/* Style pour les selects dans les groupes de formulaire */
+.attachment-workflow-page.attachment-page--liste_decomptes .form-group select.form-control{
+    width: 100%;
+}
+
+        @media print {
+            .attachment-workflow-page.attachment-page--liste_decomptes .sidebar,
+.attachment-workflow-page.attachment-page--liste_decomptes .sidebar-mobile,
+.attachment-workflow-page.attachment-page--liste_decomptes .app-topbar,
+.attachment-workflow-page.attachment-page--liste_decomptes #htmx-progress,
+            .attachment-workflow-page.attachment-page--liste_decomptes #main-content,
+.attachment-workflow-page.attachment-page--liste_decomptes main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* attachement_form */
+
+            /* Variables CSS */
+        .attachment-workflow-page.attachment-page--attachement_form{
+            --primary-color: var(--accent-primary);
+            --secondary-color: var(--accent-info);
+            --background-dark: var(--bg-main);
+            --background-card: var(--bg-surface);
+            --success-color: var(--accent-success);
+            --warning-color: var(--accent-warning);
+            --danger-color: var(--accent-danger);
+            --border-radius: 12px;
+            --transition: all 0.3s ease;
+        }
+
+        /* Reset et base */
+        .attachment-workflow-page.attachment-page--attachement_form *{
+            box-sizing: border-box;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form{
+            color: var(--text-primary); 
+            line-height: 1.6;
+        }
+
+        /* Layout responsive (le padding est fourni par #main-content) */
+        .attachment-workflow-page.attachment-page--attachement_form .main-container{
+            max-width: 1380px;
+            margin: 0 auto;
+        }
+
+        /* Composants réutilisables */
+        .attachment-workflow-page.attachment-page--attachement_form .glass-effect{
+            background: var(--background-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: var(--border-radius);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn{
+            padding: 0.75rem 1.5rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.875rem;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: none;
+            cursor: pointer;
+            text-align: center;
+            justify-content: center;
+            white-space: nowrap;
+        }
+
+        @media (min-width: 640px) {
+            .attachment-workflow-page.attachment-page--attachement_form .btn{
+                padding: 0.875rem 1.75rem;
+                font-size: 1rem;
+            }
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-primary{ 
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-warning{ 
+            background: linear-gradient(135deg, var(--warning-color) 0%, var(--accent-warning) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-danger{ 
+            background: linear-gradient(135deg, var(--danger-color) 0%, var(--accent-danger) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-success{ 
+            background: linear-gradient(135deg, var(--success-color) 0%, var(--accent-success) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-info{ 
+            background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-info) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-validation{ 
+            background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn-ferme{ 
+            background: linear-gradient(135deg, #6b7280 0%, var(--border-default) 100%); 
+            color: white; 
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .btn:active{
+            transform: translateY(0);
+        }
+
+        /* Navigation responsive */
+        .attachment-workflow-page.attachment-page--attachement_form .nav-buttons{
+            display: flex;
+            flex-wrap: wrap;
+            background: var(--background-card);
+            border: 1px solid var(--primary-color);
+            border-radius: var(--border-radius);
+            gap: 0.75rem;
+            padding: 1rem;
+            margin: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .nav-buttons-group{
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 0.25rem;
+            flex: 1;
+        }
+
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--attachement_form .nav-buttons{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+            
+            .attachment-workflow-page.attachment-page--attachement_form .nav-buttons-group{
+                flex: 0 1 auto;
+            }
+        }
+
+        /* Grille responsive */
+        .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
+                gap: 1rem;
+            }
+        }
+
+        /* Formulaires */
+        .attachment-workflow-page.attachment-page--attachement_form .form-group{
+            margin-bottom: 1rem;
+            margin-left: 1rem;
+            margin-right: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form label{
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .form-control{ 
+            background-color: var(--bg-surface); 
+            border: 1px solid var(--border-default); 
+            color: var(--text-primary); 
+            border-radius: var(--border-radius);
+            padding: 0.75rem 1rem;
+            width: 100%;
+            transition: var(--transition);
+            font-size: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .form-control:focus{ 
+            border-color: var(--primary-color); 
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.2); 
+            outline: none;
+            background-color: var(--background-dark);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .form-control::placeholder{
+            color: var(--text-secondary);
+        }
+
+        /* Tableau Handsontable responsive */
+        .attachment-workflow-page.attachment-page--attachement_form .table-container{
+            overflow-x: auto;
+            margin-bottom: 1.5rem;
+            border-radius: var(--border-radius);
+            background: var(--background-card);
+            padding: 1rem;
+        }
+
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--attachement_form .table-container{
+                padding: 1.5rem;
+            }
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form #hot{
+            min-width: 800px;
+        }
+
+        /* Sections spéciales */
+        .attachment-workflow-page.attachment-page--attachement_form .total-section{
+            background: var(--bg-elevated);
+            border: 1px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .validation-section{
+            background: var(--bg-elevated);
+            border: 1px solid var(--success-color);
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .section-fermee{
+            background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--border-default) 100%);
+            border: 1px solid #6b7280;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        /* File upload */
+        .attachment-workflow-page.attachment-page--attachement_form .file-upload{
+            border: 2px dashed var(--border-default);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .file-upload:hover{
+            border-color: var(--primary-color);
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .file-current{
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #78aa9a;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 0.5rem;
+            word-break: break-all;
+        }
+
+        /* Messages */
+        .attachment-workflow-page.attachment-page--attachement_form .alert-auto-dismiss{
+            animation: fadeOut 5s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .alert-success{ background: linear-gradient(135deg, var(--success-color) 0%, var(--accent-success) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--attachement_form .alert-error{ background: linear-gradient(135deg, var(--danger-color) 0%, var(--accent-danger) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--attachement_form .alert-warning{ background: linear-gradient(135deg, var(--warning-color) 0%, var(--accent-warning) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--attachement_form .alert-info{ background: linear-gradient(135deg, var(--secondary-color) 0%, var(--accent-info) 100%); color: white; }
+
+        /* Somme des sélections */
+        .attachment-workflow-page.attachment-page--attachement_form .selection-sum-display{
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            left: 1rem;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+
+        @media (min-width: 640px) {
+            .attachment-workflow-page.attachment-page--attachement_form .selection-sum-display{
+                left: auto;
+                right: 1rem;
+                width: auto;
+            }
+        }
+
+        /* Actions footer */
+        .attachment-workflow-page.attachment-page--attachement_form .actions-total{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--attachement_form .actions-total{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        /* Améliorations pour mobile */
+        @media (max-width: 767px) {
+            .attachment-workflow-page.attachment-page--attachement_form .btn{
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .attachment-workflow-page.attachment-page--attachement_form .nav-buttons-group{
+                width: 100%;
+            }
+            
+            .attachment-workflow-page.attachment-page--attachement_form .validation-section .flex,
+.attachment-workflow-page.attachment-page--attachement_form .section-fermee .flex{
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
+
+        /* Améliorations pour les très petits écrans */
+        @media (max-width: 380px) {
+            .attachment-workflow-page.attachment-page--attachement_form .btn{
+                padding: 0.625rem 1rem;
+                font-size: 0.75rem;
+            }
+        }
+
+        /* Styles spécifiques Handsontable */
+        .attachment-workflow-page.attachment-page--attachement_form .handsontable-custom .editable-quantity{
+            color: var(--success-color) !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .handsontable-custom td.modified-cell{
+            color: #ecad26 !important;
+            font-weight: 600 !important;
+            font-size: 13px !important;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .handsontable-custom td.modified-cell::after{
+            content: '✓';
+            color: var(--success-color);
+            margin-left: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .handsontable-custom .editable-quantity-attachee{
+            font-weight: 600 !important;
+            font-style: italic !important;
+            color: #7f8082 !important;
+            font-size: 13px !important;
+        }
+
+        @media print {
+            .attachment-workflow-page.attachment-page--attachement_form .sidebar,
+.attachment-workflow-page.attachment-page--attachement_form .sidebar-mobile,
+.attachment-workflow-page.attachment-page--attachement_form .app-topbar,
+.attachment-workflow-page.attachment-page--attachement_form #htmx-progress,
+            .attachment-workflow-page.attachment-page--attachement_form #main-content,
+.attachment-workflow-page.attachment-page--attachement_form main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* detail_attachement */
+
+        /* Variables CSS */
+        .attachment-workflow-page.attachment-page--detail_attachement{
+            --bg-dark: var(--bg-main);
+            --bg-card: var(--bg-surface);
+            --bg-header: var(--bg-page);
+            --text-accent: var(--accent-primary);
+            --text-success: var(--accent-success);
+            --border-light: var(--border-default);
+            --border-accent: var(--accent-primary);
+            --level-0-bg: var(--bg-surface);
+            --level-1-bg: var(--bg-elevated);
+            --level-2-bg: var(--bg-hover);
+            --level-3-bg: var(--bg-elevated);
+            --parent-border: var(--accent-info);
+            --detail-border: var(--border-strong);
+        }
+
+        /* Reset et base */
+        .attachment-workflow-page.attachment-page--detail_attachement{
+            color: var(--text-primary);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .container{
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Navigation principale */
+        .attachment-workflow-page.attachment-page--detail_attachement .nav-container{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .nav-buttons{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .action-buttons{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* Boutons */
+        .attachment-workflow-page.attachment-page--detail_attachement .btn{
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            white-space: nowrap;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .btn:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-sm{
+            padding: 0.5rem 1rem;
+            font-size: 0.85rem;
+            min-height: 36px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-green) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-warning{ background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-primary{ background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-green) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-validation{ background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-ferme{ background: linear-gradient(135deg, var(--text-muted) 0%, var(--text-secondary) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-danger{ background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%); color: white; }
+
+
+        /* Cartes d'information */
+        .attachment-workflow-page.attachment-page--detail_attachement .info-card{
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-grid{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-item{
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-item:last-child{
+            border-bottom: none;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-icon{
+            font-size: 1.2rem;
+            margin-top: 0.25rem;
+            flex-shrink: 0;
+            width: 24px;
+            text-align: center;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-content{
+            flex: 1;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-label{
+            color: var(--text-accent);
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .info-value{
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Résumé financier */
+        .attachment-workflow-page.attachment-page--detail_attachement .summary-card{
+            background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-surface) 100%);
+            border: 1px solid var(--border-accent);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .summary-title{
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--text-accent);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .stats-grid{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .stat-item{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border-left: 4px solid var(--text-accent);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .stat-value{
+            color: var(--text-accent);
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        /* Sections de lots */
+        .attachment-workflow-page.attachment-page--detail_attachement .lot-section{
+            margin-bottom: 2.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .lot-header{
+            background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-page) 100%);
+            color: var(--text-primary);
+            padding: 1rem 1.5rem;
+            font-weight: 700;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-bottom: 2px solid var(--border-accent);
+        }
+
+        /* Tableaux */
+        .attachment-workflow-page.attachment-page--detail_attachement .table-container{
+            background: var(--bg-card);
+            overflow-x: auto;
+            border-radius: 0 0 10px 10px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table{
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: var(--level-0-bg);
+            /* min-width: 800px; */
+            /* table-layout: fixed; */
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table th{
+            background: var(--table-header-bg);
+            color: white;
+            padding: 1rem 0.75rem;
+            text-align: left;
+            font-weight: 600;
+            border: none;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table th:first-child{
+            border-radius: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table th:last-child{
+            border-radius: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table td{
+            padding: 0.875rem 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 0.9rem;
+            vertical-align: middle;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .data-table tr:last-child td{
+            border-bottom: none;
+        }
+
+        /* Styles hiérarchiques pour les lignes */
+        .attachment-workflow-page.attachment-page--detail_attachement .level-0{
+            padding-left: 1.2rem !important;
+        }
+        .attachment-workflow-page.attachment-page--detail_attachement .level-1{
+            padding-left: 2.4rem !important;
+        }
+        .attachment-workflow-page.attachment-page--detail_attachement .level-2{
+            padding-left: 3.6rem !important;
+        }
+        .attachment-workflow-page.attachment-page--detail_attachement .level-3{
+            padding-left: 4.8rem !important;
+        }
+        .attachment-workflow-page.attachment-page--detail_attachement .level-4{
+            padding-left: 6rem !important;
+        }
+        /* Indentation visuelle */
+        .attachment-workflow-page.attachment-page--detail_attachement .ligne-numero{
+            position: relative;
+            padding-left: 1.5rem !important;
+        }
+
+        /* Style pour les lignes parents */
+        .attachment-workflow-page.attachment-page--detail_attachement .ligne-parent{
+            font-weight: 700;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .ligne-parent .designation{
+            color: var(--text-accent);
+        }
+
+        /* Style pour les lignes détails */
+        .attachment-workflow-page.attachment-page--detail_attachement .ligne-detail{
+            font-weight: 400;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .ligne-detail .designation{
+            color: var(--text-primary);
+        }
+
+        /* Indicateur hiérarchique */
+        .attachment-workflow-page.attachment-page--detail_attachement .hierarchy-indicator{
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            margin-right: 8px;
+            text-align: center;
+            line-height: 20px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* Cellules spéciales */
+        .attachment-workflow-page.attachment-page--detail_attachement .amount{
+            color: var(--text-success);
+            font-weight: 700;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+        .attachment-workflow-page.attachment-page--detail_attachement .amount-parent{
+            color: var(--text-accent);
+            font-weight: 800;
+            font-family: 'Consolas', 'Monaco', monospace;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .quantity{
+            font-weight: 600;
+        }
+
+        /* .quantity-zero {
+            color: #e74c3c;
+        } */
+
+        .attachment-workflow-page.attachment-page--detail_attachement .empty-value{
+            color: var(--text-secondary);
+            font-style: italic;
+            font-size: 0.85rem;
+        }
+        /* États vides */
+        .attachment-workflow-page.attachment-page--detail_attachement .empty-state{
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .empty-icon{
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.3;
+        }
+
+        /* Actions pour les lignes */
+        .attachment-workflow-page.attachment-page--detail_attachement .actions-cell{
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* Actions spécifiques */
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-action{
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+            min-height: 32px;
+            border-radius: 6px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement .btn-collapse{
+            background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%);
+            color: white;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+
+
+            .attachment-workflow-page.attachment-page--detail_attachement .nav-container{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .info-grid{
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .stats-grid{
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .attachment-workflow-page.attachment-page--detail_attachement .container{
+                padding: 2rem;
+            }
+
+
+            .attachment-workflow-page.attachment-page--detail_attachement .info-grid{
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .data-table th,
+.attachment-workflow-page.attachment-page--detail_attachement .data-table td{
+                padding: 1rem;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .attachment-workflow-page.attachment-page--detail_attachement .container{
+                padding: 0.75rem;
+            }
+
+
+            .attachment-workflow-page.attachment-page--detail_attachement .btn{
+                width: 100%;
+                justify-content: center;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .nav-buttons,
+.attachment-workflow-page.attachment-page--detail_attachement .action-buttons{
+                width: 100%;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .nav-container{
+                gap: 1rem;
+            }
+
+            /* .total-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            } */
+        }
+
+        @media (max-width: 480px) {
+            .attachment-workflow-page.attachment-page--detail_attachement .container{
+                padding: 0.5rem;
+            }
+
+
+            .attachment-workflow-page.attachment-page--detail_attachement .data-table{
+                font-size: 0.8rem;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .data-table th,
+.attachment-workflow-page.attachment-page--detail_attachement .data-table td{
+                padding: 0.5rem;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .lot-header{
+                padding: 0.75rem;
+                font-size: 1rem;
+            }
+        }
+
+        /* Impression */
+        @media print {
+            .attachment-workflow-page.attachment-page--detail_attachement{
+                background-color: white !important;
+                color: black !important;
+                font-size: 10pt;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .no-print{
+                display: none !important;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .btn{
+                display: none !important;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .nav-container{
+                display: none !important;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .summary-card{
+                display: none !important;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .data-table{
+                min-width: auto;
+                border: 1px solid #ddd;
+            }
+
+            /* .niveau-0, .niveau-1, .niveau-2, .niveau-3 {
+                background-color: white !important;
+                color: black !important;
+                border-left: 1px solid #ddd !important;
+            } */
+
+            .attachment-workflow-page.attachment-page--detail_attachement .ligne-parent .designation{
+                color: black !important;
+                font-weight: bold;
+            }
+
+            .attachment-workflow-page.attachment-page--detail_attachement .amount{
+                color: black !important;
+            }
+        }
+
+        /* Scrollbar personnalisée */
+        .attachment-workflow-page.attachment-page--detail_attachement ::-webkit-scrollbar{
+            width: 8px;
+            height: 8px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement ::-webkit-scrollbar-track{
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement ::-webkit-scrollbar-thumb{
+            background: var(--border-accent);
+            border-radius: 4px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_attachement ::-webkit-scrollbar-thumb:hover{
+            background: #36a9ae;
+        }
+    
+
+        @media print {
+            .attachment-workflow-page.attachment-page--detail_attachement .sidebar,
+.attachment-workflow-page.attachment-page--detail_attachement .sidebar-mobile,
+.attachment-workflow-page.attachment-page--detail_attachement .app-topbar,
+.attachment-workflow-page.attachment-page--detail_attachement #htmx-progress,
+            .attachment-workflow-page.attachment-page--detail_attachement #main-content,
+.attachment-workflow-page.attachment-page--detail_attachement main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* supprimer_attachement */
+
+        @media print {
+            .attachment-workflow-page.attachment-page--supprimer_attachement .sidebar,
+.attachment-workflow-page.attachment-page--supprimer_attachement .sidebar-mobile,
+.attachment-workflow-page.attachment-page--supprimer_attachement .app-topbar,
+.attachment-workflow-page.attachment-page--supprimer_attachement #htmx-progress,
+            .attachment-workflow-page.attachment-page--supprimer_attachement #main-content,
+.attachment-workflow-page.attachment-page--supprimer_attachement main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* validation_attachement */
+
+        /* Variables CSS */
+        .attachment-workflow-page.attachment-page--validation_attachement{
+            --bg-dark: var(--bg-main);
+            --bg-card: var(--bg-surface);
+            --bg-header: var(--bg-page);
+            --text-accent: var(--accent-primary);
+            --text-success: var(--accent-success);
+            --text-warning: var(--accent-warning);
+            --text-danger: var(--accent-danger);
+            --border-light: var(--border-default);
+            --border-accent: var(--accent-primary);
+        }
+
+        /* Reset et base */
+        .attachment-workflow-page.attachment-page--validation_attachement{
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .container{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Effet glass */
+        .attachment-workflow-page.attachment-page--validation_attachement .glass-effect{
+            background: rgba(59, 59, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(34, 211, 238, 0.2);
+            border-radius: 12px;
+        }
+
+        /* En-tête principal */
+        .attachment-workflow-page.attachment-page--validation_attachement .main-header{
+            background: linear-gradient(135deg, var(--bg-header) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--border-accent);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .main-title{
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .header-grid{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .header-item{
+            text-align: center;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .header-label{
+            color: var(--text-primary);
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .header-value{
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-accent);
+        }
+
+        /* Navigation */
+        .attachment-workflow-page.attachment-page--validation_attachement .nav-container{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .nav-buttons{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .amount-display{
+            text-align: center;
+            padding: 0.5rem;
+        }
+
+        /* Boutons */
+        .attachment-workflow-page.attachment-page--validation_attachement .btn{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 44px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .btn:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .btn:active{
+            transform: translateY(0);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-primary{ background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-info) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-danger{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); color: white; }
+
+        /* Messages */
+        .attachment-workflow-page.attachment-page--validation_attachement .message-container{
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .message{
+            padding: 1rem;
+            border-radius: 12px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .message-success{ background: var(--accent-success); }
+        .attachment-workflow-page.attachment-page--validation_attachement .message-error{ background: var(--accent-danger); }
+        .attachment-workflow-page.attachment-page--validation_attachement .message-warning{ background: var(--accent-warning); }
+        .attachment-workflow-page.attachment-page--validation_attachement .message-info{ background: var(--accent-info); }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .message-content{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        /* Processus de validation */
+        .attachment-workflow-page.attachment-page--validation_attachement .validation-section{
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .section-title{
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .validation-steps{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .validation-step{
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 1rem;
+            border-left: 4px solid;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-valid{ border-left-color: var(--accent-success); }
+        .attachment-workflow-page.attachment-page--validation_attachement .step-rejected{ border-left-color: var(--accent-danger); }
+        .attachment-workflow-page.attachment-page--validation_attachement .step-pending{ border-left-color: var(--accent-warning); }
+        .attachment-workflow-page.attachment-page--validation_attachement .step-correction{ border-left-color: #8b5cf6; }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-header{
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-title{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-number{
+            color: var(--text-accent);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-name{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-badge{
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .badge-obligatoire{ background: var(--accent-danger); }
+        .attachment-workflow-page.attachment-page--validation_attachement .badge-valide{ background: var(--accent-success); }
+        .attachment-workflow-page.attachment-page--validation_attachement .badge-rejete{ background: var(--accent-danger); }
+        .attachment-workflow-page.attachment-page--validation_attachement .badge-attente{ background: var(--accent-warning); }
+        .attachment-workflow-page.attachment-page--validation_attachement .badge-correction{ background: #8b5cf6; }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-status{
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .step-info{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .info-item{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .info-label{
+            color: var(--text-accent);
+            font-weight: 500;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .info-value{
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .text-warning{ color: var(--accent-warning); }
+        .attachment-workflow-page.attachment-page--validation_attachement .text-danger{ color: var(--accent-danger); }
+        .attachment-workflow-page.attachment-page--validation_attachement .text-success{ color: var(--accent-success); }
+
+        /* Contenu des étapes */
+        .attachment-workflow-page.attachment-page--validation_attachement .step-content{
+            margin-bottom: 0.75rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .comment-box{
+            background: var(--border-default);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .rejection-box{
+            background: rgba(239, 68, 68, 0.2);
+            padding: 0.75rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            border-left: 3px solid var(--accent-danger);
+        }
+
+        /* Actions */
+        .attachment-workflow-page.attachment-page--validation_attachement .step-actions{
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .btn-action{
+            padding: 0.5rem 1rem;
+            font-size: 0.8rem;
+            min-height: 36px;
+        }
+
+        /* État vide */
+        .attachment-workflow-page.attachment-page--validation_attachement .empty-state{
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .empty-icon{
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        /* Détails de l'attachement */
+        .attachment-workflow-page.attachment-page--validation_attachement .details-section{
+            background: var(--bg-card);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .details-grid{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .details-column{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .column-title{
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-accent);
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .detail-item{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.25rem 0;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .detail-label{
+            color: var(--text-accent);
+            font-weight: 500;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .detail-value{
+            color: var(--text-primary);
+            text-align: right;
+        }
+
+        /* Modal */
+        .attachment-workflow-page.attachment-page--validation_attachement .modal-overlay{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .modal-content{
+            background: var(--bg-card);
+            border-radius: 12px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .modal-title{
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .form-group{
+            margin-bottom: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .form-label{
+            display: block;
+            color: var(--text-accent);
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .form-control{
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .form-control:focus{
+            outline: none;
+            border-color: var(--border-accent);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_attachement .modal-actions{
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--validation_attachement .main-title{
+                font-size: 2.25rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .header-grid{
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .nav-container{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .nav-buttons{
+                justify-content: flex-start;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .amount-display{
+                text-align: right;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .step-header{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .step-info{
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .details-grid{
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .step-actions{
+                justify-content: flex-start;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .attachment-workflow-page.attachment-page--validation_attachement .container{
+                padding: 2rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .main-header{
+                padding: 2rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .validation-section,
+.attachment-workflow-page.attachment-page--validation_attachement .details-section{
+                padding: 2rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .attachment-workflow-page.attachment-page--validation_attachement .container{
+                padding: 0.5rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .main-header{
+                padding: 1rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .validation-section,
+.attachment-workflow-page.attachment-page--validation_attachement .details-section{
+                padding: 1rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .btn{
+                padding: 0.625rem 0.875rem;
+                font-size: 0.8rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .step-actions{
+                justify-content: center;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_attachement .modal-content{
+                padding: 1rem;
+            }
+        }
+    
+
+        @media print {
+            .attachment-workflow-page.attachment-page--validation_attachement .sidebar,
+.attachment-workflow-page.attachment-page--validation_attachement .sidebar-mobile,
+.attachment-workflow-page.attachment-page--validation_attachement .app-topbar,
+.attachment-workflow-page.attachment-page--validation_attachement #htmx-progress,
+            .attachment-workflow-page.attachment-page--validation_attachement #main-content,
+.attachment-workflow-page.attachment-page--validation_attachement main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* validation_technique_attachement */
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement{
+            --bg-dark: var(--bg-main);
+            --bg-card: var(--bg-surface);
+            --text-accent: var(--accent-primary);
+            --success-color: var(--accent-success);
+            --warning-color: var(--accent-warning);
+            --danger-color: var(--accent-danger);
+            --border-color: var(--border-default);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement{
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.5;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .container{
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* Header */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .header-section{
+            background: linear-gradient(135deg, var(--bg-page) 0%, var(--bg-elevated) 100%);
+            border: 1px solid var(--text-accent);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .main-title{
+            font-size: 1.75rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 0.5rem;
+        }
+
+        /* Navigation */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .nav-buttons{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .nav-buttons-group{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn{
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            min-height: 44px;
+            white-space: nowrap;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-primary{ background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-info) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-danger{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); color: white; }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Cartes */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .glass-card{
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .section-title{
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Processus de validation */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .process-header{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .process-info-item{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .info-label{
+            color: var(--text-accent);
+            font-weight: 500;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .info-value{
+            color: white;
+            text-align: right;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .status-badge{
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .status-en-attente{ background: var(--warning-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .status-valide{ background: var(--success-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .status-rejete{ background: var(--danger-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .status-correction{ background: #8b5cf6; }
+
+        /* Étapes de validation */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etapes-container{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-card{
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 1.5rem;
+            border-left: 4px solid;
+            transition: all 0.3s ease;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-en-attente{ border-left-color: var(--warning-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-validee{ border-left-color: var(--success-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-active{ border-left-color: var(--text-accent); }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-header{
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-title{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-numero{
+            background: var(--text-accent);
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-nom{
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-status{
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-badge{
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: white;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-validee-badge{ background: var(--success-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-attente-badge{ background: var(--warning-color); }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .obligatoire-badge{
+            background: var(--danger-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-details{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .comment-box{
+            background: var(--border-default);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-actions{
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        /* Modal */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-overlay{
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-content{
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--text-accent);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-title{
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--text-accent);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-group{
+            margin-bottom: 1.5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-label{
+            display: block;
+            color: var(--text-accent);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-control{
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-control:focus{
+            outline: none;
+            border-color: var(--text-accent);
+            box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement textarea.form-control{
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .file-upload{
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .file-upload:hover{
+            border-color: var(--text-accent);
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-actions{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Responsive */
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .container{
+                padding: 2rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .nav-buttons{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .nav-buttons-group{
+                flex: 0 1 auto;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .process-header{
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-header{
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-details{
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-actions{
+                justify-content: flex-start;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-actions{
+                justify-content: flex-end;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .header-section{
+                padding: 1rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .glass-card{
+                padding: 1rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-card{
+                padding: 1rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-content{
+                padding: 1.5rem;
+            }
+
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-actions{
+                justify-content: center;
+            }
+        }
+
+        /* États texte */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .text-success{ color: var(--success-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .text-warning{ color: var(--warning-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .text-danger{ color: var(--danger-color); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .text-info{ color: var(--text-accent); }
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-sm{
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            min-height: 36px;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-outline-warning{
+            background: transparent;
+            border: 1px solid var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .btn-outline-warning:hover{
+            background: var(--warning-color);
+            color: white;
+        }
+
+        /* Animation pour la suppression */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .modal-shake{
+            animation: shake 0.5s ease-in-out;
+        }
+
+        /* Style pour les checkboxes personnalisées */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-checkbox{
+            border-radius: 0.25rem;
+            border: 2px solid var(--border-default);
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-checkbox:checked{
+            background-color: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .form-checkbox:focus{
+            outline: none;
+            ring: 2px;
+            ring-color: rgba(34, 211, 238, 0.2);
+        }
+
+        /* Animation d'apparition pour les nouvelles étapes */
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+                max-height: 0;
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+                max-height: 500px;
+            }
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .etape-nouvelle{
+            animation: slideDown 0.5s ease-out;
+            border: 2px dashed var(--accent-primary);
+            background: rgba(34, 211, 238, 0.05);
+        }
+
+        /* Messages */
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .message{
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            border-left: 4px solid;
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .message-success{
+            background: rgba(16, 185, 129, 0.1);
+            border-left-color: var(--success-color);
+            color: var(--success-color);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .message-error{
+            background: rgba(239, 68, 68, 0.1);
+            border-left-color: var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .message-warning{
+            background: rgba(245, 158, 11, 0.1);
+            border-left-color: var(--warning-color);
+            color: var(--warning-color);
+        }
+
+        .attachment-workflow-page.attachment-page--validation_technique_attachement .message-info{
+            background: rgba(34, 211, 238, 0.1);
+            border-left-color: var(--text-accent);
+            color: var(--text-accent);
+        }
+    
+
+        @media print {
+            .attachment-workflow-page.attachment-page--validation_technique_attachement .sidebar,
+.attachment-workflow-page.attachment-page--validation_technique_attachement .sidebar-mobile,
+.attachment-workflow-page.attachment-page--validation_technique_attachement .app-topbar,
+.attachment-workflow-page.attachment-page--validation_technique_attachement #htmx-progress,
+            .attachment-workflow-page.attachment-page--validation_technique_attachement #main-content,
+.attachment-workflow-page.attachment-page--validation_technique_attachement main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* detail_decompte */
+
+        .attachment-workflow-page.attachment-page--detail_decompte{ background-color: var(--bg-main); color: var(--text-primary); font-family: Arial, sans-serif; }
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-card{ 
+            background: var(--bg-surface); 
+            border: 1px solid var(--border-default); 
+            border-radius: 12px; 
+            padding: 1.5rem; 
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease; 
+        }
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-card:hover{ 
+            border-color: var(--accent-primary); 
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.1); 
+        }
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-primary{ background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-info) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-danger{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); border: none; color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); border: none; color: white; }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .statut-badge{
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .type-decompte-badge{ 
+            display: inline-block; 
+            padding: 0.5rem 1rem; 
+            border-radius: 0.5rem; 
+            font-size: 0.875rem; 
+            font-weight: 600; 
+            margin-right: 0.5rem;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .montant-cell{
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .retard-badge{
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .ligne-separation{
+            border-top: 2px solid var(--border-default);
+            margin: 1rem 0;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .ligne-totale{
+            border-top: 3px solid var(--accent-primary);
+            margin: 1.5rem 0;
+            padding-top: 1rem;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .ligne-deduction{
+            border-left: 3px solid var(--accent-danger);
+            padding-left: 1rem;
+            margin: 0.5rem 0;
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .alert-auto-dismiss{
+            animation: fadeOut 5s forwards;
+        }
+        
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { opacity: 0; display: none; }
+        }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .alert-success{ background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-success) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .alert-error{ background: linear-gradient(135deg, var(--accent-danger) 0%, var(--accent-danger) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .alert-warning{ background: linear-gradient(135deg, var(--accent-warning) 0%, var(--accent-warning) 100%); color: white; }
+        .attachment-workflow-page.attachment-page--detail_decompte .alert-info{ background: linear-gradient(135deg, var(--accent-info) 0%, var(--accent-info) 100%); color: white; }
+        
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-ligne{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(75, 85, 99, 0.3);
+        }
+        /* Style pour l'affichage du net à payer en lettres */
+        .attachment-workflow-page.attachment-page--detail_decompte #net-a-payer-lettres{
+            font-style: italic;
+            opacity: 0.9;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_decompte .total-section:hover #net-a-payer-lettres{
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-ligne:last-child{
+            border-bottom: none;
+        }
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-libelle{
+            flex: 1;
+            color: var(--text-primary);
+        }
+        .attachment-workflow-page.attachment-page--detail_decompte .facture-montant{
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            min-width: 120px;
+            text-align: right;
+        }
+
+        /* Optimisations responsive */
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-navigation{
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-navigation:hover{
+            background: var(--bg-elevated);
+        }
+
+        .attachment-workflow-page.attachment-page--detail_decompte .btn-action{
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_decompte .navigation-container{
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--detail_decompte .actions-container{
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 768px) {
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-card{
+                padding: 1rem;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .btn-navigation{
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .btn-action{
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .navigation-container{
+                gap: 8px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .actions-container{
+                gap: 8px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-ligne{
+                padding: 0.5rem 0;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .attachment-workflow-page.attachment-page--detail_decompte{
+                padding: 1rem;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-card{
+                padding: 0.75rem;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .btn-navigation{
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .btn-action{
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .navigation-container{
+                gap: 6px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .actions-container{
+                gap: 6px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-ligne{
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 4px;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-montant{
+                min-width: auto;
+                text-align: left;
+            }
+        }
+
+        /* Styles pour l'impression */
+        @media print {
+            .attachment-workflow-page.attachment-page--detail_decompte{
+                background-color: white !important; 
+                color: black !important; 
+                font-size: 12pt;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .no-print{
+                display: none !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-card{
+                background: white !important;
+                border: 1px solid #ccc !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                padding: 1rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .facture-card:hover{
+                border-color: #ccc !important;
+                box-shadow: none !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .text-cyan-400,
+.attachment-workflow-page.attachment-page--detail_decompte .text-cyan-300,
+.attachment-workflow-page.attachment-page--detail_decompte .text-cyan-500{
+                color: #0066cc !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .text-gray-400,
+.attachment-workflow-page.attachment-page--detail_decompte .text-gray-500{
+                color: #666 !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .text-red-400,
+.attachment-workflow-page.attachment-page--detail_decompte .text-orange-400,
+.attachment-workflow-page.attachment-page--detail_decompte .text-yellow-400,
+.attachment-workflow-page.attachment-page--detail_decompte .text-amber-400{
+                color: #cc0000 !important;
+            }
+                        
+            .attachment-workflow-page.attachment-page--detail_decompte .bg-\[var(--bg-main)\],
+.attachment-workflow-page.attachment-page--detail_decompte .bg-\[var(--bg-surface)\]{
+                background: white !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .border,
+.attachment-workflow-page.attachment-page--detail_decompte .border-gray-600,
+.attachment-workflow-page.attachment-page--detail_decompte .border-\[var(--border-default)\]{
+                border-color: #ccc !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .ligne-separation,
+.attachment-workflow-page.attachment-page--detail_decompte .ligne-totale{
+                border-color: #666 !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .ligne-deduction{
+                border-left-color: #cc0000 !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .statut-badge,
+.attachment-workflow-page.attachment-page--detail_decompte .type-decompte-badge{
+                background: #f0f0f0 !important;
+                color: #333 !important;
+                border: 1px solid #ccc !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .retard-badge{
+                background: #ffcccc !important;
+                color: #990000 !important;
+                animation: none !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .alert-auto-dismiss{
+                display: none !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte a{
+                color: #0066cc !important;
+                text-decoration: underline !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte a[href]:after{
+                content: " (" attr(href) ")";
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte #net-a-payer-lettres{
+                opacity: 1 !important;
+                font-style: normal !important;
+                font-weight: bold !important;
+            }
+
+            /* Masquer les liens d'attachement dans l'impression */
+            .attachment-workflow-page.attachment-page--detail_decompte .attachement-link{
+                display: none !important;
+            }
+            
+            /* Optimisation de l'affichage des informations du décompte */
+            .attachment-workflow-page.attachment-page--detail_decompte .decompte-info-grid{
+                display: grid !important;
+                grid-template-columns: repeat(3, 1fr) !important;
+                gap: 1rem !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--detail_decompte .decompte-info-item{
+                margin-bottom: 0.5rem !important;
+                page-break-inside: avoid !important;
+            }
+        }
+    
+
+        @media print {
+            .attachment-workflow-page.attachment-page--detail_decompte .sidebar,
+.attachment-workflow-page.attachment-page--detail_decompte .sidebar-mobile,
+.attachment-workflow-page.attachment-page--detail_decompte .app-topbar,
+.attachment-workflow-page.attachment-page--detail_decompte #htmx-progress,
+            .attachment-workflow-page.attachment-page--detail_decompte #main-content,
+.attachment-workflow-page.attachment-page--detail_decompte main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* fiche_controle */
+
+        .attachment-workflow-page.attachment-page--fiche_controle{
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: Arial, sans-serif;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .fiche-container{
+            background: var(--bg-surface);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .fiche-header{
+            background: var(--bg-surface);
+            color: var(--accent-primary);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche{
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-surface);
+            font-size: 12px;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th{
+            background: var(--bg-elevated);
+            color: var(--accent-primary);
+            padding: 12px 8px;
+            text-align: center;
+            font-weight: 600;
+            border: 1px solid var(--border-default);
+            border-bottom: 1px solid var(--border-default);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+        }
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th:after{
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-primary);
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche td{
+            padding: 10px 8px;
+            border: 1px solid var(--border-default);
+            text-align: right;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche td.text-left{
+            text-align: left;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .table-fiche tr:nth-child(even){
+            background-color: var(--bg-main);
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .lot-header{
+            background: linear-gradient(135deg, var(--accent-green) 0%, #107C41 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .sous-total{
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .total-general{
+            background: linear-gradient(135deg, #1E3A8A 0%, #1E40AF 100%);
+            color: white;
+            font-weight: 700;
+            font-size: 13px;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .montant{
+            color: var(--accent-warning);
+            font-weight: 700;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .delta-negatif{
+            color: var(--accent-danger);
+            font-weight: 600;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .delta-positif{
+            color: var(--accent-green);
+            font-weight: 600;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .pourcentage{
+            font-weight: 600;
+        }
+        .attachment-workflow-page.attachment-page--fiche_controle .is_title{
+            font-weight: 600;
+            color:var(--accent-info);
+            font-size: 13px !important;
+            text-align: center;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .selecteur-container{
+            background: var(--bg-elevated);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-default);
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-impression{
+            background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-info) 100%);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-impression:hover{
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 211, 238, 0.3);
+        }
+
+        /* Optimisations responsive */
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-navigation{
+            background: var(--border-default);
+            color: white;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: background 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            font-size: 14px;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-navigation:hover{
+            background: var(--bg-elevated);
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-amber{
+            background: var(--accent-warning);
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-amber:hover{
+            background: #b45309;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-purple{
+            background: #7c3aed;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .btn-purple:hover{
+            background: #6d28d9;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .navigation-container{
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .attachment-workflow-page.attachment-page--fiche_controle .selecteur-wrapper{
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        @media (min-width: 768px) {
+            .attachment-workflow-page.attachment-page--fiche_controle .selecteur-wrapper{
+                flex-direction: row;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche{
+                font-size: 10px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th,
+.attachment-workflow-page.attachment-page--fiche_controle .table-fiche td{
+                padding: 6px 4px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .fiche-header{
+                padding: 8px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .btn-navigation{
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche{
+                font-size: 9px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th,
+.attachment-workflow-page.attachment-page--fiche_controle .table-fiche td{
+                padding: 4px 2px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .navigation-container{
+                gap: 8px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .btn-navigation{
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .selecteur-container{
+                padding: 12px;
+            }
+        }
+        
+        @media print {
+            .attachment-workflow-page.attachment-page--fiche_controle .no-print{
+                display: none !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche tr:nth-child(even){
+                background-color: rgb(214, 214, 214) !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle .table-fiche tr:nth-child(odd){
+                background-color: white !important;
+            }
+            
+            .attachment-workflow-page.attachment-page--fiche_controle{
+                background-color: white !important;
+                color: black !important;
+            }
+        }
+    
+
+        @media print {
+            .attachment-workflow-page.attachment-page--fiche_controle .sidebar,
+.attachment-workflow-page.attachment-page--fiche_controle .sidebar-mobile,
+.attachment-workflow-page.attachment-page--fiche_controle .app-topbar,
+.attachment-workflow-page.attachment-page--fiche_controle #htmx-progress,
+            .attachment-workflow-page.attachment-page--fiche_controle #main-content,
+.attachment-workflow-page.attachment-page--fiche_controle main.app-main-sidebar{ padding: 0 !important; overflow: visible !important; }
+        }
+    
+
+/* Scoped compatibility for legacy utility classes in light mode. */
+[data-theme="light"] .attachment-workflow-page{
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-white"],
+[data-theme="light"] .attachment-workflow-page [class~="text-[#AECBD6]"]{
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-gray-100"],
+[data-theme="light"] .attachment-workflow-page [class~="text-gray-200"],
+[data-theme="light"] .attachment-workflow-page [class~="text-gray-300"],
+[data-theme="light"] .attachment-workflow-page [class~="text-gray-400"],
+[data-theme="light"] .attachment-workflow-page [class~="text-gray-500"]{
+    color: var(--text-secondary) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="bg-[#2E2E2E]"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-[#3B3B3B]"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-gray-800"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-gray-900"]{
+    background-color: var(--bg-surface) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="bg-[#4B5563]"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-gray-700"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-gray-600"]{
+    background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="bg-[#2C3E50]"] {
+    background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="border-[#4B5563]"],
+[data-theme="light"] .attachment-workflow-page [class~="border-gray-700"],
+[data-theme="light"] .attachment-workflow-page [class~="border-gray-600"]{
+    border-color: var(--border-default) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-cyan-300"],
+[data-theme="light"] .attachment-workflow-page [class~="text-cyan-400"]{
+    color: var(--text-heading) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-green-300"],
+[data-theme="light"] .attachment-workflow-page [class~="text-emerald-300"] {
+    color: var(--accent-success) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-blue-300"] {
+    color: var(--accent-info) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-red-300"] {
+    color: var(--accent-danger) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="text-amber-300"],
+[data-theme="light"] .attachment-workflow-page [class~="text-yellow-300"] {
+    color: var(--accent-warning) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page [class~="bg-green-900"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-blue-900"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-red-900"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-yellow-900"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-amber-900"],
+[data-theme="light"] .attachment-workflow-page [class~="bg-purple-900"] {
+    background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page :is(button, a)[class*="bg-"] {
+    color: var(--text-inverse);
+}
+
+[data-theme="light"] .attachment-workflow-page :is(button, a)[class*="bg-gray-"] {
+    color: var(--text-primary);
+}
+
+[data-theme="light"] .attachment-workflow-page :is(button, a)[class*="bg-gray-"] [class~="text-white"] {
+    color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .attachment-workflow-page :is(button, a)[class*="bg-"] [class~="text-white"] {
+    color: var(--text-inverse) !important;
+}
+
+.attachment-workflow-page .attachment-delete-card {
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+}
+
+.attachment-workflow-page .attachment-delete-icon {
+    background: var(--bg-elevated);
+    color: var(--accent-danger);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-project-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    max-width: 52rem;
+    margin: 0;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-project-detail {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    align-items: baseline;
+    gap: 0.75rem;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-project-details dt {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    font-weight: 600;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-project-details dt::after {
+    content: ":";
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-project-details dd {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table {
+    min-width: 960px;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table thead th {
+    padding: 0.9rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table .sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table .sortable::after {
+    content: "\f0dc";
+    margin-left: 0.4rem;
+    color: var(--text-muted);
+    font-family: "Font Awesome 5 Free";
+    font-size: 0.7rem;
+    font-weight: 900;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table .sortable.active {
+    color: var(--accent-green);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table .sortable.active::after {
+    content: "\f0de";
+    color: var(--accent-green);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-number-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--text-primary);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-number-link:hover {
+    color: var(--accent-primary);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-period-cell {
+    white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-period-cell i {
+    margin: 0 0.35rem;
+    color: var(--text-muted);
+    font-size: 0.65rem;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-status {
+    gap: 0.4rem;
+    text-decoration: none;
+    transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements a:hover .attachment-status {
+    filter: brightness(1.08);
+    transform: translateY(-1px);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-amount-cell {
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-amount-cell small {
+    margin-left: 0.3rem;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 500;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-file-chip {
+    display: inline-flex;
+    max-width: 260px;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.35rem 0.25rem 0.6rem;
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    background: var(--bg-elevated);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-file-chip > i {
+    flex: 0 0 auto;
+    color: var(--accent-danger);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-file-name {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-file-chip .app-action-btn {
+    flex: 0 0 auto;
+    color: var(--accent-primary);
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-no-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-actions {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.15rem;
+    white-space: nowrap;
+}
+
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-actions .app-action-btn,
+.attachment-workflow-page.attachment-page--liste_attachements .attachment-file-chip .app-action-btn {
+    min-width: 2rem;
+    min-height: 2rem;
+}
+
+@media (max-width: 700px) {
+    .attachment-workflow-page.attachment-page--liste_attachements .attachment-project-detail {
+        grid-template-columns: 8.5rem minmax(0, 1fr);
+        gap: 0.5rem;
+    }
+
+    .attachment-workflow-page.attachment-page--liste_attachements .attachment-list-table {
+        min-width: 880px;
+    }
+}
+
+.attachment-workflow-page .attachment-delete-cancel {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+@media print {
+    body:has(.attachment-workflow-page) .sidebar,
+    body:has(.attachment-workflow-page) .sidebar-mobile,
+    body:has(.attachment-workflow-page) .app-topbar,
+    body:has(.attachment-workflow-page) #htmx-progress {
+        display: none !important;
+    }
+
+    body:has(.attachment-workflow-page) #main-content,
+    body:has(.attachment-workflow-page) main.app-main-sidebar {
+        padding: 0 !important;
+        overflow: visible !important;
+    }
+}
+
+/* -- Liste des attachements : recherche intégrée et dialogues -- */
+.attachment-page--liste_attachements .attachment-search {
+    position: relative;
+    width: min(20rem, 100%);
+}
+.attachment-page--liste_attachements .attachment-search i {
+    position: absolute;
+    left: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    pointer-events: none;
+}
+.attachment-page--liste_attachements .attachment-search input {
+    width: 100%;
+    padding: 0.5rem 0.75rem 0.5rem 2.1rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 0.5rem;
+    color: var(--input-text);
+    font-size: 0.875rem;
+}
+.attachment-page--liste_attachements .attachment-search input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+}
+.attachment-page--liste_attachements .attachment-list-table .sortable.active.desc::after {
+    content: "\f0dd";
+}
+
+.attachment-dialog {
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 50;
+}
+.attachment-dialog.is-open { display: flex; }
+.attachment-dialog[hidden] { display: none; }
+.attachment-dialog-panel {
+    width: 100%;
+    max-width: 28rem;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+.attachment-dialog-panel--wide { max-width: 48rem; }
+
+.attachment-delete-warning {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-left: 3px solid var(--accent-danger);
+    border-radius: 0.25rem;
+    background-color: var(--bg-elevated);
+    color: var(--accent-danger);
+}
+.attachment-delete-submit { background-color: var(--accent-danger); }
+
+.attachment-trace-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+.attachment-trace-card {
+    padding: 1rem;
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    background-color: var(--bg-elevated);
+}
+.attachment-trace-card h3 {
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+.attachment-trace-card dt { color: var(--accent-primary); font-weight: 600; display: inline; }
+.attachment-trace-card dt::after { content: " : "; }
+.attachment-trace-card dd { display: inline; margin: 0; }
+.attachment-trace-card dd::after { content: ""; display: block; }
+.attachment-trace-docs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.75rem; }
+.attachment-trace-docs a { color: var(--accent-primary); }
+.attachment-trace-steps {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-default);
+    list-style: none;
+}
+.attachment-trace-steps li + li { margin-top: 0.35rem; }

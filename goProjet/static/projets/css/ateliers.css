@@ -1,0 +1,208 @@
+/* ============================================================
+   ATELIERS — Styles unifiés (liste, matériels, planning)
+   Theme-aware : utilise uniquement var(--...)
+   Fil d'Ariane : styles communs app-breadcrumb* dans components.css
+   ============================================================ */
+
+/* ============================================================
+   GANTT (repris de planning.html inline)
+   ============================================================ */
+.gantt-container {
+    --gantt-label-width: 260px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-width: 1024px;
+}
+/* largeur dynamique injectée par la vue (via style inline), on garde le reste */
+
+.gantt-header {
+    display: flex;
+    border-bottom: 2px solid var(--border-default);
+    background: var(--bg-elevated);
+    position: sticky; top: 0; z-index: 30;
+}
+.gantt-header .gantt-label {
+    font-weight: bold;
+    color: var(--accent-green);
+    font-size: 0.85rem;
+}
+.gantt-header-days { display: flex; flex: 1; }
+.gantt-header-day {
+    flex: 1; text-align: center; padding: 0.5rem 0;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-subtle);
+    min-width: 0;
+}
+.gantt-header-day.weekend {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    font-weight: 600;
+}
+
+.gantt-row {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.gantt-label {
+    width: var(--gantt-label-width, 260px);
+    flex-shrink: 0;
+    padding: 0.5rem 0.75rem;
+    border-right: 1px solid var(--border-subtle);
+    font-size: 0.8rem;
+    display: flex; flex-direction: column; justify-content: center;
+}
+.gantt-track { position: relative; flex: 1; isolation: isolate; }
+
+.gantt-empty-hint {
+    position: absolute; top: 50%; left: 0;
+    transform: translateY(-50%);
+    padding-left: 0.75rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    display: flex; align-items: center; gap: 0.4rem;
+    pointer-events: none;
+}
+
+.gantt-weekday-overlay {
+    position: absolute; top: 0; bottom: 0;
+    left: var(--gantt-label-width); right: 0;
+    pointer-events: none; z-index: 15;
+}
+.gantt-weekday-band {
+    position: absolute; top: 0; bottom: 0;
+    background: var(--weekend-bande, rgba(0, 0, 0, 0.10));
+}
+
+.gantt-bar {
+    position: absolute;
+    border-radius: 4px;
+    color: white;
+    font-size: 0.7rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    cursor: pointer;
+    transition: transform 0.15s;
+    z-index: 2;
+    display: flex; align-items: center;
+    padding: 0 4px;
+}
+.gantt-bar:hover { transform: scaleY(1.05); }
+.gantt-bar.en-cours {
+    background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-green-dark) 100%);
+}
+
+.gantt-row-parent {
+    background-color: var(--bg-elevated);
+    border-bottom: 2px solid var(--border-default);
+    min-height: 44px;
+}
+.gantt-label-parent { font-size: 0.85rem; padding: 0.4rem 0.6rem; }
+
+.gantt-toggle {
+    width: 22px; height: 22px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 4px;
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+    border: none; cursor: pointer;
+    transition: background 0.15s, transform 0.2s;
+    flex-shrink: 0;
+}
+.gantt-toggle:hover { background: var(--border-default); color: var(--text-primary); }
+.gantt-toggle-icon { font-size: 0.7rem; transition: transform 0.2s; }
+.gantt-toggle[aria-expanded="false"] .gantt-toggle-icon { transform: rotate(-90deg); }
+
+.gantt-bar-parent {
+    top: 10px; bottom: 10px;
+    background-color: var(--accent-green);
+    font-weight: bold;
+    font-size: 0.75rem;
+    z-index: 3;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.gantt-bar-parent.en-cours {
+    background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-green-dark) 100%);
+}
+
+.gantt-row-child {
+    background-color: var(--bg-surface);
+    min-height: 36px;
+}
+.gantt-label-child {
+    padding-left: 2rem;
+    font-size: 0.75rem;
+    position: relative;
+}
+.gantt-label-child::before {
+    content: ''; position: absolute;
+    left: 1rem; top: 0; bottom: 0;
+    width: 1px; background: var(--border-default);
+}
+.gantt-label-child::after {
+    content: ''; position: absolute;
+    left: 1rem; top: 50%;
+    width: 0.75rem; height: 1px;
+    background: var(--border-default);
+}
+.gantt-bar-child {
+    top: 12px; bottom: 12px;
+    background-color: var(--barre-color);
+    padding: 0;
+}
+.gantt-bar-child.en-cours {
+    background: linear-gradient(135deg, var(--accent-success) 0%, var(--accent-green-dark) 100%);
+}
+.gantt-bar-child, .gantt-label-child { cursor: pointer; }
+
+.gantt-children {
+    overflow: hidden;
+    transition: max-height 0.25s ease-out, opacity 0.2s ease-out;
+    max-height: 5000px;
+    opacity: 1;
+}
+.gantt-children[hidden] { display: none; }
+
+/* ---------- Menus contextuels ---------- */
+.context-menu {
+    position: fixed;
+    z-index: 100;
+    min-width: 200px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+    padding: 0.25rem;
+}
+.context-menu-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    text-align: left;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: background-color 0.15s;
+}
+.context-menu-item:hover { background-color: var(--bg-hover); }
+.context-menu-item-danger { color: var(--accent-danger); }
+.context-menu-item-danger:hover { background-color: rgba(239, 68, 68, 0.1); }
+.context-menu-separator {
+    height: 1px;
+    background: var(--border-default);
+    margin: 0.25rem 0.5rem;
+}
+
+/* ---------- Impression planning ---------- */
+@media print {
+    .gantt-children[hidden] { display: block !important; }
+    .gantt-toggle { display: none; }
+    .gantt-header { position: static; }
+    .app-topbar, .sidebar, .sidebar-mobile, .app-breadcrumb { display: none !important; }
+}

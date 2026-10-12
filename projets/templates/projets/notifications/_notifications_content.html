@@ -1,7 +1,12 @@
 {% load static i18n %}
+{% load static navigation %}
+
+{% breadcrumb %}
+
 <div data-family="app"
      data-page-title="Notifications"
      data-page-icon="fa-bell">
+
     <div class="mx-auto max-w-6xl">
         <!-- En-tête -->
         <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
@@ -39,36 +44,36 @@
                 <div class="flex flex-wrap gap-2">
                     <span class="text-sm self-center" style="color: var(--text-muted);">Filtrer :</span>
 
-                    <a href="?filter=all"
-                    hx-get="?filter=all"
+                    <a href="?filter=all{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?filter=all{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="filter-pill {% if filter == 'all' %}active{% endif %}">
                         Toutes ({{ total_count }})
                     </a>
-                    <a href="?filter=unread"
-                    hx-get="?filter=unread"
+                    <a href="?filter=unread{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?filter=unread{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="filter-pill {% if filter == 'unread' %}active{% endif %}">
                         Non lues ({{ unread_count }})
                     </a>
-                    <a href="?filter=read"
-                    hx-get="?filter=read"
+                    <a href="?filter=read{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?filter=read{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="filter-pill {% if filter == 'read' %}active{% endif %}">
                         Lues ({{ read_count }})
                     </a>
-                    <a href="?filter=today"
-                    hx-get="?filter=today"
+                    <a href="?filter=today{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?filter=today{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="filter-pill {% if filter == 'today' %}active{% endif %}">
                         Aujourd'hui
                     </a>
-                    <a href="?filter=priority"
-                    hx-get="?filter=priority"
+                    <a href="?filter=priority{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?filter=priority{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="filter-pill {% if filter == 'priority' %}active{% endif %}">
@@ -126,8 +131,8 @@
         <div class="mt-6 flex justify-center">
             <nav class="flex items-center gap-2">
                 {% if notifications.has_previous %}
-                <a href="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-                hx-get="?page={{ notifications.previous_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                <a href="?page={{ notifications.previous_page_number }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                hx-get="?page={{ notifications.previous_page_number }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                 hx-target="#notifications-container"
                 hx-swap="innerHTML"
                 class="app-btn-pagination">
@@ -139,8 +144,8 @@
                     {% if notifications.number == num %}
                     <span class="app-pagination-current">{{ num }}</span>
                     {% elif num > notifications.number|add:'-3' and num < notifications.number|add:'3' %}
-                    <a href="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
-                    hx-get="?page={{ num }}{% if filter %}&filter={{ filter }}{% endif %}"
+                    <a href="?page={{ num }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                    hx-get="?page={{ num }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                     hx-target="#notifications-container"
                     hx-swap="innerHTML"
                     class="app-btn-pagination">
@@ -150,8 +155,8 @@
                 {% endfor %}
 
                 {% if notifications.has_next %}
-                <a href="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
-                hx-get="?page={{ notifications.next_page_number }}{% if filter %}&filter={{ filter }}{% endif %}"
+                <a href="?page={{ notifications.next_page_number }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
+                hx-get="?page={{ notifications.next_page_number }}{% if filter %}&amp;filter={{ filter }}{% endif %}{% if notification_origin %}&amp;breadcrumb={{ notification_origin|urlencode }}{% endif %}"
                 hx-target="#notifications-container"
                 hx-swap="innerHTML"
                 class="app-btn-pagination">

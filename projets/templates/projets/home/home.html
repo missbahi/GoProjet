@@ -6,14 +6,3 @@
 {% block content %}
     {% include "projets/home/_home_content.html" %}
 {% endblock %}
-
-{% block extra_js %}
-    {{ block.super }}
-    <script src="{% static 'projets/js/chart-utils.js' %}" defer></script>
-    <script src="{% static 'projets/js/charts.js' %}" defer></script>
-
-    <script>
-        window.CSRF_TOKEN = '{{ csrf_token }}';
-        window.NOTIFICATION_API_URL = "{% url 'projets:mark_all_notifications_as_read' %}";
-    </script>
-{% endblock %}

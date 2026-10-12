@@ -270,6 +270,7 @@ os_urlpatterns = [
 notifications_urlpatterns = [
      
     path('notifications/', notification_views.liste_notifications, name='liste_notifications'),
+    path('notifications/panel/', notification_views.notification_panel, name='notification_panel'),
     path('notifications/marquer-lue/<int:notification_id>/', 
          notification_views.mark_notification_as_read, name='mark_notification_as_read'),
     path('notifications/marquer-non-lue/<int:notification_id>/', 
@@ -320,5 +321,4 @@ urlpatterns += notifications_urlpatterns
 #     # Santé des API
 #     path('api/health/', revision.api_health_check, name='api_health_check'),
 # ]
-
 

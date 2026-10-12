@@ -26,9 +26,18 @@ from projets.models import (
     ProcessValidation,
     Projet,
 )
+from projets.utils.navigation import crumb, project_crumbs
 from projets.services.attachement_service import DonneesAttachementInvalides, enregistrer_lignes_attachement
 from projets.views.lot_views.views import _est_ligne_titre_bordereau, _iter_lignes_bordereau_hierarchiques
 from projets.views.os_views.views import download_document
+
+
+def _crumbs_attachements(projet, *items):
+    return project_crumbs(
+        projet,
+        crumb("Attachements", "projets:liste_attachements", args=[projet.id]),
+        *items,
+    )
 
 
 def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
@@ -49,7 +58,10 @@ def liste_attachements(request, projet_id):
     context = {
         'projet': projet,
         'attachements': attachements,
+        'breadcrumb_items': project_crumbs(projet, crumb("Attachements")),
     }
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/decomptes/_liste_attachements_content.html', context)
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 
 
@@ -156,6 +168,7 @@ def ajouter_attachement(request, projet_id):
         'date_debut_periode': date_debut_periode,
         'date_fin_periode': date_fin_periode,
         'is_edition': False,
+        'breadcrumb_items': _crumbs_attachements(projet, crumb("Création attachement")),
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
 
@@ -271,6 +284,7 @@ def modifier_attachement(request, attachement_id):
         'total_lignes': len(lignes_bordereau),
         'total_attachement': float(0.0),
         'is_edition': True,
+        'breadcrumb_items': _crumbs_attachements(projet, crumb(f"Modification {attachement.numero}")),
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
 
@@ -327,6 +341,7 @@ def detail_attachement(request, attachement_id):
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
+        'breadcrumb_items': _crumbs_attachements(attachement.projet, crumb(f"Attachement {attachement.numero}")),
     }
     return render(request, 'projets/decomptes/detail_attachement.html', context)
 
@@ -386,6 +401,7 @@ def supprimer_attachement(request, attachement_id):
     return render(request, 'projets/decomptes/supprimer_attachement.html', {
         'attachement': attachement,
         'count_lignes': count_lignes,
+        'breadcrumb_items': _crumbs_attachements(attachement.projet, crumb("Suppression")),
     })
 
 
@@ -446,6 +462,7 @@ def validation_attachement(request, attachement_id):
         'attachement': attachement,
         'validations': validations,
         'user': request.user,
+        'breadcrumb_items': _crumbs_attachements(attachement.projet, crumb("Validation")),
     }
     return render(request, 'projets/decomptes/validation_attachement.html', context)
 
@@ -485,6 +502,7 @@ def validation_technique_attachement(request, attachement_id):
         'validation_technique': validation_technique,
         'etapes': etapes,
         'peut_valider': validation_technique.peut_etre_valide_par(request.user),
+        'breadcrumb_items': _crumbs_attachements(attachement.projet, crumb("Validation technique")),
     }
     return render(request, 'projets/decomptes/validation_technique_attachement.html', context)
 
@@ -869,6 +887,7 @@ def liste_decomptes(request, projet_id):
         'attachement_id': attachement_id,
         'action_type': action_type,
         'attachement_cible': attachement_cible,
+        'breadcrumb_items': project_crumbs(projet, crumb("Décomptes")),
     }
 
     return render(request, 'projets/decomptes/liste_decomptes.html', context)
@@ -934,6 +953,11 @@ def detail_decompte(request, decompte_id):
         'ras': ras,
         'autres': autres,
         'net_a_payer': net_a_payer,
+        'breadcrumb_items': project_crumbs(
+            projet,
+            crumb("Décomptes", "projets:liste_decomptes", args=[projet.id]),
+            crumb(f"Décompte {decompte.numero}"),
+        ),
     }
     return render(request, 'projets/decomptes/detail_decompte.html', context)
 
@@ -1066,6 +1090,7 @@ def fiche_controle(request, projet_id):
         'donnees_controle': donnees_controle,
         'total_general': total_general,
         'nb_lots': len(donnees_controle) > 1,
+        'breadcrumb_items': _crumbs_attachements(projet, crumb("Fiche de contrôle")),
     }
 
     return render(request, 'projets/decomptes/fiche_controle.html', context)

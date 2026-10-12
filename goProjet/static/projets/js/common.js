@@ -2,6 +2,52 @@
 (function() {
     'use strict';
 
+    if (window.__commonInitialized) return;
+    window.__commonInitialized = true;
+    let panelRefresh = null;
+    let panelRefreshPending = false;
+
+    function refreshNotificationPanel() {
+        const panel = document.getElementById('notification-panel');
+        if (!panel) return Promise.resolve();
+        if (panelRefresh) {
+            panelRefreshPending = true;
+            return panelRefresh;
+        }
+        const url = new URL(panel.dataset.refreshUrl, window.location.origin);
+        const token = document.querySelector('#main-content .app-breadcrumb')?.dataset.notificationOrigin;
+        if (token) url.searchParams.set('breadcrumb', token);
+        panelRefresh = fetch(url.pathname + url.search, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            cache: 'no-store',
+        }).then(async response => {
+            if (!response.ok || response.redirected) throw new Error(`HTTP ${response.status}`);
+            const template = document.createElement('template');
+            template.innerHTML = await response.text();
+            const replacement = template.content.querySelector('#notification-panel');
+            if (!replacement) throw new Error('Réponse notifications invalide');
+            const current = document.getElementById('notification-panel');
+            if (!current) return;
+            const open = !getNotifDropdown()?.classList.contains('hidden');
+            current.replaceWith(replacement);
+            if (open) getNotifDropdown()?.classList.remove('hidden');
+            window.htmx?.process(replacement);
+        }).catch(error => {
+            console.error('[notifications] Actualisation impossible', error);
+            window.showErrorMessage?.("Impossible d'actualiser les notifications.");
+        }).finally(() => {
+            panelRefresh = null;
+            if (panelRefreshPending) {
+                panelRefreshPending = false;
+                refreshNotificationPanel();
+            }
+        });
+        return panelRefresh;
+    }
+
+    document.body.addEventListener('notifications:changed', refreshNotificationPanel);
+    document.body.addEventListener('htmx:historyRestore', refreshNotificationPanel);
+
     // ============================================================
     // Getters — résolvent l'élément à chaque appel
     // (survit aux swaps HTMX)
@@ -36,6 +82,7 @@
             e.stopPropagation();
             if (notifDropdown) notifDropdown.classList.toggle('hidden');
             if (userDropdown) userDropdown.classList.add('hidden');
+            if (notifDropdown && !notifDropdown.classList.contains('hidden')) refreshNotificationPanel();
             return;
         }
 
@@ -70,9 +117,15 @@
         e.preventDefault();
         e.stopPropagation();
 
-        const url = window.NOTIFICATION_API_URL;
-        const token = window.CSRF_TOKEN;
-        if (!url || !token) return;
+        const url = markAllBtn.dataset.actionUrl;
+        const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+            || document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)?.[1];
+        if (!url || !token) {
+            window.showErrorMessage?.("Impossible de marquer les notifications : configuration manquante.");
+            return;
+        }
+        if (markAllBtn.disabled) return;
+        markAllBtn.disabled = true;
 
         fetch(url, {
             method: 'POST',
@@ -81,34 +134,32 @@
                 'X-CSRFToken': token,
             },
             credentials: 'same-origin',
-        }).then(response => {
-            if (response.ok) {
-                const badge = document.querySelector('#notificationBtn span');
-                if (badge) badge.remove();
-                document.querySelectorAll('.notification-item').forEach(item => {
-                    item.classList.remove('app-dropdown-item-unread');
-                    const dot = item.querySelector('.flex-shrink-0 div');
-                    if (dot) dot.classList.replace('bg-cyan-500', 'bg-gray-500');
+        }).then(async response => {
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
+            document.body.dispatchEvent(new CustomEvent('notifications:changed'));
+            if (document.getElementById('notifications-container') && window.htmx) {
+                await window.htmx.ajax('GET', window.location.href, {
+                    target: '#main-content', swap: 'innerHTML',
                 });
-                if (typeof window.showNotification === 'function') {
-                    window.showNotification(
-                        'Toutes les notifications ont été marquées comme lues',
-                        'success'
-                    );
-                }
             }
-        });
+            window.showNotification?.('Toutes les notifications ont été marquées comme lues', 'success');
+        }).catch(error => {
+            console.error('[notifications] Lecture impossible', error);
+            window.showErrorMessage?.("Impossible de marquer les notifications comme lues.");
+        }).finally(() => { markAllBtn.disabled = false; });
     });
 
     // ============================================================
     // Fermer les dropdowns après un swap HTMX
     // ============================================================
     document.body.addEventListener('htmx:afterSwap', function(e) {
-        if (e.target.id === 'main-content') {
+        if (e.detail.target.id === 'main-content') {
             const notifDropdown = getNotifDropdown();
             const userDropdown = getUserDropdown();
             if (notifDropdown) notifDropdown.classList.add('hidden');
             if (userDropdown) userDropdown.classList.add('hidden');
+            refreshNotificationPanel();
         }
     });
 
@@ -181,5 +232,17 @@
 
     // 3. Après retour arrière navigateur
     window.addEventListener('popstate', updateTopbarTitle);
+    document.body.addEventListener('htmx:historyRestore', updateTopbarTitle);
 
+    /* ═══════════════════════════════════════════════════════════════
+   Refresh du contenu principal (utilisé après succès modal)
+   ═══════════════════════════════════════════════════════════════ */
+    window.refreshMainContent = function () {
+        if (!window.htmx) { window.location.reload(); return; }
+        window.htmx.ajax('GET', window.location.pathname + window.location.search, {
+            target: '#main-content',
+            swap: 'innerHTML swap:150ms settle:150ms show:top',
+            indicator: '#htmx-progress',
+        });
+    };
 })();

@@ -1,12 +1,79 @@
-(function() {
+(function () {
     'use strict';
 
-    // ============================================================
-    // Animation des cartes au chargement
-    // ============================================================
-    function initCardAnimation() {
-        const cards = document.querySelectorAll('.dashboard-card');
-        cards.forEach((card, index) => {
+    if (window.__homeInitialized) return;
+    window.__homeInitialized = true;
+    let dependencies = null;
+    let generation = 0;
+    let pendingElement = null;
+
+    function loadScript(src) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => {
+                script.remove();
+                reject(new Error(`Chargement impossible : ${src}`));
+            };
+            document.body.appendChild(script);
+        });
+    }
+
+    function loadDependencies() {
+        if (!dependencies) {
+            dependencies = Promise.all([
+                typeof ApexCharts !== 'undefined' ? Promise.resolve()
+                    : loadScript('https://cdn.jsdelivr.net/npm/apexcharts@3.35.0'),
+                window.ProjetsChartManager ? Promise.resolve()
+                    : loadScript('/static/projets/js/charts.js'),
+            ]).catch(error => {
+                dependencies = null;
+                throw error;
+            });
+        }
+        return dependencies;
+    }
+
+    function destroyChart() {
+        generation++;
+        pendingElement = null;
+        if (window.chartManager) {
+            window.chartManager.destroy();
+            window.chartManager = null;
+        }
+    }
+
+    async function initChart() {
+        const element = document.getElementById('avancementChart');
+        if (!element || pendingElement === element || window.chartManager?.chartElement === element) return;
+        destroyChart();
+        pendingElement = element;
+        const version = generation;
+        try {
+            const data = JSON.parse(element.dataset.chartData);
+            if (!data.projets.length) {
+                element.textContent = 'Aucun projet disponible pour le graphique.';
+                return;
+            }
+            await loadDependencies();
+            if (version !== generation || !element.isConnected) return;
+            window.chartManager = new window.ProjetsChartManager(data);
+            await window.chartManager.ready;
+        } catch (error) {
+            console.error('[home] Graphique indisponible', error);
+            if (version === generation && element.isConnected) {
+                destroyChart();
+                element.setAttribute('role', 'alert');
+                element.textContent = "Impossible de charger le graphique d'avancement. Revenez sur Home pour réessayer.";
+            }
+        } finally {
+            if (pendingElement === element) pendingElement = null;
+        }
+    }
+
+    function initAll() {
+        document.querySelectorAll('.dashboard-card').forEach((card, index) => {
             card.style.opacity = '0';
             card.style.transform = 'translateY(20px)';
             card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
@@ -15,82 +82,27 @@
                 card.style.transform = 'translateY(0)';
             }, index * 100);
         });
-    }
-
-    // ============================================================
-    // Charger ApexCharts si nécessaire
-    // ============================================================
-    function loadApexCharts() {
-        return new Promise((resolve) => {
-            if (typeof ApexCharts !== 'undefined') return resolve();
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/apexcharts@3.35.0';
-            script.async = true;
-            script.onload = resolve;
-            document.body.appendChild(script);
-        });
-    }
-
-    // ============================================================
-    // Initialiser le graphique d'avancement
-    // ============================================================
-    function initChart() {
-        const chartElement = document.getElementById('avancementChart');
-        if (!chartElement) return;
-
-        try {
-            const chartData = JSON.parse(chartElement.dataset.chartData || '{}');
-            if (!chartData.projets || chartData.projets.length === 0) {
-                console.warn('[home.js] Aucune donnée de projet pour le graphique');
-                return;
-            }
-
-            loadApexCharts().then(() => {
-                if (typeof ProjetsChartManager !== 'undefined') {
-                    // Détruire l'ancien graphique s'il existe
-                    if (window.chartManager && typeof window.chartManager.destroy === 'function') {
-                        try { window.chartManager.destroy(); } catch (e) {}
-                    }
-                    window.chartManager = new ProjetsChartManager(chartData);
-                } else {
-                    console.warn('[home.js] ProjetsChartManager non défini');
-                }
-            });
-        } catch (error) {
-            console.error('[home.js] Erreur initialisation graphique:', error);
-        }
-    }
-
-    // ============================================================
-    // Nettoyer à la fermeture
-    // ============================================================
-    window.addEventListener('beforeunload', () => {
-        if (window.chartManager && typeof window.chartManager.destroy === 'function') {
-            try { window.chartManager.destroy(); } catch (e) {}
-        }
-    });
-
-    // ============================================================
-    // Démarrer quand le DOM est prêt
-    // ============================================================
-    function initAll() {
-        initCardAnimation();
         initChart();
     }
+
+    document.body.addEventListener('htmx:beforeCleanupElement', event => {
+        const element = document.getElementById('avancementChart');
+        if (element && event.detail.elt.contains(element)) destroyChart();
+    });
+    document.body.addEventListener('htmx:afterSwap', event => {
+        if (event.detail.target.id === 'main-content') initAll();
+    });
+    document.body.addEventListener('htmx:historyRestore', () => {
+        destroyChart();
+        // History may contain the rendered SVG of the previous instance.
+        document.getElementById('avancementChart')?.replaceChildren();
+        initAll();
+    });
+    window.addEventListener('beforeunload', destroyChart);
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initAll);
     } else {
         initAll();
     }
-
-    // ============================================================
-    // Ré-exécuter après un swap HTMX (si vous utilisez le pattern SPA)
-    // ============================================================
-    document.body.addEventListener('htmx:afterSwap', function(e) {
-        if (e.target.id === 'main-content') {
-            initCardAnimation();
-            initChart();
-        }
-    });
 })();

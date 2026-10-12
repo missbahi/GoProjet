@@ -17,6 +17,7 @@ from projets.models import (
     Notification, OrdreService, Projet, SuiviExecution,
 )
 from projets.utils.utils import render_page_or_fragment
+from projets.utils.navigation import project_crumbs
 
 
 @superuser_required
@@ -326,9 +327,15 @@ def dashboard_projet(request, projet_id):
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
     can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
 
-    return render(request, 'projets/dashboard_projet/dashboard.html', {
+    template = (
+        'projets/dashboard_projet/_dashboard_fragment.html'
+        if request.headers.get('HX-Request')
+        else 'projets/dashboard_projet/dashboard.html'
+    )
+    return render(request, template, {
         'can_handler': can_handler,
         'projet': projet,
+        'breadcrumb_items': project_crumbs(projet),
         'lots': lots,
         'montant_total': montant_total_formate,
         'total_decomptes': total_decomptes,

@@ -1,20 +1,7 @@
 {% load static %}
-<div class="mx-auto max-w-5xl"
 
-
+<div class="mx-auto max-w-5xl">
     <div class="mb-6">
-        <a href="{% url 'projets:liste_utilisateurs' %}"
-           hx-get="{% url 'projets:liste_utilisateurs' %}"
-           hx-target="#main-content"
-           hx-swap="innerHTML swap:150ms settle:150ms show:top"
-           hx-push-url="true"
-           hx-indicator="#htmx-progress"
-           class="text-sm flex items-center gap-2 mb-4"
-           style="color: var(--accent-primary);">
-            <i class="fas fa-arrow-left"></i>
-            Retour à la liste
-        </a>
-
         <h1 class="text-2xl md:text-3xl font-bold flex items-center gap-2"
             style="color: var(--accent-primary);">
             <i class="fas fa-project-diagram"></i>
@@ -28,7 +15,7 @@
     <form method="post"
           class="app-card p-6"
           hx-post="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
-          hx-target="#main-content"
+          hx-target="{% if is_user_modal %}#user-modal-content{% else %}#main-content{% endif %}"
           hx-swap="innerHTML"
           hx-indicator="#htmx-progress">
         {% csrf_token %}
@@ -59,7 +46,7 @@
                        name="projets"
                        value="{{ projet.id }}"
                        style="accent-color: var(--accent-green); margin-top: 4px;"
-                       {% if projet in projets_utilisateur %}checked{% endif %}>
+                       {% if projet.id in projets_utilisateur_ids %}checked{% endif %}>
                 <div class="flex-1">
                     <div class="font-medium" style="color: var(--text-primary);">
                         {{ projet.nom }}
@@ -80,6 +67,7 @@
         <div class="flex flex-col sm:flex-row gap-3 pt-6 mt-6"
              style="border-top: 1px solid var(--border-default);">
             <a href="{% url 'projets:liste_utilisateurs' %}"
+               {% if is_user_modal %}data-user-modal-close{% endif %}
                hx-get="{% url 'projets:liste_utilisateurs' %}"
                hx-target="#main-content"
                hx-swap="innerHTML swap:150ms settle:150ms show:top"

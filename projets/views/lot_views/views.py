@@ -10,6 +10,7 @@ from projets.decorators import chef_projet_required
 from projets.exporters import ExcelExporter
 from projets.manager import LigneHierarchique
 from projets.models import LigneBordereau, LotProjet, Projet
+from projets.utils.navigation import crumb, project_crumbs
 from django.views.decorators.http import require_POST
 
 
@@ -205,7 +206,11 @@ def lots_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
 
-    ctx = {'projet': projet, 'lots': lots}
+    ctx = {
+        'projet': projet,
+        'lots': lots,
+        'breadcrumb_items': project_crumbs(projet, crumb("Lots / Bordereau")),
+    }
 
     if request.headers.get('HX-Request'):
         return render(request, 'projets/lots/_lots_content.html', ctx)

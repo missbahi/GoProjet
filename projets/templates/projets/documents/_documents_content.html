@@ -1,6 +1,7 @@
 {# projets/templates/projets/documents/_documents_content.html #}
 {% load static %}
-{% load formatters %}
+{% load formatters navigation %}
+{% breadcrumb %}
 
 <div data-family="project" class="max-w-6xl mx-auto"
      data-page-title="Documents administratifs"
@@ -20,15 +21,6 @@
             Gestion des documents administratifs du projet
         </p>
     </div>
-
-    <!-- Breadcrumb -->
-    <nav class="doc-breadcrumb mb-6">
-        <a href="{% url 'projets:liste_projets' %}">Projets</a>
-        <i class="fas fa-chevron-right"></i>
-        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
-        <i class="fas fa-chevron-right"></i>
-        <span class="current">Documents</span>
-    </nav>
 
     <!-- Infos projet -->
     <div class="app-card p-4 md:p-6 mb-6">

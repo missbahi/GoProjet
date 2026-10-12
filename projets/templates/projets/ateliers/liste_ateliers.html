@@ -1,172 +1,19 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <title>Ateliers – {{ projet.nom }}</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    {% load static %}
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'projets/css/modal-mat-manager.css' %}">
-    
-    <style>
-        body { background-color: #2E2E2E; color: #AECBD6; font-family: Arial, sans-serif; }
+{% extends "projets/home/base_project.html" %}
+{% load static %}
 
-        .active-menu-item {
-            background-color: #107C41;
-            color: white;
-        }
+{% block title %}Ateliers – {{ projet.nom }}{% endblock %}
 
-        .modal-backdrop {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 40;
-        }
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'projets/css/ateliers.css' %}">
+{% endblock %}
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: #2E2E2E;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            z-index: 50;
-            width: 95%;
-            max-width: 32rem;
-            max-height: 90vh;
-            overflow-y: auto;
-        }
+{% block content %}
+    {% include "projets/ateliers/_liste_ateliers_content.html" %}
+{% endblock %}
 
-        .btn-primary {
-            background: linear-gradient(135deg, #22d3ee 0%, #0ea5e9 100%);
-            border: none; color: white;
-        }
-        .btn-success {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            border: none; color: white;
-        }
-    </style>
-</head>
-
-<body class="p-4 md:p-6">
-
-<div class="max-w-7xl mx-auto">
-    <!-- En-tête -->
-    <div class="mb-6 md:mb-8 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
-        <div>
-            <h1 class="text-xl md:text-3xl font-bold text-cyan-400 mb-2 flex items-center gap-2">
-                <i class="fas fa-people-group"></i>
-                Ateliers – {{ projet.nom }}
-            </h1>
-            <p class="text-sm text-gray-400">Gestion des ateliers (équipes) rattachés à ce projet</p>
-        </div>
-        <div class="flex gap-2">
-            <a href="{% url 'projets:dashboard' projet.id %}"
-               class="bg-[#4B5563] hover:bg-[#374151] text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-arrow-left"></i> Retour au dashboard
-            </a>
-            <a href="{% url 'projets:planning_ateliers' projet.id %}"
-            class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-calendar-days"></i> Planning des ateliers
-            </a>
-            <button type="button" data-add-atelier-button
-                    class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2">
-                <i class="fas fa-plus"></i> Ajouter un atelier
-            </button>
-        </div>
-    </div>
-
-    <!-- Tableau des ateliers -->
-    {% if ateliers %}
-    <div class="bg-gray-800 p-2 overflow-x-auto rounded-lg">
-        <table class="min-w-full bg-[#2E2E2E]" id="ateliersTable">
-            <thead class="bg-gray-700 text-[#2B9C62] border-b border-gray-700">
-                <tr>
-                    <th class="px-4 py-3 text-left">Code</th>
-                    <th class="px-4 py-3 text-left">Libellé</th>
-                    <th class="px-4 py-3 text-left">Description</th>
-                    <th class="px-4 py-3 text-center">Matériels</th>
-                    <th class="px-4 py-3 text-center">Actif</th>
-                    <th class="px-4 py-3 text-center">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-gray-800 divide-y divide-green-800">
-                {% for atelier in ateliers %}
-                <tr class="style="color: var(--text-primary);"">
-                    <td class="px-4 py-3 font-semibold text-cyan-300">{{ atelier.code }}</td>
-                    <td class="px-4 py-3">{{ atelier.libelle }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-400">
-                        {{ atelier.description|default:"—"|truncatechars:80 }}
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <a href="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
-                        class="inline-flex items-center gap-1 px-2 py-1 bg-cyan-900/40 rounded text-xs text-cyan-300 hover:bg-cyan-800/60 transition">
-                            <i class="fas fa-truck-monster"></i>
-                            {{ atelier.affectations.count }}
-                        </a>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        {% if atelier.actif %}
-                            <i class="fa-solid fa-circle-check text-green-400"></i>
-                        {% else %}
-                            <i class="fa-solid fa-circle-xmark text-red-400"></i>
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-3 text-center space-x-3">
-                        <a href="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
-                        class="text-cyan-400 hover:text-cyan-300 transition" title="Gérer les matériels">
-                            <i class="fa-solid fa-truck-monster"></i>
-                        </a>
-                        <button type="button"
-                                data-edit-atelier-button
-                                data-id="{{ atelier.id }}"
-                                data-code="{{ atelier.code }}"
-                                data-libelle="{{ atelier.libelle }}"
-                                data-description="{{ atelier.description }}"
-                                data-actif="{{ atelier.actif|yesno:'true,false' }}"
-                                class="text-yellow-400 hover:text-yellow-300 transition" title="Modifier">
-                            <i class="fa-solid fa-pen"></i>
-                        </button>
-                        <a href="{% url 'projets:supprimer_atelier' projet.id atelier.id %}"
-                        class="text-red-500 hover:text-red-400 transition" title="Supprimer">
-                            <i class="fa-solid fa-trash"></i>
-                        </a>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    {% else %}
-    <div class="p-6 bg-green-900/50 text-green-200 rounded-lg shadow border border-green-700 text-center">
-        <i class="fas fa-inbox text-3xl mb-2"></i>
-        <p class="text-base md:text-lg">Aucun atelier enregistré pour ce projet.</p>
-        <p class="text-sm text-green-300 mt-2">Cliquez sur « Ajouter un atelier » pour commencer.</p>
-    </div>
-    {% endif %}
-</div>
-
-
-
-<!-- Modals -->
-{% include "projets/ateliers/partials/modal_add_atelier.html" %}
-{% include "projets/ateliers/partials/modal_edit_atelier.html" %}
-{% include "projets/ateliers/partials/modal_backdrop.html" %}
-
-<div id="atelier-config"
-     data-add-url="{% url 'projets:ajouter_atelier' projet.id %}"
-     data-edit-template="{% url 'projets:modifier_atelier' projet.id 0 %}"
-     data-delete-template="{% url 'projets:supprimer_atelier' projet.id 0 %}">
-</div>
-
-<script src="{% static 'projets/js/atelier-modal.js' %}"></script>
-
-<script>
-   </script>
-</body>
-</html>
+{% block extra_js %}
+    {{ block.super }}
+    <script src="{% static 'projets/js/atelier-modal.js' %}" defer></script>
+    <script src="{% static 'projets/js/affectation-modal.js' %}" defer></script>
+{% endblock %}

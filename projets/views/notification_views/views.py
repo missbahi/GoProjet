@@ -15,10 +15,24 @@ from projets.decorators import can_view_projet, projets_accessibles
 from projets.models import Attachement, DocumentAdministratif, Notification, OrdreService, Projet, Tache
 from django.core.paginator import Paginator
 
+from projets.utils.navigation import crumb, notification_origin_items
+
+
+@login_required
+@require_GET
+def notification_panel(request):
+    return render(request, 'includes/_notification_panel_response.html', {
+        'notification_origin': request.GET.get('breadcrumb', ''),
+    })
+
 
 @login_required
 def liste_notifications(request):
     """Page des notifications."""
+    notification_origin = request.GET.get('breadcrumb', '')
+    breadcrumb_items = notification_origin_items(notification_origin)
+    if not breadcrumb_items:
+        breadcrumb_items = [crumb("Tableau de bord", "projets:home")]
     notifications_qs = Notification.objects.filter(
         utilisateur=request.user
     ).order_by('-prioritaire', '-date_creation').select_related(
@@ -45,13 +59,15 @@ def liste_notifications(request):
     all_qs = Notification.objects.filter(utilisateur=request.user)
     unread_count = all_qs.filter(lue=False).count()
     read_count = all_qs.filter(lue=True).count()
-
+    
     context = {
         'notifications': page_obj,
         'filter': filter_type,
         'unread_count': unread_count,
         'read_count': read_count,
         'total_count': all_qs.count(),
+        'breadcrumb_items': [*breadcrumb_items, crumb("Notifications")],
+        'notification_origin': notification_origin,
     }
     # ⚡ Rendu conditionnel HTMX
     if request.headers.get('HX-Request'):

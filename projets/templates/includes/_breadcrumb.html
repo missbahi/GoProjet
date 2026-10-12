@@ -1,0 +1,33 @@
+{% if items %}
+<nav class="app-breadcrumb" aria-label="Fil d'Ariane"
+     data-notification-origin="{{ notification_origin }}">
+    <ol class="app-breadcrumb-list">
+        {% for item in items %}
+            <li class="app-breadcrumb-item">
+                {% if item.url and not forloop.last %}
+                    <a href="{{ item.url }}"
+                       {% if item.hx is not False %}
+                       hx-get="{{ item.url }}"
+                       hx-target="#main-content"
+                       hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                       hx-push-url="true"
+                       hx-indicator="#htmx-progress"
+                       {% endif %}
+                       class="app-breadcrumb-link" title="{{ item.label }}">
+                        {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %}
+                        <span>{{ item.label }}</span>
+                    </a>
+                {% else %}
+                    <span class="app-breadcrumb-current" aria-current="page" title="{{ item.label }}">
+                        {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %}
+                        <span>{{ item.label }}</span>
+                    </span>
+                {% endif %}
+                {% if not forloop.last %}
+                    <i class="fas fa-chevron-right app-breadcrumb-sep" aria-hidden="true"></i>
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ol>
+</nav>
+{% endif %}

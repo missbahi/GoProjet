@@ -13,6 +13,7 @@ from collections import defaultdict
 from projets.decorators import chef_projet_required
 from projets.forms import AffectationRessourceForm, AtelierForm
 from projets.models import AffectationRessource, Atelier, Materiel, Projet
+from projets.utils.navigation import crumb, project_crumbs
 from projets.utils.utils import ajax_response, is_ajax
 from dateutil.relativedelta import relativedelta
 
@@ -134,7 +135,7 @@ def supprimer_atelier(request, projet_id, atelier_id):
 # ============================================================
 
 @chef_projet_required
-def materiels_atelier(request, projet_id, atelier_id):
+def materiels_atelier_(request, projet_id, atelier_id):
     if request.method != 'GET':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
     projet = get_object_or_404(Projet, id=projet_id)
@@ -205,7 +206,6 @@ def modifier_affectation(request, affectation_id):
 
     if request.method != 'POST':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
-
     form = AffectationRessourceForm(request.POST, instance=affectation, atelier=atelier)
 
     if form.is_valid():
@@ -217,7 +217,6 @@ def modifier_affectation(request, affectation_id):
             )
         messages.success(request, "Affectation modifiée avec succès.")
         return redirect('projets:materiels_atelier', projet_id=projet.id, atelier_id=atelier.id)
-
     if is_ajax(request):
         return ajax_response(
             success=False,
@@ -261,7 +260,7 @@ def supprimer_affectation(request, affectation_id):
 # ============================================================
 
 @chef_projet_required
-def ateliers_projet(request, projet_id):
+def ateliers_projet_(request, projet_id):
     if request.method != 'GET':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
     projet = get_object_or_404(Projet, id=projet_id)
@@ -276,6 +275,85 @@ def ateliers_projet(request, projet_id):
         'ateliers': ateliers,
     })
 
+# ─── ateliers_projet ──────────────────────────────────────
+@chef_projet_required
+def ateliers_projet(request, projet_id):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+
+    projet = get_object_or_404(Projet, id=projet_id)
+    ateliers = (
+        Atelier.objects.filter(projet=projet)
+        .prefetch_related('affectations')
+        .order_by('code')
+    )
+
+    ctx = {
+        'projet': projet,
+        'ateliers': ateliers,
+        'breadcrumb_items': project_crumbs(projet, crumb("Ateliers")),
+    }
+
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/ateliers/_liste_ateliers_content.html', ctx)
+
+    return render(request, 'projets/ateliers/liste_ateliers.html', ctx)
+
+# ─── materiels_atelier ──────────────────────────────────────
+@chef_projet_required
+def materiels_atelier(request, projet_id, atelier_id):
+    if request.method != 'GET':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
+
+    projet = get_object_or_404(Projet, id=projet_id)
+    atelier = get_object_or_404(Atelier, id=atelier_id, projet=projet)
+    affectations = (
+        AffectationRessource.objects
+        .filter(atelier=atelier)
+        .select_related('materiel', 'materiel__type_materiel')
+        .order_by('-date_debut', 'materiel__designation')
+    )
+    materiels_disponibles = (
+        Materiel.objects.filter(actif=True)
+        .select_related('type_materiel')
+        .order_by('designation')
+    )
+
+    ctx = {
+        'projet': projet,
+        'atelier': atelier,
+        'affectations': affectations,
+        'materiels_disponibles': materiels_disponibles,
+        'breadcrumb_items': project_crumbs(
+            projet,
+            crumb("Ateliers", "projets:ateliers_projet", args=[projet.id]),
+            crumb(f"{atelier.code} — {atelier.libelle}"),
+        ),
+    }
+
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/ateliers/_materiels_atelier_content.html', ctx)
+
+    return render(request, 'projets/ateliers/materiels_atelier.html', ctx)
+
+# ─── planning_ateliers ──────────────────────────────────────
+@chef_projet_required
+def planning_ateliers(request, projet_id):
+    contexte = _preparer_contexte_planning(request, projet_id)
+    projet = contexte['projet']
+    contexte['breadcrumb_items'] = project_crumbs(
+        projet,
+        crumb("Ateliers", "projets:ateliers_projet", args=[projet.id]),
+        crumb("Planning"),
+    )
+
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/ateliers/_planning_content.html', contexte)
+
+    return render(request, 'projets/ateliers/planning.html', contexte)
 
 # ============================================================
 # Planning hiérarchique des ateliers
@@ -518,11 +596,6 @@ def _preparer_contexte_planning(request, projet_id):
         'nb_materiels_total': nb_materiels_total,
         'affectations': affectations,
     }
-@chef_projet_required
-def planning_ateliers(request, projet_id):
-    """Planning des affectations de matériel aux ateliers du projet."""
-    contexte = _preparer_contexte_planning(request, projet_id)
-    return render(request, 'projets/ateliers/planning.html', contexte)
 
 
 @chef_projet_required

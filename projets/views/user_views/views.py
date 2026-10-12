@@ -31,10 +31,27 @@ from projets.decorators import (
 from projets.forms import AvatarUpdateForm, UtilisateurCreationForm
 from projets.models import Dossier, Profile
 from projets.views.os_views.views import clean_url
+from projets.utils.navigation import crumb
 
 
 logger = logging.getLogger(__name__)
 MAX_UPLOAD_SIZE = 5 * 1024 * 1024
+
+
+def _user_form_response(request, template, context, status=200):
+    return render(
+        request, template,
+        {**context, 'is_user_modal': request.headers.get('HX-Target') == 'user-modal-content'},
+        status=status,
+    )
+
+
+def _user_modal_success(request, message):
+    if request.headers.get('HX-Target') != 'user-modal-content':
+        return None
+    response = HttpResponse(status=204)
+    response['HX-Trigger'] = json.dumps({'userModalSaved': {'message': message}})
+    return response
 
 
 # ============================================================
@@ -55,7 +72,7 @@ def liste_utilisateurs(request):
         ).distinct()
 
     # ⚡ Optimization : précharger le profil
-    utilisateurs = utilisateurs.select_related('profile').order_by('username')
+    utilisateurs = utilisateurs.select_related('profile').prefetch_related('dossiers').order_by('username')
 
     # ⚡ Filtres
     role_filter = request.GET.get('role', '').strip()
@@ -96,7 +113,8 @@ def liste_utilisateurs(request):
         'page_obj': page_obj,
         'role_filter': role_filter,
         'search': search,
-    }
+        'breadcrumb_items': [crumb("Home", "projets:home"), crumb("Utilisateurs")],
+    } 
 
     # ⚡ Rendu conditionnel HTMX
     if request.headers.get('HX-Request'):
@@ -124,6 +142,11 @@ def ajouter_utilisateur(request):
         if form.is_valid():
             try:
                 new_user = form.save()
+                modal_response = _user_modal_success(
+                    request, f"Utilisateur « {new_user.username} » créé avec succès.",
+                )
+                if modal_response is not None:
+                    return modal_response
 
                 # ⚡ Succès HTMX : UNIQUEMENT dans le POST
                 if request.headers.get('HX-Request'):
@@ -147,7 +170,7 @@ def ajouter_utilisateur(request):
 
         # ⚡ Formulaire invalide
         if request.headers.get('HX-Request'):
-            return render(
+            return _user_form_response(
                 request,
                 'projets/utilisateurs/_ajouter_utilisateur_content.html',
                 {'form': form},
@@ -160,7 +183,7 @@ def ajouter_utilisateur(request):
     context = {'form': form}
 
     if request.headers.get('HX-Request'):
-        return render(
+        return _user_form_response(
             request,
             'projets/utilisateurs/_ajouter_utilisateur_content.html',
             context,
@@ -277,7 +300,7 @@ def modifier_utilisateur(request, user_id):
             if password != confirm_password:
                 messages.error(request, "Les mots de passe ne correspondent pas.")
                 if request.headers.get('HX-Request'):
-                    return render(
+                    return _user_form_response(
                         request,
                         'projets/utilisateurs/_modifier_utilisateur_content.html',
                         context,
@@ -294,7 +317,7 @@ def modifier_utilisateur(request, user_id):
                     request, "Le mot de passe doit contenir au moins 8 caractères."
                 )
                 if request.headers.get('HX-Request'):
-                    return render(
+                    return _user_form_response(
                         request,
                         'projets/utilisateurs/_modifier_utilisateur_content.html',
                         context,
@@ -328,6 +351,15 @@ def modifier_utilisateur(request, user_id):
         if 'avatar' in request.FILES:
             if request.FILES['avatar'].size > MAX_UPLOAD_SIZE:
                 messages.error(request, "L'avatar ne doit pas dépasser 5 Mo.")
+                if request.headers.get('HX-Request'):
+                    return _user_form_response(
+                        request, 'projets/utilisateurs/_modifier_utilisateur_content.html',
+                        _modifier_utilisateur_context(
+                            request, target_user, can_manage_account_status,
+                            can_manage_roles, can_manage_user_dossiers,
+                        ),
+                        status=400,
+                    )
                 return redirect('projets:modifier_utilisateur', user_id=target_user.pk)
             target_user.profile.avatar = request.FILES['avatar']
             target_user.profile.save()
@@ -343,10 +375,23 @@ def modifier_utilisateur(request, user_id):
             else:
                 dossiers_autorises = Dossier.objects.filter(gerant=request.user)
 
-            target_user.dossiers.set(
-                dossiers_autorises.filter(id__in=request.POST.getlist('dossiers'))
+            dossiers_hors_perimetre = target_user.dossiers.exclude(
+                id__in=dossiers_autorises.values('id')
             )
+            target_user.dossiers.set([
+                *dossiers_hors_perimetre,
+                *dossiers_autorises.filter(id__in=request.POST.getlist('dossiers')),
+            ])
 
+
+        if target_user.pk == request.user.pk and password:
+            update_session_auth_hash(request, target_user)
+
+        modal_response = _user_modal_success(
+            request, f"Utilisateur « {target_user.username} » modifié avec succès.",
+        )
+        if modal_response is not None:
+            return modal_response
 
         # ⚡ Succès HTMX : UNIQUEMENT dans le POST
         if request.headers.get('HX-Request'):
@@ -376,7 +421,7 @@ def modifier_utilisateur(request, user_id):
     )
 
     if request.headers.get('HX-Request'):
-        return render(
+        return _user_form_response(
             request,
             'projets/utilisateurs/_modifier_utilisateur_content.html',
             context,
@@ -455,26 +500,37 @@ def gerer_projets_utilisateur(request, user_id):
 
     # ⚡ Projets affectables
     if request.user.is_superuser:
-        tous_les_projets = projets_autorises.order_by('nom')
+        tous_les_projets = projets_autorises.select_related('dossier').order_by('nom')
     else:
         dossiers_geres = Dossier.objects.filter(gerant=request.user)
         tous_les_projets = projets_autorises.filter(
             dossier__in=dossiers_geres
-        ).order_by('nom')
+        ).select_related('dossier').order_by('nom')
 
     # ⚡ Projets actuellement assignés
     projets_utilisateur = utilisateur.projets.filter(
         id__in=tous_les_projets.values('id')
     )
+    projets_utilisateur_ids = set(projets_utilisateur.values_list('id', flat=True))
 
     # ============================================================
     # ⚡ BLOC POST : enregistrement
     # ============================================================
     if request.method == 'POST':
         projets_selectionnes = request.POST.getlist('projets')
-        utilisateur.projets.set(
-            tous_les_projets.filter(id__in=projets_selectionnes)
+        projets_hors_perimetre = utilisateur.projets.exclude(
+            id__in=tous_les_projets.values('id')
         )
+        utilisateur.projets.set([
+            *projets_hors_perimetre,
+            *tous_les_projets.filter(id__in=projets_selectionnes),
+        ])
+
+        modal_response = _user_modal_success(
+            request, f"Projets de {utilisateur.username} mis à jour.",
+        )
+        if modal_response is not None:
+            return modal_response
 
         # ⚡ Succès HTMX : UNIQUEMENT dans le POST
         if request.headers.get('HX-Request'):
@@ -499,10 +555,11 @@ def gerer_projets_utilisateur(request, user_id):
         'utilisateur': utilisateur,
         'tous_les_projets': tous_les_projets,
         'projets_utilisateur': projets_utilisateur,
+        'projets_utilisateur_ids': projets_utilisateur_ids,
     }
 
     if request.headers.get('HX-Request'):
-        return render(
+        return _user_form_response(
             request,
             'projets/utilisateurs/_gerer_projets_utilisateur_content.html',
             context,

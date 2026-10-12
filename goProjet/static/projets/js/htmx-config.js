@@ -8,6 +8,23 @@
     }
     window.__htmxConfigInitialized = true;
 
+    function syncNotificationLinks() {
+        const breadcrumb = document.querySelector('#main-content .app-breadcrumb');
+        const token = breadcrumb?.dataset.notificationOrigin;
+        document.querySelectorAll('a[data-notifications-url]').forEach(link => {
+            const url = new URL(link.dataset.notificationsUrl, window.location.origin);
+            if (token) url.searchParams.set('breadcrumb', token);
+            const target = url.pathname + url.search;
+            link.setAttribute('href', target);
+            if (link.hasAttribute('hx-get')) link.setAttribute('hx-get', target);
+        });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('a[data-notifications-url]')) syncNotificationLinks();
+    }, true);
+    document.body.addEventListener('htmx:historyRestore', syncNotificationLinks);
+
     // ═══════════════════════════════════════════════════════════
     // CONFIGURATION GLOBALE HTMX
     // ═══════════════════════════════════════════════════════════
@@ -45,6 +62,8 @@
                 '/static/projets/css/documents.css',
                 '/static/projets/css/lots.css',  
                 '/static/projets/css/situations.css',
+                '/static/projets/css/attachements.css',
+                '/static/projets/css/ateliers.css',
             ],
             js: [
                 '/static/projets/js/dashboard.js',
@@ -52,6 +71,10 @@
                 '/static/projets/js/documents.js',
                 '/static/projets/js/lots.js', 
                 '/static/projets/js/situations.js',
+                '/static/projets/js/attachements.js',
+                '/static/projets/js/atelier-modal.js',
+                '/static/projets/js/affectation-modal.js',
+                '/static/projets/js/ateliers-planning.js',
             ],
         },
     };
@@ -101,6 +124,7 @@
     // ═══════════════════════════════════════════════════════════
     document.body.addEventListener('htmx:afterSwap', function (e) {
         if (e.detail.target.id !== 'main-content') return;
+        syncNotificationLinks();
 
         // 1. Cherche data-family dans le nouveau contenu
         const wrapper = e.detail.target.querySelector('[data-family]');
@@ -116,6 +140,7 @@
     // INITIALISATION — Famille courante (rendu serveur)
     // ═══════════════════════════════════════════════════════════
     document.addEventListener('DOMContentLoaded', function () {
+        syncNotificationLinks();
         const family = document.getElementById('main-content')?.dataset.family;
         if (family) {
             loadFamilyAssets(family); 

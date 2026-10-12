@@ -1,7 +1,23 @@
 (function() {
     'use strict';
 
-    const CSRF = getCookie('csrftoken');
+    if (window.__notificationsInitialized) return;
+    window.__notificationsInitialized = true;
+
+    async function readMutationResponse(response) {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+            const message = data.error || `HTTP ${response.status}`;
+            throw new Error(message);
+        }
+        document.body.dispatchEvent(new CustomEvent('notifications:changed'));
+        return data;
+    }
+
+    function reportError(error) {
+        console.error('[notif]', error);
+        showNotification(`Impossible de modifier les notifications (${error.message}).`, 'error');
+    }
 
     // ============================================================
     // Marquer comme lu
@@ -11,26 +27,22 @@
         if (!btn) return;
 
         const id = btn.dataset.notificationId;
-        const item = btn.closest('.notification-item');
 
         try {
             const response = await fetch(`/notifications/marquer-lue/${id}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': CSRF,
+                    'X-CSRFToken': getCookie('csrftoken'),
                     'Content-Type': 'application/json',
                 },
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
-                item.classList.remove('unread');
-                item.dataset.read = 'true';
-                item.querySelector('.notification-actions').innerHTML = renderUnreadBtn(id);
-                updateUnreadCount(-1);
+                refreshNotificationsList();
                 showNotification('Notification marquée comme lue', 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -42,26 +54,22 @@
         if (!btn) return;
 
         const id = btn.dataset.notificationId;
-        const item = btn.closest('.notification-item');
 
         try {
             const response = await fetch(`/notifications/marquer-non-lue/${id}/`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': CSRF,
+                    'X-CSRFToken': getCookie('csrftoken'),
                     'Content-Type': 'application/json',
                 },
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
-                item.classList.add('unread');
-                item.dataset.read = 'false';
-                item.querySelector('.notification-actions').innerHTML = renderReadBtn(id);
-                updateUnreadCount(1);
+                refreshNotificationsList();
                 showNotification('Notification marquée comme non lue', 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -69,28 +77,25 @@
     // Supprimer une notification
     // ============================================================
     document.addEventListener('click', async function(e) {
-        const btn = e.target.closest('.delete-btn');
+        const btn = e.target.closest('#notifications-container .delete-btn');
         if (!btn) return;
 
         if (!confirm('Supprimer cette notification ?')) return;
 
         const id = btn.dataset.notificationId;
-        const item = btn.closest('.notification-item');
 
         try {
             const response = await fetch(`/notifications/supprimer/${id}/`, {
                 method: 'DELETE',
-                headers: { 'X-CSRFToken': CSRF },
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
-                item.style.transition = 'opacity 0.3s';
-                item.style.opacity = '0';
-                setTimeout(() => item.remove(), 300);
+                refreshNotificationsList();
                 showNotification('Notification supprimée', 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -109,7 +114,7 @@
         const container = document.getElementById('notifications-container');
         if (container && window.htmx) {
             htmx.ajax('GET', window.location.href, {
-                target: '#notifications-container',
+                target: '#main-content',
                 swap: 'innerHTML',
             }).then(() => {
                 if (icon) icon.classList.remove('animate-spin');
@@ -130,15 +135,15 @@
         try {
             const response = await fetch('/notifications/marquer-toutes-lues/', {
                 method: 'POST',
-                headers: { 'X-CSRFToken': CSRF },
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
                 refreshNotificationsList();
                 showNotification(`Toutes marquées comme lues (${data.count})`, 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -153,15 +158,15 @@
         try {
             const response = await fetch('/notifications/supprimer-toutes-lues/', {
                 method: 'POST',
-                headers: { 'X-CSRFToken': CSRF },
+                headers: { 'X-CSRFToken': getCookie('csrftoken') },
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
                 refreshNotificationsList();
                 showNotification(`${data.count} notifications supprimées`, 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -202,18 +207,18 @@
             const response = await fetch('/notifications/marquer-selection-lues/', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': CSRF,
+                    'X-CSRFToken': getCookie('csrftoken'),
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ notification_ids: ids }),
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
                 refreshNotificationsList();
                 showNotification(`${data.count} notification(s) marquée(s)`, 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -232,18 +237,18 @@
             const response = await fetch('/notifications/supprimer-selection/', {
                 method: 'POST',
                 headers: {
-                    'X-CSRFToken': CSRF,
+                    'X-CSRFToken': getCookie('csrftoken'),
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ notification_ids: ids }),
             });
-            const data = await response.json();
+            const data = await readMutationResponse(response);
             if (data.success) {
                 refreshNotificationsList();
                 showNotification(`${data.count} notification(s) supprimée(s)`, 'success');
             }
         } catch (err) {
-            console.error('[notif]', err);
+            reportError(err);
         }
     });
 
@@ -256,7 +261,7 @@
 
         if (window.htmx) {
             htmx.ajax('GET', window.location.href, {
-                target: '#notifications-container',
+                target: '#main-content',
                 swap: 'innerHTML',
             });
         } else {
@@ -287,40 +292,6 @@
         return Array.from(
             document.querySelectorAll('.notification-checkbox:checked')
         ).map(cb => cb.dataset.notificationId);
-    }
-
-    function renderReadBtn(id) {
-        return `
-            <button type="button"
-                    class="action-btn mark-as-read-btn"
-                    data-notification-id="${id}"
-                    title="Marquer comme lu"
-                    style="background-color: var(--accent-primary);">
-                <i class="fas fa-check text-white"></i>
-            </button>`;
-    }
-
-    function renderUnreadBtn(id) {
-        return `
-            <button type="button"
-                    class="action-btn mark-as-unread-btn"
-                    data-notification-id="${id}"
-                    title="Marquer comme non lu"
-                    style="background-color: var(--bg-elevated);">
-                <i class="fas fa-undo" style="color: var(--text-primary);"></i>
-            </button>`;
-    }
-
-    function updateUnreadCount(delta) {
-        const badge = document.querySelector('#notificationBtn span');
-        if (!badge) return;
-        const current = parseInt(badge.textContent.trim()) || 0;
-        const next = Math.max(0, current + delta);
-        if (next === 0) {
-            badge.remove();
-        } else {
-            badge.textContent = next;
-        }
     }
 
     function getCookie(name) {

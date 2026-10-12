@@ -145,9 +145,10 @@ class Attachement(models.Model):
     def __str__(self):
         return f"Attachement {self.numero} - {self.projet.nom}"
 
-    def save(self, *, force_insert = ..., force_update = ..., using = ..., update_fields = ...):
-        self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
-        return super().save(force_insert=force_insert, force_update=force_update, using=using, update_fields=update_fields)
+    def save(self, *args, **kwargs):
+        if self.pk:
+            self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
+        return super().save(*args, **kwargs)
     
 # ------------------------ Ligne Attachement ------------------------
 class LigneAttachement(models.Model):

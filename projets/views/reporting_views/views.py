@@ -26,6 +26,7 @@ from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuell
 from projets.models.projet import Dossier
 from projets.models.ressources import Consommable, Fourniture, Location, Personnel, SousTraitance
 from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
+from projets.utils.navigation import crumb, project_crumbs
 
 
 logger = logging.getLogger(__name__)
@@ -446,6 +447,14 @@ def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
             messages.info(request, 'Aucun document à supprimer.')
     return redirect('projets:modifier_rapport_journalier', projet_id=projet_id, rapport_id=rapport_id)
 
+def _crumbs_situations(projet, *items):
+    return project_crumbs(
+        projet,
+        crumb("Situations mensuelles", "projets:situations_mensuelles", args=[projet.id]),
+        *items,
+    )
+
+
 @login_required
 @chef_projet_required 
 def situations_mensuelles(request, projet_id):
@@ -455,6 +464,7 @@ def situations_mensuelles(request, projet_id):
     ctx = {
         'projet': projet,
         'situations': situations,
+        'breadcrumb_items': project_crumbs(projet, crumb("Situations mensuelles")),
     }
 
     if request.headers.get('HX-Request'):
@@ -659,6 +669,7 @@ def ajouter_situation_mensuelle(request, projet_id):
         'recettes': recettes,
         'documents': documents,
         'depenses_groupees': _group_situation_expenses(depenses),
+        'breadcrumb_items': _crumbs_situations(projet, crumb("Nouvelle situation")),
     })
 
 
@@ -735,6 +746,9 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         'depenses_groupees': _group_situation_expenses(depenses),
         'documents': documents,
         'validation_errors': validation_errors if request.method == 'POST' else [],
+        'breadcrumb_items': _crumbs_situations(
+            projet, crumb(f"{situation.mois:02d}/{situation.annee}")
+        ),
     })
 
 

@@ -1,22 +1,25 @@
 
 // static/projets/js/charts.js - Version simplifiée
 
+(function () {
+if (window.ProjetsChartManager) return;
 class ProjetsChartManager {
     constructor(chartData) {
         this.chartData = chartData;
         this.currentChart = null;
         this.chartElement = document.getElementById('avancementChart');
-        this.init();
+        this.ready = this.init();
     }
 
     init() {
         if (!this.chartElement) return;
         
         // Créer le graphique
-        this.createChart();
+        const ready = this.createChart();
         
         // Gérer le redimensionnement
         this.setupResizeHandler();
+        return ready;
     }
 
     createChart() {
@@ -148,14 +151,8 @@ class ProjetsChartManager {
             this.currentChart.destroy();
         }
 
-        try {
-            this.currentChart = new ApexCharts(this.chartElement, options);
-            this.currentChart.render();
-            
-        } catch (error) {
-            console.error('Erreur création graphique:', error);
-            this.showFallbackChart(projets);
-        }
+        this.currentChart = new ApexCharts(this.chartElement, options);
+        return this.currentChart.render();
     }
 
     showFallbackChart(projets) {
@@ -215,11 +212,9 @@ class ProjetsChartManager {
     }
 
     setupResizeHandler() {
-        let resizeTimeout;
-        
-        window.addEventListener('resize', () => {
-            clearTimeout(resizeTimeout);
-            resizeTimeout = setTimeout(() => {
+        this.resizeHandler = () => {
+            clearTimeout(this.resizeTimeout);
+            this.resizeTimeout = setTimeout(() => {
                 if (this.currentChart) {
                     this.currentChart.updateOptions({
                         xaxis: {
@@ -234,16 +229,22 @@ class ProjetsChartManager {
                     }, false, false);
                 }
             }, 250);
-        });
+        };
+        window.addEventListener('resize', this.resizeHandler);
     }
 
     destroy() {
+        clearTimeout(this.resizeTimeout);
+        window.removeEventListener('resize', this.resizeHandler);
         if (this.currentChart) {
             this.currentChart.destroy();
+            this.currentChart = null;
         }
     }
 }
+window.ProjetsChartManager = ProjetsChartManager;
 // Export pour utilisation dans d'autres fichiers
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = { ProjetsChartManager };
 }
+})();

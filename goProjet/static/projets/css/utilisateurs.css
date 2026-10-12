@@ -86,3 +86,24 @@
 .projet-checkbox-row:hover {
     background-color: var(--bg-hover);
 }
+
+.user-management-dialog {
+    width: min(56rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    padding: 2.5rem 1.25rem 1.25rem;
+    margin: auto;
+    overflow-y: auto;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-lg);
+}
+.user-management-dialog::backdrop {
+    background: var(--modal-overlay);
+}
+.user-management-dialog .user-modal-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+}

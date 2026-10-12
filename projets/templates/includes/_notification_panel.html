@@ -1,0 +1,63 @@
+<div id="notification-panel" class="relative"
+     data-refresh-url="{% url 'projets:notification_panel' %}">
+    <button id="notificationBtn" type="button" class="app-topbar-item relative p-2"
+            aria-label="Notifications">
+        <i class="fas fa-bell text-lg md:text-xl"></i>
+        {% if nb_notifications > 0 %}
+        <span data-notification-count class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+            {{ nb_notifications }}
+        </span>
+        {% endif %}
+    </button>
+    <div id="notificationDropdown"
+         class="hidden absolute right-0 mt-2 w-80 md:w-96 rounded-md shadow-lg py-1 z-50 max-h-96 overflow-y-auto app-dropdown">
+        <div class="px-4 py-3 app-dropdown-header">
+            <p class="text-sm font-semibold">Notifications non lues ({{ nb_notifications }})</p>
+        </div>
+        <div class="max-h-72 overflow-y-auto">
+            {% for notification in notifications %}
+            <a href="{{ notifications_url }}"
+               data-notifications-url="{% url 'projets:liste_notifications' %}"
+               hx-get="{{ notifications_url }}" hx-target="#main-content"
+               hx-swap="innerHTML" hx-push-url="true"
+               class="notification-item block px-4 py-3 app-dropdown-item app-dropdown-item-unread">
+                <div class="flex items-start">
+                    <div class="flex-shrink-0 mr-3">
+                        <div class="w-2 h-2 mt-2 rounded-full bg-cyan-500"></div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium truncate">{{ notification.titre }}</p>
+                        <p class="text-xs mt-1 line-clamp-2">{{ notification.message|truncatechars:80 }}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="text-xs" style="color: var(--text-muted);">{{ notification.date_creation|timesince }}</span>
+                            {% if notification.projet %}
+                            <span class="text-xs text-green-400 bg-green-900/30 px-2 py-0.5 rounded">{{ notification.projet.reference }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="px-4 py-4 text-center">
+                <p class="text-sm" style="color: var(--text-muted);">Aucune notification non lue</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="px-4 py-3 app-dropdown-footer">
+            <div class="flex justify-between">
+                <button id="markAllReadFromDropdown" type="button"
+                        data-action-url="{% url 'projets:mark_all_notifications_as_read' %}"
+                        class="text-xs hover:underline" style="color: var(--accent-primary);">
+                    <i class="fas fa-check-double mr-1"></i>Tout marquer comme lu
+                </button>
+                <a href="{{ notifications_url }}"
+                   data-notifications-url="{% url 'projets:liste_notifications' %}"
+                   hx-get="{{ notifications_url }}" hx-target="#main-content"
+                   hx-swap="innerHTML" hx-push-url="true" hx-indicator="#htmx-progress"
+                   class="block px-4 py-2 text-sm app-dropdown-item">
+                    <i class="fas fa-external-link-alt mr-2"></i>Voir toutes les notifications
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

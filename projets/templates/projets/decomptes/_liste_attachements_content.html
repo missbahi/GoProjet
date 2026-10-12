@@ -1,0 +1,232 @@
+{# projets/templates/projets/decomptes/_liste_attachements_content.html #}
+{% load static %}
+{% load formatters navigation %}
+{% breadcrumb %}
+
+<div data-family="project"
+     class="attachment-workflow-page attachment-page--liste_attachements max-w-6xl mx-auto"
+     data-page-title="Attachements"
+     data-page-icon="fa-file-contract">
+
+    <!-- En-tête -->
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-file-contract mr-2"></i>
+            Attachements
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Gestion des attachements du projet
+        </p>
+    </div>
+
+    <!-- Infos projet -->
+    <section class="app-card p-4 md:p-6 mb-6" aria-label="Informations du projet">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <dl class="attachment-project-details">
+                <div class="attachment-project-detail"><dt>Numéro</dt><dd>{{ projet.numero|default:"—" }}</dd></div>
+                <div class="attachment-project-detail"><dt>Objet</dt><dd>{{ projet.objet|default:"—" }}</dd></div>
+                <div class="attachment-project-detail"><dt>Client</dt><dd>{{ projet.maitre_ouvrage|default:"—" }}</dd></div>
+            </dl>
+            <span class="app-badge app-badge-info">{{ projet.get_statut_display }}</span>
+        </div>
+    </section>
+
+    <!-- Ajout : page dédiée (formulaire avec bordereau) -->
+    <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="doc-toggle-btn">
+        <span class="doc-toggle-icon-wrap">
+            <i class="fas fa-plus doc-toggle-icon"></i>
+        </span>
+        <span class="doc-toggle-label">Ajouter un attachement</span>
+        <i class="fas fa-chevron-right doc-toggle-chevron"></i>
+    </a>
+
+    <!-- Liste -->
+    <section class="app-card p-4 md:p-6" aria-label="Liste des attachements">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2" style="color: var(--text-primary);">
+                <i class="fas fa-list" style="color: var(--accent-primary);"></i>
+                Attachements existants
+                <span class="app-badge app-badge-info" id="attachment-count">{{ attachements|length }}</span>
+            </h3>
+            {% if attachements %}
+            <div class="attachment-search">
+                <i class="fas fa-search" aria-hidden="true"></i>
+                <input type="search" id="attachment-search-input"
+                       placeholder="Rechercher (date, statut, montant…)"
+                       aria-label="Rechercher un attachement">
+            </div>
+            {% endif %}
+        </div>
+
+        {% if attachements %}
+        <div class="overflow-x-auto">
+            <table class="attachment-list-table app-table" id="attachment-table">
+                <thead>
+                    <tr>
+                        <th class="text-left sortable" data-sort="numero">N°</th>
+                        <th class="text-left sortable" data-sort="periode">Période</th>
+                        <th class="text-left sortable" data-sort="statut">Statut</th>
+                        <th class="text-right sortable" data-sort="montant">Montant HT</th>
+                        <th class="text-left">Pièce jointe</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attachement in attachements %}
+                    <tr data-sort-numero="{{ attachement.date_etablissement|date:'Y-m-d' }}"
+                        data-sort-periode="{{ attachement.date_debut_periode|date:'Y-m-d' }}"
+                        data-sort-statut="{{ attachement.get_statut_display }}"
+                        data-sort-montant="{{ attachement.total_montant_ht|default:0|stringformat:'f' }}">
+                        <td class="attachment-number-cell">
+                            <a href="{% url 'projets:detail_attachement' attachement.id %}" class="attachment-number-link">
+                                {{ attachement.numero }}
+                            </a>
+                        </td>
+                        <td class="attachment-period-cell">
+                            <span>{{ attachement.date_debut_periode|date:"d/m/Y" }}</span>
+                            <i class="fas fa-arrow-right" aria-hidden="true"></i>
+                            <span>{{ attachement.date_fin_periode|date:"d/m/Y" }}</span>
+                        </td>
+                        <td>
+                            <a href="{% url 'projets:validation_attachement' attachement.id %}">
+                                <span class="app-badge attachment-status
+                                    {% if attachement.statut == 'VALIDE' %}app-badge-success
+                                    {% elif attachement.statut == 'REFUSE' %}app-badge-danger
+                                    {% elif attachement.statut == 'SIGNE' or attachement.statut == 'TRANSMIS' %}app-badge-info
+                                    {% elif attachement.statut == 'MODIFIE' %}app-badge-warning
+                                    {% else %}app-badge-muted{% endif %}"
+                                    title="Consulter le processus de validation">
+                                    {{ attachement.get_statut_display }}
+                                </span>
+                            </a>
+                        </td>
+                        <td class="attachment-amount-cell">
+                            <span>{{ attachement.total_montant_ht|format_quantity }}</span>
+                            <small>DH</small>
+                        </td>
+                        <td class="attachment-file-cell">
+                            {% if attachement.fichier %}
+                            <div class="attachment-file-chip">
+                                <i class="fas fa-file-pdf" aria-hidden="true"></i>
+                                <span class="attachment-file-name" title="{{ attachement.get_file_name }}">{{ attachement.get_file_name|default:"Document joint" }}</span>
+                                <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=false"
+                                   target="_blank" rel="noopener"
+                                   class="app-action-btn" title="Consulter le fichier" aria-label="Consulter le fichier joint">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                </a>
+                                <a href="{% url 'projets:download_document' 'Attachement' attachement.id %}?download=true"
+                                   target="_blank" rel="noopener"
+                                   class="app-action-btn" title="Télécharger le fichier" aria-label="Télécharger le fichier joint">
+                                    <i class="fas fa-download" aria-hidden="true"></i>
+                                </a>
+                            </div>
+                            {% else %}
+                                <span class="attachment-no-file"><i class="fas fa-paperclip" aria-hidden="true"></i> Aucun fichier</span>
+                            {% endif %}
+                        </td>
+                        <td class="attachment-actions-cell">
+                            <div class="attachment-actions">
+                                <a href="{% url 'projets:detail_attachement' attachement.id %}"
+                                   class="app-action-btn" style="color: var(--accent-primary);"
+                                   title="Voir le détail" aria-label="Voir le détail de l’attachement">
+                                    <i class="fas fa-eye" aria-hidden="true"></i>
+                                </a>
+                                <button type="button"
+                                        data-attachment-trace="{% url 'projets:tracabilite_validation_attachement' attachement.id %}"
+                                        class="app-action-btn" style="color: var(--accent-info);"
+                                        title="Traçabilité des validations" aria-label="Consulter la traçabilité des validations">
+                                    <i class="fas fa-clipboard-check" aria-hidden="true"></i>
+                                </button>
+                                <a href="{% url 'projets:modifier_attachement' attachement.id %}"
+                                   class="app-action-btn" style="color: var(--accent-warning);"
+                                   title="Modifier" aria-label="Modifier l’attachement">
+                                    <i class="fas fa-pen" aria-hidden="true"></i>
+                                </a>
+                                <button type="button"
+                                        data-attachment-delete="{% url 'projets:supprimer_attachement' attachement.id %}"
+                                        data-attachment-label="{{ attachement.date_etablissement|date:'d/m/Y' }}"
+                                        class="app-action-btn" style="color: var(--accent-danger);"
+                                        title="Supprimer" aria-label="Supprimer l’attachement">
+                                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                </button>
+                                {% if attachement.decompte %}
+                                <a href="{% url 'projets:liste_decomptes' projet.id %}?from_attachements=true&attachement_id={{ attachement.id }}&action=modifier&modifier={{ attachement.decompte.id }}"
+                                   class="app-action-btn" style="color: var(--accent-green);"
+                                   title="Modifier le décompte" aria-label="Modifier le décompte">
+                                    <i class="fas fa-calculator" aria-hidden="true"></i>
+                                </a>
+                                {% else %}
+                                <a href="{% url 'projets:liste_decomptes' projet.id %}?from_attachements=true&attachement_id={{ attachement.id }}&action=ajouter"
+                                   class="app-action-btn" style="color: var(--accent-green);"
+                                   title="Ajouter un décompte" aria-label="Ajouter un décompte">
+                                    <i class="fas fa-plus" aria-hidden="true"></i>
+                                </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p id="attachment-search-empty" class="text-sm text-center py-6" style="color: var(--text-muted);" hidden>
+            Aucun attachement ne correspond à la recherche.
+        </p>
+        {% else %}
+        <div class="app-empty-state text-center py-10">
+            <i class="fas fa-folder-open text-4xl mb-3" style="color: var(--text-muted);"></i>
+            <p style="color: var(--text-secondary);">Aucun attachement pour ce projet.</p>
+            <p class="text-sm mt-1" style="color: var(--text-muted);">Utilisez le bouton « Ajouter un attachement » pour commencer le suivi.</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Traçabilité des validations -->
+    <div id="attachment-trace-dialog" class="modal-backdrop attachment-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="attachment-trace-title" hidden>
+        <div class="app-modal attachment-dialog-panel attachment-dialog-panel--wide">
+            <div class="app-modal-header">
+                <h2 id="attachment-trace-title" class="app-modal-title">
+                    <i class="fas fa-clipboard-check mr-2"></i>Traçabilité des validations
+                </h2>
+                <button type="button" class="app-modal-close" data-attachment-dialog-close aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div id="attachment-trace-content" class="attachment-trace-content"></div>
+        </div>
+    </div>
+
+    <!-- Confirmation de suppression -->
+    <div id="attachment-delete-dialog" class="modal-backdrop attachment-dialog" role="dialog" aria-modal="true"
+         aria-labelledby="attachment-delete-title" hidden>
+        <div class="app-modal attachment-dialog-panel">
+            <div class="app-modal-header">
+                <h2 id="attachment-delete-title" class="app-modal-title" style="color: var(--accent-danger);">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>Confirmer la suppression
+                </h2>
+                <button type="button" class="app-modal-close" data-attachment-dialog-close aria-label="Fermer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="text-sm mb-3" style="color: var(--text-primary);">
+                Voulez-vous vraiment supprimer l’attachement du <strong id="attachment-delete-label"></strong> ?
+            </p>
+            <p class="attachment-delete-warning text-sm">
+                <i class="fas fa-exclamation-circle"></i>
+                Cette action est irréversible. Toutes les données associées seront perdues.
+            </p>
+            <form id="attachment-delete-form" method="post" action="">
+                {% csrf_token %}
+                <div class="app-modal-footer">
+                    <button type="button" class="app-modal-btn app-modal-btn-cancel" data-attachment-dialog-close>Annuler</button>
+                    <button type="submit" class="app-modal-btn app-modal-btn-submit attachment-delete-submit">
+                        <i class="fas fa-trash mr-1"></i>Supprimer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

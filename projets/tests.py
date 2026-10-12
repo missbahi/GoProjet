@@ -5,13 +5,17 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.db.models.signals import post_save
 from django.test import override_settings
-from django.test import TestCase
+from django.test import Client, RequestFactory, TestCase
+from django.template import Context, Template
 from django.urls import reverse
+from django.utils.html import escape
+from urllib.parse import urlencode, urlsplit, parse_qs
 
 from datetime import date, timedelta
 from decimal import Decimal
 import json
 import os
+import re
 import shutil
 import tempfile
 
@@ -22,6 +26,8 @@ from .services.attachement_service import DonneesAttachementInvalides, enregistr
 from .exporters import ExcelExporter
 from .models import (
 	Attachement,
+	Atelier,
+	AffectationRessource,
 	Dossier,
 	DocumentAdministratif,
 	EtapeValidation,
@@ -48,6 +54,490 @@ from .models import (
 	CategorieCharge,
 )
 from .signals.notifications import gerer_notifications_projet
+from .utils.navigation import crumb, notification_origin_items, notification_origin_token
+
+
+@override_settings(
+	STORAGES={
+		'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+		'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+	},
+)
+class NotificationBreadcrumbTests(TestCase):
+	def setUp(self):
+		self.user = User.objects.create_user(
+			username='breadcrumb-user', password='test-password'
+		)
+		self.client.force_login(self.user)
+		self.url = reverse('projets:liste_notifications')
+		self.origin_url = reverse('projets:liste_projets') + '?search=chantier&page=2'
+		self.request = RequestFactory().get(self.origin_url)
+		self.items = [
+			crumb('Projets', 'projets:liste_projets'),
+			crumb('Chantier', icon='fas fa-building'),
+		]
+		self.token = notification_origin_token(self.items, self.request)
+
+	def test_breadcrumb_exports_origin_and_does_not_mutate_items(self):
+		html = Template('{% load navigation %}{% breadcrumb %}').render(Context({
+			'request': self.request, 'breadcrumb_items': self.items,
+		}))
+		self.assertIn('data-notification-origin=', html)
+		items = notification_origin_items(self.token)
+		self.assertEqual(items[-1]['url'], self.origin_url)
+		self.assertIsNone(self.items[-1]['url'])
+		self.assertEqual(items[-1]['icon'], 'fas fa-building')
+
+	def test_explicit_breadcrumb_items_export_origin(self):
+		html = Template('{% load navigation %}{% breadcrumb custom_items %}').render(Context({
+			'request': self.request, 'custom_items': self.items,
+		}))
+		match = re.search(r'data-notification-origin="([^"]+)"', html)
+		self.assertIsNotNone(match)
+		self.assertEqual(
+			notification_origin_items(match.group(1)),
+			notification_origin_items(self.token),
+		)
+
+	def test_task_list_breadcrumb_is_flat_in_full_page_and_htmx(self):
+		url = reverse('projets:liste_taches')
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true', 'HTTP_HX_TARGET': 'main-content'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(url, **headers)
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(response.context['breadcrumb_items'], [
+					crumb('Home', 'projets:home'), crumb('Taches'),
+				])
+				self.assertContains(response, 'aria-current="page" title="Taches"')
+				match = re.search(r'data-notification-origin="([^"]+)"', response.content.decode())
+				self.assertIsNotNone(match)
+				origin = notification_origin_items(match.group(1))
+				self.assertEqual(origin[-1]['url'], url)
+				self.assertEqual(origin[-1]['label'], 'Taches')
+
+	def test_notification_link_contains_signed_origin(self):
+		url = Template('{% load navigation %}{% notification_url %}').render(Context({
+			'request': self.request, 'breadcrumb_items': self.items,
+		}))
+		token = parse_qs(urlsplit(url).query)['breadcrumb'][0]
+		self.assertEqual(notification_origin_items(token)[-1]['url'], self.origin_url)
+
+	def test_no_origin_links_to_home(self):
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(self.url, **headers)
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(response.context['breadcrumb_items'], [
+					crumb('Tableau de bord', 'projets:home'), crumb('Notifications'),
+				])
+				self.assertContains(response, f'href="{reverse("projets:home")}"')
+				self.assertContains(response, f'hx-get="{reverse("projets:home")}"')
+				self.assertContains(response, 'aria-current="page" title="Notifications"')
+				self.assertContains(response, 'app-breadcrumb-current')
+				self.assertContains(response, 'data-notification-origin=""')
+		url = Template('{% load navigation %}{% notification_url %}').render(Context({
+			'request': self.request,
+		}))
+		self.assertEqual(url, self.url)
+
+	def test_empty_origin_from_home_is_accepted(self):
+		request = RequestFactory().get(reverse('projets:home'))
+		url = Template('{% load navigation %}{% notification_url %}').render(Context({
+			'request': request,
+		}))
+		self.assertEqual(url, self.url)
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true', 'HTTP_HX_TARGET': 'main-content'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(
+					url, {'breadcrumb': ''}, HTTP_REFERER=request.build_absolute_uri(),
+					**headers,
+				)
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(response.context['notification_origin'], '')
+				self.assertEqual(response.context['breadcrumb_items'], [
+					crumb('Tableau de bord', 'projets:home'), crumb('Notifications'),
+				])
+
+	def test_origin_navigation_is_rendered_in_full_page_and_htmx(self):
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true', 'HTTP_HX_TARGET': 'main-content'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(self.url, {'breadcrumb': self.token}, **headers)
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(
+					response.context['breadcrumb_items'],
+					[*notification_origin_items(self.token), crumb('Notifications')],
+				)
+				self.assertContains(response, f'href="{escape(self.origin_url)}"')
+				self.assertContains(response, f'hx-get="{escape(self.origin_url)}"')
+				self.assertContains(response, f'data-notification-origin="{escape(self.token)}"')
+				self.assertContains(response, 'aria-current="page" title="Notifications"')
+
+	def test_filters_and_pagination_keep_origin(self):
+		Notification.objects.bulk_create([
+			Notification(utilisateur=self.user, titre=f'Notification {i}', message='Test')
+			for i in range(21)
+		])
+		response = self.client.get(self.url, {'breadcrumb': self.token})
+		for filter_type in ('all', 'unread', 'read', 'today', 'priority'):
+			query = urlencode({'filter': filter_type, 'breadcrumb': self.token})
+			self.assertContains(response, f'href="?{escape(query)}"')
+			self.assertContains(response, f'hx-get="?{escape(query)}"')
+		query = urlencode({'page': 2, 'filter': 'all', 'breadcrumb': self.token})
+		self.assertContains(response, f'href="?{escape(query)}"')
+		response = self.client.get(
+			self.url, {'breadcrumb': self.token, 'filter': 'unread', 'page': 2},
+			HTTP_HX_REQUEST='true', HTTP_HX_TARGET='notifications-container',
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context['notification_origin'], self.token)
+		self.assertEqual(len(response.context['notifications']), 1)
+		self.assertNotContains(response, 'app-breadcrumb')
+
+	def test_reopening_notifications_does_not_duplicate_navigation(self):
+		context = Context({
+			'request': RequestFactory().get(self.url, {'breadcrumb': self.token}),
+			'breadcrumb_items': [*notification_origin_items(self.token), crumb('Notifications')],
+			'notification_origin': self.token,
+		})
+		url = Template('{% load navigation %}{% notification_url %}').render(context)
+		self.assertEqual(parse_qs(urlsplit(url).query)['breadcrumb'], [self.token])
+
+	def test_tampered_origin_is_rejected(self):
+		response = self.client.get(self.url, {'breadcrumb': self.token + 'tampered'})
+		self.assertEqual(response.status_code, 400)
+
+	def test_notification_panel_counts_only_current_user_unread_notifications(self):
+		other = User.objects.create_user(username='other-notification-user')
+		Notification.objects.create(utilisateur=other, titre='Private notification', message='Test')
+		Notification.objects.create(utilisateur=self.user, titre='Already read', message='Test', lue=True)
+		Notification.objects.bulk_create([
+			Notification(utilisateur=self.user, titre=f'Unread {i}', message='Test')
+			for i in range(7)
+		])
+		response = self.client.get(reverse('projets:notification_panel'), {'breadcrumb': self.token})
+		self.assertContains(response, 'Notifications non lues (7)')
+		self.assertContains(response, 'class="notification-item', count=5)
+		self.assertNotContains(response, 'Private notification')
+		self.assertNotContains(response, 'Already read')
+		self.assertContains(response, escape(urlencode({'breadcrumb': self.token})))
+
+	def test_notification_panel_refreshes_after_read_unread_and_delete(self):
+		notification = Notification.objects.create(
+			utilisateur=self.user, titre='Notification to update', message='Test',
+		)
+		panel_url = reverse('projets:notification_panel')
+		for action, expected in (
+			('mark_notification_as_read', 0),
+			('mark_notification_as_unread', 1),
+			('delete_notification', 0),
+		):
+			response = self.client.post(reverse(f'projets:{action}', args=[notification.id]))
+			self.assertEqual(response.status_code, 200)
+			self.assertContains(self.client.get(panel_url), f'Notifications non lues ({expected})')
+		self.assertNotContains(self.client.get(panel_url), 'data-notification-count')
+
+	def test_topbar_panel_does_not_use_paginated_list_as_its_source(self):
+		Notification.objects.bulk_create([
+			Notification(utilisateur=self.user, titre=f'Unread {i}', message='Test')
+			for i in range(21)
+		])
+		response = self.client.get(self.url, {'page': 2})
+		self.assertContains(response, 'Notifications non lues (21)')
+		self.assertContains(response, 'data-action-url=')
+
+	def test_notification_panel_requires_login_and_get(self):
+		panel_url = reverse('projets:notification_panel')
+		self.assertEqual(self.client.post(panel_url).status_code, 405)
+		self.client.logout()
+		self.assertEqual(self.client.get(panel_url).status_code, 302)
+
+
+@override_settings(
+	STORAGES={
+		'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+		'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+	},
+)
+class AtelierPlanningNavigationTests(TestCase):
+	def setUp(self):
+		self.user = User.objects.create_superuser(
+			username='planning-admin', password='test-password',
+		)
+		self.client.force_login(self.user)
+		self.projet = Projet.objects.create(
+			nom='Projet Planning', objet='Test', numero='PLAN-01',
+			maitre_ouvrage='MOA', localisation='Lieu',
+		)
+		self.atelier = Atelier.objects.create(
+			projet=self.projet, code='01', libelle='Terrassement',
+		)
+		self.materiel = Materiel.objects.create(designation='Pelle', actif=True)
+		self.affectation = AffectationRessource.objects.create(
+			atelier=self.atelier, materiel=self.materiel,
+			date_debut=date(2026, 10, 1), date_fin=date(2026, 10, 20),
+		)
+		self.filters = {
+			'atelier': self.atelier.id, 'debut': '2026-10-01', 'fin': '2026-11-15',
+		}
+
+	def test_home_chart_data_is_current_in_full_and_htmx_responses(self):
+		for headers, progress in (({}, 35), ({'HTTP_HX_REQUEST': 'true'}, 65)):
+			with self.subTest(headers=headers):
+				Projet.objects.filter(pk=self.projet.pk).update(avancement=progress)
+				response = self.client.get(reverse('projets:home'), **headers)
+				self.assertEqual(response.status_code, 200)
+				data = json.loads(response.context['chart_data_json'])
+				self.assertEqual(data['projets'][0]['avancement'], progress)
+				self.assertEqual(response.context['chart_data'], data)
+				self.assertContains(response, '1 projets récents')
+				self.assertContains(response, 'id="avancementChart"')
+				if headers:
+					self.assertNotContains(response, '<html')
+
+	def test_planning_controls_and_print_link_in_full_and_htmx_pages(self):
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(
+					reverse('projets:planning_ateliers', args=[self.projet.id]),
+					self.filters, **headers,
+				)
+				self.assertEqual(response.status_code, 200)
+				self.assertContains(response, 'data-context-action="add-affectation"')
+				self.assertContains(response, 'data-context-action="edit-atelier"')
+				self.assertContains(response, 'data-context-action="delete-atelier"')
+				self.assertContains(response, 'data-context-action="edit-affectation"')
+				self.assertContains(response, 'data-context-action="delete-affectation"')
+				self.assertContains(response, f'data-toggle-atelier="{self.atelier.id}"')
+				self.assertContains(response, f'id="atelier-{self.atelier.id}-children"')
+				preview = reverse('projets:apercu_impression_planning', args=[self.projet.id])
+				self.assertContains(response, f'href="{escape(preview + "?" + urlencode(self.filters))}"')
+				self.assertContains(response, 'target="_blank"')
+				self.assertContains(response, 'hx-boost="false"')
+				if headers:
+					self.assertNotContains(response, '<html')
+				else:
+					self.assertContains(response, 'projets/js/ateliers-planning.js')
+
+	def test_print_preview_uses_selected_period_and_atelier(self):
+		response = self.client.get(
+			reverse('projets:apercu_impression_planning', args=[self.projet.id]),
+			self.filters,
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertEqual(response.context['debut'], date(2026, 10, 1))
+		self.assertEqual(response.context['fin'], date(2026, 11, 15))
+		self.assertEqual(response.context['atelier_selectionne'], self.atelier.id)
+		self.assertEqual(response.context['nb_materiels_total'], 1)
+		self.assertContains(response, 'window.print()')
+
+	def test_edit_affectation_from_planning_persists_dates_and_comment(self):
+		response = self.client.post(
+			reverse('projets:modifier_affectation', args=[self.affectation.id]),
+			{'materiel': self.materiel.id, 'date_debut': '2026-10-02',
+			 'date_fin': '2026-10-21', 'commentaire': 'Updated from planning'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 200)
+		self.assertTrue(response.json()['success'])
+		self.affectation.refresh_from_db()
+		self.assertEqual(self.affectation.date_debut, date(2026, 10, 2))
+		self.assertEqual(self.affectation.date_fin, date(2026, 10, 21))
+		self.assertEqual(self.affectation.commentaire, 'Updated from planning')
+
+	def test_invalid_dates_return_errors_without_saving(self):
+		response = self.client.post(
+			reverse('projets:modifier_affectation', args=[self.affectation.id]),
+			{'materiel': self.materiel.id, 'date_debut': '2026-10-20', 'date_fin': '2026-10-01'},
+			HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+		)
+		self.assertEqual(response.status_code, 400)
+		self.assertIn('date_fin', response.json()['errors'])
+		self.affectation.refresh_from_db()
+		self.assertEqual(self.affectation.date_debut, date(2026, 10, 1))
+
+
+@override_settings(
+	STORAGES={
+		'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+		'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+	},
+)
+class UserManagementModalTests(TestCase):
+	def setUp(self):
+		self.admin = User.objects.create(username='modal-admin', is_superuser=True, is_staff=True)
+		self.target = User.objects.create(username='modal-user', email='old@example.com')
+		self.client.force_login(self.admin)
+		self.headers = {'HTTP_HX_REQUEST': 'true', 'HTTP_HX_TARGET': 'user-modal-content'}
+		self.urls = [
+			reverse('projets:ajouter_utilisateur'),
+			reverse('projets:modifier_utilisateur', args=[self.target.id]),
+			reverse('projets:gerer_projets_utilisateur', args=[self.target.id]),
+		]
+
+	def test_list_has_home_breadcrumb_and_only_one_empty_modal(self):
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true'}):
+			with self.subTest(headers=headers):
+				response = self.client.get(reverse('projets:liste_utilisateurs'), **headers)
+				self.assertEqual(response.status_code, 200)
+				self.assertEqual(response.context['breadcrumb_items'], [
+					crumb('Home', 'projets:home'), crumb('Utilisateurs'),
+				])
+				self.assertContains(response, 'id="user-management-dialog"', count=1)
+				self.assertContains(response, '<div id="user-modal-content"></div>', count=1)
+				self.assertContains(response, 'hx-target="#user-modal-content"')
+				self.assertNotContains(response, 'name="password1"')
+
+	def test_each_form_loads_on_demand_and_keeps_classic_page(self):
+		for url in self.urls:
+			with self.subTest(url=url):
+				modal = self.client.get(url, **self.headers)
+				self.assertEqual(modal.status_code, 200)
+				self.assertContains(modal, 'hx-target="#user-modal-content"')
+				self.assertNotContains(modal, '<html')
+				self.assertContains(modal, 'data-user-modal-close')
+				classic = self.client.get(url)
+				self.assertEqual(classic.status_code, 200)
+				self.assertContains(classic, 'hx-target="#main-content"')
+				self.assertNotContains(classic, 'data-user-modal-close')
+
+	def test_creation_error_stays_in_modal(self):
+		response = self.client.post(self.urls[0], {'username': ''}, **self.headers)
+		self.assertEqual(response.status_code, 400)
+		self.assertContains(response, 'hx-target="#user-modal-content"', status_code=400)
+		self.assertNotIn('HX-Location', response)
+		self.assertFalse(User.objects.exclude(pk__in=[self.admin.pk, self.target.pk]).exists())
+
+	def test_create_success_closes_modal_without_redirect(self):
+		response = self.client.post(self.urls[0], {
+			'username': 'created-in-modal',
+			'password1': 'A-valid-password-123!',
+			'password2': 'A-valid-password-123!',
+			'role': 'UTILISATEUR',
+		}, **self.headers)
+		self.assertEqual(response.status_code, 204)
+		self.assertIn('userModalSaved', json.loads(response['HX-Trigger']))
+		self.assertNotIn('HX-Location', response)
+		self.assertTrue(User.objects.filter(username='created-in-modal').exists())
+
+	def test_modify_password_errors_stay_in_modal(self):
+		for password, confirmation in [('mismatch-123', 'different-123'), ('short', 'short')]:
+			with self.subTest(password=password):
+				response = self.client.post(self.urls[1], {
+					'password': password, 'confirm_password': confirmation,
+					'email': 'new@example.com',
+				}, **self.headers)
+				self.assertEqual(response.status_code, 400)
+				self.assertContains(response, 'hx-target="#user-modal-content"', status_code=400)
+				self.target.refresh_from_db()
+				self.assertEqual(self.target.email, 'old@example.com')
+
+	def test_modify_success_persists_changes(self):
+		response = self.client.post(self.urls[1], {
+			'email': 'new@example.com', 'first_name': 'Updated',
+			'role': 'POINTEUR', 'is_active': 'on',
+		}, **self.headers)
+		self.assertEqual(response.status_code, 204)
+		self.target.refresh_from_db()
+		self.assertEqual(self.target.email, 'new@example.com')
+		self.assertEqual(self.target.profile.role, 'POINTEUR')
+
+	def test_oversized_avatar_returns_modal_validation_error(self):
+		response = self.client.post(self.urls[1], {
+			'role': 'UTILISATEUR',
+			'avatar': SimpleUploadedFile('large.png', b'x' * (5 * 1024 * 1024 + 1)),
+		}, **self.headers)
+		self.assertEqual(response.status_code, 400)
+		self.assertContains(response, '5 Mo', status_code=400)
+		self.assertContains(response, 'hx-target="#user-modal-content"', status_code=400)
+
+	def test_project_assignment_preserves_projects_outside_manager_scope(self):
+		manager = User.objects.create(username='modal-manager')
+		manager.profile.role = 'GERANT'
+		manager.profile.save()
+		owned = Dossier.objects.create(nom='Owned', gerant=manager)
+		other = Dossier.objects.create(nom='Other', gerant=self.admin)
+		self.target.dossiers.add(owned, other)
+		projects = []
+		for index, dossier in enumerate([owned, owned, other]):
+			projects.append(Projet.objects.create(
+				nom=f'Project {index}', numero=f'UM-{index}', objet='Test',
+				maitre_ouvrage='Client', localisation='Lieu', dossier=dossier,
+			))
+		self.target.projets.set([projects[0], projects[2]])
+		self.client.force_login(manager)
+		response = self.client.get(self.urls[2], **self.headers)
+		self.assertContains(response, f'value="{projects[0].id}"')
+		self.assertNotContains(response, f'value="{projects[2].id}"')
+		self.assertEqual(response.context['projets_utilisateur_ids'], {projects[0].id})
+		response = self.client.post(self.urls[2], {
+			'projets': [projects[1].id, projects[2].id],
+		}, **self.headers)
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(set(self.target.projets.values_list('id', flat=True)), {
+			projects[1].id, projects[2].id,
+		})
+
+	def test_modal_requests_do_not_bypass_access_permissions(self):
+		self.client.force_login(self.target)
+		for url in [reverse('projets:liste_utilisateurs'), *self.urls]:
+			with self.subTest(url=url):
+				self.assertEqual(self.client.get(url, **self.headers).status_code, 403)
+
+	def test_manager_cannot_open_other_users_forms(self):
+		manager = User.objects.create(username='restricted-manager')
+		manager.profile.role = 'GERANT'
+		manager.profile.save()
+		self.client.force_login(manager)
+		for url in self.urls[1:]:
+			with self.subTest(url=url):
+				self.assertEqual(self.client.get(url, **self.headers).status_code, 403)
+
+	def test_edit_preserves_dossiers_outside_manager_scope(self):
+		manager = User.objects.create(username='dossier-manager')
+		manager.profile.role = 'GERANT'
+		manager.profile.save()
+		owned = Dossier.objects.create(nom='Editable', gerant=manager)
+		other = Dossier.objects.create(nom='Uneditable', gerant=self.admin)
+		self.target.dossiers.add(owned, other)
+		self.client.force_login(manager)
+		response = self.client.post(self.urls[1], {
+			'role': 'STAFF', 'dossiers': [owned.id],
+		}, **self.headers)
+		self.assertEqual(response.status_code, 204)
+		self.assertEqual(set(self.target.dossiers.values_list('id', flat=True)), {owned.id, other.id})
+
+	def test_self_password_change_keeps_authenticated_session(self):
+		response = self.client.post(
+			reverse('projets:modifier_utilisateur', args=[self.admin.id]),
+			{'password': 'New-password-123!', 'confirm_password': 'New-password-123!'},
+			**self.headers,
+		)
+		self.assertEqual(response.status_code, 204)
+		response = self.client.get(reverse('projets:liste_utilisateurs'), HTTP_HX_REQUEST='true')
+		self.assertEqual(response.status_code, 200)
+		self.admin.refresh_from_db()
+		self.assertTrue(self.admin.check_password('New-password-123!'))
+
+	def test_classic_htmx_success_keeps_existing_navigation(self):
+		response = self.client.post(self.urls[1], {
+			'role': 'UTILISATEUR', 'is_active': 'on',
+		}, HTTP_HX_REQUEST='true', HTTP_HX_TARGET='main-content')
+		self.assertEqual(response.status_code, 200)
+		self.assertIn('HX-Location', response)
+		self.assertNotIn('userModalSaved', json.loads(response['HX-Trigger']))
+
+	def test_modal_submission_keeps_csrf_protection(self):
+		client = Client(enforce_csrf_checks=True)
+		client.force_login(self.admin)
+		self.assertEqual(client.post(self.urls[1], {
+			'role': 'UTILISATEUR',
+		}, **self.headers).status_code, 403)
+		response = client.get(self.urls[1], **self.headers)
+		self.assertContains(response, 'csrfmiddlewaretoken')
+		response = client.post(self.urls[1], {
+			'role': 'UTILISATEUR', 'is_active': 'on',
+		}, HTTP_X_CSRFTOKEN=client.cookies['csrftoken'].value, **self.headers)
+		self.assertEqual(response.status_code, 204)
 
 
 class RolesEtDossiersTests(TestCase):

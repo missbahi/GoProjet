@@ -24,6 +24,7 @@ from django.views import View
 from projets.decorators import can_view_projet, modules_projet_required
 from projets.forms import DocumentAdministratifForm, OrdreServiceForm
 from projets.models import DocumentAdministratif, OrdreService, Projet, TypeOrdreService
+from projets.utils.navigation import crumb, project_crumbs
 from django.views.decorators.http import require_POST
 
 VIEWABLE_TYPES = {
@@ -226,6 +227,7 @@ def documents_projet(request, projet_id):
     ctx = {
         'projet': projet,
         'documents': documents,
+        'breadcrumb_items': project_crumbs(projet, crumb("Documents administratifs")),
     }
 
     # ⚡ Rendu conditionnel HTMX
@@ -477,6 +479,7 @@ def ordres_service(request, projet_id):
         'ordre_a_modifier': ordre_a_modifier,
         'types_disponibles': types_disponibles,
         'form': form,
+        'breadcrumb_items': project_crumbs(projet, crumb("Ordres de service")),
     }
 
     # ⚡ Rendu conditionnel HTMX (uniquement en GET)
@@ -547,6 +550,7 @@ def modifier_ordre_service(request, projet_id, ordre_id):
         'ordre_a_modifier': ordre,
         'types_disponibles': types_disponibles,
         'form': form,
+        'breadcrumb_items': project_crumbs(projet, crumb("Ordres de service")),
     }
     return render(request, 'projets/ordres_service/ordres_service.html', context)
 
@@ -582,6 +586,11 @@ def details_ordre_service(request, projet_id, ordre_id):
     ctx = {
         'projet': projet,
         'ordre': ordre,
+        'breadcrumb_items': project_crumbs(
+            projet,
+            crumb("Ordres de service", "projets:ordres_service", args=[projet.id]),
+            crumb(ordre.reference),
+        ),
     }
 
     # ⚡ Rendu conditionnel HTMX

@@ -1,0 +1,35 @@
+
+{% load navigation %}
+{% breadcrumb %}
+
+<div class="attachment-workflow-page attachment-page--supprimer_attachement min-h-full flex items-center justify-center p-4" data-family="project" data-page-title="Suppression attachement" data-page-icon="fa-trash">
+<div class="attachment-delete-card p-6 rounded-lg shadow-md max-w-md w-full">
+        <div class="text-center mb-6">
+            <div class="attachment-delete-icon w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3">
+                <span class="text-xl">⚠️</span>
+            </div>
+            <h2 class="text-xl font-bold text-[var(--text-primary)]">Confirmer la suppression</h2>
+            <p class="text-[var(--text-secondary)] mt-2">
+                Supprimer l'attachement <strong>{{ attachement.numero }}</strong> ?
+            </p>
+            
+            {% if count_lignes > 0 %}
+            <p class="text-red-600 text-sm mt-2">
+                ⚠️ {{ count_lignes }} ligne(s) seront également supprimée(s)
+            </p>
+            {% endif %}
+        </div>
+        <form method="POST">
+            {% csrf_token %}
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-red-600 text-white py-2 px-4 rounded hover:bg-red-700 transition">
+                    Supprimer
+                </button>
+                <a href="{% url 'projets:liste_attachements' attachement.projet.id %}" 
+                   class="attachment-delete-cancel flex-1 py-2 px-4 rounded transition text-center">
+                    Annuler
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

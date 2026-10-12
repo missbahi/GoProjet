@@ -1,0 +1,131 @@
+{# projets/templates/projets/ateliers/_liste_ateliers_content.html #}
+{% load static navigation %}
+
+{% breadcrumb %}
+
+<div data-family="project"
+     data-page-title="Ateliers"
+     data-page-icon="fa-people-group">
+
+    <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <div> 
+            <h1 class="app-section-title mb-2">
+                <i class="fas fa-people-group mr-2"></i>
+                Ateliers – {{ projet.nom }}
+            </h1>
+            <p class="app-section-subtitle">
+                Gestion des ateliers (équipes) rattachés à ce projet
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'projets:planning_ateliers' projet.id %}"
+               hx-get="{% url 'projets:planning_ateliers' projet.id %}"
+               hx-target="#main-content"
+               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+               hx-push-url="true"
+               hx-indicator="#htmx-progress"
+               class="app-btn-secondary">
+                <i class="fas fa-calendar-days"></i> Planning
+            </a>
+            <button type="button" data-add-atelier-button class="app-btn-primary">
+                <i class="fas fa-plus"></i> Ajouter un atelier
+            </button>
+        </div>
+    </div>
+
+    {% if ateliers %}
+    <div class="app-card p-2 overflow-x-auto">
+        <table class="app-table" id="ateliersTable">
+            <thead>
+                <tr>
+                    <th class="text-left">Code</th>
+                    <th class="text-left">Libellé</th>
+                    <th class="text-left">Description</th>
+                    <th class="text-center">Matériels</th>
+                    <th class="text-center">Actif</th>
+                    <th class="text-center">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for atelier in ateliers %}
+                <tr>
+                    <td class="font-semibold" style="color: var(--accent-primary);">{{ atelier.code }}</td>
+                    <td>{{ atelier.libelle }}</td>
+                    <td class="text-sm" style="color: var(--text-secondary);">
+                        {{ atelier.description|default:"—"|truncatechars:80 }}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
+                           hx-get="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
+                           hx-target="#main-content"
+                           hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                           hx-push-url="true"
+                           hx-indicator="#htmx-progress"
+                           class="app-badge app-badge-info">
+                            <i class="fas fa-truck-monster mr-1"></i>
+                            {{ atelier.affectations.count }}
+                        </a>
+                    </td>
+                    <td class="text-center">
+                        {% if atelier.actif %}
+                            <i class="fa-solid fa-circle-check" style="color: var(--accent-success);"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-xmark" style="color: var(--accent-danger);"></i>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="inline-flex gap-2">
+                            <a href="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
+                               hx-get="{% url 'projets:materiels_atelier' projet.id atelier.id %}"
+                               hx-target="#main-content"
+                               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                               hx-push-url="true"
+                               hx-indicator="#htmx-progress"
+                               class="app-action-btn"
+                               style="color: var(--accent-primary);"
+                               title="Gérer les matériels">
+                                <i class="fa-solid fa-truck-monster"></i>
+                            </a>
+                            <button type="button"
+                                    data-edit-atelier-button
+                                    data-id="{{ atelier.id }}"
+                                    data-code="{{ atelier.code }}"
+                                    data-libelle="{{ atelier.libelle }}"
+                                    data-description="{{ atelier.description }}"
+                                    data-actif="{{ atelier.actif|yesno:'true,false' }}"
+                                    class="app-action-btn app-action-edit"
+                                    title="Modifier">
+                                <i class="fa-solid fa-pen"></i>
+                            </button>
+                            <a href="{% url 'projets:supprimer_atelier' projet.id atelier.id %}"
+                               class="app-action-btn app-action-delete"
+                               title="Supprimer"
+                               data-delete-atelier-link>
+                                <i class="fa-solid fa-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="app-empty-state text-center">
+        <i class="fas fa-inbox text-3xl mb-2"></i>
+        <p class="text-base md:text-lg">Aucun atelier enregistré pour ce projet.</p>
+        <p class="text-sm mt-2">Cliquez sur « Ajouter un atelier » pour commencer.</p>
+    </div>
+    {% endif %}
+
+    {# Modals #}
+    {% include "projets/ateliers/partials/modal_add_atelier.html" %}
+    {% include "projets/ateliers/partials/modal_edit_atelier.html" %}
+    {% include "projets/ateliers/partials/modal_backdrop.html" %}
+
+    <div id="atelier-config"
+         data-add-url="{% url 'projets:ajouter_atelier' projet.id %}"
+         data-edit-template="{% url 'projets:modifier_atelier' projet.id 0 %}"
+         data-delete-template="{% url 'projets:supprimer_atelier' projet.id 0 %}">
+    </div>
+</div>

@@ -1,44 +1,27 @@
-/**
- * Gestion des modals d'affectation de matériel.
- *
- * Ce fichier est réutilisable par plusieurs templates :
- *   - projets/ateliers/materiels.html
- *   - projets/ateliers/planning.html
- *
- * Dépendances DOM (doivent exister dans le template) :
- *   - Modals : #addAffectationModal, #editAffectationModal
- *   - Formulaires : #addAffectationForm, #editAffectationForm
- *   - Champs : #addMaterielInput, #addMateriel, #editMaterielInput, #editMateriel, ...
- *   - Backdrop : #modalBackdrop
- *   - Meta CSRF : <meta name="csrf-token" content="...">
- *
- * URLs (passées via data-attributes sur #affectation-config) :
- *   - data-add-url : URL pour ajouter une affectation
- *   - data-edit-template : URL pour modifier, avec /0/ à remplacer par l'ID
- *   - data-delete-template : URL pour supprimer, avec /0/ à remplacer par l'ID
- *
- * @author [A. Missbahi]
- * @version 1.0
- */
-(function() {
+/* static/projets/js/affectation-modal.js */
+(function () {
     'use strict';
 
-    // ============================================================
-    // Configuration
-    // ============================================================
-    let CONFIG = {
-        addUrl: null,
-        editTemplate: null,
-        deleteTemplate: null,
-    };
+    if (window.AffectationModal) return;
+
+    let CONFIG = { addUrl: null, editTemplate: null, deleteTemplate: null };
+
+    // ------------------------------------------------------------
+    // Utils
+    // ------------------------------------------------------------
+    function refreshMainContent() {
+        if (typeof window.refreshMainContent === 'function') {
+            window.refreshMainContent();
+        } else {
+            window.location.reload();
+        }
+    }
 
     function chargerConfig() {
         const el = document.getElementById('affectation-config');
-        if (!el) {
-            console.warn('[Affectation] #affectation-config introuvable');
-            return false;
-        }
-        CONFIG.addUrl = el.dataset.addUrl || el.dataset.addTemplate || null;
+        if (!el) return false;
+        CONFIG.addUrl = document.getElementById('addAffectationForm')?.getAttribute('action')
+            || el.dataset.addUrl || el.dataset.addTemplate || null;
         CONFIG.editTemplate = el.dataset.editTemplate || null;
         CONFIG.deleteTemplate = el.dataset.deleteTemplate || null;
         return true;
@@ -54,83 +37,84 @@
         return CONFIG.deleteTemplate.replace('/0/', `/${id}/`);
     }
 
-    // ============================================================
-    // CSRF
-    // ============================================================
     function getCsrfToken() {
         const meta = document.querySelector('meta[name="csrf-token"]');
         if (meta) return meta.content;
+        const input = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (input) return input.value;
         const match = document.cookie.match(/csrftoken=([^;]+)/);
         return match ? match[1] : '';
     }
 
-    // ============================================================
-    // Ouverture / fermeture des modals
-    // ============================================================
+    // ------------------------------------------------------------
+    // Modals
+    // ------------------------------------------------------------
     function openAddAffectationModal(atelierId, url) {
         const modal = document.getElementById('addAffectationModal');
         const backdrop = document.getElementById('modalBackdrop');
         if (!modal || !backdrop) return;
-
-        // Mettre à jour l'URL d'ajout si fournie (appel depuis le planning)
+        chargerConfig();
+        if (!url && atelierId) {
+            const template = document.getElementById('affectation-config')?.dataset.addTemplate;
+            if (template) url = template.replace('/0/', `/${atelierId}/`);
+        }
         if (url) {
             CONFIG.addUrl = url;
+            document.getElementById('addAffectationForm').setAttribute('action', url);
         }
-
+        if (!CONFIG.addUrl || CONFIG.addUrl.includes('/0/')) {
+            showErrorMessage("URL d'ajout non configurée.");
+            return;
+        }
         modal.style.display = 'block';
         backdrop.style.display = 'block';
-
-        // Pré-remplir la date du jour
-        const dateDebut = document.getElementById('addDateDebut');
-        if (dateDebut && !dateDebut.value) {
-            dateDebut.value = new Date().toISOString().split('T')[0];
-        }
+        const d = document.getElementById('addDateDebut');
+        if (d && !d.value) d.value = new Date().toISOString().split('T')[0];
     }
 
     function openEditAffectationModal(id, materielId, materielLabel, dateDebut, dateFin, commentaire) {
         const modal = document.getElementById('editAffectationModal');
         const backdrop = document.getElementById('modalBackdrop');
         if (!modal || !backdrop) return;
-
-        const setVal = (elId, val) => {
-            const el = document.getElementById(elId);
-            if (el) el.value = val || '';
-        };
-
+        const setVal = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
         setVal('editAffectationId', id);
+        const option = Array.from(document.getElementById('editMaterielList')?.options || [])
+            .find(item => item.dataset.id === String(materielId));
+        if (option) materielLabel = option.value;
         setVal('editMaterielInput', materielLabel);
-        setVal('editMateriel', materielId);   // injecté directement
+        setVal('editMateriel', materielId);
+        const input = document.getElementById('editMaterielInput');
+        if (input) {
+            input.dataset.initialLabel = materielLabel;
+            input.dataset.initialId = String(materielId);
+        }
         setVal('editDateDebut', dateDebut);
         setVal('editDateFin', dateFin);
         setVal('editCommentaire', commentaire);
-
+        hideAllErrors('editAffectationForm');
         modal.style.display = 'block';
         backdrop.style.display = 'block';
     }
 
     function closeAddAffectationModal() {
-        const modal = document.getElementById('addAffectationModal');
-        const backdrop = document.getElementById('modalBackdrop');
-        const form = document.getElementById('addAffectationForm');
-        if (modal) modal.style.display = 'none';
-        if (backdrop) backdrop.style.display = 'none';
-        if (form) form.reset();
-        const input = document.getElementById('addMaterielInput');
-        const hidden = document.getElementById('addMateriel');
-        if (input) input.value = '';
-        if (hidden) hidden.value = '';
+        const m = document.getElementById('addAffectationModal');
+        const b = document.getElementById('modalBackdrop');
+        const f = document.getElementById('addAffectationForm');
+        if (m) m.style.display = 'none';
+        if (b) b.style.display = 'none';
+        if (f) f.reset();
+        const i = document.getElementById('addMaterielInput'); if (i) i.value = '';
+        const h = document.getElementById('addMateriel'); if (h) h.value = '';
         hideAllErrors('addAffectationForm');
     }
 
     function closeEditAffectationModal() {
-        const modal = document.getElementById('editAffectationModal');
-        const backdrop = document.getElementById('modalBackdrop');
-        const input = document.getElementById('editMaterielInput');
-        const hidden = document.getElementById('editMateriel');
-        if (modal) modal.style.display = 'none';
-        if (backdrop) backdrop.style.display = 'none';
-        if (input) input.value = '';
-        if (hidden) hidden.value = '';
+        const m = document.getElementById('editAffectationModal');
+        const b = document.getElementById('modalBackdrop');
+        if (m) m.style.display = 'none';
+        if (b) b.style.display = 'none';
+        const i = document.getElementById('editMaterielInput'); if (i) i.value = '';
+        const h = document.getElementById('editMateriel'); if (h) h.value = '';
         hideAllErrors('editAffectationForm');
     }
 
@@ -139,35 +123,35 @@
         closeEditAffectationModal();
     }
 
-    // ============================================================
-    // Synchronisation input visible ↔ hidden
-    // ============================================================
+    // ------------------------------------------------------------
+    // Datalist → hidden
+    // ------------------------------------------------------------
     function syncMaterielIdFromInput(inputId, hiddenId) {
         const input = document.getElementById(inputId);
         const hidden = document.getElementById(hiddenId);
         if (!input || !hidden) return '';
-
         const valeur = input.value.trim();
-        if (!valeur) {
-            hidden.value = '';
-            return '';
-        }
-
+        if (!valeur) { hidden.value = ''; return ''; }
         const datalist = document.getElementById(input.getAttribute('list'));
         if (!datalist) return '';
-
         const option = Array.from(datalist.options).find(o => o.value === valeur);
         hidden.value = option ? option.dataset.id : '';
         return hidden.value;
     }
 
-    // ============================================================
-    // Gestion des erreurs
-    // ============================================================
+    // ------------------------------------------------------------
+    // Erreurs / messages
+    // ------------------------------------------------------------
     function hideAllErrors(formId) {
-        document.querySelectorAll(`#${formId} .invalid-feedback`).forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll(`#${formId} input, #${formId} select, #${formId} textarea`)
-            .forEach(el => el.classList.remove('border-red-500'));
+        const root = document.getElementById(formId);
+        if (!root) return;
+        root.querySelectorAll('.invalid-feedback').forEach(el => el.classList.add('hidden'));
+        root.querySelectorAll('input, select, textarea').forEach(el => el.classList.remove('border-red-500'));
+        const summary = root.querySelector('[data-affectation-errors]');
+        if (summary) {
+            summary.hidden = true;
+            summary.replaceChildren();
+        }
         const addInput = document.getElementById('addMaterielInput');
         const editInput = document.getElementById('editMaterielInput');
         if (addInput) addInput.classList.remove('border-red-500');
@@ -178,7 +162,6 @@
         const selector = fieldName === 'materiel'
             ? `#${formId === 'addAffectationForm' ? 'addMaterielInput' : 'editMaterielInput'}`
             : `#${formId} [name="${fieldName}"]`;
-
         const input = document.querySelector(selector);
         const feedback = document.querySelector(`#${formId} [data-error-for="${fieldName}"]`);
         if (input) input.classList.add('border-red-500');
@@ -186,21 +169,37 @@
             if (message) feedback.textContent = message;
             feedback.classList.remove('hidden');
         }
+        if (message) showFormError(formId, message);
+    }
+
+    function showFormError(formId, message) {
+        const form = document.getElementById(formId);
+        const summary = form?.querySelector('[data-affectation-errors]');
+        if (!summary) {
+            showErrorMessage(message);
+            return;
+        }
+        const line = document.createElement('p');
+        line.textContent = message;
+        summary.appendChild(line);
+        summary.hidden = false;
+        summary.scrollIntoView({ block: 'nearest' });
     }
 
     function showServerErrors(formId, errors) {
         hideAllErrors(formId);
-        if (!errors) return;
+        if (!errors || !Object.keys(errors).length) {
+            showFormError(formId, 'Veuillez corriger les erreurs du formulaire.');
+            return;
+        }
         Object.keys(errors).forEach(field => {
             const messages = errors[field].map(e => e.message || e).join(' ');
             showFieldError(formId, field, messages);
         });
     }
 
-    // ============================================================
-    // Notifications
-    // ============================================================
     function showSuccessMessage(message) {
+        if (typeof window.showSuccessMessage === 'function') return window.showSuccessMessage(message);
         const el = document.createElement('div');
         el.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-green-800 text-green-200 rounded-lg shadow-lg max-w-sm';
         el.innerHTML = `<i class="fa-solid fa-check mr-2"></i> ${message}`;
@@ -209,6 +208,7 @@
     }
 
     function showErrorMessage(message) {
+        if (typeof window.showErrorMessage === 'function') return window.showErrorMessage(message);
         const el = document.createElement('div');
         el.className = 'fixed top-4 left-1/2 transform -translate-x-1/2 z-50 p-4 bg-red-800 text-red-100 rounded-lg shadow-lg max-w-sm';
         el.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${message}`;
@@ -216,10 +216,11 @@
         setTimeout(() => el.remove(), 5000);
     }
 
-    // ============================================================
-    // Soumission : ajout
-    // ============================================================
+    // ------------------------------------------------------------
+    // Handlers métier
+    // ------------------------------------------------------------
     function handleAddAffectation(form) {
+        chargerConfig();
         syncMaterielIdFromInput('addMaterielInput', 'addMateriel');
         const materielInput = document.getElementById('addMateriel');
         const dateDebutInput = document.getElementById('addDateDebut');
@@ -235,73 +236,52 @@
             isValid = false;
         }
         if (!isValid) return;
-
-        const formData = new FormData(form);
-        if (!CONFIG.addUrl) {
-            showErrorMessage("URL d'ajout non configurée.");
-            return;
-        }
+        if (!CONFIG.addUrl) { showErrorMessage("URL d'ajout non configurée."); return; }
 
         fetch(CONFIG.addUrl, {
             method: 'POST',
-            body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCsrfToken(),
-            },
+            body: new FormData(form),
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() },
         })
-        .then(async response => {
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Server returned non-JSON:', response.status, text);
-                throw new Error(`HTTP ${response.status} - réponse inattendue`);
-            }
-            const data = await response.json();
-            if (!response.ok) {
-                const err = new Error('Validation échouée');
-                err.data = data;
-                throw err;
-            }
+        .then(async r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            if (!r.ok) { const e = new Error('Validation échouée'); e.data = data; throw e; }
             return data;
         })
         .then(data => {
             if (data.success) {
                 closeAddAffectationModal();
                 showSuccessMessage(data.message);
-                setTimeout(() => window.location.reload(), 1000);
+                setTimeout(() => refreshMainContent(), 1000);
             } else {
                 showServerErrors('addAffectationForm', data.errors);
                 showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
             }
         })
-        .catch(error => {
-            console.error('Add affectation error:', error);
-            if (error.data && error.data.errors) {
-                showServerErrors('addAffectationForm', error.data.errors);
-                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+        .catch(err => {
+            console.error('Add affectation error:', err);
+            if (err.data && err.data.errors) {
+                showServerErrors('addAffectationForm', err.data.errors);
+                showErrorMessage(err.data.message || 'Veuillez corriger les erreurs.');
             } else {
-                showErrorMessage("Erreur lors de l'affectation. Voir la console.");
+                showErrorMessage("Erreur lors de l'affectation.");
             }
         });
     }
 
-    // ============================================================
-    // Soumission : édition
-    // ============================================================
     function handleEditAffectation(form) {
+        chargerConfig();
         const materielInput = document.getElementById('editMateriel');
         const materielVisible = document.getElementById('editMaterielInput');
         const dateDebutInput = document.getElementById('editDateDebut');
 
-        // Sync intelligente : ne remplace l'ID que si l'utilisateur a choisi une option
-        const datalist = document.getElementById('editMaterielList');
-        if (datalist && materielVisible && materielVisible.value.trim()) {
-            const option = Array.from(datalist.options).find(
-                o => o.value === materielVisible.value.trim()
-            );
-            if (option) {
-                materielInput.value = option.dataset.id;
+        if (materielInput && materielVisible) {
+            if (materielVisible.value.trim() === materielVisible.dataset.initialLabel) {
+                materielInput.value = materielVisible.dataset.initialId;
+            } else {
+                syncMaterielIdFromInput('editMaterielInput', 'editMateriel');
             }
         }
 
@@ -319,106 +299,79 @@
         if (!isValid) return;
 
         const id = document.getElementById('editAffectationId').value;
+        const url = construireEditUrl(id);
+        if (!url) { showFormError('editAffectationForm', "URL d'édition non configurée."); return; }
+
         const formData = new FormData(form);
         formData.set('materiel', materielInput.value);
-
-        const url = construireEditUrl(id);
-        if (!url) {
-            showErrorMessage("URL d'édition non configurée.");
-            return;
-        }
 
         fetch(url, {
             method: 'POST',
             body: formData,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCsrfToken(),
-            },
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() },
         })
-        .then(async response => {
-            const contentType = response.headers.get('content-type') || '';
-            if (!contentType.includes('application/json')) {
-                const text = await response.text();
-                console.error('Server returned non-JSON:', response.status, text);
-                throw new Error(`HTTP ${response.status} - réponse inattendue`);
-            }
-            const data = await response.json();
-            if (!response.ok) {
-                const err = new Error('Validation échouée');
-                err.data = data;
-                throw err;
-            }
+        .then(async r => {
+            const ct = r.headers.get('content-type') || '';
+            if (!ct.includes('application/json')) throw new Error(`HTTP ${r.status}`);
+            const data = await r.json();
+            if (!r.ok) { const e = new Error('Validation échouée'); e.data = data; throw e; }
             return data;
         })
         .then(data => {
             if (data.success) {
                 closeEditAffectationModal();
                 showSuccessMessage(data.message);
-                setTimeout(() => window.location.reload(), 1000);
+                setTimeout(() => refreshMainContent(), 1000);
             } else {
                 showServerErrors('editAffectationForm', data.errors);
-                showErrorMessage(data.message || 'Veuillez corriger les erreurs.');
+                showFormError('editAffectationForm', data.message || 'Veuillez corriger les erreurs.');
             }
         })
-        .catch(error => {
-            console.error('Edit affectation error:', error);
-            if (error.data && error.data.errors) {
-                showServerErrors('editAffectationForm', error.data.errors);
-                showErrorMessage(error.data.message || 'Veuillez corriger les erreurs.');
+        .catch(err => {
+            console.error('Edit affectation error:', err);
+            if (err.data && err.data.errors) {
+                showServerErrors('editAffectationForm', err.data.errors);
+                showFormError('editAffectationForm', err.data.message || 'Veuillez corriger les erreurs.');
             } else {
-                showErrorMessage("Erreur lors de la modification. Voir la console.");
+                showFormError('editAffectationForm', `Erreur lors de la modification (${err.message}).`);
             }
         });
     }
 
-    // ============================================================
-    // Suppression
-    // ============================================================
     function handleDeleteAffectation(id) {
+        chargerConfig();
         const url = construireDeleteUrl(id);
-        if (!url) {
-            showErrorMessage("URL de suppression non configurée.");
-            return;
-        }
-        if (!confirm('Retirer ce matériel de l\'atelier ?')) return;
+        if (!url) { showErrorMessage("URL de suppression non configurée."); return; }
+        if (!confirm("Retirer ce matériel de l'atelier ?")) return;
 
         fetch(url, {
             method: 'POST',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': getCsrfToken(),
-            },
+            headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': getCsrfToken() },
         })
-        .then(response => response.json())
+        .then(r => r.json())
         .then(data => {
             if (data.success) {
                 showSuccessMessage(data.message || 'Affectation retirée.');
-                setTimeout(() => window.location.reload(), 800);
+                setTimeout(() => refreshMainContent(), 800);
             } else {
                 showErrorMessage(data.message || 'Erreur lors de la suppression.');
             }
         })
-        .catch(error => {
-            console.error('Delete affectation error:', error);
+        .catch(err => {
+            console.error('Delete affectation error:', err);
             showErrorMessage('Une erreur est survenue lors de la suppression.');
         });
     }
 
-    // ============================================================
-    // Ouverture automatique via ?edit=<id>
-    // ============================================================
+    // ------------------------------------------------------------
+    // Auto-open ?edit=<id> (rejoué après chaque swap)
+    // ------------------------------------------------------------
     function autoOpenEditModal() {
         const params = new URLSearchParams(window.location.search);
         const editId = params.get('edit');
         if (!editId) return;
-
         const button = document.querySelector(`[data-edit-affectation-button][data-id="${editId}"]`);
-        if (!button) {
-            console.warn(`[Affectation] Affectation ${editId} introuvable dans la page`);
-            return;
-        }
-
+        if (!button) return;
         openEditAffectationModal(
             button.getAttribute('data-id'),
             button.getAttribute('data-materiel-id'),
@@ -427,103 +380,76 @@
             button.getAttribute('data-date-fin'),
             button.getAttribute('data-commentaire')
         );
-
-        // Nettoyer l'URL
         window.history.replaceState({}, document.title, window.location.pathname);
     }
 
     // ============================================================
-    // Délégation d'événements
+    // ⚡ Délégation globale — attachée UNE fois, survit aux swaps
     // ============================================================
-    function attacherHandlers() {
-        // Clic sur les boutons
-        document.addEventListener('click', function(e) {
-            // Bouton "Affecter"
-            if (e.target.matches('[data-add-affectation-button]') || e.target.closest('[data-add-affectation-button]')) {
-                e.preventDefault();
-                openAddAffectationModal();
-                return;
-            }
-
-            // Bouton "Modifier"
-            if (e.target.matches('[data-edit-affectation-button]') || e.target.closest('[data-edit-affectation-button]')) {
-                const button = e.target.matches('[data-edit-affectation-button]')
-                    ? e.target
-                    : e.target.closest('[data-edit-affectation-button]');
-                e.preventDefault();
-                openEditAffectationModal(
-                    button.getAttribute('data-id'),
-                    button.getAttribute('data-materiel-id'),
-                    button.getAttribute('data-materiel-label'),
-                    button.getAttribute('data-date-debut'),
-                    button.getAttribute('data-date-fin'),
-                    button.getAttribute('data-commentaire')
-                );
-                return;
-            }
-
-            // Suppression
-            if (e.target.matches('[data-delete-affectation-button]') || e.target.closest('[data-delete-affectation-button]')) {
-                const button = e.target.matches('[data-delete-affectation-button]')
-                    ? e.target
-                    : e.target.closest('[data-delete-affectation-button]');
-                e.preventDefault();
-                handleDeleteAffectation(button.getAttribute('data-id'));
-                return;
-            }
-            // Fermeture des modals via les boutons "data-close-modal"
-            if (e.target.matches('[data-close-modal]') || e.target.closest('[data-close-modal]')) {
-                const btn = e.target.matches('[data-close-modal]') ? e.target : e.target.closest('[data-close-modal]');
-                e.preventDefault();
-                const cible = btn.getAttribute('data-close-modal');
-                if (cible === 'add') closeAddAffectationModal();
-                else if (cible === 'edit') closeEditAffectationModal();
-                else if (cible === 'all') closeAllModals();
-                return;
-            }
-        });
-
-        // Soumission des formulaires
-        const addForm = document.getElementById('addAffectationForm');
-        if (addForm) {
-            addForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                handleAddAffectation(e.target);
-            });
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-add-affectation-button]')) {
+            e.preventDefault();
+            openAddAffectationModal();
+            return;
         }
 
-        const editForm = document.getElementById('editAffectationForm');
-        if (editForm) {
-            editForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                handleEditAffectation(e.target);
-            });
+        const editBtn = e.target.closest('[data-edit-affectation-button]');
+        if (editBtn) {
+            e.preventDefault();
+            openEditAffectationModal(
+                editBtn.getAttribute('data-id'),
+                editBtn.getAttribute('data-materiel-id'),
+                editBtn.getAttribute('data-materiel-label'),
+                editBtn.getAttribute('data-date-debut'),
+                editBtn.getAttribute('data-date-fin'),
+                editBtn.getAttribute('data-commentaire')
+            );
+            return;
         }
 
-        // Échap pour fermer
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeAllModals();
-        });
-    }
+        const delBtn = e.target.closest('[data-delete-affectation-button]');
+        if (delBtn) {
+            e.preventDefault();
+            handleDeleteAffectation(delBtn.getAttribute('data-id'));
+            return;
+        }
 
-    // ============================================================
-    // Point d'entrée
-    // ============================================================
-    function init() {
-        if (!chargerConfig()) return;
-        attacherHandlers();
+        const closeBtn = e.target.closest('[data-close-modal]');
+        if (closeBtn) {
+            e.preventDefault();
+            const cible = closeBtn.getAttribute('data-close-modal');
+            if (cible === 'add') closeAddAffectationModal();
+            else if (cible === 'edit') closeEditAffectationModal();
+            else if (cible === 'all') closeAllModals();
+            return;
+        }
+    });
+
+    document.addEventListener('submit', function (e) {
+        if (e.target.matches('form#addAffectationForm')) {
+            e.preventDefault();
+            handleAddAffectation(e.target);
+        } else if (e.target.matches('form#editAffectationForm')) {
+            e.preventDefault();
+            handleEditAffectation(e.target);
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeAllModals();
+    });
+
+    // Auto-open au load + après chaque swap
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', autoOpenEditModal);
+    } else {
         autoOpenEditModal();
     }
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+        if (e.detail.target.id === 'main-content') autoOpenEditModal();
+    });
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-
-    // ============================================================
-    // API publique (pour debug ou usage externe)
-    // ============================================================
+    // API publique
     window.AffectationModal = {
         openAdd: openAddAffectationModal,
         openAddForAtelier: openAddAffectationModal,
@@ -534,4 +460,3 @@
         closeAll: closeAllModals,
     };
 })();
-

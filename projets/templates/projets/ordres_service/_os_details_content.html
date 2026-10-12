@@ -1,19 +1,11 @@
 {# projets/templates/projets/ordres_service/_os_details_content.html #}
+{% load navigation %}
+
+{% breadcrumb %}
 
 <div data-family="project" class="max-w-4xl mx-auto"
      data-page-title="Détails de l'ordre de service"
      data-page-icon="fa-file-contract">
-
-    {# ═══════ Breadcrumb ═══════ #}
-    <nav class="doc-breadcrumb mb-6">
-        <a href="{% url 'projets:liste_projets' %}">Projets</a>
-        <i class="fas fa-chevron-right"></i>
-        <a href="{% url 'projets:dashboard' projet.id %}">{{ projet.nom|truncatechars:30 }}</a>
-        <i class="fas fa-chevron-right"></i>
-        <a href="{% url 'projets:ordres_service' projet.id %}">Ordres de service</a>
-        <i class="fas fa-chevron-right"></i>
-        <span class="current">{{ ordre.reference }}</span>
-    </nav>
 
     {# ═══════ En-tête ═══════ #}
     <div class="mb-6">

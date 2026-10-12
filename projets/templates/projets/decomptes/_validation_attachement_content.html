@@ -1,0 +1,364 @@
+{% load static navigation %}
+{% load formatters %}
+{% breadcrumb %}
+
+<div class="attachment-workflow-page attachment-page--validation_attachement" data-family="project" data-page-title="Validation attachement" data-page-icon="fa-clipboard-check">
+<div class="container">
+        <!-- En-tête principal -->
+        <header class="main-header">
+            <h1 class="main-title">
+                <i class="fas fa-clipboard-check"></i>
+                Processus de Validation d'Attachement
+            </h1>
+            <div class="header-grid">
+                <div class="header-item">
+                    <div class="header-label">Attachement</div>
+                    <div class="header-value">{{ attachement.numero }}</div>
+                </div>
+                <div class="header-item">
+                    <div class="header-label">Projet</div>
+                    <div class="header-value">{{ attachement.projet.nom }}</div>
+                </div>
+                <div class="header-item">
+                    <div class="header-label">Statut global</div>
+                    <div class="header-value 
+                        {% if attachement.statut == 'VALIDE' %}text-green-400
+                        {% elif attachement.statut == 'BROUILLON' %}text-yellow-400
+                        {% elif attachement.statut == 'TRANSMIS' %}text-blue-400
+                        {% else %}text-gray-400{% endif %}">
+                        {{ attachement.get_statut_display }}
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <div class="nav-container">
+            <div class="amount-display">
+                <div class="text-cyan-400 font-semibold">
+                    Montant total : <span class="text-white text-xl">{{ attachement.total_montant_ht|format_currency }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages -->
+        {% if messages %}
+            <div class="message-container">
+                {% for message in messages %}
+                    <div class="message message-{{ message.tags }}">
+                        <div class="message-content">
+                            <i class="fas 
+                                {% if message.tags == 'success' %}fa-check-circle
+                                {% elif message.tags == 'error' %}fa-exclamation-circle
+                                {% elif message.tags == 'warning' %}fa-exclamation-triangle
+                                {% else %}fa-info-circle{% endif %}"></i>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <!-- Processus de validation  -->
+        <section class="validation-section">
+            <h2 class="section-title">
+                <i class="fas fa-list-ol"></i>
+                Étapes de Validation
+            </h2>
+            
+            <div class="validation-steps">
+                {% for validation in validations %}
+                <div class="validation-step 
+                    {% if validation.statut_validation == 'VALIDE' %}step-valid
+                    {% elif validation.statut_validation == 'REJETE' %}step-rejected
+                    {% elif validation.statut_validation == 'EN_ATTENTE' %}step-pending
+                    {% else %}step-correction{% endif %}">
+                    
+                    <div class="step-header">
+                        <div class="step-title">
+                            <span class="step-number">Étape {{ validation.ordre_validation }}</span>
+                            <span class="step-name">{{ validation.get_type_validation_display }}</span>
+                            {% if validation.est_obligatoire %}
+                                <span class="step-badge badge-obligatoire">Obligatoire</span>
+                            {% endif %}
+                        </div>
+                        <div class="step-status">
+                            <span class="step-badge 
+                                {% if validation.statut_validation == 'VALIDE' %}badge-valide
+                                {% elif validation.statut_validation == 'REJETE' %}badge-rejete
+                                {% elif validation.statut_validation == 'EN_ATTENTE' %}badge-attente
+                                {% else %}badge-correction{% endif %}">
+                                {{ validation.get_statut_validation_display }}
+                            </span>
+                            {% if validation.est_en_retard %}
+                                <span class="text-danger font-semibold">
+                                    <i class="fas fa-clock"></i> En retard
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="step-info">
+                        <div class="info-item">
+                            <span class="info-label">Validateur :</span>
+                            <span class="info-value">
+                                {% if validation.validateur %}
+                                    {{ validation.validateur.get_full_name|default:validation.validateur.username }}
+                                {% else %}
+                                    <span class="text-warning">Non assigné</span>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Date limite :</span>
+                            <span class="info-value">
+                                {% if validation.date_limite %}
+                                    {{ validation.date_limite|date:"d/m/Y" }}
+                                    {% if validation.jours_restants is not None %}
+                                        <span class="{% if validation.jours_restants < 3 %}text-danger{% else %}text-success{% endif %}">
+                                            ({{ validation.jours_restants }} jour{{ validation.jours_restants|pluralize }} restant{{ validation.jours_restants|pluralize }})
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    Non définie
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+
+                    {% if validation.commentaires %}
+                    <div class="step-content">
+                        <span class="info-label">Commentaires :</span>
+                        <div class="comment-box">
+                            {{ validation.commentaires }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if validation.motifs_rejet %}
+                    <div class="step-content">
+                        <span class="info-label text-danger">Motifs de rejet :</span>
+                        <div class="rejection-box">
+                            {{ validation.motifs_rejet }}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Actions -->
+                    {% if validation.est_validable_par_utilisateur %}
+                    <div class="step-actions">
+                        {% if validation.etapes_validation %}
+                            <button onclick="window.location.href='{% url 'projets:validation_technique_attachement' attachement.id %}'"
+                                class="btn btn-info btn-action">
+                                <i class="fas fa-eye"></i> Valider étapes
+                            </button>
+                        {% else %}
+                        <button onclick="openValidationModal('valider', {{ validation.id }})" 
+                                class="btn btn-success btn-action">
+                                <i class="fas fa-check"></i> Valider
+                        </button>
+                        {% endif %}
+                        <button onclick="openValidationModal('rejeter', {{ validation.id }})" 
+                                class="btn btn-danger btn-action">
+                            <i class="fas fa-times"></i> Rejeter
+                        </button>
+                        <button onclick="openValidationModal('correction', {{ validation.id }})" 
+                                class="btn btn-warning btn-action">
+                            <i class="fas fa-edit"></i> Correction
+                        </button>
+                    </div>
+                    {% elif validation.est_en_attente %}
+                    <div class="step-content">
+                        <p class="text-warning">
+                            <i class="fas fa-clock"></i>
+                            En attente de validation par {% if validation.validateur %}{{ validation.validateur.get_full_name|default:validation.validateur.username }}{% else %}un validateur{% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% empty %}
+                <div class="empty-state">
+                    <i class="fas fa-info-circle empty-icon"></i>
+                    <p>Aucun processus de validation défini pour cet attachement.</p>
+                    <p>Veuillez contacter l'administrateur du système pour configurer les étapes de validation.</p>
+                    <button id="transmitTrigger" type="button" onclick="transmitModal()"
+                            class="btn btn-primary mt-4">
+                        <i class="fas fa-edit"></i>
+                        Transmettre pour validation
+                    </button>
+                    {% if attachement.statut == 'TRANSMIS' %}
+                    <p class="mt-2">Le processus de validation devrait être initialisé automatiquement.</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <!-- Informations détaillées de l'attachement -->
+        <section class="details-section">
+            <h2 class="section-title">
+                <i class="fas fa-info-circle"></i>
+                Détails de l'Attachement
+            </h2>
+            <div class="details-grid">
+                <div class="details-column">
+                    <h3 class="column-title">Informations générales</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Période :</span>
+                        <span class="detail-value">{{ attachement.date_debut_periode|date:"d/m/Y" }} - {{ attachement.date_fin_periode|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Date établissement :</span>
+                        <span class="detail-value">{{ attachement.date_etablissement|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Observations :</span>
+                        <span class="detail-value">{{ attachement.observations|default:"Aucune" }}</span>
+                    </div>
+                </div>
+                <div class="details-column">
+                    <h3 class="column-title">Montants</h3>
+                    <div class="detail-item">
+                        <span class="detail-label">Montant HT :</span>
+                        <span class="detail-value">{{ attachement.total_montant_ht|format_currency }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Cumul précédent :</span>
+                        <span class="detail-value">{{ attachement.montant_ht_attachement_precedent|format_currency }}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Situation actuelle :</span>
+                        <span class="detail-value">{{ attachement.montant_situation|format_currency }}</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modal pour les actions de validation -->
+    <div id="validationModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 id="modalTitle" class="modal-title"></h3>
+            <form id="validationForm" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="validationId" name="validation_id">
+                <input type="hidden" id="actionType" name="action_type">
+                
+                <div class="form-group">
+                    <label class="form-label">Commentaires :</label>
+                    <textarea id="commentaires" name="commentaires" rows="4" 
+                              class="form-control" placeholder="Saisissez vos commentaires..."></textarea>
+                </div>
+                
+                <div class="form-group" id="motifsField" style="display: none;">
+                    <label class="form-label text-danger">Motifs de rejet :</label>
+                    <textarea id="motifs" name="motifs" rows="4" 
+                              class="form-control" placeholder="Expliquez les motifs du rejet..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Fichier justificatif (optionnel) :</label>
+                    <input type="file" id="fichier" name="fichier" class="form-control">
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Confirmer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Modal pour transmettre pour validation -->
+    <div id="transmitModal" class="modal-overlay">
+        <div class="modal-content">
+            <h3 class="modal-title">Transmettre l'attachement pour validation</h3>
+            <form id="transmitForm" method="POST" action="{% url 'projets:transmettre_validation_attachement' attachement.id %}">
+                {% csrf_token %}
+                <p>Êtes-vous sûr de vouloir transmettre cet attachement pour validation ?</p>
+                <div class="modal-actions">
+                    <button type="button" onclick="closeModal()" class="btn btn-info">Annuler</button>
+                    <button type="submit" class="btn btn-primary">Transmettre</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openValidationModal(action, validationId) {
+            const modal = document.getElementById('validationModal');
+            const title = document.getElementById('modalTitle');
+            const motifsField = document.getElementById('motifsField');
+            const actionType = document.getElementById('actionType');
+            const validationIdInput = document.getElementById('validationId');
+            
+            validationIdInput.value = validationId;
+            actionType.value = action;
+            
+            if (action === 'valider') {
+                title.textContent = 'Valider cette étape';
+                motifsField.style.display = 'none';
+            } else if (action === 'rejeter') {
+                title.textContent = 'Rejeter cette étape';
+                motifsField.style.display = 'block';
+            } else if (action === 'correction') {
+                title.textContent = 'Demander une correction';
+                motifsField.style.display = 'none';
+            }
+            
+            modal.style.display = 'flex';
+        }
+        
+        function transmitModal() {
+            const modal = document.getElementById('transmitModal');
+            modal.style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('validationModal').style.display = 'none';
+            document.getElementById('transmitModal').style.display = 'none';
+            document.getElementById('validationForm').reset();
+        }
+
+        // Fermer la modal en cliquant à l'extérieur
+        document.getElementById('validationModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Gérer la soumission du formulaire
+        document.getElementById('validationForm').addEventListener('submit', function(e) {
+            const actionType = document.getElementById('actionType').value;
+            const motifs = document.getElementById('motifs').value;
+            
+            if (actionType === 'rejeter' && !motifs.trim()) {
+                e.preventDefault();
+                alert('Veuillez saisir les motifs du rejet.');
+                return;
+            }
+        });
+        
+        // Gérer la soumission du formulaire de transmission
+        document.getElementById('transmitForm').addEventListener('submit', function(e) {
+            if (this.dataset.submitting === 'true') {
+                e.preventDefault();
+                return;
+            }
+
+            this.dataset.submitting = 'true';
+            const submitButton = this.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmission...';
+
+            const transmitTrigger = document.getElementById('transmitTrigger');
+            transmitTrigger.disabled = true;
+            transmitTrigger.setAttribute('aria-busy', 'true');
+            transmitTrigger.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Transmission...';
+            document.getElementById('transmitModal').style.display = 'none';
+        });
+    </script>
+    <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
+</div>
