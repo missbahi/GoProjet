@@ -21,13 +21,13 @@
     </div>
 
     {# ═══════ Actions ═══════ #}
-    <div class="flex flex-wrap justify-end gap-2 mb-6">
-        <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}"
-           class="app-btn-primary">
-            <i class="fas fa-plus-circle mr-2"></i> Nouvelle situation
-        </a>
-    </div>
- 
+    <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="doc-toggle-btn">
+        <span class="doc-toggle-icon-wrap">
+            <i class="fas fa-plus doc-toggle-icon"></i>
+        </span>
+        <span class="doc-toggle-label">Ajouter un attachement</span>
+        <i class="fas fa-chevron-right doc-toggle-chevron"></i>
+    </a>
     {# ═══════ Liste des situations ═══════ #}
     {% if situations %}
         <div class="space-y-4">

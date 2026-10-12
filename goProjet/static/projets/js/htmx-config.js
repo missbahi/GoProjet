@@ -64,6 +64,7 @@
                 '/static/projets/css/situations.css',
                 '/static/projets/css/attachements.css',
                 '/static/projets/css/ateliers.css',
+                '/static/projets/css/suivi.css',
             ],
             js: [
                 '/static/projets/js/dashboard.js',
@@ -75,6 +76,7 @@
                 '/static/projets/js/atelier-modal.js',
                 '/static/projets/js/affectation-modal.js',
                 '/static/projets/js/ateliers-planning.js',
+                '/static/projets/js/suivi.js',
             ],
         },
     };
@@ -150,10 +152,4 @@
     // ═══════════════════════════════════════════════════════════
     // GESTION D'ERREURS
     // ═══════════════════════════════════════════════════════════
-    document.body.addEventListener('htmx:responseError', function (e) {
-        console.error('[HTMX] Erreur', e.detail.xhr.status);
-        if (typeof window.showErrorMessage === 'function') {
-            window.showErrorMessage(`Erreur ${e.detail.xhr.status}`);
-        }
-    });
 })();

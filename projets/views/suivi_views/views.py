@@ -1,22 +1,30 @@
 import os
+import logging
 from decimal import Decimal
 
+from botocore.exceptions import BotoCoreError, ClientError
 from django.contrib import messages
+from django.db import DatabaseError
 from django.db.models import Sum, Value
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
 
 from projets.decorators import modules_projet_required
 from projets.models import Dossier, FichierSuivi, Projet, SuiviExecution
+from projets.forms import SuiviExecutionAjoutForm, SuiviExecutionForm
+from projets.utils.navigation import crumb, project_crumbs
 from projets.views.os_views.views import delete_document, download_document
+
+logger = logging.getLogger(__name__)
 
 
 @modules_projet_required
 def suivi_execution(request, projet_id):
     projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
     suivis = projet.suivis_execution.all().prefetch_related('fichiers')
-    choices = SuiviExecution.TYPE_SUIVI_CHOICES
 
     rapports_journaliers = []
     if projet.dossier_id and projet.dossier.activite == Dossier.Activite.TRAVAUX:
@@ -26,12 +34,18 @@ def suivi_execution(request, projet_id):
             )
         )[:10]
 
-    return render(request, 'projets/suivi/suivi_execution.html', {
+    ctx = {
         'projet': projet,
         'suivis': suivis,
-        'choices': choices,
+        'form': SuiviExecutionAjoutForm(initial={'date': timezone.localdate()}),
         'rapports_journaliers': rapports_journaliers,
-    })
+        'breadcrumb_items': project_crumbs(projet, crumb("Suivi exécution")),
+    }
+    # ⚡ Rendu conditionnel HTMX
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/suivi/_suivi_execution_content.html', ctx)
+
+    return render(request, 'projets/suivi/suivi_execution.html', ctx)
 
 
 @modules_projet_required
@@ -39,17 +53,54 @@ def ajouter_suivi(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
 
     if request.method == 'POST':
-        suivi = SuiviExecution(
-            projet=projet,
-            date=request.POST.get('date'),
-            titre=request.POST.get('titre'),
-            type_suivi=request.POST.get('type_suivi'),
-            commentaire=request.POST.get('commentaire'),
-            redacteur=request.POST.get('redacteur'),
-            importance=request.POST.get('importance', 'moyenne')
-        )
+        form = SuiviExecutionAjoutForm(request.POST, request.FILES)
+        if not form.is_valid():
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return JsonResponse({
+                    'success': False, 'errors': form.errors.get_json_data(),
+                    'message': "Veuillez corriger les erreurs du formulaire.",
+                }, status=400)
+            return render(request, 'projets/suivi/suivi_execution.html', {
+                'projet': projet, 'suivis': projet.suivis_execution.all().prefetch_related('fichiers'),
+                'form': form, 'breadcrumb_items': project_crumbs(projet, crumb("Suivi exécution")),
+            }, status=400)
+        suivi = form.save(commit=False)
+        suivi.projet = projet
         suivi.save()
+        fichiers_ajoutes = 0
+        for fichier in form.cleaned_data['fichiers']:
+            try:
+                FichierSuivi.objects.create(
+                    suivi=suivi, fichier=fichier, original_filename=fichier.name,
+                )
+                fichiers_ajoutes += 1
+            except (OSError, BotoCoreError, ClientError, DatabaseError):
+                logger.exception("Échec d'ajout du fichier %s au suivi %s", fichier.name, suivi.pk)
+                message = (
+                    f"Le suivi est enregistré avec {fichiers_ajoutes} fichier(s) joint(s), "
+                    f"mais l'envoi de « {fichier.name} » a échoué. "
+                    "Ouvrez la gestion des fichiers pour ajouter les fichiers manquants ; "
+                    "ne créez pas à nouveau ce suivi."
+                )
+                url = reverse('projets:ajouter_fichier_suivi', args=[projet_id, suivi.pk])
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse({
+                        'success': False, 'saved': True, 'url': url, 'message': message,
+                    }, status=500)
+                messages.error(request, message)
+                return redirect(url)
         action = request.POST.get('action')
+
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            if action == 'save_and_open_files':
+                url = reverse('projets:ajouter_fichier_suivi', args=[projet_id, suivi.id])
+            else:
+                url = reverse('projets:suivi_execution', args=[projet_id])
+            return JsonResponse({
+                'success': True, 'url': url,
+                'open_files': action == 'save_and_open_files',
+                'message': "Le suivi a été enregistré avec succès.",
+            })
 
         if action == 'save_and_open_files':
             return redirect('projets:ajouter_fichier_suivi', projet_id=projet_id, suivi_id=suivi.id)
@@ -76,29 +127,42 @@ def modifier_suivi(request, projet_id, suivi_id):
     """
     projet = get_object_or_404(Projet, id=projet_id)
     suivi = get_object_or_404(SuiviExecution, id=suivi_id, projet=projet)
+    ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
     if request.method == 'POST':
-        try:
-            suivi.date = request.POST.get('date', suivi.date)
-            suivi.titre = request.POST.get('titre', suivi.titre)
-            suivi.type_suivi = request.POST.get('type_suivi', suivi.type_suivi)
-            suivi.commentaire = request.POST.get('commentaire', suivi.commentaire)
-            suivi.redacteur = request.POST.get('redacteur', suivi.redacteur)
-            suivi.importance = request.POST.get('importance', suivi.importance)
+        form = SuiviExecutionForm(request.POST, instance=suivi, auto_id='edit_%s')
+        if form.is_valid():
+            suivi = form.save(commit=False)
+            suivi.date_modification = timezone.now()
             suivi.save()
-
+            if ajax:
+                return JsonResponse({
+                    'success': True,
+                    'url': reverse('projets:suivi_execution', args=[projet_id]),
+                    'message': "Le suivi a été modifié avec succès.",
+                })
             messages.success(request, "Le suivi a été modifié avec succès.")
-
-        except Exception as e:
-            messages.error(request, f"Erreur lors de la modification du suivi: {str(e)}")
-
-        return redirect('projets:suivi_execution', projet_id=projet_id)
+            return redirect('projets:suivi_execution', projet_id=projet_id)
+        if ajax:
+            return JsonResponse({
+                'success': False, 'errors': form.errors.get_json_data(),
+                'message': "Veuillez corriger les erreurs du formulaire.",
+            }, status=400)
+    else:
+        form = SuiviExecutionForm(instance=suivi, auto_id='edit_%s')
 
     context = {
         'projet': projet,
         'suivi': suivi,
+        'form': form,
+        'editing': True,
+        'breadcrumb_items': project_crumbs(
+            projet, crumb("Suivi exécution", "projets:suivi_execution", args=[projet_id]),
+            crumb("Modifier le suivi"),
+        ),
     }
-    return render(request, 'projets/suivi/modifier_suivi.html', context)
+    template = 'projets/suivi/_modifier_suivi_content.html' if request.headers.get('HX-Request') else 'projets/suivi/modifier_suivi.html'
+    return render(request, template, context, status=400 if form.errors else 200)
 
 
 @modules_projet_required

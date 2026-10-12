@@ -22,6 +22,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
     
+    {% include "includes/_toast_assets.html" %}
 </head>
 <body>
 
@@ -223,5 +224,6 @@
         window.csrfToken = '{{ csrf_token }}';
         window.saveUrl = '{% url 'projets:sauvegarder_lignes_bordereau' lot.id %}';
     </script>
+{% include "projets/home/_messages.html" %}
 </body>
 </html>

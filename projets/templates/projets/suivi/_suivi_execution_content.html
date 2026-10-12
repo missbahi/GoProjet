@@ -1,0 +1,44 @@
+{% load navigation l10n %}
+{% breadcrumb %}
+<div data-family="project" data-page-title="Suivi d'exécution"
+     data-page-icon="fa-file-contract" class="suivi-module">
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2"><i class="fas fa-file-contract mr-2"></i>Suivi d'exécution</h1>
+        <p class="app-section-subtitle">{{ projet.nom }} — Suivi détaillé de l'exécution du projet</p>
+    </div>
+    {% for message in messages %}
+    <div class="app-alert {% if message.tags == 'error' %}app-alert-error{% else %}app-alert-success{% endif %} p-3 mb-4 rounded-lg">{{ message }}</div>
+    {% endfor %}
+    <div class="app-card p-4 md:p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div class="space-y-2">
+                <p><strong>Numéro de marché :</strong> {{ projet.numero }}</p>
+                <p><strong>Objet :</strong> {{ projet.objet }}</p>
+                <p><strong>Maître d'ouvrage :</strong> {{ projet.maitre_ouvrage }}</p>
+            </div>
+            <div class="space-y-2">
+                <p><strong>Statut :</strong> <span class="app-badge app-badge-info">{{ projet.get_statut_display }}</span></p>
+                <p><strong>Avancement :</strong> {{ projet.avancement }} %</p>
+                <div class="suivi-progress" role="progressbar" aria-label="Avancement du projet"
+                     aria-valuenow="{{ projet.avancement|unlocalize }}" aria-valuemin="0" aria-valuemax="100">
+                    <div style="width: {{ projet.avancement|unlocalize }}%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <button type="button" id="toggleSuiviForm" class="doc-toggle-btn"
+            aria-expanded="{% if form.errors %}true{% else %}false{% endif %}" aria-controls="suiviFormContainer">
+        <span class="doc-toggle-icon-wrap"><i class="fas fa-plus doc-toggle-icon"></i></span>
+        <span class="doc-toggle-label">Ajouter un nouveau suivi</span>
+        <i class="fas fa-chevron-down doc-toggle-chevron"></i>
+    </button>
+    <div id="suiviFormContainer" class="app-card p-4 md:p-6 mb-6{% if not form.errors %} hidden{% endif %}">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="app-section-title text-lg">Nouvelle entrée de suivi</h2>
+            <button type="button" id="closeSuiviForm" class="app-btn-secondary" aria-label="Fermer le formulaire"><i class="fas fa-times"></i></button>
+        </div>
+        {% include 'projets/suivi/_suivi_form.html' %}
+    </div>
+    <div id="suiviEditContainer"></div>
+    {% include 'projets/suivi/_liste_suivi_execution_table.html' %}
+</div>

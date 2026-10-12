@@ -76,6 +76,7 @@
       border: 1px solid #4a5568;
     }
   </style>
+    {% include "includes/_toast_assets.html" %}
 </head>
 <body class="p-3 p-md-4">
   <div class="container">
@@ -310,5 +311,6 @@
     window.addEventListener('resize', adaptFileNames);
   </script>
   <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
+{% include "projets/home/_messages.html" %}
 </body>
 </html>

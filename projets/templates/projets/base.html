@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/components.css' %}">
+    {% include "includes/_toast_assets.html" %}
 
     <script>
         tailwind.config = {
@@ -90,7 +91,6 @@
     <div id="modals-nested-container"></div>
 
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
-    <script src="{% static 'projets/js/toast.js' %}" defer></script>
 
     <script>
         (function() {

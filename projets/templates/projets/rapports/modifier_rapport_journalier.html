@@ -47,6 +47,7 @@
             .card { padding: 0.75rem; }
         }
     </style>
+    {% include "includes/_toast_assets.html" %}
 </head>
 <body class="p-4 sm:p-6">
     <div class="max-w-5xl mx-auto">
@@ -130,5 +131,6 @@
             });
         }, 5000);
     </script>
+{% include "projets/home/_messages.html" %}
 </body>
 </html>

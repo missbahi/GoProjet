@@ -19,7 +19,7 @@ from .models import (
     RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
     AffectationRessource, Location, Transport, SousTraitance, Consommable,
     Fourniture, CategorieCharge,
-    ReleveMateriel,
+    ReleveMateriel, SuiviExecution,
 )
  
 from django.contrib.auth.models import User
@@ -33,6 +33,57 @@ class FrenchDecimalField(forms.DecimalField):
         if isinstance(value, str):
             value = re.sub(r'\s+', '', value).replace(',', '.')
         return super().to_python(value)
+
+class SuiviExecutionForm(forms.ModelForm):
+    class Meta:
+        model = SuiviExecution
+        fields = ['date', 'type_suivi', 'importance', 'titre', 'commentaire', 'redacteur']
+        widgets = {
+            'date': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'commentaire': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'app-modal-input'
+
+class SuiviFilesInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class SuiviFilesField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('widget', SuiviFilesInput)
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        files = data if isinstance(data, (list, tuple)) else [data]
+        cleaned = []
+        errors = []
+        for file in files:
+            try:
+                uploaded = super().clean(file, initial)
+                if uploaded is None:
+                    continue
+                if uploaded.size > 10 * 1024 * 1024:
+                    raise forms.ValidationError(
+                        "Le fichier %(name)s dépasse la taille maximale de 10 Mo.",
+                        params={'name': uploaded.name},
+                    )
+                cleaned.append(uploaded)
+            except forms.ValidationError as error:
+                errors.extend(error.error_list)
+        if errors:
+            raise forms.ValidationError(errors)
+        return cleaned
+
+
+class SuiviExecutionAjoutForm(SuiviExecutionForm):
+    fichiers = SuiviFilesField(
+        required=False, max_length=255, label="Fichiers joints",
+        widget=SuiviFilesInput(attrs={'data-suivi-files': '', 'aria-describedby': 'suivi-files-help'}),
+    )
 
 class CategorieChargeForm(forms.ModelForm):
     class Meta:

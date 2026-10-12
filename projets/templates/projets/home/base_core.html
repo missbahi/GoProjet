@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/components.css' %}">
+    {% include "includes/_toast_assets.html" %}
 
     <style>
         /* Indicateur de chargement HTMX */
@@ -109,7 +110,6 @@
 
     <!-- ⚡ JS essentiels (chargés partout) -->
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
-    <script src="{% static 'projets/js/toast.js' %}" defer></script>
     <script src="{% static 'projets/js/sidebar.js' %}" defer></script>
     <script src="{% static 'projets/js/htmx-config.js' %}" defer></script>
     <script src="{% static 'projets/js/common.js' %}" defer></script>

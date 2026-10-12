@@ -1,0 +1,106 @@
+.suivi-module {
+    color: var(--text-primary);
+}
+
+.suivi-module .suivi-muted {
+    color: var(--text-secondary);
+}
+
+.suivi-module .suivi-progress {
+    height: 0.625rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+}
+
+.suivi-module .suivi-progress > div {
+    height: 100%;
+    max-width: 100%;
+    background: var(--accent-green);
+}
+
+.suivi-module .suivi-timeline {
+    border-left: 2px solid var(--border-default);
+    padding-left: 1.25rem;
+}
+
+.suivi-module .suivi-card {
+    position: relative;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.suivi-module .suivi-card:last-child {
+    margin-bottom: 0;
+}
+
+.suivi-module .suivi-card::before {
+    content: '';
+    position: absolute;
+    top: 1.25rem;
+    left: -1.65rem;
+    width: 0.75rem;
+    height: 0.75rem;
+    border-radius: 50%;
+    border: 2px solid var(--bg-surface);
+    background: var(--accent-primary);
+}
+
+.suivi-module .suivi-actions {
+    border-top: 1px solid var(--border-default);
+}
+
+.suivi-module .suivi-delete-btn {
+    min-height: 2.5rem;
+    border: 1px solid var(--accent-danger);
+    box-shadow: var(--shadow-sm);
+}
+
+.suivi-module .suivi-delete-btn:focus-visible {
+    outline: 2px solid var(--accent-danger);
+    outline-offset: 3px;
+}
+
+.suivi-module .suivi-file {
+    border-left: 3px solid var(--accent-primary);
+    padding-left: 0.75rem;
+}
+
+.suivi-module [aria-invalid="true"] {
+    border-color: var(--accent-danger);
+}
+
+.suivi-module .suivi-attachments {
+    border-top: 1px solid var(--border-default);
+}
+
+.suivi-module .suivi-selected-files {
+    list-style: none;
+    padding: 0;
+}
+
+.suivi-module .suivi-selected-file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: 0.5rem;
+}
+
+.suivi-module .suivi-files-error {
+    color: var(--accent-danger);
+}
+
+@media (max-width: 640px) {
+    .suivi-module .suivi-card {
+        padding: 0.75rem;
+    }
+}

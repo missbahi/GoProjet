@@ -1,0 +1,54 @@
+<form id="{% if editing %}editSuiviForm{% else %}suiviForm{% endif %}" method="post" enctype="multipart/form-data"
+      action="{% if editing %}{% url 'projets:modifier_suivi' projet.id suivi.id %}{% else %}{% url 'projets:ajouter_suivi' projet.id %}{% endif %}">
+    {% csrf_token %}
+    <div data-suivi-errors role="alert" aria-live="assertive" class="app-alert app-alert-error p-3 mb-4 rounded-lg"{% if not form.errors %} hidden{% endif %}>
+        {% for field in form %}{% for error in field.errors %}<p>{{ field.label }} : {{ error }}</p>{% endfor %}{% endfor %}
+        {{ form.non_field_errors }}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for field in form %}
+        {% if field.name != 'fichiers' %}
+        <div{% if field.name == 'commentaire' or field.name == 'titre' %} class="md:col-span-2"{% endif %}>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-2">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+            {{ field }}
+        </div>
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% if not editing %}
+    <section class="suivi-attachments mt-6 pt-4" aria-labelledby="suivi-files-title">
+        <h3 id="suivi-files-title" class="font-semibold mb-3"><i class="fas fa-paperclip"></i> Fichiers joints</h3>
+        <label for="{{ form.fichiers.id_for_label }}" class="block text-sm font-medium mb-2">Ajouter des fichiers</label>
+        {{ form.fichiers }}
+        <p id="suivi-files-help" class="suivi-muted text-sm mt-2">
+            Plusieurs fichiers peuvent être sélectionnés, en une ou plusieurs fois. Maximum : 10 Mo par fichier.
+            Remplacez ou retirez chaque fichier avant l'enregistrement.
+        </p>
+        {% if form.is_bound %}<p class="suivi-muted text-sm mt-2">Après une erreur, sélectionnez à nouveau les fichiers à joindre.</p>{% endif %}
+        <p data-suivi-files-error role="alert" class="suivi-files-error mt-2" hidden></p>
+        <ul data-suivi-files-list class="suivi-selected-files mt-3" aria-label="Fichiers sélectionnés" aria-live="polite"></ul>
+        <template data-suivi-file-row>
+            <li class="suivi-selected-file">
+                <div class="min-w-0">
+                    <span data-suivi-file-name class="font-medium break-words"></span>
+                    <span data-suivi-file-size class="suivi-muted text-sm block"></span>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <button type="button" data-suivi-file-replace class="app-btn-secondary"><i class="fas fa-exchange-alt"></i>Remplacer</button>
+                    <input type="file" data-suivi-file-replacement hidden>
+                    <button type="button" data-suivi-file-remove class="app-btn app-btn-danger suivi-delete-btn"><i class="fas fa-trash"></i>Supprimer</button>
+                </div>
+            </li>
+        </template>
+        <noscript><p class="suivi-muted text-sm mt-2">Sans JavaScript, sélectionnez tous les fichiers en une seule fois.</p></noscript>
+    </section>
+    {% endif %}
+    <div class="flex flex-wrap gap-3 mt-6">
+        <button type="submit" name="action" value="save_and_close" class="app-btn-primary"><i class="fas fa-save"></i>{% if editing %}Enregistrer les modifications{% else %}Enregistrer et fermer le formulaire{% endif %}</button>
+        {% if editing %}
+        <a href="{% url 'projets:suivi_execution' projet.id %}" data-cancel-suivi-edit class="app-btn-secondary">Annuler</a>
+        {% else %}
+        <button type="button" id="cancelSuiviForm" class="app-btn-secondary">Annuler</button>
+        {% endif %}
+    </div>
+</form>

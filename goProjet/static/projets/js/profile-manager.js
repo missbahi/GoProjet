@@ -141,17 +141,6 @@
         });
 
         // Afficher un message (toast)
-        document.body.addEventListener('showMessage', function(e) {
-            const detail = e.detail || {};
-            const message = detail.value || detail.message || detail;
-            const type = detail.type || detail.messageType || 'info';
-
-            if (typeof window.showNotification === 'function') {
-                window.showNotification(message, type);
-            } else {
-                console.log(`[${type.toUpperCase()}] ${message}`);
-            }
-        });
     }
 
     /**

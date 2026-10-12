@@ -12,6 +12,7 @@
         .form-control { background: #2E2E2E; border: 1px solid #4B5563; color: #AECBD6; border-radius: 0.5rem; padding: 0.5rem 0.75rem; width: 100%; }
         .btn-secondary { background: #4B5563; color: white; }
     </style>
+    {% include "includes/_toast_assets.html" %}
 </head>
 <body class="p-4 sm:p-6">
     <main class="max-w-5xl mx-auto">
@@ -39,5 +40,6 @@
             {% include 'projets/rapports/_formulaire_rapport_journalier.html' %}
         </section>
     </main>
+{% include "projets/home/_messages.html" %}
 </body>
 </html>

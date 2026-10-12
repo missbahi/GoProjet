@@ -1,0 +1,57 @@
+<section class="app-card p-4 md:p-6" aria-labelledby="suivi-history-title">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+        <h2 id="suivi-history-title" class="app-section-title text-lg"><i class="fas fa-history"></i> Historique des suivis</h2>
+        <span class="app-badge app-badge-info">{{ suivis|length }} entrée(s)</span>
+    </div>
+    {% if suivis %}
+    <div class="suivi-timeline">
+        {% for suivi in suivis %}
+        <article class="suivi-card">
+            <div class="flex flex-wrap justify-between gap-2 mb-3">
+                <h3 class="font-semibold break-words">{{ suivi.titre }}</h3>
+                <time datetime="{{ suivi.date|date:'Y-m-d' }}" class="suivi-muted text-sm">{{ suivi.date|date:"d/m/Y" }}</time>
+            </div>
+            <div class="flex flex-wrap gap-2 mb-3">
+                <span class="app-badge {% if suivi.type_suivi == 'incident' %}app-badge-danger{% elif suivi.type_suivi == 'validation' or suivi.type_suivi == 'livraison' %}app-badge-success{% else %}app-badge-info{% endif %}">{{ suivi.get_type_suivi_display }}</span>
+                <span class="app-badge {% if suivi.importance == 'elevee' %}app-badge-danger{% elif suivi.importance == 'moyenne' %}app-badge-warning{% else %}app-badge-muted{% endif %}">{{ suivi.get_importance_display }}</span>
+            </div>
+            <p class="whitespace-pre-line break-words mb-3">{{ suivi.commentaire }}</p>
+            {% if suivi.redacteur %}<p class="suivi-muted text-sm mb-3"><i class="fas fa-user"></i> Rédigé par : {{ suivi.redacteur }}</p>{% endif %}
+            {% if suivi.fichiers.all %}
+            <div class="mb-4">
+                <h4 class="font-medium mb-2"><i class="fas fa-paperclip"></i> Fichiers joints</h4>
+                {% for fichier in suivi.fichiers.all %}
+                <div class="suivi-file flex flex-wrap justify-between items-center gap-2 mb-2">
+                    <div class="min-w-0 break-words">
+                        <span>{{ fichier.get_file_name }}</span>
+                        {% if fichier.description %}<p class="suivi-muted text-sm">{{ fichier.description }}</p>{% endif %}
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{% url 'projets:afficher_fichier_suivi' fichier.id %}" target="_blank" rel="noopener"
+                           hx-boost="false" class="app-btn-secondary" aria-label="Afficher {{ fichier.get_file_name }}" title="Voir"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'projets:download_document' 'FichierSuivi' fichier.id %}?download=true"
+                           target="_blank" rel="noopener" hx-boost="false" class="app-btn-secondary"
+                           aria-label="Télécharger {{ fichier.get_file_name }}" title="Télécharger"><i class="fas fa-download"></i></a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="suivi-actions flex flex-wrap justify-end gap-2 pt-3">
+                <a href="{% url 'projets:modifier_suivi' projet.id suivi.id %}"
+                   hx-get="{% url 'projets:modifier_suivi' projet.id suivi.id %}"
+                   hx-target="#suiviEditContainer" hx-swap="innerHTML" hx-push-url="false"
+                   hx-sync="#suiviEditContainer:replace" hx-indicator="#htmx-progress"
+                   data-edit-suivi="{{ suivi.id }}" class="app-btn-secondary"><i class="fas fa-pen"></i>Modifier</a>
+                <form method="post" action="{% url 'projets:supprimer_suivi' projet.id suivi.id %}" data-suivi-delete>
+                    {% csrf_token %}
+                    <button type="submit" class="app-btn app-btn-danger suivi-delete-btn"><i class="fas fa-trash"></i>Supprimer</button>
+                </form>
+            </div>
+        </article>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="suivi-muted text-center py-8"><i class="fas fa-clipboard-list text-4xl mb-3"></i><p>Aucun suivi d'exécution n'a été enregistré pour ce projet.</p></div>
+    {% endif %}
+</section>

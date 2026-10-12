@@ -1,32 +1,4 @@
-{# projets/templates/projets/home/_messages.html #}
-{% if messages %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        {% for message in messages %}
-            // ⚡ Convertit chaque message Django en toast JS
-            (function() {
-                const text = "{{ message|escapejs }}";
-                const tags = "{{ message.tags|default:'info' }}";
-
-                // Mappe les tags Django vers les types toast
-                const typeMap = {
-                    'success': 'success',
-                    'error': 'error',
-                    'warning': 'warning',
-                    'info': 'info',
-                    'debug': 'info',
-                };
-                const toastType = typeMap[tags] || 'info';
-
-                // Appel au système de toasts global
-                if (typeof window.showToast === 'function') {
-                    window.showToast(text, toastType);
-                } else {
-                    // Fallback : si toast.js n'est pas chargé
-                    console.warn('[messages] toast.js absent :', text);
-                }
-            })();
-        {% endfor %}
-    });
-</script>
-{% endif %}
+{% for message in messages %}
+<span hidden data-app-message="{{ message }}" data-app-message-type="{{ message.level_tag|default:'info' }}"></span>
+<noscript><div role="alert">{{ message }}</div></noscript>
+{% endfor %}

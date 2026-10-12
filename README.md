@@ -43,6 +43,23 @@ ouvert par HTMX depuis un autre module. Les anciennes instances et leurs
 de l'historique. Les états vides et erreurs de chargement sont affichés.
 Ces actualisations ne nécessitent pas de rechargement global.
 
+### Suivi d'exécution
+
+La liste et le formulaire d'ajout utilisent les composants et couleurs du thème.
+Les actions restent opérationnelles après les swaps HTMX, sans réinitialisation
+des scripts. L'enregistrement actualise l'historique et ferme le formulaire.
+Les pièces jointes sont sélectionnées au bas du formulaire d'ajout, sans
+glisser-déposer, en une ou plusieurs sélections. Chaque fichier peut être
+remplacé ou retiré avant l'envoi ; la limite est de 10 Mo par fichier.
+Les fichiers sont envoyés avec le suivi au moment de l'enregistrement.
+Si le stockage échoue après la création du suivi, l'erreur indique les fichiers
+déjà enregistrés et propose la gestion des fichiers sans recréer le suivi.
+Les erreurs de validation et de réseau restent visibles dans le formulaire.
+La modification ouvre un formulaire prérempli dans la même page, chargé à la
+demande par HTMX et réutilisant les champs de l'ajout. Annuler ferme ce panneau
+sans navigation ; enregistrer actualise l'historique sans toucher aux fichiers
+joints. L'accès direct à la page de modification reste disponible.
+
 ### Planning des ateliers
 
 La soumission des modales identifie les formulaires par sélecteur DOM :
@@ -77,6 +94,19 @@ Les autorisations existantes sont conservées et les projets hors du périmètre
 du gestionnaire ne sont pas retirés lors de l'enregistrement.
 
 ## 🛠️ Technologies
+
+### Messages d'action
+
+Les pages classiques, les réponses HTMX et AJAX, ainsi que les modales utilisent
+le même composant toast. Les messages Django sont transmis par l'en-tête
+`X-App-Messages` lors des requêtes asynchrones ; les redirections conservent
+leurs messages jusqu'à la page de destination. Les réponses JSON d'action
+peuvent fournir `message` ou `error`. Les erreurs de champs (`errors`) restent
+traitées dans les formulaires, dont les alertes persistantes sont conservées.
+Les toasts sont dédupliqués tant qu'ils sont visibles, limités à cinq et
+affichés dans le dialogue ouvert pour rester accessibles au-dessus des modales.
+Les pages autonomes actives partagent aussi ces assets ; les sauvegardes de
+templates et les aperçus d'impression ne sont pas modifiés.
 
 - **Backend** : Django 5.2.5
 - **Frontend** : HTML, CSS, JavaScript, Handsontable

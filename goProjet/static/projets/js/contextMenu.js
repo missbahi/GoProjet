@@ -290,6 +290,7 @@ function changerHauteurLigne(type) {
 
 // Fonction de notification simple
 function showNotification(message, type = 'info') {
+    if (window.showToast) return window.showToast(message, type);
     // Créer une notification temporaire
     const notification = document.createElement('div');
     notification.className = `fixed top-4 right-4 px-4 py-2 rounded-lg z-50 ${

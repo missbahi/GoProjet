@@ -23,6 +23,7 @@
         .document-link { color: #22d3ee; }
         .document-link:hover { color: #67e8f9; }
     </style>
+    {% include "includes/_toast_assets.html" %}
 </head>
 <body class="p-4 sm:p-6">
     <main class="max-w-6xl mx-auto">
@@ -107,5 +108,6 @@
             {% endif %}
         </section>
     </main>
+{% include "projets/home/_messages.html" %}
 </body>
 </html>

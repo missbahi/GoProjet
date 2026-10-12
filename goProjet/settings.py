@@ -82,6 +82,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
+    'projets.middleware.toast_messages.ToastMessagesMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'projets.middleware.admin_redirect.AdminRedirectMiddleware',
     # Optionnel: middleware pour détecter les visites PWA
