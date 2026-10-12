@@ -1,0 +1,11 @@
+{% for message in messages %}
+{% if message.level >= 30 %}
+<div role="alert" data-persistent-action-message
+     class="app-alert {% if message.level >= 40 %}app-alert-error{% else %}app-alert-warning{% endif %} p-3 mb-4 rounded-lg">
+    {{ message }}
+</div>
+{% else %}
+<span hidden data-app-message="{{ message }}" data-app-message-type="{{ message.level_tag|default:'info' }}"></span>
+<noscript><div role="status">{{ message }}</div></noscript>
+{% endif %}
+{% endfor %}

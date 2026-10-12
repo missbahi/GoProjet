@@ -95,18 +95,7 @@
         </div>
 
         <!-- Messages flash -->
-        {% if messages %}
-            <div class="mb-6 space-y-2">
-                {% for message in messages %}
-                    <div class="alert-auto-dismiss p-3 sm:p-4 rounded-lg alert-{{ message.tags }} flex justify-between items-center fade-in">
-                        <span class="text-sm sm:text-base">{{ message }}</span>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 ml-2 flex-shrink-0">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        {% include "projets/home/_action_messages.html" %}
 
         <!-- Formulaire -->
         <div class="card">

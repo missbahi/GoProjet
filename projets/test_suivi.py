@@ -182,3 +182,24 @@ class SuiviMigrationTests(TestCase):
         self.assertRedirects(response, self.url, fetch_redirect_response=False)
         suivi.refresh_from_db()
         self.assertEqual(suivi.titre, 'Classic edit')
+
+    def test_delete_success_is_only_a_toast_and_is_consumed_after_redirect(self):
+        for headers in (
+            {},
+            {'HTTP_HX_REQUEST': 'true', 'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'},
+        ):
+            with self.subTest(headers=headers):
+                suivi = self.create_suivi()
+                response = self.client.post(
+                    reverse('projets:supprimer_suivi', args=[self.projet.pk, suivi.pk]),
+                    follow=True, **headers,
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertFalse(SuiviExecution.objects.filter(pk=suivi.pk).exists())
+                self.assertContains(response, 'data-app-message="Le suivi a été supprimé avec succès."')
+                self.assertNotContains(response, 'app-alert-success')
+                if headers:
+                    self.assertIn('X-App-Messages', response)
+                refreshed = self.client.get(self.url, **headers)
+                self.assertNotContains(refreshed, 'Le suivi a été supprimé avec succès.')
+                self.assertNotIn('X-App-Messages', refreshed)

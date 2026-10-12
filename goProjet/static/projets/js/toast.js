@@ -111,6 +111,13 @@
     document.addEventListener('close', event => {
         if (event.target.matches('dialog') && active.size) container();
     }, true);
+    new MutationObserver(() => {
+        if (active.size) container();
+    }).observe(document.body, { attributes: true, attributeFilter: ['open'], subtree: true });
+    document.addEventListener('htmx:beforeCleanupElement', event => {
+        const element = document.getElementById('toast-container');
+        if (element && event.detail.elt.contains(element)) document.body.appendChild(element);
+    });
     document.addEventListener('showMessage', event => {
         const detail = event.detail || {};
         showToast(detail.message || detail.value, detail.type || detail.messageType || 'info');
@@ -135,9 +142,11 @@
     window.fetch = async function (input, options) {
         const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url, window.location.href);
         if (url.origin !== window.location.origin) return originalFetch.call(this, input, options);
+        const headers = new Headers(options?.headers || (input instanceof Request ? input.headers : undefined));
+        headers.set('X-App-Toast', 'true');
         let response;
         try {
-            response = await originalFetch.call(this, input, options);
+            response = await originalFetch.call(this, input, { ...options, headers });
         } catch (error) {
             if (error.name !== 'AbortError') showToast('Connexion au serveur impossible. Réessayez.', 'error');
             throw error;
@@ -149,13 +158,31 @@
         return response;
     };
 
+    const localRequests = new WeakSet();
+    const originalOpen = XMLHttpRequest.prototype.open;
+    XMLHttpRequest.prototype.open = function (method, url, ...args) {
+        if (new URL(url, window.location.href).origin === window.location.origin) localRequests.add(this);
+        else localRequests.delete(this);
+        return originalOpen.call(this, method, url, ...args);
+    };
     const originalSend = XMLHttpRequest.prototype.send;
+    const watchedRequests = new WeakSet();
     XMLHttpRequest.prototype.send = function (...args) {
-        this.addEventListener('load', () => {
-            if (this.responseURL && new URL(this.responseURL).origin === window.location.origin) {
-                readMessages(this.getResponseHeader('X-App-Messages'));
-            }
-        }, { once: true });
+        if (localRequests.has(this)) this.setRequestHeader('X-App-Toast', 'true');
+        if (!watchedRequests.has(this)) {
+            watchedRequests.add(this);
+            this.addEventListener('load', () => {
+                if (this.responseURL && new URL(this.responseURL).origin === window.location.origin) {
+                    const delivered = readMessages(this.getResponseHeader('X-App-Messages'));
+                    if (this.status >= 400 && !delivered && ![400, 422].includes(this.status)) {
+                        showToast(`L'opération a échoué (HTTP ${this.status}).`, 'error');
+                    }
+                }
+            });
+            ['error', 'timeout'].forEach(name => this.addEventListener(name, () => {
+                if (localRequests.has(this)) showToast('Connexion au serveur impossible. Réessayez.', 'error');
+            }));
+        }
         return originalSend.apply(this, args);
     };
 

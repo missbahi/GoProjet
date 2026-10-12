@@ -93,8 +93,6 @@ Les pages classiques restent accessibles par leurs URL sans JavaScript.
 Les autorisations existantes sont conservées et les projets hors du périmètre
 du gestionnaire ne sont pas retirés lors de l'enregistrement.
 
-## 🛠️ Technologies
-
 ### Messages d'action
 
 Les pages classiques, les réponses HTMX et AJAX, ainsi que les modales utilisent
@@ -105,8 +103,15 @@ peuvent fournir `message` ou `error`. Les erreurs de champs (`errors`) restent
 traitées dans les formulaires, dont les alertes persistantes sont conservées.
 Les toasts sont dédupliqués tant qu'ils sont visibles, limités à cinq et
 affichés dans le dialogue ouvert pour rester accessibles au-dessus des modales.
+Les templates actifs utilisent un rendu commun des messages d'action :
+succès et informations ne créent plus de bandeaux permanents, tandis que les
+erreurs et avertissements restent visibles sans fermeture automatique.
+Les vues peuvent conserver `messages.success()` avec redirection ; le message
+est consommé à destination et ne revient pas au prochain chargement.
 Les pages autonomes actives partagent aussi ces assets ; les sauvegardes de
 templates et les aperçus d'impression ne sont pas modifiés.
+
+## 🛠️ Technologies
 
 - **Backend** : Django 5.2.5
 - **Frontend** : HTML, CSS, JavaScript, Handsontable

@@ -153,29 +153,7 @@
         </div>
         
         <!-- Messages -->
-        {% if messages %}
-            <div class="mb-4 md:mb-6 space-y-2 md:space-y-3 no-print">
-                {% for message in messages %}
-                    <div class="alert-auto-dismiss p-3 md:p-4 rounded-xl alert-{{ message.tags }} flex justify-between items-center shadow-lg">
-                        <div class="flex items-center gap-2 md:gap-3">
-                            {% if message.tags == 'success' %}
-                                <i class="fas fa-check-circle text-sm md:text-base"></i>
-                            {% elif message.tags == 'error' %}
-                                <i class="fas fa-exclamation-circle text-sm md:text-base"></i>
-                            {% elif message.tags == 'warning' %}
-                                <i class="fas fa-exclamation-triangle text-sm md:text-base"></i>
-                            {% else %}
-                                <i class="fas fa-info-circle text-sm md:text-base"></i>
-                            {% endif %}
-                            <span class="font-medium text-sm md:text-base">{{ message }}</span>
-                        </div>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200 text-lg">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        {% include "projets/home/_action_messages.html" %}
 
         <div id="dynamic-messages" class="mb-4"></div>
 

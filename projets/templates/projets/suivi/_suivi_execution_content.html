@@ -6,9 +6,7 @@
         <h1 class="app-section-title mb-2"><i class="fas fa-file-contract mr-2"></i>Suivi d'exécution</h1>
         <p class="app-section-subtitle">{{ projet.nom }} — Suivi détaillé de l'exécution du projet</p>
     </div>
-    {% for message in messages %}
-    <div class="app-alert {% if message.tags == 'error' %}app-alert-error{% else %}app-alert-success{% endif %} p-3 mb-4 rounded-lg">{{ message }}</div>
-    {% endfor %}
+    {% include "projets/home/_action_messages.html" %}
     <div class="app-card p-4 md:p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div class="space-y-2">

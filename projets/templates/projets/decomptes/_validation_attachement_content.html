@@ -42,25 +42,7 @@
         </div>
 
         <!-- Messages -->
-        {% if messages %}
-            <div class="message-container">
-                {% for message in messages %}
-                    <div class="message message-{{ message.tags }}">
-                        <div class="message-content">
-                            <i class="fas 
-                                {% if message.tags == 'success' %}fa-check-circle
-                                {% elif message.tags == 'error' %}fa-exclamation-circle
-                                {% elif message.tags == 'warning' %}fa-exclamation-triangle
-                                {% else %}fa-info-circle{% endif %}"></i>
-                            <span class="font-medium">{{ message }}</span>
-                        </div>
-                        <button type="button" onclick="this.parentElement.remove()" class="text-white hover:text-gray-200">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
+        {% include "projets/home/_action_messages.html" %}
 
         <!-- Processus de validation  -->
         <section class="validation-section">

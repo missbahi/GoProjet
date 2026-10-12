@@ -19,13 +19,7 @@
         </nav>
 
         <!-- Messages -->
-        {% if messages %}
-        <div class="glass-card">
-            {% for message in messages %}
-            <div class="message message-{{ message.tags }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
+        {% include "projets/home/_action_messages.html" %}
 
         <!-- Section Étapes de Validation -->
         <section class="glass-card">
