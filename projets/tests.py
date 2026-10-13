@@ -2045,6 +2045,37 @@ class StorageDocumentFlowsTests(TestCase):
 			],
 		)
 
+	def test_situations_affichent_resultat_et_pourcentage(self):
+		cases = (
+			(1, '1000.00', '250.00', Decimal('750.00'), Decimal('75.00')),
+			(2, '100.00', '150.00', Decimal('-50.00'), Decimal('-50.00')),
+			(3, '100.00', '100.00', Decimal('0.00'), Decimal('0.00')),
+			(4, '0.00', '100.00', Decimal('-100.00'), None),
+		)
+		for mois, produits, charges, _, _ in cases:
+			situation = SituationMensuelle.objects.create(
+				projet=self.projet, annee=2026, mois=mois, chiffre_affaires=produits,
+			)
+			DepenseSituationMensuelle.objects.create(
+				situation=situation, categorie='PERSONNEL', designation='Charges',
+				montant_base=charges,
+			)
+		for headers in ({}, {'HTTP_HX_REQUEST': 'true'}):
+			response = self.client.get(
+				reverse('projets:situations_mensuelles', args=[self.projet.id]), **headers,
+			)
+			self.assertEqual(response.status_code, 200)
+			by_month = {s.mois: s for s in response.context['situations']}
+			for mois, _, _, resultat, pct in cases:
+				self.assertEqual(by_month[mois].resultat, resultat)
+				self.assertEqual(by_month[mois].pct_resultat, pct)
+			self.assertContains(response, 'Résultat : 750,00 DH')
+			self.assertContains(response, '75,00 %')
+			self.assertContains(response, '-50,00 %')
+			self.assertContains(response, '0,00 %')
+			self.assertContains(response, 'non calculable lorsque les produits sont nuls')
+			self.assertContains(response, 'app-badge-danger')
+
 	def test_apercu_situation_mensuelle_affiche_le_detail_imprimable(self):
 		dossier = Dossier.objects.create(
 			nom='Dossier Apercu Situation', gerant=self.user,

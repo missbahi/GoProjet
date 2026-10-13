@@ -62,6 +62,15 @@
                 <i class="fas fa-boxes text-xs"></i>
                 Stocks : {{ situation.total_stock|floatformat:'2g' }} DH
             </span>
+            <span class="app-badge {% if situation.resultat > 0 %}app-badge-success{% elif situation.resultat < 0 %}app-badge-danger{% else %}app-badge-muted{% endif %} inline-flex items-center gap-2">
+                <i class="fas {% if situation.resultat > 0 %}fa-chart-line{% elif situation.resultat < 0 %}fa-arrow-trend-down{% else %}fa-equals{% endif %} text-xs" aria-hidden="true"></i>
+                Résultat : {{ situation.resultat|floatformat:'2g' }} DH
+            </span>
+            <span class="app-badge {% if situation.pct_resultat is None %}app-badge-muted{% elif situation.pct_resultat > 0 %}app-badge-success{% elif situation.pct_resultat < 0 %}app-badge-danger{% else %}app-badge-muted{% endif %} inline-flex items-center gap-2"
+                  title="Résultat / Produits × 100{% if situation.pct_resultat is None %} : non calculable lorsque les produits sont nuls{% endif %}">
+                <i class="fas fa-percent text-xs" aria-hidden="true"></i>
+                {% if situation.pct_resultat is not None %}{{ situation.pct_resultat|floatformat:2 }} %{% else %}—{% endif %}
+            </span>
         </div>
 
         {% if situation.observations %}

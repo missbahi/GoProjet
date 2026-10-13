@@ -571,7 +571,14 @@ def _crumbs_situations(projet, *items):
 @chef_projet_required 
 def situations_mensuelles(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    situations = projet.situations_mensuelles.all()
+    situations = list(projet.situations_mensuelles.all())
+    for situation in situations:
+        situation.total_depenses_annotated = situation.total_depenses
+        situation.resultat = situation.chiffre_affaires - situation.total_depenses_annotated
+        situation.pct_resultat = (
+            situation.resultat / situation.chiffre_affaires * Decimal('100')
+            if situation.chiffre_affaires else None
+        )
 
     ctx = {
         'projet': projet,
@@ -874,5 +881,4 @@ def supprimer_document_situation_mensuelle(request, projet_id, situation_id):
         document.delete()
         messages.success(request, 'Document mensuel supprimé.')
     return redirect('projets:modifier_situation_mensuelle', projet_id=projet.id, situation_id=situation.id)
-
 

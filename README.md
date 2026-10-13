@@ -60,6 +60,13 @@ demande par HTMX et réutilisant les champs de l'ajout. Annuler ferme ce panneau
 sans navigation ; enregistrer actualise l'historique sans toucher aux fichiers
 joints. L'accès direct à la page de modification reste disponible.
 
+### Situations mensuelles
+
+Les cartes des situations mensuelles affichent le résultat (produits moins
+charges) et son pourcentage des produits, en vert pour un bénéfice, rouge pour
+une perte et neutre à zéro. Le pourcentage est non calculable si les produits
+sont nuls.
+
 ### Planning des ateliers
 
 La soumission des modales identifie les formulaires par sélecteur DOM :
