@@ -1,0 +1,101 @@
+{# projets/templates/projets/ressources/_modal_ressource.html #}
+{# Modal réutilisable : Ajouter / Modifier une ressource affectée. #}
+
+<div class="app-modal" id="modalRessource" hidden role="dialog" aria-modal="true"
+     aria-labelledby="modalRessourceTitle">
+
+    <div class="app-modal-content" style="max-width: 640px;">
+
+        <div class="app-modal-header">
+            <h3 id="modalRessourceTitle" data-title-add="Affecter une ressource"
+                data-title-edit="Modifier l'affectation">
+                <i class="fas fa-plus-circle mr-2"></i>
+                <span data-modal-title-text>Affecter une ressource</span>
+            </h3>
+            <button type="button" class="app-modal-close" data-close-modal>
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form id="formRessource" method="post" action="">
+            {% csrf_token %}
+
+            <input type="hidden" name="categorie_charge" id="ressource-categorie" value="">
+
+            {# Bandeau informatif : quel type est en cours d'affectation #}
+            <div class="p-4 pb-0">
+                <div class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm"
+                     style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+                    <i class="fas fa-tag" style="color: var(--accent-primary);"></i>
+                    <span style="color: var(--text-secondary);">Type :</span>
+                    <strong id="ressource-categorie-label" style="color: var(--accent-primary);">—</strong>
+                </div>
+            </div>
+
+            <div class="p-4 space-y-3">
+                <div>
+                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                        Ressource *
+                    </label>
+                    <select name="objet_id" id="ressource-objet"
+                            class="app-modal-input" required disabled>
+                        <option value="">— Chargement… —</option>
+                    </select>
+                </div>
+
+                {# Atelier : visible uniquement pour MATERIEL #}
+                <div id="ressource-atelier-wrapper" hidden>
+                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                        Atelier (optionnel)
+                    </label>
+                    <select name="atelier" id="ressource-atelier" class="app-modal-input">
+                        <option value="">— Non affecté à un atelier —</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                            Date de début *
+                        </label>
+                        <input type="date" name="date_debut" id="ressource-debut"
+                               class="app-modal-input" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                            Date de fin
+                        </label>
+                        <input type="date" name="date_fin" id="ressource-fin"
+                               class="app-modal-input">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                        Tarif négocié (DH)
+                    </label>
+                    <input type="number" name="tarif" id="ressource-tarif"
+                           class="app-modal-input" step="0.01" min="0" value="0.00">
+                </div>
+
+                <div>
+                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                        Commentaire
+                    </label>
+                    <input type="text" name="commentaire" id="ressource-commentaire"
+                           class="app-modal-input" maxlength="255">
+                </div>
+
+                <input type="hidden" name="actif" value="on">
+            </div>
+
+            <div class="app-modal-footer">
+                <button type="button" class="app-btn-secondary" data-close-modal>Annuler</button>
+                <button type="submit" class="app-btn-primary">
+                    <i class="fas fa-check"></i>
+                    <span data-modal-submit-text>Affecter</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>

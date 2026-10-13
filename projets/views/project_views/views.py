@@ -352,4 +352,5 @@ def dashboard_projet(request, projet_id):
         'dernier_rapport_journalier': dernier_rapport_journalier,
         'situations_mensuelles': situations_mensuelles,
         'derniere_situation_mensuelle': derniere_situation_mensuelle,
+        'ressources_count': projet.ressources_affectees.count(),
     })

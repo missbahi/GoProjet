@@ -1,6 +1,8 @@
 # projets/urls.py
 
 from django.urls import path, include
+
+from projets.views import ressource_views
 from .views.data_views import views as data_views
 from .views.user_views import views as user_views
 from .views.project_views import views as project_views
@@ -194,6 +196,22 @@ atelier_urlpatterns = [
     path('projets/<int:projet_id>/ateliers/planning/apercu/', atelier_views.apercu_impression_planning,  name='apercu_impression_planning'),
 ]
 
+# Gestion des ressources affectées aux projets
+ressource_urlpatterns = [
+    path('projet/<int:projet_id>/ressources/',
+         ressource_views.ressources_projet, name='ressources_projet'),
+    path('projet/<int:projet_id>/ressources/ajouter/',
+         ressource_views.ajouter_ressource, name='ajouter_ressource'),
+    path('ressources/<int:ressource_id>/modifier/',
+         ressource_views.modifier_ressource, name='modifier_ressource'),
+    path('ressources/<int:ressource_id>/supprimer/',
+         ressource_views.supprimer_ressource, name='supprimer_ressource'),
+    path('api/projet/<int:projet_id>/options-ressource/',
+         ressource_views.api_options_ressource, name='api_options_ressource'),
+    path('api/projet/<int:projet_id>/ateliers/',
+     ressource_views.api_ateliers_projet, name='api_ateliers_projet'),
+]
+
 # Gestion des taches
 tache_urlpatterns = [
     path('projet/<int:projet_id>/taches/', task_views.ListeTachesView.as_view(), name='liste_taches_projet'),
@@ -297,6 +315,7 @@ urlpatterns += suivi_urlpatterns
 urlpatterns += projets_urlpatterns
 urlpatterns += data_urlpatterns
 urlpatterns += atelier_urlpatterns
+urlpatterns += ressource_urlpatterns
 urlpatterns += tache_urlpatterns
 urlpatterns += attachement_urlpatterns
 urlpatterns += utilisateur_urlpatterns

@@ -3,3 +3,4 @@ from .projet import *
 from .decomptes import *
 from .suivi_projet import *
 from .ressources import *
+from .ressource_affectee import *

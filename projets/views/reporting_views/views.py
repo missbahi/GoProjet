@@ -9,6 +9,7 @@ from django.db import IntegrityError, transaction
 from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -152,7 +153,7 @@ def ajouter_rapport_journalier(request, projet_id):
             'form': form,
             'depenses': depenses,
             'stocks': stocks,
-            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+            'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
             'erreurs': erreurs,
             'breadcrumb_items': project_crumbs(
                 projet,
@@ -273,8 +274,11 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         return render(request, 'projets/rapports/_detail_rapport_journalier_content.html', ctx)
     return render(request, 'projets/rapports/detail_rapport_journalier.html', ctx)
 
-def _referentiel_depenses():
-    """Entrées du référentiel (base de données) proposées par catégorie de dépense."""
+def _referentiel_depenses(projet=None):
+    """Entrées du référentiel proposées par catégorie de dépense.
+    Si `projet` est fourni, on filtre aux ressources affectées à ce projet.
+    """
+    
     def options(queryset, champ_designation, champ_prix):
         return [
             {
@@ -284,6 +288,29 @@ def _referentiel_depenses():
             }
             for obj in queryset
         ]
+
+    if projet is not None:
+        # 🔥 Mode filtré : on utilise RessourceAffectee
+        def options_from_project(code):
+            return [
+                {
+                    'designation': r.designation,
+                    'unite': r.unite or '',
+                    'prix': r.tarif or Decimal('0.00'),
+                }
+                for r in projet.ressources_affectees.filter(
+                    categorie_charge__code=code, actif=True,
+                ).order_by('designation')
+            ]
+
+        return {
+            CategorieDepenseTravaux.PERSONNEL: options_from_project('PERSONNEL'),
+            CategorieDepenseTravaux.MATERIEL: options_from_project('MATERIEL'),
+            CategorieDepenseTravaux.LOCATION: options_from_project('LOCATION'),
+            CategorieDepenseTravaux.SOUS_TRAITANCE: options_from_project('SOUS_TRAITANCE'),
+            CategorieDepenseTravaux.FOURNITURE: options_from_project('FOURNITURE'),
+            CategorieDepenseTravaux.CONSOMMABLE: options_from_project('CONSOMMABLE'),
+        }
 
     return {
         CategorieDepenseTravaux.PERSONNEL: options(
@@ -306,7 +333,7 @@ def _referentiel_depenses():
         ),
     }
 
-def _grouper_depenses_par_categorie(depenses_formset):
+def _grouper_depenses_par_categorie(depenses_formset, projet=None):
     categories = list(CategorieCharge.objects.filter(actif=True))
     existing_ids = {
         form.instance.categorie_charge_id
@@ -324,7 +351,7 @@ def _grouper_depenses_par_categorie(depenses_formset):
         )
         if categorie in groupes:
             groupes[categorie].append(depense_form)
-    referentiel = _referentiel_depenses()
+    referentiel = _referentiel_depenses(projet=projet)
     return [
         (
             category.code,
@@ -389,7 +416,7 @@ def formulaire_rapport_journalier(request, projet_id):
                 'form': form,
                 'depenses': depenses,
                 'stocks': stocks,
-                'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+                'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
                 'erreurs': True,
             })
     else:
@@ -402,7 +429,7 @@ def formulaire_rapport_journalier(request, projet_id):
         depenses = DepenseRapportJournalierFormSet()
         stocks = StockRapportJournalierFormSet()
     
-    depenses_groupees = _grouper_depenses_par_categorie(depenses)
+    depenses_groupees = _grouper_depenses_par_categorie(depenses, projet=projet)
     
     return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
         'projet': projet,
@@ -426,7 +453,7 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
             'form': form,
             'depenses': depenses,
             'stocks': stocks,
-            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+            'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
             'breadcrumb_items': project_crumbs(
                 projet,
                 crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),

@@ -1,0 +1,129 @@
+/* ============================================================
+   Modal flottant (vrai overlay)
+   ============================================================ */
+
+/* Conteneur du modal : centre la boîte */
+.app-modal {
+    position: fixed;
+    background: rgba(0, 0, 0, 0.5);
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    overflow-y: auto;
+    animation: modalFadeIn 0.15s ease-out;
+}
+
+.app-modal[hidden] {
+    display: none !important;
+}
+
+
+/* La boîte du modal */
+.app-modal-content {
+    background: var(--bg-surface, #1e1e1e);
+    border: 1px solid var(--border-default, #333);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    max-width: 640px;
+    max-height: calc(100vh - 2rem);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.2s ease-out;
+    padding: 1rem 1.25rem;
+}
+
+/* En-tête */
+/* .app-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-default, #333);
+    background: var(--bg-elevated, #1e1e1e);
+} */
+
+.app-modal-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary, #fff);
+    display: flex;
+    align-items: center;
+}
+
+/* .app-modal-close {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary, #aaa);
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 6px;
+    transition: background 0.15s, color 0.15s;
+}
+
+.app-modal-close:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary, #fff);
+} */
+
+/* Corps : scrollable si trop long */
+.app-modal-content form {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    overflow: hidden;
+}
+
+.app-modal-content .p-4 {
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Pied */
+/* .app-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--border-default, #333);
+    background: var(--bg-elevated, #1e1e1e);
+} */
+
+/* Inputs dans le modal */
+/* .app-modal-input {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border-default, #333);
+    background: var(--bg-base, #0a0a0a);
+    color: var(--text-primary, #fff);
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.app-modal-input:focus {
+    outline: none;
+    border-color: var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.app-modal-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+} */
+
+/* Animations */
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes modalSlideIn {
+    from { transform: translateY(-12px) scale(0.98); opacity: 0; }
+    to   { transform: translateY(0) scale(1); opacity: 1; }
+}

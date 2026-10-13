@@ -265,8 +265,21 @@
                     </div>
                 </div>
 
-                {# ═══════════ Rapports journaliers (TRAVAUX) ═══════════ #}
                 {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
+                {# ═══════════ Affectation des ressources (TRAVAUX) ═══════════ #}
+                <div class="dashboard-module-card">
+                    <div class="dashboard-module-icon"><i class="fas fa-boxes-packing"></i></div>
+                    <h4 class="dashboard-module-title">Ressources</h4>
+                    <p class="dashboard-module-desc">Suivi des ressources affectées au projet</p>
+                    <div class="mt-auto">
+                        <p class="dashboard-no-data">{{ projet.ressources_affectees.count }} affectée{{ projet.ressources_affectees.count|pluralize }}</p>
+                        <a href="{% url 'projets:ressources_projet' projet.id %}" class="btn-access  w-full justify-center">
+                            <i class="fas fa-arrow-right"></i><span>Accéder</span>
+                        </a>
+                    </div>
+                </div>
+
+                {# ═══════════ Rapports journaliers (TRAVAUX) ═══════════ #}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-calendar-day"></i></div>
                     <h4 class="dashboard-module-title">Rapports journaliers</h4>
@@ -288,7 +301,7 @@
                         {% endif %}
                     </div>
                 </div>
-                {% endif %}
+                
                 {# ═══════════ Ateliers ═══════════ #}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-people-group"></i></div>
@@ -308,6 +321,7 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 {# ═══════════ Fiche de contrôle ═══════════ #}
                 <div class="dashboard-module-card">

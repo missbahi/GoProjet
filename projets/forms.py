@@ -6,7 +6,9 @@ import re
 from django import forms
 from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 
+from projets.models.ressource_affectee import RessourceAffectee
 from projets.utils.icones import choix_icones
 
 # from projets.models.revision import RevisionPrix
@@ -592,6 +594,158 @@ class FournitureForm(forms.ModelForm):
     class Meta:
         model = Fourniture
         fields = ['designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
+
+class RessourceAffecteeForm(forms.ModelForm):
+    """
+    Formulaire d'affectation d'une ressource du référentiel à un projet.
+
+    Le champ `objet_id` est alimenté par un <select> dont les options sont
+    filtrées côté serveur selon `categorie_charge.code`.
+    """
+
+    # Mapping centralisé (code → modèle + labels)
+    RESSOURCE_MAP = {
+        'PERSONNEL':      (Personnel,      'nom',         'tarif',          'Personnel'),
+        'MATERIEL':       (Materiel,       'designation', 'prix_unitaire',  'Matériel'),
+        'LOCATION':       (Location,       'designation', 'prix_unitaire',  'Location'),
+        'SOUS_TRAITANCE': (SousTraitance,  'designation', 'prix_unitaire',  'Sous-traitance'),
+        'TRANSPORT':      (Transport,      'designation', 'prix_unitaire',  'Transport'),
+        'CONSOMMABLE':    (Consommable,    'designation', 'prix_unitaire',  'Consommable'),
+        'FOURNITURE':     (Fourniture,     'designation', 'prix_unitaire',  'Fourniture'),
+    }
+
+    objet_id = forms.ChoiceField(
+        label=_("Ressource"),
+        required=True,
+        widget=forms.Select(attrs={'class': 'app-modal-input'}),
+    )
+
+    class Meta:
+        model = RessourceAffectee
+        fields = [
+            'categorie_charge', 'atelier', 'objet_id',
+            'date_debut', 'date_fin', 'tarif', 'commentaire', 'actif',
+        ]
+        widgets = {
+            'categorie_charge': forms.Select(attrs={'class': 'app-modal-input'}),
+            'atelier': forms.Select(attrs={'class': 'app-modal-input'}),
+            'date_debut': forms.DateInput(attrs={'type': 'date', 'class': 'app-modal-input'}),
+            'date_fin': forms.DateInput(attrs={'type': 'date', 'class': 'app-modal-input'}),
+            'tarif': forms.NumberInput(attrs={'class': 'app-modal-input', 'step': '0.01', 'min': '0'}),
+            'commentaire': forms.TextInput(attrs={'class': 'app-modal-input'}),
+        }
+
+    def __init__(self, *args, projet=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.projet = projet or getattr(self.instance, 'projet', None)
+        self.fields['categorie_charge'].queryset = (
+            CategorieCharge.objects.filter(actif=True).order_by('ordre', 'nom')
+        )
+        if self.projet:
+            self.fields['atelier'].queryset = (
+                Atelier.objects.filter(projet=self.projet, actif=True).order_by('code')
+            )
+        else:
+            self.fields['atelier'].queryset = Atelier.objects.none()
+
+        code = self._code_categorie_courant()
+        self.fields['objet_id'].choices = self._options_pour_code(code)
+
+        # ⚡ Le champ atelier n'est pertinent que pour le MATERIEL
+        if code != 'MATERIEL':
+            self.fields['atelier'].widget = forms.HiddenInput()
+            self.fields['atelier'].required = False
+            self.initial['atelier'] = ''
+
+        for name in ('date_debut', 'date_fin'):
+            val = getattr(self.instance, name, None)
+            if val:
+                self.initial[name] = val.strftime('%Y-%m-%d')
+
+    def _code_categorie_courant(self):
+        """Détermine le code de catégorie courant (initial, instance ou POST)."""
+        if self.data and self.data.get('categorie_charge'):
+            cat = CategorieCharge.objects.filter(pk=self.data['categorie_charge']).first()
+            return cat.code if cat else ''
+        if self.instance and self.instance.categorie_charge_id:
+            return self.instance.categorie_charge.code
+        if self.initial.get('categorie_charge'):
+            cat = self.initial['categorie_charge']
+            return cat.code if hasattr(cat, 'code') else ''
+        return ''
+
+    def _options_pour_code(self, code):
+        """Retourne les choix [(id, label), ...] pour le code de catégorie."""
+        entry = self.RESSOURCE_MAP.get(code)
+        if not entry:
+            return [('', '— Sélectionnez d\'abord un type —')]
+        Model, champ_designation, _, _ = entry
+        qs = Model.objects.filter(actif=True).order_by(champ_designation)
+        options = [('', '— Sélectionner —')]
+        for obj in qs:
+            label = getattr(obj, champ_designation)
+            parc = getattr(obj, 'immatriculation', None)
+            if parc:
+                label = f"{label} — N° {parc}"
+            options.append((obj.pk, label))
+        return options
+
+    def clean(self):
+        cleaned = super().clean()
+        code = cleaned['categorie_charge'].code if cleaned.get('categorie_charge') else ''
+        objet_id = cleaned.get('objet_id')
+        entry = self.RESSOURCE_MAP.get(code)
+
+        if not entry:
+            self.add_error('categorie_charge', _("Type de ressource non supporté."))
+            return cleaned
+        if not objet_id:
+            self.add_error('objet_id', _("Sélectionnez une ressource."))
+            return cleaned
+
+        Model, champ_designation, champ_prix, _ = entry
+        try:
+            source = Model.objects.get(pk=int(objet_id))
+        except (Model.DoesNotExist, ValueError, TypeError):
+            self.add_error('objet_id', _("Ressource introuvable."))
+            return cleaned
+
+        # Snapshot dénormalisé
+        cleaned['designation'] = getattr(source, champ_designation)
+        cleaned['unite'] = getattr(source, 'unite', '') or ''
+        if not cleaned.get('tarif'):
+            cleaned['tarif'] = getattr(source, champ_prix, Decimal('0.00')) or Decimal('0.00')
+        cleaned['projet'] = self.projet
+
+        # Validation de chevauchement (déléguée au modèle)
+        instance = self.instance
+        instance.projet = self.projet
+        instance.categorie_charge = cleaned['categorie_charge']
+        instance.objet_id = int(objet_id)
+        instance.date_debut = cleaned.get('date_debut')
+        instance.date_fin = cleaned.get('date_fin')
+        try:
+            instance.clean()
+        except ValidationError as e:
+            for field, msgs in e.message_dict.items():
+                for msg in msgs:
+                    self.add_error(field if field in self.fields else None, msg)
+
+        return cleaned
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.designation = self.cleaned_data['designation']
+        instance.unite = self.cleaned_data.get('unite', '')
+        instance.tarif = self.cleaned_data.get('tarif') or Decimal('0.00')
+        instance.projet = self.projet
+        # ⚡ Atelier uniquement pour le matériel
+        if self.cleaned_data.get('categorie_charge') \
+                and self.cleaned_data['categorie_charge'].code != 'MATERIEL':
+            instance.atelier = None
+        if commit:
+            instance.save()
+        return instance
 
 class TacheForm(forms.ModelForm):
     class Meta:

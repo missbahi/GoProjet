@@ -1,0 +1,166 @@
+{# projets/templates/projets/ressources/_liste_ressources_content.html #}
+{% load static navigation %}
+
+{% breadcrumb %}
+
+<div data-family="project"
+     data-page-title="Ressources"
+     data-page-icon="fa-boxes-packing"
+     class="max-w-6xl mx-auto">
+
+    <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+        <div>
+            <h1 class="app-section-title mb-2">
+                <i class="fas fa-boxes-packing mr-2"></i>
+                Ressources du projet — {{ projet.nom }}
+            </h1>
+            <p class="app-section-subtitle">
+                {{ total_ressources }} ressource{{ total_ressources|pluralize }} affectée{{ total_ressources|pluralize }}
+            </p>
+        </div>
+        {# ⚡ Bouton global retiré — l'ajout se fait par onglet #}
+    </div>
+
+    {% if categories_data %}
+    {# Onglets #}
+    <div class="mb-4 flex flex-wrap gap-2 border-b" style="border-color: var(--border-default);">
+        {% for item in categories_data %}
+        <button type="button"
+                class="ressource-tab{% if forloop.first %} active{% endif %}"
+                data-tab-target="tab-{{ item.categorie.code }}"
+                data-code="{{ item.categorie.code }}">
+            {{ item.categorie.nom }}
+            <span class="app-badge app-badge-info ml-1">{{ item.count }}</span>
+        </button>
+        {% endfor %}
+    </div>
+
+    {# Panneaux #}
+    {% for item in categories_data %}
+    <div class="ressource-tab-panel{% if not forloop.first %} hidden{% endif %}"
+         id="tab-{{ item.categorie.code }}">
+
+        {# ⭐ Bouton Ajouter propre à chaque onglet, avec le contexte injecté #}
+        <div class="mb-3 flex justify-end">
+            <button type="button"
+                    class="app-btn-primary"
+                    data-open-ressource-modal
+                    data-mode="add"
+                    data-categorie-id="{{ item.categorie.id }}"
+                    data-categorie-code="{{ item.categorie.code }}"
+                    data-categorie-label="{{ item.categorie.nom }}">
+                <i class="fas fa-plus"></i>
+                Ajouter {{ item.categorie.nom|lower }}
+            </button>
+        </div>
+
+        {% if item.ressources %}
+        <div class="app-card p-2 overflow-x-auto">
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th class="text-left">Désignation</th>
+                        <th class="text-left">Unité</th>
+                        <th class="text-right">Tarif (DH)</th>
+                        <th class="text-left">Début</th>
+                        <th class="text-left">Fin</th>
+                        {% if item.categorie.code == 'MATERIEL' %}
+                        <th class="text-left">Atelier</th>
+                        {% endif %}
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for r in item.ressources %}
+                    <tr>
+                        <td>
+                            <div class="font-medium">{{ r.designation }}</div>
+                            {% if r.commentaire %}
+                                <div class="text-xs mt-0.5 italic" style="color: var(--text-muted);">
+                                    {{ r.commentaire|truncatechars:60 }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ r.unite|default:"—" }}</td>
+                        <td class="text-right">{{ r.tarif|floatformat:2 }}</td>
+                        <td>{{ r.date_debut|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if r.date_fin %}
+                                {{ r.date_fin|date:"d/m/Y" }}
+                            {% else %}
+                                <span class="italic" style="color: var(--accent-primary);">En cours</span>
+                            {% endif %}
+                        </td>
+                        {% if item.categorie.code == 'MATERIEL' %}
+                        <td>
+                            {% if r.atelier %}
+                                <span class="text-sm" style="color: var(--accent-green);">
+                                    {{ r.atelier.code }} — {{ r.atelier.libelle }}
+                                </span>
+                            {% else %}
+                                <span class="italic text-sm" style="color: var(--text-muted);">—</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                        <td class="text-center">
+                            <div class="inline-flex gap-2">
+                                <button type="button"
+                                        class="app-action-btn app-action-edit"
+                                        title="Modifier"
+                                        data-open-ressource-modal
+                                        data-mode="edit"
+                                        data-ressource-id="{{ r.id }}"
+                                        data-categorie-id="{{ r.categorie_charge_id }}"
+                                        data-categorie-code="{{ item.categorie.code }}"
+                                        data-categorie-label="{{ item.categorie.nom }}"
+                                        data-objet-id="{{ r.objet_id }}"
+                                        data-date-debut="{{ r.date_debut|date:'Y-m-d' }}"
+                                        data-date-fin="{{ r.date_fin|date:'Y-m-d' }}"
+                                        data-tarif="{{ r.tarif }}"
+                                        data-atelier-id="{{ r.atelier_id|default:'' }}"
+                                        data-commentaire="{{ r.commentaire }}">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <button type="button"
+                                        class="app-action-btn app-action-delete"
+                                        title="Retirer"
+                                        data-delete-ressource-button
+                                        data-id="{{ r.id }}"
+                                        data-designation="{{ r.designation }}">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="app-empty-state text-center py-12">
+            <i class="fas fa-inbox text-3xl mb-2"></i>
+            <p class="text-base md:text-lg">
+                Aucune ressource « {{ item.categorie.nom }} » affectée.
+            </p>
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="app-empty-state text-center py-12">
+        <i class="fas fa-triangle-exclamation text-3xl mb-2"></i>
+        <p>Aucune catégorie de charge active.</p>
+    </div>
+    {% endif %}
+
+    {% include "projets/ressources/_modal_ressource.html" %}
+
+    {# URLs injectées dans une config globale #}
+    <div id="ressource-config"
+         data-add-url="{% url 'projets:ajouter_ressource' projet.id %}"
+         data-edit-template="{% url 'projets:modifier_ressource' 0 %}"
+         data-delete-template="{% url 'projets:supprimer_ressource' 0 %}"
+         data-api-options="{% url 'projets:api_options_ressource' projet.id %}"
+         data-api-ateliers="{% url 'projets:api_ateliers_projet' projet.id %}">
+    </div>
+</div>
