@@ -34,6 +34,7 @@
     <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/components.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/version-notice.css' %}">
     {% include "includes/_toast_assets.html" %}
 
     <style>
@@ -69,7 +70,6 @@
     {% block extra_head %}{% endblock %}
 </head>
 <body class="h-full" data-username="{{ user.username|default:'User' }}">
-
     <!-- Overlay sidebar mobile -->
     <div id="sidebarOverlay" class="sidebar-overlay md:hidden"></div>
 
@@ -104,7 +104,7 @@
     <!-- Messages + taches -->
     {% include "projets/home/_messages.html" %}
     {% include "projets/taches/_modal_tache.html" %}
-
+    {% include "includes/_version_notice.html" %}
     <div id="modals-container"></div>
     <div id="modals-nested-container"></div>
 
@@ -116,6 +116,7 @@
     <script src="{% static 'projets/js/profile-manager.js' %}" defer></script>
     <script src="{% static 'projets/js/notification-handler.js' %}" defer></script>
     <script src="{% static 'projets/js/modals.js' %}" defer></script>
+    <script src="{% static 'projets/js/version-notice.js' %}" defer></script>
 
     {% block extra_js %}{% endblock %}
 </body>

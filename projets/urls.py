@@ -2,7 +2,7 @@
 
 from django.urls import path, include
 
-from projets.views import ressource_views
+from projets.views import ressource_views, version_views
 from .views.data_views import views as data_views
 from .views.user_views import views as user_views
 from .views.project_views import views as project_views
@@ -23,6 +23,7 @@ app_name = "projets"
 # URL patterns pour les différentes fonctionnalités de l'application
 commun_urlpatterns = [
     # Home
+    path("api/version/mark-seen/", version_views.mark_version_seen, name="mark_version_seen"),
     path('home/', site_views.home, name='home'),
     path('dossiers/gerer/', project_views.gerer_dossiers, name='gerer_dossiers'),
     path('dossiers/<int:dossier_id>/modifier/', project_views.modifier_dossier, name='modifier_dossier'),

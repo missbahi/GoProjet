@@ -35,39 +35,22 @@ class Profile(models.Model):
         ('system', 'Système'),
     ]
 
-    liste_projets_vue = models.CharField(
-        max_length=10,
-        choices=VUE_CHOICES,
-        default='tableau',
-        verbose_name="Vue des projets préférée",
-    )
-
-    theme = models.CharField(
-        max_length=10,
-        choices=THEME_CHOICES,
-        default='dark',
-        verbose_name="Thème préféré",
-    )
+    liste_projets_vue = models.CharField(max_length=10, choices=VUE_CHOICES, default='tableau', verbose_name="Vue des projets préférée",)
+    theme = models.CharField(max_length=10, choices=THEME_CHOICES, default='dark', verbose_name="Thème préféré",)
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default='UTILISATEUR',
-    )
-
-    tel = models.CharField(
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='UTILISATEUR',)
+    tel = models.CharField( max_length=20, blank=True, null=True, verbose_name="Téléphone", help_text="Téléphone de contact",)
+    avatar = models.ImageField(upload_to=avatar_upload_path, blank=True,)
+    last_seen_version = models.CharField(
+        _("Dernière version vue"),
         max_length=20,
         blank=True,
-        null=True,
-        verbose_name="Téléphone",
-        help_text="Téléphone de contact",
+        default="",
+        help_text=_("Version de l'app vue par l'utilisateur à sa dernière connexion."),
     )
-
-    # ⚡ Pas de default='avatars/...' : le fallback est géré par avatar_url.
-    # Le fichier par défaut est static/images/default.png, servi par WhiteNoise.
-    avatar = models.ImageField(
-        upload_to=avatar_upload_path,
+    last_version_check = models.DateTimeField(
+        _("Dernière vérification de version"),
+        null=True,
         blank=True,
     )
 

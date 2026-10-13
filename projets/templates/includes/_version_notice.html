@@ -1,0 +1,64 @@
+{# projets/templates/includes/_version_notice.html #}
+{% if version_notice %}
+
+<div class="version-notice-backdrop" id="versionNoticeBackdrop"></div>
+
+<div class="version-notice"
+     id="versionNotice"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="versionNoticeTitle">
+
+    <div class="version-notice-card">
+
+        {# ─────────── En-tête ─────────── #}
+        <div class="version-notice-header">
+            <div class="version-notice-icon">
+                <i class="fas fa-rocket"></i>
+            </div>
+            <div>
+                <h2 id="versionNoticeTitle" class="version-notice-title">
+                    Nouveautés v{{ version_notice.current }}
+                </h2>
+                <p class="version-notice-subtitle">
+                    {% if version_notice.last_seen %}
+                        Depuis votre dernière visite (v{{ version_notice.last_seen }})
+                    {% else %}
+                        Bienvenue dans la nouvelle version
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        {# ─────────── Corps : liste des versions ─────────── #}
+        <div class="version-notice-body">
+            {% for update in version_notice.updates %}
+            <section class="version-update">
+                <header class="version-update-head">
+                    <span class="version-badge">v{{ update.version }}</span>
+                    <strong>{{ update.titre }}</strong>
+                    <span class="version-date">{{ update.date }}</span>
+                </header>
+                <ul class="version-highlights">
+                    {% for item in update.highlights %}
+                        <li>{{ item }}</li>
+                    {% endfor %}
+                </ul>
+            </section>
+            {% endfor %}
+        </div>
+
+        {# ─────────── Pied : bouton valider ─────────── #}
+        <div class="version-notice-footer">
+            <button type="button"
+                    id="versionNoticeClose"
+                    class="app-btn-primary"
+                    data-mark-url="{% url 'projets:mark_version_seen' %}">
+                <i class="fas fa-check"></i> J'ai compris
+            </button>
+        </div>
+
+    </div>
+</div>
+
+{% endif %}

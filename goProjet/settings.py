@@ -120,6 +120,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                "projets.context_processors.app_version",
+                "projets.context_processors.version_update_notice",
             ],
         },
     },
