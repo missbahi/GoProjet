@@ -40,6 +40,13 @@ def ressources_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     categories = CategorieCharge.objects.filter(actif=True).order_by('ordre', 'nom')
 
+    # ⭐ Type actif : ?type=MATERIEL ou premier par défaut
+    type_demande = (request.GET.get('type') or '').upper()
+    codes_valides = {c.code for c in categories}
+    active_type = type_demande if type_demande in codes_valides else (
+        categories[0].code if categories else None
+    )
+
     categories_data = []
     total = 0
     for cat in categories:
@@ -60,6 +67,7 @@ def ressources_projet(request, projet_id):
         'projet': projet,
         'categories_data': categories_data,
         'total_ressources': total,
+        'active_type': active_type,
         'breadcrumb_items': project_crumbs(projet, crumb("Ressources")),
     }
     return render_page_or_fragment(
@@ -68,8 +76,6 @@ def ressources_projet(request, projet_id):
         fragment_template='projets/ressources/_liste_ressources_content.html',
         context=ctx,
     )
-
-
 # ============================================================
 # CRUD AJAX
 # ============================================================
@@ -143,13 +149,19 @@ def api_options_ressource(request, projet_id):
     Model, champ_designation, champ_prix, _ = entry
     qs = Model.objects.filter(actif=True).order_by(champ_designation)
 
-    options = [
-        {
+    options = []
+    for obj in qs:
+        designation = getattr(obj, champ_designation)
+        parc = getattr(obj, 'immatriculation', None)
+        # Format : "P001 - Pelle CAT 320D" (si immatriculation existe)
+        label = f"{parc} - {designation}" if parc else designation
+
+        options.append({
             'id': obj.pk,
-            'label': getattr(obj, champ_designation),
+            'label': label,
+            'designation': designation, 
+            'immatriculation': parc or '',
             'unite': getattr(obj, 'unite', '') or '',
             'prix': str(getattr(obj, champ_prix, 0) or 0),
-        }
-        for obj in qs
-    ]
+        })
     return ajax_response(success=True, options=options)

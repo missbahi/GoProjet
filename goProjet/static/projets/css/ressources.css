@@ -37,16 +37,6 @@
     padding: 1rem 1.25rem;
 }
 
-/* En-tête */
-/* .app-modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid var(--border-default, #333);
-    background: var(--bg-elevated, #1e1e1e);
-} */
-
 .app-modal-header h3 {
     margin: 0;
     font-size: 1rem;
@@ -56,22 +46,6 @@
     align-items: center;
 }
 
-/* .app-modal-close {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary, #aaa);
-    cursor: pointer;
-    padding: 0.35rem;
-    border-radius: 6px;
-    transition: background 0.15s, color 0.15s;
-}
-
-.app-modal-close:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-primary, #fff);
-} */
-
-/* Corps : scrollable si trop long */
 .app-modal-content form {
     display: flex;
     flex-direction: column;
@@ -84,39 +58,58 @@
     flex: 1;
 }
 
-/* Pied */
-/* .app-modal-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 0.5rem;
-    padding: 1rem 1.25rem;
-    border-top: 1px solid var(--border-default, #333);
-    background: var(--bg-elevated, #1e1e1e);
-} */
-
-/* Inputs dans le modal */
-/* .app-modal-input {
-    width: 100%;
-    padding: 0.5rem 0.75rem;
-    border-radius: 6px;
-    border: 1px solid var(--border-default, #333);
-    background: var(--bg-base, #0a0a0a);
-    color: var(--text-primary, #fff);
+.ressource-tab {
+    padding: 0.5rem 1rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-bottom: 2px solid transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
     font-size: 0.875rem;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    font-weight: 500;
+    transition: color 0.15s, background-color 0.15s, border-color 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    position: relative;
+    margin-bottom: -2px;   /* colle au border-bottom de la barre */
 }
 
-.app-modal-input:focus {
-    outline: none;
-    border-color: var(--accent-primary, #3b82f6);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.ressource-tab:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-hover);
 }
 
-.app-modal-input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-} */
+/* ⭐ ACTIF : très visible */
+.ressource-tab.active {
+    color: var(--text-inverse);
+    background-color: var(--accent-green);
+    border-bottom-color: var(--accent-green);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(43, 156, 98, 0.35);
+}
 
+.ressource-tab.active .app-badge-info {
+    background-color: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* LIGHT MODE : contraste renforcé */
+[data-theme="light"] .ressource-tab.active {
+    background-color: var(--accent-green);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(43, 156, 98, 0.45);
+}
+
+.ressource-tab-panel {
+    animation: fadeIn 0.15s ease-in;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
 /* Animations */
 @keyframes modalFadeIn {
     from { opacity: 0; }

@@ -34,15 +34,32 @@
 
             <div class="p-4 space-y-3">
                 <div>
-                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                    <!-- <label class="block text-sm mb-1" style="color: var(--text-secondary);">
                         Ressource *
                     </label>
                     <select name="objet_id" id="ressource-objet"
                             class="app-modal-input" required disabled>
                         <option value="">— Chargement… —</option>
-                    </select>
-                </div>
+                    </select> -->
+                
+                    <label class="block text-sm mb-1" style="color: var(--text-secondary);">
+                        <i class="fas fa-search mr-1" style="color: var(--accent-primary);"></i>
+                        Ressource *
+                    </label>
 
+                    <input type="text"
+                        id="ressource-objet-input"
+                        class="app-modal-input"
+                        list="ressource-objet-datalist"
+                        placeholder="Tapez le code ou le nom…"
+                        autocomplete="off"
+                        required>
+
+                    <datalist id="ressource-objet-datalist">
+                        {# Alimenté par JS #}
+                    </datalist>
+                    <input type="hidden" name="objet_id" id="ressource-objet" value="">
+                </div>
                 {# Atelier : visible uniquement pour MATERIEL #}
                 <div id="ressource-atelier-wrapper" hidden>
                     <label class="block text-sm mb-1" style="color: var(--text-secondary);">

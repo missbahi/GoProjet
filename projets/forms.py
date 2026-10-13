@@ -650,7 +650,7 @@ class RessourceAffecteeForm(forms.ModelForm):
 
         code = self._code_categorie_courant()
         self.fields['objet_id'].choices = self._options_pour_code(code)
-
+        self.fields['tarif'].required = False
         # ⚡ Le champ atelier n'est pertinent que pour le MATERIEL
         if code != 'MATERIEL':
             self.fields['atelier'].widget = forms.HiddenInput()
@@ -686,7 +686,7 @@ class RessourceAffecteeForm(forms.ModelForm):
             label = getattr(obj, champ_designation)
             parc = getattr(obj, 'immatriculation', None)
             if parc:
-                label = f"{label} — N° {parc}"
+                label = f"{parc} — {label}"
             options.append((obj.pk, label))
         return options
 
@@ -713,7 +713,7 @@ class RessourceAffecteeForm(forms.ModelForm):
         # Snapshot dénormalisé
         cleaned['designation'] = getattr(source, champ_designation)
         cleaned['unite'] = getattr(source, 'unite', '') or ''
-        if not cleaned.get('tarif'):
+        if not cleaned.get('tarif') is None:
             cleaned['tarif'] = getattr(source, champ_prix, Decimal('0.00')) or Decimal('0.00')
         cleaned['projet'] = self.projet
 

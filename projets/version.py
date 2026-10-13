@@ -4,7 +4,7 @@
 from marshal import version
 
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -15,6 +15,17 @@ APP_VERSION = "1.1.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "1.2.0": {
+        "date": "2026-10-14",
+        "titre": "Ressources : recherche et navigation rapides",
+        "highlights": [
+            "Filtrez les ressources en tapant le code ou une partie du nom",
+            "Les engins sont affichés « Code - Nom » pour les distinguer",
+            "L'onglet actif est maintenant clairement mis en évidence",
+            "Ouvrez directement un type de ressource via un lien partagé",
+        ],
+        "niveau": "info",  # info | warning | critical
+    },
     "1.1.0": {
         "date": "2026-10-13",
         "titre": "Gestion des ressources du projet",

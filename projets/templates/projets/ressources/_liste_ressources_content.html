@@ -26,7 +26,7 @@
     <div class="mb-4 flex flex-wrap gap-2 border-b" style="border-color: var(--border-default);">
         {% for item in categories_data %}
         <button type="button"
-                class="ressource-tab{% if forloop.first %} active{% endif %}"
+                class="ressource-tab{% if item.categorie.code == active_type %} active{% endif %}"
                 data-tab-target="tab-{{ item.categorie.code }}"
                 data-code="{{ item.categorie.code }}">
             {{ item.categorie.nom }}
@@ -35,10 +35,9 @@
         {% endfor %}
     </div>
 
-    {# Panneaux #}
     {% for item in categories_data %}
-    <div class="ressource-tab-panel{% if not forloop.first %} hidden{% endif %}"
-         id="tab-{{ item.categorie.code }}">
+    <div class="ressource-tab-panel{% if item.categorie.code != active_type %} hidden{% endif %}"
+        id="tab-{{ item.categorie.code }}">
 
         {# ⭐ Bouton Ajouter propre à chaque onglet, avec le contexte injecté #}
         <div class="mb-3 flex justify-end">
@@ -116,7 +115,7 @@
                                         data-objet-id="{{ r.objet_id }}"
                                         data-date-debut="{{ r.date_debut|date:'Y-m-d' }}"
                                         data-date-fin="{{ r.date_fin|date:'Y-m-d' }}"
-                                        data-tarif="{{ r.tarif }}"
+                                        data-tarif="{{ r.tarif|stringformat:'0.2f' }}"
                                         data-atelier-id="{{ r.atelier_id|default:'' }}"
                                         data-commentaire="{{ r.commentaire }}">
                                     <i class="fas fa-pen"></i>
