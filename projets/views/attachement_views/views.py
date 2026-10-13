@@ -717,14 +717,12 @@ def transmettre_validation_attachement(request, attachement_id):
     try:
         with transaction.atomic():
             attachement.statut = 'SIGNE'
-            attachement.save(update_fields=['statut', 'modifie_par'])
-            attachement.marquer_modification(request.user)
             attachement.transmettre(request.user)
         messages.success(request, f"L'attachement {attachement.numero} a été transmis pour validation.")
     except Exception as e:
         messages.error(request, f"Erreur lors de la transmission : {str(e)}")
 
-    return redirect('projets:modifier_attachement', attachement_id=attachement_id)
+    return redirect('projets:detail_attachement', attachement_id=attachement_id)
 
 
 def telecharger_document_validation(request, etape_id):

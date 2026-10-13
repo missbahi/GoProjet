@@ -65,6 +65,7 @@
                 '/static/projets/css/attachements.css',
                 '/static/projets/css/ateliers.css',
                 '/static/projets/css/suivi.css',
+                '/static/projets/css/rapport-form.css',
             ],
             js: [
                 '/static/projets/js/dashboard.js',
@@ -77,6 +78,8 @@
                 '/static/projets/js/affectation-modal.js',
                 '/static/projets/js/ateliers-planning.js',
                 '/static/projets/js/suivi.js',
+                '/static/projets/js/rapports-form.js',
+                '/static/projets/js/rapports-bdd-modal.js',
             ],
         },
     };

@@ -1,0 +1,67 @@
+{# projets/templates/projets/rapports/_modal_bdd_consultation.html #}
+<div id="modalBDDConsultation"
+     class="modal-bdd"
+     onclick="if(event.target===this) fermerModalBDD();"
+     role="dialog" aria-modal="true" aria-labelledby="modalBDDTitle">
+
+    <div class="modal-bdd-card">
+
+        <div class="modal-bdd-header">
+            <div class="modal-bdd-title">
+                <i class="fas fa-database"></i>
+                <div>
+                    <h3 id="modalBDDTitle" class="text-sm md:text-base">Base de données référentiel</h3>
+                    <p class="text-xs" style="color: var(--text-secondary);">
+                        Consultation des éléments enregistrés
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="fermerModalBDD()" class="app-modal-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-bdd-search">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs"
+                   style="color: var(--text-muted);"></i>
+                <input type="text" id="modalBDDSearch" onkeyup="filtrerModalBDD()"
+                       placeholder="Rechercher une désignation, unité…">
+            </div>
+            {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
+            <a href="{% url 'projets:data_view' %}" target="_blank" rel="noopener"
+               class="app-btn-secondary text-xs shrink-0">
+                <i class="fas fa-external-link-alt"></i>
+                <span class="hidden sm:inline">Gérer la BDD</span>
+            </a>
+            {% endif %}
+        </div>
+
+        <div class="modal-bdd-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-left">Désignation</th>
+                        <th class="text-center w-20">Unité</th>
+                        <th class="text-right w-32">Prix unitaire</th>
+                        <th class="text-center w-24">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="modalBDDTbody"></tbody>
+            </table>
+            <div id="modalBDDEmpty" class="hidden text-center py-8 text-xs"
+                 style="color: var(--text-secondary);">
+                <i class="fas fa-search-minus text-2xl mb-2 block" style="color: var(--text-muted);"></i>
+                Aucun élément trouvé.
+            </div>
+        </div>
+
+        <div class="modal-bdd-footer">
+            <span class="text-xs" style="color: var(--text-secondary);"
+                  id="modalBDDCount">0 élément(s)</span>
+            <button type="button" onclick="fermerModalBDD()" class="app-btn-secondary">
+                Fermer
+            </button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,444 @@
+/* static/projets/css/rapport-form.css */
+/* ============================================================
+   MODULE RAPPORTS JOURNALIERS — Styles du formulaire
+   ============================================================
+   Chargé uniquement sur :
+     - modifier_rapport_journalier.html
+     - ajouter_rapport_journalier.html
+
+   Contient :
+     1. Upload area (document joint)
+     2. Document existant
+     3. Accordéon catégories (dépenses/stocks)
+     4. Formulaire (inputs, tables)
+     5. Modal BDD (consultation référentiel)
+     6. Animations
+   ============================================================ */
+
+
+/* ══════════════════════════════════════════════════════════════
+   1. UPLOAD AREA — Document joint
+   ══════════════════════════════════════════════════════════════ */
+.rapport-upload-area {
+    box-sizing: border-box;
+    display: flex;
+    min-height: 150px;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    border: 2px dashed var(--border-strong);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    text-align: center;
+    background-color: var(--bg-elevated);
+    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.rapport-upload-area:hover,
+.rapport-upload-area:focus-within,
+.rapport-upload-area.border-cyan-400 {
+    border-color: var(--accent-primary);
+    background-color: rgba(34, 211, 238, 0.08);
+}
+
+.rapport-upload-area:active {
+    transform: scale(0.995);
+}
+
+.rapport-upload-area .file-icon {
+    margin-bottom: 0.35rem;
+    font-size: 2rem;
+}
+
+.rapport-upload-area.hidden {
+    display: none;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   2. DOCUMENT EXISTANT (mode modification)
+   ══════════════════════════════════════════════════════════════ */
+.rapport-existing-document {
+    display: flex;
+    min-height: 58px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.rapport-document-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.rapport-document-button {
+    display: inline-flex;
+    min-height: 34px;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    white-space: nowrap;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    text-decoration: none;
+    transition: opacity 0.15s, transform 0.15s;
+}
+
+.rapport-document-button:hover {
+    transform: scale(1.03);
+    opacity: 0.92;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   3. ACCORDÉON CATÉGORIES (dépenses / stocks)
+   ══════════════════════════════════════════════════════════════ */
+.categorie-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--bg-elevated);
+    color: var(--text-primary);
+    border: none;
+    border-bottom: 1px solid var(--border-default);
+    cursor: pointer;
+    text-align: left;
+    transition: background-color 0.15s ease;
+}
+
+.categorie-toggle:hover {
+    background-color: var(--bg-hover);
+}
+
+.categorie-toggle:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: -2px;
+}
+
+.toggle-icon {
+    transition: transform 0.2s ease;
+}
+
+.toggle-icon.rotate-90 {
+    transform: rotate(90deg);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   4. FORMULAIRE — Inputs et tables
+   ══════════════════════════════════════════════════════════════ */
+.rapport-form {
+    color: var(--text-primary);
+}
+
+/* Champs texte / select / textarea */
+.rapport-form input:not([type="hidden"]):not([type="checkbox"]):not([type="radio"]),
+.rapport-form select,
+.rapport-form textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rapport-form input:focus,
+.rapport-form select:focus,
+.rapport-form textarea:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+
+.rapport-form input::placeholder,
+.rapport-form textarea::placeholder {
+    color: var(--input-placeholder);
+}
+
+/* Input en lecture seule (unité depuis référentiel) */
+.rapport-form .depense-unite[readonly] {
+    background-color: var(--bg-elevated);
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+/* Tables dans le formulaire (dépenses + stocks) */
+.rapport-form table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.rapport-form table thead th {
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-default);
+    font-weight: 500;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.375rem 0.5rem;
+    text-align: left;
+}
+
+.rapport-form table tbody tr {
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.rapport-form table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.rapport-form table tbody td {
+    padding: 0.25rem 0.5rem;
+    color: var(--text-primary);
+}
+
+/* Montant de la ligne dépense */
+.rapport-form .depense-montant {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* Triggers de suppression */
+.rapport-form .depense-delete-trigger,
+.rapport-form .stock-delete-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    cursor: pointer;
+    color: var(--accent-danger);
+    transition: background-color 0.15s, color 0.15s;
+}
+
+.rapport-form .depense-delete-trigger:hover,
+.rapport-form .stock-delete-trigger:hover {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--accent-danger);
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   5. MODAL BDD — Consultation référentiel
+   ══════════════════════════════════════════════════════════════ */
+.modal-bdd {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem;
+    background-color: var(--modal-overlay);
+}
+
+.modal-bdd.open {
+    display: flex;
+}
+
+.modal-bdd-card {
+    background-color: var(--modal-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow-lg), 0 20px 60px rgba(0, 0, 0, 0.35);
+    max-width: 42rem;
+    width: 100%;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: modalBddEnter 0.3s ease-out;
+}
+
+[data-theme="light"] .modal-bdd-card {
+    box-shadow: var(--shadow-lg), 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes modalBddEnter {
+    from { opacity: 0; transform: translateY(-20px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Header */
+.modal-bdd-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.modal-bdd-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+/* Barre de recherche */
+.modal-bdd-search {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-bdd-search input {
+    flex: 1;
+    background-color: var(--input-bg);
+    border: 1px solid var(--input-border);
+    color: var(--input-text);
+    padding: 0.5rem 0.75rem 0.5rem 2rem;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.modal-bdd-search input:focus {
+    outline: none;
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 3px rgba(43, 156, 98, 0.15);
+}
+
+.modal-bdd-search input::placeholder {
+    color: var(--input-placeholder);
+}
+
+/* Body — tableau */
+.modal-bdd-body {
+    padding: 0.75rem 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-bdd-body table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.modal-bdd-body thead th {
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-default);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 0.5rem 0.75rem;
+    position: sticky;
+    top: 0;
+    background-color: var(--bg-surface);
+    z-index: 1;
+}
+
+.modal-bdd-body tbody tr {
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background-color 0.15s;
+}
+
+.modal-bdd-body tbody tr:hover {
+    background-color: var(--bg-hover);
+}
+
+.modal-bdd-body td {
+    padding: 0.5rem 0.75rem;
+    color: var(--text-primary);
+}
+
+.modal-bdd-body td:first-child {
+    color: var(--accent-warning);
+    font-weight: 500;
+}
+
+.modal-bdd-body td:nth-child(3) {
+    font-family: 'Consolas', 'Monaco', monospace;
+    color: var(--accent-primary);
+    font-weight: 600;
+}
+
+/* Footer */
+.modal-bdd-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px solid var(--border-default);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   6. ANIMATIONS
+   ══════════════════════════════════════════════════════════════ */
+.rapport-form.fade-in {
+    animation: rapportFadeIn 0.3s ease-in;
+}
+
+@keyframes rapportFadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   7. RESPONSIVE
+   ══════════════════════════════════════════════════════════════ */
+@media (max-width: 640px) {
+    .rapport-existing-document {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .rapport-document-actions {
+        width: 100%;
+    }
+
+    .rapport-document-button {
+        flex: 1;
+    }
+
+    .rapport-upload-area {
+        padding: 1rem;
+        min-height: 120px;
+    }
+
+    .modal-bdd-body td,
+    .modal-bdd-body th {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.7rem;
+    }
+
+    .modal-bdd-header,
+    .modal-bdd-footer {
+        padding: 0.75rem 1rem;
+    }
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   8. UTILITAIRES
+   ══════════════════════════════════════════════════════════════ */
+.rapport-form .hidden {
+    display: none !important;
+}

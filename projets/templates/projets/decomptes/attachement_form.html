@@ -1,18 +1,19 @@
 {% extends "projets/home/base_project.html" %}
 {% load static %}
 {% block title %}{% if is_edition %}Modification attachement{% else %}Nouvel attachement{% endif %} – {{ projet.nom }}{% endblock %}
+
 {% block extra_css %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
-<link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
-
-
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
 {% endblock %}
+
 {% block extra_head %}
     {{ block.super }}
-<script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
 {% endblock %}
+
 {% block content %}
     {% include "projets/decomptes/_attachement_form_content.html" %}
 {% endblock %}

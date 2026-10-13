@@ -24,7 +24,7 @@ from projets.forms import (
 from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuelle, DepenseSituationMensuelle, 
                             DocumentSituationMensuelle, StockSituationMensuelle, RapportJournalier)
 from projets.models.projet import Dossier
-from projets.models.ressources import Consommable, Fourniture, Location, Personnel, SousTraitance
+from projets.models.ressources import Consommable, Fourniture, Location, Materiel, Personnel, SousTraitance
 from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
 from projets.utils.navigation import crumb, project_crumbs
 
@@ -120,13 +120,21 @@ def rapports_journaliers(request, projet_id):
             Sum('depenses__montant'), Value(Decimal('0.00'))
         )
     ).prefetch_related('depenses')
-    return render(request, 'projets/rapports/rapports_journaliers.html', {
-        'projet': projet,
-        'rapports': rapports,
-    })
+
+    ctx = {
+            'projet': projet,
+            'rapports': rapports,
+            'breadcrumb_items': project_crumbs(projet, crumb("Rapports journaliers")),
+        }
+    
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/rapports/_rapports_journaliers_content.html', ctx)
+
+    return render(request, 'projets/rapports/rapports_journaliers.html', ctx)
 
 #----------------------- Suivi d'execution ---------------------------
 def _projet_travaux_or_403(projet_id):
+    """Récupère un projet de travaux ou lève une 403."""
     projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
     if not projet.dossier_id or projet.dossier.activite != Dossier.Activite.TRAVAUX:
         raise PermissionDenied("Ce suivi est réservé aux dossiers de travaux.")
@@ -136,22 +144,37 @@ def _projet_travaux_or_403(projet_id):
 @can_edit_projet
 def ajouter_rapport_journalier(request, projet_id):
     projet = _projet_travaux_or_403(projet_id)
-    
+    is_xhr = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    def _build_ctx(form, depenses, stocks, erreurs=False):
+        return {
+            'projet': projet,
+            'form': form,
+            'depenses': depenses,
+            'stocks': stocks,
+            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+            'erreurs': erreurs,
+            'breadcrumb_items': project_crumbs(
+                projet,
+                crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
+                crumb("Nouveau rapport"),
+            ),
+        }
+
     if request.method == 'POST':
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
         depenses = DepenseRapportJournalierFormSet(request.POST)
         stocks = StockRapportJournalierFormSet(request.POST)
-        
+
         if form.is_valid() and depenses.is_valid() and stocks.is_valid():
             rapport = form.save(commit=False)
             rapport.projet = projet
-            
-            # Gestion du fichier
+
             fichier = request.FILES.get('document')
             if fichier:
                 rapport.document = fichier
                 rapport.original_filename = fichier.name
-            
+
             try:
                 with transaction.atomic():
                     rapport.save()
@@ -160,33 +183,39 @@ def ajouter_rapport_journalier(request, projet_id):
                     depenses.save()
                     stocks.save()
             except IntegrityError:
-                messages.error(
-                    request,
-                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
-                )
+                msg = 'Un rapport journalier existe déjà pour cette date dans ce projet.'
+                if is_xhr:
+                    return JsonResponse({'success': False, 'message': msg}, status=400)
+                messages.error(request, msg)
                 return redirect('projets:rapports_journaliers', projet_id=projet.id)
-            
-            messages.success(request, 'Rapport journalier enregistré avec succès.')
+
+            msg = 'Rapport journalier enregistré avec succès.'
+            if is_xhr:
+                return JsonResponse({
+                    'success': True,
+                    'message': msg,
+                    'url': reverse('projets:rapports_journaliers', args=[projet.id]),
+                })
+
+            messages.success(request, msg)
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
-        else:
-            # Afficher les erreurs
-            error_messages = []
-            if form.errors:
-                error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
-            if depenses.errors:
-                error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
-            if stocks.errors:
-                error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
-            
-            messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
-            return render(request, 'projets/rapports/ajouter_rapport_journalier.html', {
-                'projet': projet,
-                'form': form,
-                'depenses': depenses,
-                'stocks': stocks,
-                'depenses_groupees': _grouper_depenses_par_categorie(depenses),
-            })
-    
+
+        # Erreurs
+        error_messages = []
+        if form.errors:
+            error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
+        if depenses.errors:
+            error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
+        if stocks.errors:
+            error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
+        messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
+
+        ctx = _build_ctx(form, depenses, stocks, erreurs=True)
+        if is_xhr:
+            return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx, status=400)
+        return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx, status=400)
+
+    # GET — nouveau rapport
     today = timezone.now().date()
     form = RapportJournalierForm(initial={
         'date': today.strftime('%Y-%m-%d'),
@@ -194,13 +223,12 @@ def ajouter_rapport_journalier(request, projet_id):
     })
     depenses = DepenseRapportJournalierFormSet()
     stocks = StockRapportJournalierFormSet()
-    return render(request, 'projets/rapports/ajouter_rapport_journalier.html', {
-        'projet': projet,
-        'form': form,
-        'depenses': depenses,
-        'stocks': stocks,
-        'depenses_groupees': _grouper_depenses_par_categorie(depenses),
-    })
+
+    ctx = _build_ctx(form, depenses, stocks)
+
+    if is_xhr:
+        return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx)
+    return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx)
 
 @login_required
 @can_view_projet
@@ -214,24 +242,36 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         ).prefetch_related('depenses', 'stocks'),
         id=rapport_id, projet=projet
     )
+
     depenses = list(rapport.depenses.select_related('categorie_charge'))
-    categorie_ids = {depense.categorie_charge_id for depense in depenses if depense.categorie_charge_id}
+    categorie_ids = {d.categorie_charge_id for d in depenses if d.categorie_charge_id}
     categories = CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=categorie_ids))
+
     depenses_groupees = []
     for category in categories:
         depenses_categorie = [
-            depense for depense in depenses
-            if (depense.categorie_charge_id and depense.categorie_charge_id == category.id)
-            or (not depense.categorie_charge_id and depense.categorie == category.code)
+            d for d in depenses
+            if (d.categorie_charge_id and d.categorie_charge_id == category.id)
+            or (not d.categorie_charge_id and d.categorie == category.code)
         ]
         if depenses_categorie:
             total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
             depenses_groupees.append((category.code, category.nom, depenses_categorie, total))
-    return render(request, 'projets/rapports/detail_rapport_journalier.html', {
+
+    ctx = {
         'projet': projet,
         'rapport': rapport,
         'depenses_groupees': depenses_groupees,
-    })
+        'breadcrumb_items': project_crumbs(
+            projet,
+            crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
+            crumb(f"Rapport {rapport.date.strftime('%d/%m/%Y')}"),
+        ),
+    }
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/rapports/_detail_rapport_journalier_content.html', ctx)
+    return render(request, 'projets/rapports/detail_rapport_journalier.html', ctx)
 
 def _referentiel_depenses():
     """Entrées du référentiel (base de données) proposées par catégorie de dépense."""
@@ -377,13 +417,28 @@ def formulaire_rapport_journalier(request, projet_id):
 def modifier_rapport_journalier(request, projet_id, rapport_id):
     projet = _projet_travaux_or_403(projet_id)
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+    is_xhr = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    def _build_ctx(form, depenses, stocks):
+        return {
+            'projet': projet,
+            'rapport': rapport,
+            'form': form,
+            'depenses': depenses,
+            'stocks': stocks,
+            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
+            'breadcrumb_items': project_crumbs(
+                projet,
+                crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
+                crumb(f"Modifier — {rapport.date.strftime('%d/%m/%Y')}"),
+            ),
+        }
 
     if request.method == 'POST':
-        form = RapportJournalierForm(
-            request.POST, request.FILES, instance=rapport, projet=projet
-        )
+        form = RapportJournalierForm(request.POST, request.FILES, instance=rapport, projet=projet)
         depenses = DepenseRapportJournalierFormSet(request.POST, instance=rapport)
         stocks = StockRapportJournalierFormSet(request.POST, instance=rapport)
+
         if form.is_valid() and depenses.is_valid() and stocks.is_valid():
             rapport = form.save(commit=False)
             fichier = request.FILES.get('document')
@@ -394,58 +449,88 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
                 rapport.save()
                 depenses.save()
                 stocks.save()
-            messages.success(request, 'Rapport journalier modifié.')
-            return redirect('projets:rapports_journaliers', projet_id=projet.id)
-        messages.error(request, "Le rapport journalier n'a pas pu être modifié. Vérifiez les informations saisies.")
-        return render(request, 'projets/rapports/modifier_rapport_journalier.html', {
-            'projet': projet,
-            'rapport': rapport,
-            'form': form,
-            'depenses': depenses,
-            'stocks': stocks,
-            'depenses_groupees': _grouper_depenses_par_categorie(depenses),
-        })
-    else:
-        form = RapportJournalierForm(instance=rapport)
-        # S'assurer que la date est au bon format
-        if rapport.date:
-            form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
-        depenses = DepenseRapportJournalierFormSet(instance=rapport)
-        stocks = StockRapportJournalierFormSet(instance=rapport)
 
-    return render(request, 'projets/rapports/modifier_rapport_journalier.html', {
-        'projet': projet,
-        'rapport': rapport,
-        'form': form,
-        'depenses': depenses,
-        'stocks': stocks,
-        'depenses_groupees': _grouper_depenses_par_categorie(depenses),
-    })
+            msg = 'Rapport journalier modifié.'
+            if is_xhr:
+                return JsonResponse({
+                    'success': True,
+                    'message': msg,
+                    'url': reverse('projets:rapports_journaliers', args=[projet.id]),
+                })
+            messages.success(request, msg)
+            return redirect('projets:rapports_journaliers', projet_id=projet.id)
+
+        msg = "Le rapport n'a pas pu être modifié. Vérifiez les informations saisies."
+        if is_xhr:
+            return JsonResponse({
+                'success': False,
+                'message': msg,
+                'errors': {
+                    'form': form.errors.get_json_data(),
+                    'depenses': depenses.errors,
+                    'stocks': stocks.errors,
+                },
+            }, status=400)
+        messages.error(request, msg)
+        return render(request, 'projets/rapports/modifier_rapport_journalier.html',
+                      _build_ctx(form, depenses, stocks), status=400)
+
+    # GET
+    form = RapportJournalierForm(instance=rapport)
+    if rapport.date:
+        form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
+    depenses = DepenseRapportJournalierFormSet(instance=rapport)
+    stocks = StockRapportJournalierFormSet(instance=rapport)
+
+    ctx = _build_ctx(form, depenses, stocks)
+
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx)
+    return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx)
 
 @login_required
 @can_edit_projet
 def supprimer_rapport_journalier(request, projet_id, rapport_id):
     projet = _projet_travaux_or_403(projet_id)
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
-    if request.method == 'POST':
-        rapport.delete()
-        messages.success(request, 'Rapport journalier supprimé.')
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
+    if request.method != 'POST':
+        return redirect('projets:rapports_journaliers', projet_id=projet_id)
+
+    date_str = rapport.date.strftime('%d/%m/%Y')
+    rapport.delete()
+    msg = f'Rapport du {date_str} supprimé.'
+
+    if is_xhr:
+        return JsonResponse({'success': True, 'message': msg})
+
+    messages.success(request, msg)
     return redirect('projets:rapports_journaliers', projet_id=projet_id)
+
 
 @login_required
 @can_edit_projet
 def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
     projet = _projet_travaux_or_403(projet_id)
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
+    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
+
     if request.method == 'POST':
         if rapport.document:
             rapport.document = None
             rapport.original_filename = ''
             rapport.save(update_fields=['document', 'original_filename'])
-            messages.success(request, 'Document supprimé du rapport journalier.')
+            msg = 'Document supprimé du rapport.'
         else:
-            messages.info(request, 'Aucun document à supprimer.')
-    return redirect('projets:modifier_rapport_journalier', projet_id=projet_id, rapport_id=rapport_id)
+            msg = 'Aucun document à supprimer.'
+
+        if is_xhr:
+            return JsonResponse({'success': True, 'message': msg})
+        messages.success(request, msg)
+
+    return redirect('projets:modifier_rapport_journalier',
+                    projet_id=projet_id, rapport_id=rapport_id)
 
 def _crumbs_situations(projet, *items):
     return project_crumbs(
@@ -747,7 +832,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         'documents': documents,
         'validation_errors': validation_errors if request.method == 'POST' else [],
         'breadcrumb_items': _crumbs_situations(
-            projet, crumb(f"{situation.mois:02d}/{situation.annee}")
+            projet, crumb(f"Situation {situation.mois:02d}/{situation.annee}")
         ),
     })
 

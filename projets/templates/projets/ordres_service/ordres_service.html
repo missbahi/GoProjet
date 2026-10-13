@@ -1,8 +1,6 @@
 {% extends "projets/home/base_project.html" %}
 {% load static %}
 
-{% block title %}Ordres de service – {{ projet.nom }}{% endblock %}
-
 {% block extra_css %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'projets/css/ordres_service.css' %}">

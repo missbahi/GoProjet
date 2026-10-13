@@ -1,0 +1,159 @@
+{# projets/templates/projets/rapports/_detail_rapport_journalier_content.html #}
+{% load static formatters navigation %}
+
+{% breadcrumb %}
+
+<div data-family="project" class="max-w-5xl mx-auto"
+     data-page-title="Rapport du {{ rapport.date|date:'d/m/Y' }}"
+     data-page-icon="fa-calendar-day">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-calendar-day mr-2"></i>
+            Rapport du {{ rapport.date|date:"d/m/Y" }}
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+    </div>
+
+    {# ═══════ Actions ═══════ #}
+    <div class="flex flex-wrap gap-2 mb-6">
+        <a href="{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}" class="app-btn-primary">
+            <i class="fas fa-pen-to-square mr-1"></i> Modifier
+        </a>
+        <form method="post" action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}"
+              onsubmit="return confirm('Supprimer ce rapport et toutes ses lignes ?');" class="inline">
+            {% csrf_token %}
+            <button type="submit" class="app-btn"
+                    style="background-color: var(--accent-danger); color: var(--text-inverse);">
+                <i class="fas fa-trash mr-1"></i> Supprimer
+            </button>
+        </form>
+    </div>
+
+    {# ═══════ Infos générales ═══════ #}
+    <div class="app-card p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-4">
+        <p><strong style="color: var(--text-primary);">Météo :</strong> {{ rapport.meteo|default:"—" }}</p>
+        <p><strong style="color: var(--text-primary);">Température :</strong>
+            {% if rapport.temperature %}{{ rapport.temperature }} °C{% else %}—{% endif %}</p>
+        <p><strong style="color: var(--text-primary);">Rédacteur :</strong> {{ rapport.redacteur|default:"—" }}</p>
+    </div>
+
+    {# ═══════ Sections texte ═══════ #}
+    {% if rapport.travaux_realises %}
+    <div class="app-card p-4 mb-4">
+        <h3 class="font-semibold mb-2" style="color: var(--accent-primary);">
+            <i class="fas fa-hammer mr-1"></i> Travaux réalisés
+        </h3>
+        <p class="whitespace-pre-line text-sm">{{ rapport.travaux_realises }}</p>
+    </div>
+    {% endif %}
+
+    {% if rapport.evenements %}
+    <div class="app-card p-4 mb-4">
+        <h3 class="font-semibold mb-2" style="color: var(--accent-primary);">
+            <i class="fas fa-exclamation-circle mr-1"></i> Événements
+        </h3>
+        <p class="whitespace-pre-line text-sm">{{ rapport.evenements }}</p>
+    </div>
+    {% endif %}
+
+    {% if rapport.observations %}
+    <div class="app-card p-4 mb-4">
+        <h3 class="font-semibold mb-2" style="color: var(--accent-primary);">
+            <i class="fas fa-sticky-note mr-1"></i> Observations
+        </h3>
+        <p class="whitespace-pre-line text-sm">{{ rapport.observations }}</p>
+    </div>
+    {% endif %}
+
+    {# ═══════ Dépenses ═══════ #}
+    <div class="app-card p-4 mb-4">
+        <div class="flex justify-between items-center mb-3">
+            <h3 class="font-semibold" style="color: var(--accent-warning);">
+                <i class="fas fa-coins mr-1"></i> Dépenses
+            </h3>
+            <span class="font-bold" style="color: var(--text-primary);">
+                {{ rapport.total_depenses|format_currency }}
+            </span>
+        </div>
+
+        {% if depenses_groupees %}
+            {% for value, label, depenses_categorie, total in depenses_groupees %}
+            <div class="mb-3 rounded-lg overflow-hidden" style="border: 1px solid var(--border-default);">
+                <button type="button" class="categorie-toggle" data-target="depense-recap-{{ value }}">
+                    <span class="flex items-center gap-2 text-sm font-medium" style="color: var(--accent-warning);">
+                        <i class="fas fa-chevron-right toggle-icon"></i> {{ label }}
+                    </span>
+                    <span class="flex items-center gap-3 text-xs sm:text-sm">
+                        <span style="color: var(--text-muted);">{{ depenses_categorie|length }} ligne(s)</span>
+                        <span class="font-semibold text-right min-w-[110px]" style="color: var(--accent-warning);">
+                            {{ total|format_currency }}
+                        </span>
+                    </span>
+                </button>
+                <div class="hidden p-3" id="depense-recap-{{ value }}">
+                    <table class="app-table text-sm">
+                        <thead>
+                            <tr>
+                                <th class="text-left">Désignation</th>
+                                <th class="text-left">Quantité</th>
+                                <th class="text-left">Unité</th>
+                                <th class="text-left">PU</th>
+                                <th class="text-right">Montant</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for depense in depenses_categorie %}
+                            <tr>
+                                <td>{{ depense.designation }}</td>
+                                <td>{{ depense.quantite }}</td>
+                                <td>{{ depense.unite|default:"—" }}</td>
+                                <td>{{ depense.prix_unitaire|format_currency }}</td>
+                                <td class="text-right">{{ depense.montant|format_currency }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <p class="text-sm" style="color: var(--text-secondary);">Aucune dépense enregistrée.</p>
+        {% endif %}
+    </div>
+
+    {# ═══════ Stocks ═══════ #}
+    <div class="app-card p-4">
+        <h3 class="font-semibold mb-3" style="color: var(--accent-success);">
+            <i class="fas fa-boxes-stacked mr-1"></i> Mouvements de stock
+        </h3>
+        {% if rapport.stocks.all %}
+        <table class="app-table text-sm">
+            <thead>
+                <tr>
+                    <th class="text-left">Désignation</th>
+                    <th class="text-left">Unité</th>
+                    <th class="text-left">Qté entrée</th>
+                    <th class="text-left">Qté sortie</th>
+                    <th class="text-left">Stock restant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stock in rapport.stocks.all %}
+                <tr>
+                    <td>{{ stock.designation }}</td>
+                    <td>{{ stock.unite|default:"—" }}</td>
+                    <td>{{ stock.quantite_entree }}</td>
+                    <td>{{ stock.quantite_sortie }}</td>
+                    <td>{{ stock.stock_restant }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-sm" style="color: var(--text-secondary);">Aucun mouvement de stock enregistré.</p>
+        {% endif %}
+    </div>
+
+</div>

@@ -1,0 +1,53 @@
+{# projets/templates/projets/rapports/_modifier_rapport_journalier_content.html #}
+{% load static navigation %}
+
+{% breadcrumb %}
+
+<div data-family="project" class="max-w-5xl mx-auto"
+     data-page-title="{% if rapport %}Modifier le rapport{% else %}Nouveau rapport{% endif %}"
+     data-page-icon="fa-calendar-day">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-calendar-day mr-2"></i>
+            {% if rapport %}
+                Modifier le rapport du {{ rapport.date|date:"d/m/Y" }}
+            {% else %}
+                Nouveau rapport journalier
+            {% endif %}
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
+            <i class="fas fa-info-circle"></i>
+            Remplissez tous les champs obligatoires pour enregistrer le rapport
+        </p>
+    </div>
+
+    {# ═══════ Actions ═══════ #}
+    <div class="flex flex-wrap gap-2 mb-6">
+        {% if rapport %}
+        <a href="{% url 'projets:detail_rapport_journalier' projet.id rapport.id %}" class="app-btn-secondary">
+            <i class="fas fa-eye mr-1"></i>
+            <span class="hidden sm:inline">Consulter</span>
+            <span class="sm:hidden">Voir</span>
+        </a>
+        <form method="post" action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}"
+              class="inline" onsubmit="return confirm('Supprimer ce rapport et toutes ses lignes ?');">
+            {% csrf_token %}
+            <button type="submit" class="app-btn"
+                    style="background-color: var(--accent-danger); color: var(--text-inverse);">
+                <i class="fas fa-trash mr-1"></i>
+                <span class="hidden sm:inline">Supprimer</span>
+                <span class="sm:hidden">Suppr.</span>
+            </button>
+        </form>
+        {% endif %}
+    </div>
+
+    {# ═══════ Formulaire ═══════ #}
+    <div class="app-card p-4 md:p-6">
+        {% include 'projets/rapports/_formulaire_rapport_journalier.html' %}
+    </div>
+
+</div>

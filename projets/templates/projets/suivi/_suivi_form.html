@@ -1,3 +1,5 @@
+{# Formulaire de suivi #}
+
 <form id="{% if editing %}editSuiviForm{% else %}suiviForm{% endif %}" method="post" enctype="multipart/form-data"
       action="{% if editing %}{% url 'projets:modifier_suivi' projet.id suivi.id %}{% else %}{% url 'projets:ajouter_suivi' projet.id %}{% endif %}">
     {% csrf_token %}

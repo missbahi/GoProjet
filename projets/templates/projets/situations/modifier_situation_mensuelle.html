@@ -2,12 +2,12 @@
 {% extends "projets/home/base_project.html" %}
 {% load static navigation %}
 
-{% block title %}Modifier la situation – {{ projet.nom }}{% endblock %}
-
 {% block content %}
 {% breadcrumb %}
 
-<div class="max-w-5xl mx-auto">
+<div data-family="project" class="max-w-6xl mx-auto"
+     data-page-title="Modifier la situation – {{ projet.nom }}"
+     data-page-icon="fa-calendar-check">
 
     {# ═══════ En-tête ═══════ #}
     <div class="mb-6">
