@@ -11,8 +11,8 @@ from collections import defaultdict
 
 
 from projets.decorators import chef_projet_required
-from projets.forms import AffectationRessourceForm, AtelierForm
-from projets.models import AffectationRessource, Atelier, Materiel, Projet
+from projets.forms import AffectationRessourceForm, AtelierForm, materiels_affectes_projet
+from projets.models import AffectationRessource, Atelier, Projet
 from projets.utils.navigation import crumb, project_crumbs
 from projets.utils.utils import ajax_response, is_ajax
 from dateutil.relativedelta import relativedelta
@@ -146,11 +146,7 @@ def materiels_atelier_(request, projet_id, atelier_id):
         .select_related('materiel', 'materiel__type_materiel')
         .order_by('-date_debut', 'materiel__designation')
     )
-    materiels_disponibles = (
-        Materiel.objects.filter(actif=True)
-        .select_related('type_materiel')
-        .order_by('designation')
-    )
+    materiels_disponibles = materiels_affectes_projet(projet)
     return render(request, 'projets/ateliers/materiels_atelier.html', {
         'projet': projet,
         'atelier': atelier,
@@ -191,7 +187,7 @@ def ajouter_affectation(request, atelier_id):
         'atelier': atelier,
         'form': form,
         'affectations': AffectationRessource.objects.filter(atelier=atelier).select_related('materiel', 'materiel__type_materiel'),
-        'materiels_disponibles': Materiel.objects.filter(actif=True).select_related('type_materiel'),
+        'materiels_disponibles': materiels_affectes_projet(projet),
     })
 
 
@@ -231,7 +227,7 @@ def modifier_affectation(request, affectation_id):
         'form': form,
         'affectation': affectation,
         'affectations': AffectationRessource.objects.filter(atelier=atelier).select_related('materiel', 'materiel__type_materiel'),
-        'materiels_disponibles': Materiel.objects.filter(actif=True).select_related('type_materiel'),
+        'materiels_disponibles': materiels_affectes_projet(projet),
     })
 
 
@@ -314,11 +310,7 @@ def materiels_atelier(request, projet_id, atelier_id):
         .select_related('materiel', 'materiel__type_materiel')
         .order_by('-date_debut', 'materiel__designation')
     )
-    materiels_disponibles = (
-        Materiel.objects.filter(actif=True)
-        .select_related('type_materiel')
-        .order_by('designation')
-    )
+    materiels_disponibles = materiels_affectes_projet(projet)
 
     ctx = {
         'projet': projet,
@@ -587,11 +579,7 @@ def _preparer_contexte_planning(request, projet_id):
         'fin': fin,
         'duree_totale': duree_totale,
         'jours_periode': jours_periode,
-        'materiels_disponibles': (
-            Materiel.objects.filter(actif=True)
-            .select_related('type_materiel')
-            .order_by('designation')
-        ),
+        'materiels_disponibles': materiels_affectes_projet(projet),
         'lignes_hierarchiques': lignes_hierarchiques,
         'nb_materiels_total': nb_materiels_total,
         'affectations': affectations,

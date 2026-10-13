@@ -69,6 +69,13 @@ sont nuls.
 
 ### Planning des ateliers
 
+Le matériel proposé provient uniquement des ressources actives de catégorie
+MATERIEL affectées au projet. À l'ajout et à la modification, toute la période
+de l'atelier doit être incluse dans une période de disponibilité de la ressource.
+Une affectation sans date de fin exige une ressource du projet en cours.
+Aucune exception n'est accordée aux anciennes affectations lors de leur
+modification ; les contrôles de chevauchement entre ateliers sont conservés.
+
 La soumission des modales identifie les formulaires par sélecteur DOM :
 les champs cachés nommés `id` ne doivent pas masquer leur identification.
 

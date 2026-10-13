@@ -272,6 +272,15 @@ class AtelierPlanningNavigationTests(TestCase):
 			projet=self.projet, code='01', libelle='Terrassement',
 		)
 		self.materiel = Materiel.objects.create(designation='Pelle', actif=True)
+		from projets.models import RessourceAffectee
+		categorie, _ = CategorieCharge.objects.get_or_create(
+			code='MATERIEL', defaults={'nom': 'Matériel'},
+		)
+		self.ressource = RessourceAffectee.objects.create(
+			projet=self.projet, categorie_charge=categorie, objet_id=self.materiel.pk,
+			designation='Pelle', date_debut=date(2026, 10, 1),
+			date_fin=date(2026, 10, 31),
+		)
 		self.affectation = AffectationRessource.objects.create(
 			atelier=self.atelier, materiel=self.materiel,
 			date_debut=date(2026, 10, 1), date_fin=date(2026, 10, 20),
@@ -354,6 +363,64 @@ class AtelierPlanningNavigationTests(TestCase):
 		self.assertIn('date_fin', response.json()['errors'])
 		self.affectation.refresh_from_db()
 		self.assertEqual(self.affectation.date_debut, date(2026, 10, 1))
+
+	def test_resource_availability_bounds_and_open_ended_assignments(self):
+		from projets.forms import AffectationRessourceForm
+		cases = (
+			('2026-10-01', '2026-10-31', True),
+			('2026-09-30', '2026-10-10', False),
+			('2026-10-01', '2026-11-01', False),
+			('2026-10-01', '', False),
+		)
+		for debut, fin, expected in cases:
+			with self.subTest(debut=debut, fin=fin):
+				form = AffectationRessourceForm(
+					{'materiel': self.materiel.pk, 'date_debut': debut, 'date_fin': fin},
+					instance=self.affectation, atelier=self.atelier,
+				)
+				self.assertEqual(form.is_valid(), expected, form.errors)
+		self.ressource.date_fin = None
+		self.ressource.save(update_fields=['date_fin'])
+		form = AffectationRessourceForm(
+			{'materiel': self.materiel.pk, 'date_debut': '2026-10-01', 'date_fin': ''},
+			instance=self.affectation, atelier=self.atelier,
+		)
+		self.assertTrue(form.is_valid(), form.errors)
+
+	def test_unassigned_or_inactive_resource_is_rejected_even_for_existing_assignment(self):
+		url = reverse('projets:modifier_affectation', args=[self.affectation.pk])
+		for mode in ('inactive', 'removed'):
+			with self.subTest(mode=mode):
+				if mode == 'inactive':
+					self.ressource.actif = False
+					self.ressource.save(update_fields=['actif'])
+				else:
+					self.ressource.delete()
+				response = self.client.post(
+					url, {'materiel': self.materiel.pk, 'date_debut': '2026-10-02'},
+					HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+				)
+				self.assertEqual(response.status_code, 400)
+				self.assertIn('materiel', response.json()['errors'])
+
+	def test_planning_and_atelier_lists_exclude_global_and_other_project_materials(self):
+		from projets.models import RessourceAffectee
+		outsider = Materiel.objects.create(designation='Matériel hors projet')
+		other = Projet.objects.create(
+			nom='Autre projet', objet='Test', numero='PLAN-02',
+			maitre_ouvrage='MOA', localisation='Lieu',
+		)
+		RessourceAffectee.objects.create(
+			projet=other, categorie_charge=self.ressource.categorie_charge,
+			objet_id=outsider.pk, designation=outsider.designation, date_debut=date(2026, 10, 1),
+		)
+		for name, args in (
+			('planning_ateliers', [self.projet.pk]),
+			('materiels_atelier', [self.projet.pk, self.atelier.pk]),
+		):
+			response = self.client.get(reverse(f'projets:{name}', args=args))
+			self.assertEqual(response.status_code, 200)
+			self.assertEqual(list(response.context['materiels_disponibles']), [self.materiel])
 
 
 @override_settings(

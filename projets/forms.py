@@ -317,6 +317,13 @@ class EntrepriseForm(forms.ModelForm):
         model = Entreprise
         fields = ['nom', 'contact', 'email', 'telephone', 'adresse']
 
+def materiels_affectes_projet(projet):
+    ressources = RessourceAffectee.objects.filter(
+        projet=projet, categorie_charge__code='MATERIEL', actif=True,
+    ).values('objet_id')
+    return Materiel.objects.filter(pk__in=ressources).select_related('type_materiel').order_by('designation')
+
+
 class AffectationRessourceForm(forms.ModelForm):
     """
     Formulaire d'affectation d'un matériel à un atelier.
@@ -331,6 +338,8 @@ class AffectationRessourceForm(forms.ModelForm):
     2. La date de fin, si fournie, doit être ≥ date de début.
     3. Un matériel ne peut pas être affecté à deux endroits sur des périodes
        qui se chevauchent (tous ateliers confondus).
+    4. Le matériel et toute la période doivent être disponibles dans les
+       ressources actives du projet, sans exception en édition.
     """
 
     class Meta:
@@ -342,25 +351,24 @@ class AffectationRessourceForm(forms.ModelForm):
         }
 
     def __init__(self, *args, atelier=None, **kwargs):
-        self.atelier = atelier
         super().__init__(*args, **kwargs)
+        self.atelier = atelier or (self.instance.atelier if self.instance.pk else None)
+        atelier = self.atelier
 
         # --- Champ atelier ---
         qs_ateliers = Atelier.objects.filter(actif=True)
         if atelier:
-            # Conserver l'atelier courant même s'il est inactif
-            qs_ateliers = Atelier.objects.filter(Q(actif=True) | Q(pk=atelier.pk))
+            # Figer l'atelier fourni, même s'il est inactif.
+            qs_ateliers = Atelier.objects.filter(pk=atelier.pk)
         self.fields['atelier'].queryset = qs_ateliers.order_by('code')
         self.fields['atelier'].required = False  # injecté par clean/save si absent
 
         # --- Champ materiel ---
-        # Conserver le matériel courant même s'il est inactif (édition)
-        materiel_id = self.instance.materiel_id if self.instance and self.instance.pk else None
-        qs_materiels = Materiel.objects.filter(actif=True)
-        if materiel_id:
-            qs_materiels = Materiel.objects.filter(Q(actif=True) | Q(pk=materiel_id))
         self.fields['materiel'].queryset = (
-            qs_materiels.select_related('type_materiel').order_by('designation')
+            materiels_affectes_projet(atelier.projet) if atelier else Materiel.objects.none()
+        )
+        self.fields['materiel'].error_messages['invalid_choice'] = _(
+            "Choisissez un matériel parmi les ressources actives affectées à ce projet."
         )
 
         # --- Pré-remplissage HTML5 des dates ---
@@ -396,6 +404,20 @@ class AffectationRessourceForm(forms.ModelForm):
 
         # 3. Détection de chevauchement (requête SQL, pas de boucle Python)
         if materiel and debut:
+            disponibilites = RessourceAffectee.objects.filter(
+                projet=atelier.projet, categorie_charge__code='MATERIEL',
+                objet_id=materiel.pk, actif=True, date_debut__lte=debut,
+            )
+            if fin:
+                disponibilites = disponibilites.filter(Q(date_fin__isnull=True) | Q(date_fin__gte=fin))
+            else:
+                disponibilites = disponibilites.filter(date_fin__isnull=True)
+            if not disponibilites.exists():
+                self.add_error('date_debut', _(
+                    "La période de l'atelier doit être comprise dans une période de "
+                    "disponibilité de ce matériel sur le projet. Sans date de fin, "
+                    "la ressource du projet doit être en cours."
+                ))
             conflit = self._trouver_conflit(materiel, debut, fin)
             if conflit:
                 self.add_error('materiel', self._message_conflit(conflit))
