@@ -4,7 +4,7 @@
 from marshal import version
 
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -15,6 +15,15 @@ APP_VERSION = "1.2.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "1.2.1": {
+        "date": "2026-10-15",
+        "titre": "Correctifs mineurs et améliorations",
+        "highlights": [
+            "Correction de bugs mineurs",
+            "Amélioration des performances de l'interface",
+        ],
+        "niveau": "info",  # info | warning | critical
+    },
     "1.2.0": {
         "date": "2026-10-14",
         "titre": "Ressources : recherche et navigation rapides",

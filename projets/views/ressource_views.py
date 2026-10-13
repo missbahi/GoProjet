@@ -8,9 +8,8 @@ from django.views.decorators.http import require_POST
 
 from projets.decorators import chef_projet_required, can_view_projet
 from projets.forms import RessourceAffecteeForm
-from projets.models import (
-    Projet, Atelier, CategorieCharge, RessourceAffectee,
-)
+from projets.models import (Projet, Atelier, CategorieCharge, RessourceAffectee, Materiel,
+                            )
 from projets.utils.navigation import crumb, project_crumbs
 from projets.utils.utils import ajax_response, is_ajax, render_page_or_fragment
 
@@ -56,6 +55,19 @@ def ressources_projet(request, projet_id):
             .select_related('atelier', 'categorie_charge')
             .order_by('-date_debut', 'designation')
         )
+        if cat.code == 'MATERIEL' and liste:
+            ids = [r.objet_id for r in liste]
+            parc_map = dict(
+                Materiel.objects
+                .filter(id__in=ids)
+                .values_list('id', 'immatriculation')
+            )
+            for r in liste:
+                r.code_ressource = parc_map.get(r.objet_id, '') or ''
+        else:
+            for r in liste:
+                r.code_ressource = ''
+                
         total += len(liste)
         categories_data.append({
             'categorie': cat,

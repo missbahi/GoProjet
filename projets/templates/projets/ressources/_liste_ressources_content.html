@@ -73,7 +73,15 @@
                 {% for r in item.ressources %}
                     <tr>
                         <td>
-                            <div class="font-medium">{{ r.designation }}</div>
+                            <div class="font-medium">
+                                {% if r.code_ressource %}
+                                    <span style="color: var(--accent-primary); font-weight: 600;">
+                                        {{ r.code_ressource }}
+                                    </span>
+                                    <span style="color: var(--text-muted);">-</span>
+                                {% endif %}
+                                {{ r.designation }}
+                            </div>
                             {% if r.commentaire %}
                                 <div class="text-xs mt-0.5 italic" style="color: var(--text-muted);">
                                     {{ r.commentaire|truncatechars:60 }}
