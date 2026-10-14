@@ -742,12 +742,19 @@
             <table class="w-full text-sm">
                 <thead>
                     <tr class="text-left">
-                        <th>Désignation</th>
-                        <th>Unité</th>
-                        <th>Quantité</th>
-                        <th>Prix unitaire</th>
-                        <th class="text-right">Montant (DH)</th>
-                        <th></th>
+                        <th rowspan="2">Désignation</th>
+                        <th rowspan="2">Unité</th>
+                        <th colspan="3" class="text-center bg-[#cfe5ed]">Stock initial</th>
+                        <th colspan="3" class="text-center bg-[#d6e9f0]">Entrée</th>
+                        <th colspan="3" class="text-center bg-[#e7f1f5]">Sortie</th>
+                        <th colspan="3" class="text-center bg-[#fdfbf5]">Stock final</th>
+                        <th rowspan="2"></th>
+                    </tr>
+                    <tr class="text-left">
+                        <th>Qté</th><th>PU</th><th class="text-right">Montant</th>
+                        <th>Qté</th><th>PU</th><th class="text-right">Montant</th>
+                        <th>Qté</th><th>PU</th><th class="text-right">Montant</th>
+                        <th class="text-right">Qté</th><th class="text-right">Montant</th><th class="text-right">ΔStock</th>
                     </tr>
                 </thead>
                 <tbody id="stockBody">
@@ -774,7 +781,7 @@
         <div class="situation-section-header border-[#a9cad6]">
             <h2 class="text-lg font-semibold text-[#24485a]">Résultats de la situation</h2>
         </div>
-        <div class="grid gap-3 p-4 md:grid-cols-4">
+        <div class="grid gap-3 p-4 md:grid-cols-5">
             <div>
                 <span class="block text-xs uppercase text-[#527889]">Chiffre d'affaires</span>
                 <strong id="situationRevenueResult" class="situation-results-value block text-lg">0,00 DH</strong>
@@ -784,11 +791,15 @@
                 <strong id="situationExpenseResult" class="situation-results-value block text-lg">0,00 DH</strong>
             </div>
             <div>
-                <span class="block text-xs uppercase text-[#527889]">Marge</span>
+                <span class="block text-xs uppercase text-[#527889]">Variation de stock</span>
+                <strong id="situationStockVariation" class="situation-results-value block text-lg" style="color: var(--accent-primary);">0,00 DH</strong>
+            </div>
+            <div>
+                <span class="block text-xs uppercase text-[#527889]">Résultat</span>
                 <strong id="situationMarginResult" class="situation-results-value block text-lg">0,00 DH</strong>
             </div>
             <div>
-                <span class="block text-xs uppercase text-[#527889]">% de marge</span>
+                <span class="block text-xs uppercase text-[#527889]">% de résultat</span>
                 <strong id="situationMarginRateResult" class="situation-results-value block text-lg">0,00 %</strong>
             </div>
         </div>
@@ -891,19 +902,48 @@
 
         function updateRecetteTotal() {
             const total = Array.from(document.querySelectorAll('#recettePanel input[name$="-montant"]')).reduce((sum, input) => sum + (parseAmount(input.value) || 0), 0);
-            const formatted = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+            const formatted = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
             const output = document.getElementById('recetteTotal'), headerOutput = document.getElementById('recetteHeaderTotal');
             if (output) output.textContent = formatted;
             if (headerOutput) headerOutput.textContent = formatted;
         }
 
         function updateStockAmounts() {
+            let totalVariation = 0;
+            const fmt2 = (v) => v.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const fmt3 = (v) => v.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
+
             document.querySelectorAll('#stockBody tr:not(.hidden)').forEach(row => {
-                const quantite = parseAmount(row.querySelector('input[name$="-quantite"]')?.value) || 0,
-                    prixUnitaire = parseAmount(row.querySelector('input[name$="-prix_unitaire"]')?.value) || 0,
-                    output = row.querySelector('.stock-amount');
-                if (output) output.textContent = (quantite * prixUnitaire).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+                const get = (suffix) => parseAmount(row.querySelector(`input[name$="-${suffix}"]`)?.value) || 0;
+
+                const qi = get('qte_initiale'), pui = get('pu_initial');
+                const qe = get('qte_entree'),   pue = get('pu_entree');
+                const qs = get('qte_sortie'),   pus = get('pu_sortie');
+
+                const mi = qi * pui, me = qe * pue, ms = qs * pus;
+                const qf = qi + qe - qs;
+                const sf = mi + me - ms;
+                const variation = me - ms;
+
+                const c1 = row.querySelector('.stock-amount-initial');
+                const c2 = row.querySelector('.stock-amount-entree');
+                const c3 = row.querySelector('.stock-amount-sortie');
+                const c4 = row.querySelector('.stock-qte-finale');
+                const c5 = row.querySelector('.stock-amount-final');
+                const c6 = row.querySelector('.stock-variation');
+
+                if (c1) c1.textContent = fmt2(mi);
+                if (c2) c2.textContent = fmt2(me);
+                if (c3) c3.textContent = fmt2(ms);
+                if (c4) c4.textContent = fmt3(qf);
+                if (c5) c5.textContent = fmt2(sf);
+                if (c6) c6.textContent = fmt2(variation);
+
+                totalVariation += variation;
             });
+
+            const output = document.getElementById('situationStockVariation');
+            if (output) output.textContent = fmt2(totalVariation);
         }
 
         function getExpenseRowTotal(row) {
@@ -916,14 +956,14 @@
             const sum = rows.reduce((total, row) => total + getExpenseRowTotal(row), 0);
             const count = container.querySelector('.expenseCount'), total = container.querySelector('.expenseCategoryTotal');
             if (count) count.textContent = rows.length;
-            if (total) total.textContent = sum.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+            if (total) total.textContent = sum.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         function updateGrandTotal() {
             const output = document.getElementById('expensesGrandTotal');
             if (!output) return;
             const sum = Array.from(document.querySelectorAll('#expenseGroups [data-category] tbody tr:not(.hidden)')).reduce((n, row) => n + getExpenseRowTotal(row), 0);
-            output.textContent = sum.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
+            output.textContent = sum.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         document.querySelectorAll('.categoryToggle').forEach(button => button.addEventListener('click', function () {
@@ -1402,16 +1442,31 @@
             return Array.from(document.querySelectorAll('#recettePanel input[name$="-montant"]')).reduce((total, input) => total + parseAmount(input.value), 0);
         }
 
+                function stockVariationTotal() {
+            let total = 0;
+            document.querySelectorAll('#stockBody tr:not(.hidden)').forEach(row => {
+                total += parseAmount(row.querySelector('.stock-variation')?.textContent) || 0;
+            });
+            return total;
+        }
+
         function updateSituationResults() {
-            const ca = revenueTotal(), td = expenseTotal(), margin = ca - td, marginRate = ca ? (margin / ca) * 100 : 0;
-            const revenueOutput = document.getElementById('situationRevenueResult'),
-                expenseOutput = document.getElementById('situationExpenseResult'),
-                marginOutput = document.getElementById('situationMarginResult'),
-                rateOutput = document.getElementById('situationMarginRateResult');
-            if (revenueOutput) revenueOutput.textContent = `${formatAmount(ca)} DH`;
-            if (expenseOutput) expenseOutput.textContent = `${formatAmount(td)} DH`;
-            if (marginOutput) marginOutput.textContent = `${formatAmount(margin)} DH`;
-            if (rateOutput) rateOutput.textContent = `${formatAmount(marginRate)} %`;
+            const ca = revenueTotal();
+            const td = expenseTotal();
+            const vs = stockVariationTotal();
+            const resultat = ca - td + vs;
+            const taux = ca ? (resultat / ca) * 100 : 0;
+
+            const setText = (id, txt) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = txt;
+            };
+
+            setText('situationRevenueResult', `${formatAmount(ca)} DH`);
+            setText('situationExpenseResult', `${formatAmount(td)} DH`);
+            setText('situationStockVariation', `${formatAmount(vs)} DH`);
+            setText('situationMarginResult', `${formatAmount(resultat)} DH`);
+            setText('situationMarginRateResult', `${formatAmount(taux)} %`);
         }
 
         updateSituationResults();

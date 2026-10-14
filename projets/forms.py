@@ -8,7 +8,6 @@ from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
 from django.core.exceptions import ValidationError
 
-from projets.models.ressource_affectee import RessourceAffectee
 from projets.utils.icones import choix_icones
 
 # from projets.models.revision import RevisionPrix
@@ -20,7 +19,7 @@ from .models import (
     DocumentAdministratif, StockSituationMensuelle, DocumentSituationMensuelle,
     RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
     AffectationRessource, Location, Transport, SousTraitance, Consommable,
-    Fourniture, CategorieCharge,
+    Fourniture, CategorieCharge, RessourceAffectee,
     ReleveMateriel, SuiviExecution,
 )
  
@@ -1487,22 +1486,51 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
         return self.cleaned_data['cession_sortante'] or Decimal('0.00')
 
 class StockSituationMensuelleForm(forms.ModelForm):
-    quantite = FrenchDecimalField(
-        max_digits=12, decimal_places=3,
+    qte_initiale = FrenchDecimalField(
+        max_digits=15, decimal_places=3, required=False, initial=Decimal('0.000'),
         widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
     )
-    prix_unitaire = FrenchDecimalField(
-        max_digits=15, decimal_places=2,
+    pu_initial = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
         widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
     )
+    qte_entree = FrenchDecimalField(
+        max_digits=15, decimal_places=3, required=False, initial=Decimal('0.000'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    pu_entree = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    qte_sortie = FrenchDecimalField(
+        max_digits=15, decimal_places=3, required=False, initial=Decimal('0.000'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+    pu_sortie = FrenchDecimalField(
+        max_digits=15, decimal_places=2, required=False, initial=Decimal('0.00'),
+        widget=forms.TextInput(attrs={'inputmode': 'decimal', 'class': 'form-control js-french-number'}),
+    )
+
     class Meta:
         model = StockSituationMensuelle
-        fields = ['designation', 'unite', 'quantite', 'prix_unitaire']
+        fields = [
+            'designation', 'unite',
+            'qte_initiale', 'pu_initial',
+            'qte_entree', 'pu_entree',
+            'qte_sortie', 'pu_sortie',
+        ]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_qte_initiale(self): return self.cleaned_data['qte_initiale'] or Decimal('0.000')
+    def clean_pu_initial(self):   return self.cleaned_data['pu_initial']   or Decimal('0.00')
+    def clean_qte_entree(self):   return self.cleaned_data['qte_entree']   or Decimal('0.000')
+    def clean_pu_entree(self):    return self.cleaned_data['pu_entree']    or Decimal('0.00')
+    def clean_qte_sortie(self):   return self.cleaned_data['qte_sortie']   or Decimal('0.000')
+    def clean_pu_sortie(self):    return self.cleaned_data['pu_sortie']    or Decimal('0.00')
 
 class DepenseSituationMensuelleBaseFormSet(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):

@@ -58,9 +58,9 @@
                 <i class="fas fa-arrow-down text-xs"></i>
                 Charges : {{ situation.total_depenses|floatformat:'2g' }} DH
             </span>
-            <span class="app-badge app-badge-success inline-flex items-center gap-2">
+            <span class="app-badge {% if situation.variation_stock > 0 %}app-badge-success{% elif situation.variation_stock < 0 %}app-badge-danger{% else %}app-badge-muted{% endif %} inline-flex items-center gap-2">
                 <i class="fas fa-boxes text-xs"></i>
-                Stocks : {{ situation.total_stock|floatformat:'2g' }} DH
+                ΔStock : {% if situation.variation_stock > 0 %}+{% endif %}{{ situation.variation_stock|floatformat:'2g' }} DH
             </span>
             <span class="app-badge {% if situation.resultat > 0 %}app-badge-success{% elif situation.resultat < 0 %}app-badge-danger{% else %}app-badge-muted{% endif %} inline-flex items-center gap-2">
                 <i class="fas {% if situation.resultat > 0 %}fa-chart-line{% elif situation.resultat < 0 %}fa-arrow-trend-down{% else %}fa-equals{% endif %} text-xs" aria-hidden="true"></i>
