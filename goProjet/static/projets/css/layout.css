@@ -95,3 +95,14 @@
 #topbar-title.updating {
     opacity: 0;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   FORCE LA SIDEBAR DESKTOP EN FLEX-COLUMN
+   ══════════════════════════════════════════════════════════════ */
+@media (min-width: 768px) {
+    .sidebar {
+        display: flex !important;
+        flex-direction: column !important;
+        height: 100vh !important;
+    }
+}

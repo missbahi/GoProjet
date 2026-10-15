@@ -1,5 +1,5 @@
 {% load static %}
-<div class="sidebar w-72 flex-shrink-0 md:block hidden flex flex-col h-full">
+<div class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col">
 
     <!-- En-tête -->
     <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
@@ -96,7 +96,7 @@
     <!-- ═══════════════════════════════════════════════════════════
          Section FIXE EN BAS
          ═══════════════════════════════════════════════════════════ -->
-    <div class="p-4" style="border-top: 1px solid var(--border-default);">
+    <div class="p-4 mt-auto" style="border-top: 1px solid var(--border-default); flex-shrink: 0;">
 
         <!-- À propos (avec bordure de séparation au-dessus) -->
         <a href="{% url 'projets:apropos' %}" class="sidebar-item">
@@ -112,6 +112,11 @@
             <span>Configuration</span>
         </a>
         {% endif %}
-
+        <!-- ⚡ Version  -->
+        <div class="mt-3 pt-2 text-center text-xs"
+             style="color: var(--text-muted); opacity: 0.5; font-size: 0.7rem; letter-spacing: 0.05em;">
+            <i class="fas fa-code-branch mr-1"></i>
+            v{{ APP_VERSION }}
+        </div>
     </div>
 </div>
