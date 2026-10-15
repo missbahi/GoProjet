@@ -135,21 +135,27 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
     form_class = TacheForm
 
     def dispatch(self, request, *args, **kwargs):
-        # ⚡ Vérifier l'accès au projet AVANT tout
+        # Vérifier l'accès au projet AVANT tout
         self.projet = get_object_or_404(
             projets_accessibles(request.user),
             pk=kwargs['projet_id'],
         )
         return super().dispatch(request, *args, **kwargs)
 
-    # ⚡ ESSENTIEL : passer user au formulaire pour filtrer les querysets
+    # ESSENTIEL : passer user au formulaire pour filtrer les querysets
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
         return kwargs
 
     def form_valid(self, form):
-        # ⚡ Forcer le projet depuis l'URL
+        # Forcer le projet depuis l'URL
+
+        projet_soumis = form.cleaned_data.get('projet')
+        if projet_soumis and projet_soumis.pk != self.projet.pk:
+            form.add_error('projet', "Vous ne pouvez pas créer une tâche sur un autre projet.")
+            return self.form_invalid(form)
+
         form.instance.projet = self.projet
 
         try:

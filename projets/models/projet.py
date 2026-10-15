@@ -673,9 +673,50 @@ class Tache(models.Model):
         verbose_name = _("Tâche")
         verbose_name_plural = _("Tâches")
         ordering = ['date_fin']
-
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(avancement__gte=0) & models.Q(avancement__lte=100),
+                name='tache_avancement_0_100',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(date_fin__gte=models.F('date_debut')),
+                name='tache_dates_coherentes',
+            ),
+        ]
     def __str__(self):
         return f"{self.titre} - {self.projet.nom}"
+    
+    def clean(self):
+        super().clean()
+        errors = {}
+        
+        if self.date_debut and self.date_fin and self.date_fin < self.date_debut:
+            errors['date_fin'] = _("La date de fin ne peut précéder la date de début.")
+        
+        if self.avancement is not None and (self.avancement < 0 or self.avancement > 100):
+            errors['avancement'] = _("L'avancement doit être compris entre 0 et 100.")
+        
+        if self.terminee and self.avancement is not None and self.avancement < 100:
+            errors['avancement'] = _("Une tâche terminée doit avoir un avancement de 100%.")
+        
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields')
+        
+        # Sync automatique
+        if self.terminee and self.avancement < 100:
+            self.avancement = 100
+            if update_fields and 'avancement' not in update_fields:
+                update_fields = list(update_fields) + ['avancement']
+                kwargs['update_fields'] = update_fields
+        
+        # Validation (uniquement si demandé)
+        if kwargs.pop('validate', False):
+            self.full_clean()
+        
+        super().save(*args, **kwargs)
     
     @classmethod
     def accessibles(cls, user):
