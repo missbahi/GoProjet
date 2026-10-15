@@ -4,7 +4,7 @@
 from marshal import version
 
 
-APP_VERSION = "1.2.2"
+APP_VERSION = "1.3.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -15,6 +15,17 @@ APP_VERSION = "1.2.2"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "1.3.0": {
+        "date": "2026-10-15",
+        "titre": "Notifications système et validation des situations",
+        "highlights": [
+            "Recevez des notifications système sur votre bureau",
+            "Le titre de l'onglet affiche le nombre de notifications non lues",
+            "Validez une situation mensuelle en un clic : elle devient verrouillée et non modifiable",
+            "Un administrateur peut rouvrir une situation validée si nécessaire",
+        ],
+        "niveau": "info",
+    },
     "1.2.1": {
         "date": "2026-10-15",
         "titre": "Correctifs mineurs et améliorations",

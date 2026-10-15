@@ -62,6 +62,9 @@ suivi_urlpatterns = [
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/modifier/', reporting_views.modifier_situation_mensuelle, name='modifier_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer/', reporting_views.supprimer_situation_mensuelle, name='supprimer_situation_mensuelle'),
     path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/supprimer-document/', reporting_views.supprimer_document_situation_mensuelle, name='supprimer_document_situation_mensuelle'),
+    path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/valider/', reporting_views.valider_situation_mensuelle, name='valider_situation_mensuelle'),
+    path('projet/<int:projet_id>/situations-mensuelles/<int:situation_id>/devalider/', reporting_views.devalider_situation_mensuelle, name='devalider_situation_mensuelle'),
+
     
     path('projet/<int:projet_id>/suivi/', suivi_views.suivi_execution, name='suivi_execution'),
     path('projet/<int:projet_id>/suivi/ajouter/', suivi_views.ajouter_suivi, name='ajouter_suivi'),

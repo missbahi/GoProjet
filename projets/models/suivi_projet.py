@@ -217,6 +217,28 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
         verbose_name=_("Chiffre d'affaires")
     )
     observations = models.TextField(blank=True, verbose_name=_('Observations'))
+    class Statut(models.TextChoices):
+        BROUILLON = 'BROUILLON', _('Brouillon')
+        VALIDEE = 'VALIDEE', _('Validée')
+
+    statut = models.CharField(
+        _("Statut"), max_length=20,
+        choices=Statut.choices, default=Statut.BROUILLON,
+    )
+    date_validation = models.DateTimeField(
+        _("Date de validation"), null=True, blank=True,
+    )
+    validee_par = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='situations_validees', verbose_name=_("Validée par"),
+    )
+    date_devalidation = models.DateTimeField(
+        _("Date de dévalidation"), null=True, blank=True,
+    )
+    devalidee_par = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='situations_devalidees', verbose_name=_("Dévalidée par"),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -270,6 +292,14 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
         if ca == 0:
             return None
         return (self.resultat / ca) * Decimal('100')
+    
+    @property
+    def est_brouillon(self):
+        return self.statut == self.Statut.BROUILLON
+
+    @property
+    def est_validee(self):
+        return self.statut == self.Statut.VALIDEE
 
 class RecetteSituationMensuelle(models.Model):
     class Rubrique(models.TextChoices):

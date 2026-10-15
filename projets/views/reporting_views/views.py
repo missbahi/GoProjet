@@ -15,6 +15,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required
+from projets.decorators import can_devalidate_situation_mensuelle, can_validate_situation_mensuelle
+
 from projets.forms import (
     DepenseRapportJournalierFormSet, DepenseSituationMensuelleFormSet,
     DocumentSituationMensuelleFormSet, RecetteSituationMensuelleFormSet,
@@ -566,6 +568,12 @@ def _crumbs_situations(projet, *items):
         *items,
     )
 
+def _situation_brouillon_or_403(situation):
+    """Lève une 403 si la situation n'est pas en brouillon."""
+    if not situation.est_brouillon:
+        raise PermissionDenied(
+            "Cette situation est validée et ne peut plus être modifiée."
+        )
 
 @login_required
 @chef_projet_required 
@@ -861,6 +869,57 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         ),
     })
 
+
+@login_required
+@can_validate_situation_mensuelle
+@require_POST
+def valider_situation_mensuelle(request, projet_id, situation_id):
+    """Passe une situation de Brouillon à Validée."""
+    situation = get_object_or_404(
+        SituationMensuelle, id=situation_id, projet_id=projet_id,
+    )
+
+    if situation.est_validee:
+        return JsonResponse(
+            {'success': False, 'message': 'Cette situation est déjà validée.'},
+            status=400,
+        )
+
+    situation.statut = SituationMensuelle.Statut.VALIDEE
+    situation.date_validation = timezone.now()
+    situation.validee_par = request.user
+    situation.save(update_fields=['statut', 'date_validation', 'validee_par'])
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Situation {situation.mois:02d}/{situation.annee} validée.',
+    })
+
+
+@login_required
+@can_devalidate_situation_mensuelle
+@require_POST
+def devalider_situation_mensuelle(request, projet_id, situation_id):
+    """Remet une situation Validée en Brouillon. Superuser uniquement."""
+    situation = get_object_or_404(
+        SituationMensuelle, id=situation_id, projet_id=projet_id,
+    )
+
+    if situation.est_brouillon:
+        return JsonResponse(
+            {'success': False, 'message': 'Cette situation est déjà en brouillon.'},
+            status=400,
+        )
+
+    situation.statut = SituationMensuelle.Statut.BROUILLON
+    situation.date_devalidation = timezone.now()
+    situation.devalidee_par = request.user
+    situation.save(update_fields=['statut', 'date_devalidation', 'devalidee_par'])
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Situation {situation.mois:02d}/{situation.annee} remise en brouillon.',
+    })
 
 @login_required
 @chef_projet_required

@@ -26,7 +26,6 @@ def projets_accessibles(user):
         Q(users=user, dossier__isnull=True)
     ).distinct()
 
-
 def est_gerant(user):
     if not user.is_authenticated or user.is_superuser:
         return False
@@ -40,7 +39,6 @@ def est_chef_projet(user):
     role = getattr(getattr(user, 'profile', None), 'role', None)
     role_normalise = _normaliser_role(role)
     return role_normalise in {'CHEFPROJET', 'CHEFDEPROJET', 'GERANT'}
-
 
 def _normaliser_role(role):
     role_sans_accents = unicodedata.normalize('NFKD', str(role or ''))
@@ -246,6 +244,38 @@ def can_edit_projet(view_func):
         return view_func(request, *args, **kwargs)
     return _wrapped_view
 
+def _situation_action_required(check_func, message):
+    """Factory de décorateur pour les actions sur situations (JSON si AJAX)."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def _wrapped_view(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse(
+                        {'success': False, 'message': 'Votre session a expiré. Veuillez vous reconnecter.'},
+                        status=401,
+                    )
+                return login_required(view_func)(request, *args, **kwargs)
+            if not check_func(request.user):
+                if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                    return JsonResponse(
+                        {'success': False, 'message': message},
+                        status=403,
+                    )
+                raise PermissionDenied
+            return view_func(request, *args, **kwargs)
+        return _wrapped_view
+    return decorator
+
+can_validate_situation_mensuelle = _situation_action_required(
+    lambda user: user.is_superuser or est_chef_projet(user),
+    "Vous n'êtes pas autorisé à valider les situations mensuelles."
+)
+
+can_devalidate_situation_mensuelle = _situation_action_required(
+    lambda user: user.is_superuser,
+    "Vous n'êtes pas autorisé à dévalider les situations mensuelles."
+)
 
 def categorie_charge_required(view_func):
     """Autorise la gestion des catégories aux superusers et chefs de projet."""

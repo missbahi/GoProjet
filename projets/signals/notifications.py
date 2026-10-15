@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from datetime import date
 
-from projets.models import Attachement, DocumentAdministratif, EtapeValidation, FichierSuivi, Notification, OrdreService, Projet, RapportJournalier, SituationMensuelle
+from projets.models import Attachement, Notification, OrdreService, Projet, RapportJournalier, SituationMensuelle
 from django.contrib.auth.models import User
 
 @receiver(post_save, sender=Projet)
@@ -72,33 +72,7 @@ def notifier_attachement_modifie(sender, instance: Attachement, created, **kwarg
 
     for user in users:
         NotificationService.notifier_attachement_modifie(instance, user_projet, user, type_notif)
-            
-   
-@receiver(pre_save, sender=Projet)
-def mettre_a_jour_indicateurs(sender, instance: Projet, **kwargs):
-    if not getattr(instance, '_updating_flags', False):
-        instance.update_status_flags(force_save=False)
 
-@receiver(post_save, sender=OrdreService)
-def gerer_notifications_os(sender, instance: OrdreService, created, **kwargs):
-    if created:
-        Notification.creer_notification_os(
-            instance, 
-            'AUTRE',
-            utilisateurs_cibles=User.objects.filter(
-                profile__role__in=['ADMIN', 'CHEF_PROJET']
-            )
-        )
-    else:
-        try:
-            ancien_os = OrdreService.objects.get(pk=instance.pk)
-            
-            if instance.statut == 'NOTIFIE' and ancien_os.statut != 'NOTIFIE':
-                Notification.creer_notification_os(instance, 'OS_NOTIFIE')
-            elif instance.statut == 'ANNULE' and ancien_os.statut != 'ANNULE':
-                Notification.creer_notification_os(instance, 'OS_ANNULE')
-        except OrdreService.DoesNotExist:
-            pass
 
 @receiver(post_save, sender=OrdreService)
 def verifier_echeances_os(sender, instance: OrdreService, **kwargs):
@@ -137,8 +111,35 @@ def notifier_rapport_journalier(sender, instance, created, **kwargs):
         )
 
 
+@receiver(pre_save, sender=SituationMensuelle)
+def capturer_ancien_statut_situation(sender, instance, **kwargs):
+    """Capture l'ancien statut AVANT le save."""
+    if instance.pk:
+        try:
+            ancien = SituationMensuelle.objects.only('statut').get(pk=instance.pk)
+            instance._ancien_statut = ancien.statut
+        except SituationMensuelle.DoesNotExist:
+            instance._ancien_statut = None
+    else:
+        instance._ancien_statut = None
+
+
 @receiver(post_save, sender=SituationMensuelle)
 def notifier_situation_mensuelle(sender, instance, created, **kwargs):
+    """Notifie les utilisateurs selon le cycle de vie de la situation."""
+
+    ancien_statut = getattr(instance, '_ancien_statut', None)
+
+    # ── Changement de statut détecté ──
+    if not created and ancien_statut is not None and ancien_statut != instance.statut:
+        if instance.statut == SituationMensuelle.Statut.VALIDEE:
+            _notifier_situation_validee(instance)
+            return
+        elif instance.statut == SituationMensuelle.Statut.BROUILLON and ancien_statut == SituationMensuelle.Statut.VALIDEE:
+            _notifier_situation_devalidee(instance)
+            return
+    
+    # ── Création / modification simple ──
     type_notif = 'NOUVELLE_SITUATION_MENSUELLE' if created else 'SITUATION_MENSUELLE_MODIFIEE'
     titre = 'Nouvelle situation mensuelle' if created else 'Situation mensuelle modifiée'
     periode = f'{instance.mois:02d}/{instance.annee}'
@@ -154,5 +155,62 @@ def notifier_situation_mensuelle(sender, instance, created, **kwargs):
             objet_type='situation_mensuelle',
         )
         for utilisateur_id in _utilisateurs_concernes(instance.projet).values_list('id', flat=True)
+    ]
+    Notification.objects.bulk_create(notifications)
+
+
+def _notifier_situation_validee(instance):
+    """Notification dédiée à la validation."""
+    periode = f'{instance.mois:02d}/{instance.annee}'
+    valideur = instance.validee_par
+    valideur_label = (valideur.get_full_name() or valideur.username) if valideur else 'Système'
+    
+    notifications = [
+        Notification(
+            utilisateur_id=utilisateur_id,
+            projet=instance.projet,
+            type_notification='SITUATION_MENSUELLE_VALIDEE',
+            titre=f'Situation {periode} validée - {instance.projet.nom}',
+            message=(
+                f'La situation mensuelle {periode} du projet {instance.projet.nom} '
+                f'a été validée par {valideur_label}.'
+            ),
+            action_url=f'/projet/{instance.projet_id}/situations-mensuelles/{instance.pk}/apercu/',
+            objet_id=instance.pk,
+            objet_type='situation_mensuelle',
+            niveau_urgence='INFO',
+        )
+        for utilisateur_id in _utilisateurs_concernes(instance.projet)
+                              .exclude(id=valideur.id if valideur else None)
+                              .values_list('id', flat=True)
+    ]
+    Notification.objects.bulk_create(notifications)
+
+
+def _notifier_situation_devalidee(instance):
+    """Notification dédiée à la dévalidation."""
+    periode = f'{instance.mois:02d}/{instance.annee}'
+    devalideur = instance.devalidee_par
+    devalideur_label = (devalideur.get_full_name() or devalideur.username) if devalideur else 'Système'
+    
+    notifications = [
+        Notification(
+            utilisateur_id=utilisateur_id,
+            projet=instance.projet,
+            type_notification='SITUATION_MENSUELLE_DEVALIDEE',
+            titre=f'⚠️ Situation {periode} rouverte - {instance.projet.nom}',
+            message=(
+                f'La situation mensuelle {periode} du projet {instance.projet.nom} '
+                f'a été remise en brouillon par {devalideur_label}. '
+                f'Elle est de nouveau modifiable.'
+            ),
+            action_url=f'/projet/{instance.projet_id}/situations-mensuelles/',
+            objet_id=instance.pk,
+            objet_type='situation_mensuelle',
+            niveau_urgence='ELEVE',
+        )
+        for utilisateur_id in _utilisateurs_concernes(instance.projet)
+                              .exclude(id=devalideur.id if devalideur else None)
+                              .values_list('id', flat=True)
     ]
     Notification.objects.bulk_create(notifications)

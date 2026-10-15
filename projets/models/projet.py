@@ -1112,8 +1112,12 @@ class Notification(models.Model):
         ('NOUVEAU_PROJET', 'Nouveau projet'),
         ('NOUVEAU_RAPPORT_JOURNALIER', 'Nouveau rapport journalier'),
         ('RAPPORT_JOURNALIER_MODIFIE', 'Rapport journalier modifié'),
+
+        # SITUATIONS MENSUELLES
         ('NOUVELLE_SITUATION_MENSUELLE', 'Nouvelle situation mensuelle'),
         ('SITUATION_MENSUELLE_MODIFIEE', 'Situation mensuelle modifiée'),
+        ('SITUATION_MENSUELLE_VALIDEE', 'Situation mensuelle validée'),
+        ('SITUATION_MENSUELLE_DEVALIDEE', 'Situation mensuelle dévalidée'),
         
         # ATTACHEMENTS
         ('ATTACHEMENT_BROUILLON', 'Attachement en cours de travail'),
@@ -1294,6 +1298,8 @@ class Notification(models.Model):
             'OS_ANNULE': 'danger',
             'VALIDATION_ATTACHEMENT': 'warning',
             'DOCUMENT_A_SIGNER': 'primary',
+            'SITUATION_MENSUELLE_VALIDEE': 'success',
+            'SITUATION_MENSUELLE_DEVALIDEE': 'warning',
         }
         return colors.get(self.type_notification, 'secondary')
 
@@ -1312,6 +1318,8 @@ class Notification(models.Model):
             'DOCUMENT_A_SIGNER': 'fas fa-signature',
             'REUNION': 'fas fa-calendar-alt',
             'ECHEANCE': 'fas fa-calendar-times',
+            'SITUATION_MENSUELLE_VALIDEE': 'fas fa-check-circle',
+            'SITUATION_MENSUELLE_DEVALIDEE': 'fas fa-lock-open',
         }
         return icons.get(self.type_notification, 'fas fa-bell')
 

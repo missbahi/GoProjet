@@ -13,6 +13,10 @@
                 <span class="font-semibold text-lg" style="color: var(--text-primary);">
                     {{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}
                 </span>
+                <span class="app-badge {% if situation.est_validee %}app-badge-success{% else %}app-badge-warning{% endif %} inline-flex items-center gap-1">
+                    <i class="fas {% if situation.est_validee %}fa-lock{% else %}fa-pen{% endif %} text-xs"></i>
+                    {% if situation.est_validee %}Validée{% else %}Brouillon{% endif %}
+                </span>
             </div>
             <span class="text-sm flex items-center gap-1.5" style="color: var(--text-secondary);">
                 <i class="far fa-clock"></i>
@@ -24,25 +28,54 @@
 
         {# ═══════ Actions ═══════ #}
         <div class="flex items-center gap-1">
+            {# Aperçu : toujours disponible #}
             <a href="{% url 'projets:apercu_situation_mensuelle' projet.id situation.id %}"
                class="app-action-btn"
                title="Aperçu">
                 <i class="fas fa-eye"></i>
             </a>
-            <a href="{% url 'projets:modifier_situation_mensuelle' projet.id situation.id %}"
-               class="app-action-btn"
-               style="color: var(--accent-warning);"
-               title="Modifier">
-                <i class="fas fa-pen"></i>
-            </a>
-            <button type="button"
-                    class="app-action-btn situation-delete-btn"
-                    data-situation-id="{{ situation.id }}"
-                    data-situation-periode="{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}"
-                    style="color: var(--accent-danger);"
-                    title="Supprimer">
-                <i class="fas fa-trash-alt"></i>
-            </button>
+
+            {% if situation.est_brouillon %}
+                {# Modifier : brouillon uniquement #}
+                <a href="{% url 'projets:modifier_situation_mensuelle' projet.id situation.id %}"
+                   class="app-action-btn"
+                   style="color: var(--accent-warning);"
+                   title="Modifier">
+                    <i class="fas fa-pen"></i>
+                </a>
+
+                {# Valider : brouillon uniquement #}
+                <button type="button"
+                        class="app-action-btn situation-validate-btn"
+                        data-situation-id="{{ situation.id }}"
+                        data-situation-periode="{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}"
+                        style="color: var(--accent-success);"
+                        title="Valider la situation">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+
+                {# Supprimer : brouillon uniquement #}
+                <button type="button"
+                        class="app-action-btn situation-delete-btn"
+                        data-situation-id="{{ situation.id }}"
+                        data-situation-periode="{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}"
+                        style="color: var(--accent-danger);"
+                        title="Supprimer">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            {% else %}
+                {# Validée : superuser peut dévalider #}
+                {% if user.is_superuser %}
+                    <button type="button"
+                            class="app-action-btn situation-unlock-btn"
+                            data-situation-id="{{ situation.id }}"
+                            data-situation-periode="{{ situation.mois|stringformat:'02d' }}/{{ situation.annee }}"
+                            style="color: var(--accent-danger);"
+                            title="Remettre en brouillon (superuser)">
+                        <i class="fas fa-lock-open"></i>
+                    </button>
+                {% endif %}
+            {% endif %}
         </div>
     </div>
 
