@@ -21,10 +21,6 @@
         h2 { margin: 0; font-size: 17px; }
         p { margin: 4px 0; }
         .meta { color: var(--muted); font-size: 14px; text-align: right; }
-        .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 20px; font-family: sans-serif; }
-        .summary-item { border: 1px solid var(--line); background: #f1f7f8; padding: 12px; }
-        .summary-item strong { display: block; color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; }
-        .summary-item span { display: block; margin-top: 6px; color: var(--ink); font-size: 18px; font-weight: 700; }
 
         /* NOUVEAU : conteneur scrollable pour les tableaux */
         .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -62,10 +58,8 @@
             .toolbar { margin: 12px 12px; flex-wrap: wrap; }
             .document-header { display: block; }
             .meta { margin-top: 14px; text-align: left; }
-            .summary { grid-template-columns: 1fr; }
             table { font-size: 12px; }
             th, td { padding: 7px 6px; }
-            /* Sur mobile, on garde un tableau lisible : le scroll horizontal prend le relais */
             .charges-table { min-width: 640px; }
         }
 
@@ -73,8 +67,6 @@
             @page { size: A4; margin: 14mm; }
             body { background: #fff; }
             .toolbar { display: none !important; }
-            /* CORRECTION : on ne force plus l'affichage des detail-row.
-               L'impression respecte l'état résumé/détail choisi par l'utilisateur. */
             .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; }
             h2 { break-after: avoid; }
             table { break-inside: avoid; }
@@ -157,72 +149,44 @@
                                 </tr>
                             {% endfor %}
                         {% endfor %}
-                    </tbody>
-                </table>
-            </div>
 
-        </section>
-        <section>
-            <div class="section-heading" style="background: #dcebdc; border-left: 4px solid #4d7a57; color: #295337;">
-                <h2>Variation de stock</h2>
-                <span class="charges-total">
-                    ΔStock : {{ situation.variation_stock|floatformat:'2g' }} DH
-                </span>
-            </div>
-            <div class="table-wrap">
-                <table class="stock-table">
-                    <thead>
-                        <tr>
-                            <th style="width:22%;">Article</th>
-                            <th class="amount" style="width:7%;">U</th>
-                            <th class="amount" style="width:7%;">QI</th>
-                            <th class="amount" style="width:8%;">PUI</th>
-                            <th class="amount" style="width:7%;">E</th>
-                            <th class="amount" style="width:8%;">PUE</th>
-                            <th class="amount" style="width:7%;">S</th>
-                            <th class="amount" style="width:8%;">PUS</th>
-                            <th class="amount" style="width:7%;">QF</th>
-                            <th class="amount" style="width:9%;">SF</th>
-                            <th class="amount" style="width:10%;">ΔStock</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stock in stocks %}
-                        <tr>
-                            <td>{{ stock.designation }}</td>
-                            <td class="amount">{{ stock.unite|default:"—" }}</td>
-                            <td class="amount">{{ stock.qte_initiale|floatformat:'2g' }}</td>
-                            <td class="amount">{{ stock.pu_initial|floatformat:'2g' }}</td>
-                            <td class="amount">{{ stock.qte_entree|floatformat:'2g' }}</td>
-                            <td class="amount">{{ stock.pu_entree|floatformat:'2g' }}</td>
-                            <td class="amount">{{ stock.qte_sortie|floatformat:'2g' }}</td>
-                            <td class="amount">{{ stock.pu_sortie|floatformat:'2g' }}</td>
-                            <td class="amount"><strong>{{ stock.qte_finale|floatformat:'2g' }}</strong></td>
-                            <td class="amount"><strong>{{ stock.montant_final|floatformat:'2g' }}</strong></td>
-                            <td class="amount" style="color: #295337;"><strong>{{ stock.variation_stock|floatformat:'2g' }}</strong></td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="11" style="font-style: italic; color: #617786;">
-                                Aucun mouvement de stock enregistré.
+                        <!-- 2. Ensuite l'état des stocks comme une catégorie -->
+                        <tr class="stock-category-row">
+                            <td colspan="5">
+                                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                    <span class="category">État des stocks</span>
+                                    <span class="category-total-amount">{{ situation.variation_stock|floatformat:'2g' }} DH</span>
+                                </div>
                             </td>
                         </tr>
+                        {% for stock in stocks %}
+                            <tr class="detail-row stock-detail-row">
+                                <td>{{ stock.designation }}</td>
+                                <td class="amount">{{ stock.montant_entree|floatformat:'2g' }}</td>
+                                <td class="amount"></td>
+                                <td class="amount">{{ stock.montant_sortie|floatformat:'2g' }}</td>
+                                <td class="amount"><strong>{{ stock.variation_stock|floatformat:'2g' }}</strong></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="5" style="font-style: italic; color: #617786;">
+                                    Aucun mouvement de stock enregistré.
+                                </td>
+                            </tr>
                         {% endfor %}
                     </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="10" style="text-align: right; padding-right: 12px;">Variation totale</td>
-                            <td class="amount"><strong>{{ situation.variation_stock|floatformat:'2g' }} DH</strong></td>
-                        </tr>
-                    </tfoot>
                 </table>
             </div>
         </section>
-        <div class="results-row"><strong>Chiffre d'affaires</strong><strong>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</strong></div>
-        <div class="results-row"><strong>Total des dépenses</strong><strong>{{ situation.total_depenses|floatformat:'2g' }} DH</strong></div>
-        <div class="results-row"><strong>Variation de stock</strong><strong>{{ situation.variation_stock|floatformat:'2g' }} DH</strong></div>
-        <div class="results-row"><strong>Résultat</strong><strong>{{ situation.resultat|floatformat:'2g' }} DH</strong></div>
-        <div class="results-row"><strong>% de résultat</strong><strong>{% if situation.pct_resultat is not None %}{{ situation.pct_resultat|floatformat:2 }} %{% else %}-{% endif %}</strong></div>
+
+        <section class="results-box">
+            <h2>Résultats de la situation</h2>
+            <div class="results-row"><strong>Chiffre d'affaires</strong><strong>{{ situation.chiffre_affaires|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>Total des dépenses</strong><strong>{{ situation.total_depenses|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>Variation de stock</strong><strong>{{ situation.variation_stock|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>Résultat</strong><strong>{{ situation.resultat|floatformat:'2g' }} DH</strong></div>
+            <div class="results-row"><strong>% de résultat</strong><strong>{% if situation.pct_resultat is not None %}{{ situation.pct_resultat|floatformat:2 }} %{% else %}-{% endif %}</strong></div>
+        </section>
 
         {% if situation.observations %}<section class="note"><strong>Observations</strong><p>{{ situation.observations|linebreaksbr }}</p></section>{% endif %}
         {% if documents %}<section><h2>Documents associés</h2><div class="documents">{% for document in documents %}<p>{{ document.nom }}</p>{% endfor %}</div></section>{% endif %}
