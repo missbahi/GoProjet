@@ -21,14 +21,28 @@ venv-1/
 *.swo
 *~
 
-# scripts
+# Scripts
 scripts/
 
-# Fichiers sensibles
+# ══════════════════════════════════════════════════════════════
+# FICHIERS SENSIBLES — NE JAMAIS COMMITER
+# ══════════════════════════════════════════════════════════════
 .env
 .env.*
 !.env.example
+!.env.local.example
+
+# Miroirs pour d'autres environnements
+.env_render
+.env_railway
 .secrets
+
+# Dumps de BDD (peuvent contenir des données sensibles)
+*.pgc
+*.dump
+*.sql
+
+# Fichiers de structure (peuvent contenir des infos système)
 structure.txt
 suivi_projet.html
 
@@ -63,7 +77,3 @@ Desktop.ini
 # Traductions (optionnel)
 *.pot
 *.mo
-
-# Railway / Render
-.env.local
-.env_render

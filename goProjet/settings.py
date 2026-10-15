@@ -142,6 +142,17 @@ if os.environ.get('DATABASE_URL') and not DEBUG:
         )
     }
     print("⚡ Mode production: PostgreSQL Railway")
+elif os.environ.get('DATABASE_URL'):
+    # DÉVELOPPEMENT LOCAL avec PostgreSQL local (si DATABASE_URL définie dans .env.local)
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=os.environ.get('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=False,   # pas de health check en local
+            ssl_require=False,           # pas de SSL en local
+        )
+    }
+    print("🐘 Mode développement: PostgreSQL local")
 else:
     # DÉVELOPPEMENT LOCAL : SQLite
     DATABASES = {
