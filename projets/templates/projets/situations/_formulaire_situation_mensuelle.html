@@ -736,6 +736,7 @@
                     <small class="hidden block text-xs text-[#527889]">Plusieurs mouvements possibles.</small>
                 </span>
             </button>
+             <strong id="stockHeaderTotal" class="recette-total">0,00 DH</strong>
         </div>
         {{ stocks.management_form }}
         <div id="stockPanel" class="overflow-x-auto hidden">
@@ -902,7 +903,7 @@
 
         function updateRecetteTotal() {
             const total = Array.from(document.querySelectorAll('#recettePanel input[name$="-montant"]')).reduce((sum, input) => sum + (parseAmount(input.value) || 0), 0);
-            const formatted = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const formatted = total.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
             const output = document.getElementById('recetteTotal'), headerOutput = document.getElementById('recetteHeaderTotal');
             if (output) output.textContent = formatted;
             if (headerOutput) headerOutput.textContent = formatted;
@@ -944,6 +945,8 @@
 
             const output = document.getElementById('situationStockVariation');
             if (output) output.textContent = fmt2(totalVariation);
+            const headerOutput = document.getElementById('stockHeaderTotal');
+            if (headerOutput) headerOutput.textContent = fmt2(totalVariation) + ' DH';
         }
 
         function getExpenseRowTotal(row) {
