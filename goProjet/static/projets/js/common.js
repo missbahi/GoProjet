@@ -59,6 +59,44 @@
         return document.getElementById('notificationDropdown');
     }
 
+
+    // ══════════════════════════════════════════════════════════
+    // FERMETURE AUTO DU PANNEAU NOTIFICATIONS (30 s)
+    // ══════════════════════════════════════════════════════════
+    let notifAutoCloseTimer = null;
+    const NOTIF_AUTO_CLOSE_MS = 1000;  // 1 seconde
+
+    function clearNotifAutoClose() {
+        if (notifAutoCloseTimer) {
+            clearTimeout(notifAutoCloseTimer);
+            notifAutoCloseTimer = null;
+        }
+    }
+
+    function startNotifAutoClose() {
+        clearNotifAutoClose();
+        notifAutoCloseTimer = setTimeout(() => {
+            const dropdown = getNotifDropdown();
+            if (dropdown) dropdown.classList.add('hidden');
+        }, NOTIF_AUTO_CLOSE_MS);
+    }
+
+    // Annuler/reprendre sur interaction utilisateur
+    document.addEventListener('mouseenter', function(e) {
+        if (e.target.closest('#notificationDropdown')) clearNotifAutoClose();
+    }, true);
+
+    document.addEventListener('mouseleave', function(e) {
+        if (e.target.closest('#notificationDropdown')) {
+            const dropdown = getNotifDropdown();
+            if (dropdown && !dropdown.classList.contains('hidden')) startNotifAutoClose();
+        }
+    }, true);
+
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('#notificationDropdown')) startNotifAutoClose();
+    });
+
     // ============================================================
     // UN SEUL listener pour gérer tous les clics
     // ============================================================
@@ -76,17 +114,24 @@
             return;
         }
 
-        // ⚡ Clic sur le bouton "cloche notifications"
+        // Clic sur le bouton "cloche notifications"
+
         if (notifBtn && e.target.closest('#notificationBtn')) {
             e.preventDefault();
             e.stopPropagation();
             if (notifDropdown) notifDropdown.classList.toggle('hidden');
             if (userDropdown) userDropdown.classList.add('hidden');
-            if (notifDropdown && !notifDropdown.classList.contains('hidden')) refreshNotificationPanel();
+            
+            if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
+                refreshNotificationPanel();
+                startNotifAutoClose();   // ⚡ lance le timer
+            } else {
+                clearNotifAutoClose();   // ⚡ annule le timer
+            }
             return;
         }
 
-        // ⚡ Clic en dehors OU sur un lien du dropdown utilisateur → fermer
+        // Clic en dehors OU sur un lien du dropdown utilisateur → fermer
         if (userDropdown && !userDropdown.classList.contains('hidden')) {
             const clickedOutside = !e.target.closest('#userMenuBtn')
                                 && !e.target.closest('#userMenuDropdown');
@@ -96,7 +141,7 @@
             }
         }
 
-        // ⚡ Clic en dehors OU sur un lien du dropdown notifications → fermer
+        // Clic en dehors OU sur un lien du dropdown notifications → fermer
         if (notifDropdown && !notifDropdown.classList.contains('hidden')) {
             const clickedOutside = !e.target.closest('#notificationBtn')
                                 && !e.target.closest('#notificationDropdown');
@@ -110,45 +155,45 @@
     // ============================================================
     // "Marquer tout comme lu" depuis le dropdown
     // ============================================================
-    document.addEventListener('click', function(e) {
-        const markAllBtn = e.target.closest('#markAllReadFromDropdown');
-        if (!markAllBtn) return;
+    // document.addEventListener('click', function(e) {
+    //     const markAllBtn = e.target.closest('#markAllReadFromDropdown');
+    //     if (!markAllBtn) return;
 
-        e.preventDefault();
-        e.stopPropagation();
+    //     e.preventDefault();
+    //     e.stopPropagation();
 
-        const url = markAllBtn.dataset.actionUrl;
-        const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value
-            || document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)?.[1];
-        if (!url || !token) {
-            window.showErrorMessage?.("Impossible de marquer les notifications : configuration manquante.");
-            return;
-        }
-        if (markAllBtn.disabled) return;
-        markAllBtn.disabled = true;
+    //     const url = markAllBtn.dataset.actionUrl;
+    //     const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value
+    //         || document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/)?.[1];
+    //     if (!url || !token) {
+    //         window.showErrorMessage?.("Impossible de marquer les notifications : configuration manquante.");
+    //         return;
+    //     }
+    //     if (markAllBtn.disabled) return;
+    //     markAllBtn.disabled = true;
 
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': token,
-            },
-            credentials: 'same-origin',
-        }).then(async response => {
-            const data = await response.json();
-            if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
-            document.body.dispatchEvent(new CustomEvent('notifications:changed'));
-            if (document.getElementById('notifications-container') && window.htmx) {
-                await window.htmx.ajax('GET', window.location.href, {
-                    target: '#main-content', swap: 'innerHTML',
-                });
-            }
-            window.showNotification?.('Toutes les notifications ont été marquées comme lues', 'success');
-        }).catch(error => {
-            console.error('[notifications] Lecture impossible', error);
-            window.showErrorMessage?.("Impossible de marquer les notifications comme lues.");
-        }).finally(() => { markAllBtn.disabled = false; });
-    });
+    //     fetch(url, {
+    //         method: 'POST',
+    //         headers: {
+    //             'Content-Type': 'application/json',
+    //             'X-CSRFToken': token,
+    //         },
+    //         credentials: 'same-origin',
+    //     }).then(async response => {
+    //         const data = await response.json();
+    //         if (!response.ok || !data.success) throw new Error(data.error || `HTTP ${response.status}`);
+    //         document.body.dispatchEvent(new CustomEvent('notifications:changed'));
+    //         if (document.getElementById('notifications-container') && window.htmx) {
+    //             await window.htmx.ajax('GET', window.location.href, {
+    //                 target: '#main-content', swap: 'innerHTML',
+    //             });
+    //         }
+    //         window.showNotification?.('Toutes les notifications ont été marquées comme lues', 'success');
+    //     }).catch(error => {
+    //         console.error('[notifications] Lecture impossible', error);
+    //         window.showErrorMessage?.("Impossible de marquer les notifications comme lues.");
+    //     }).finally(() => { markAllBtn.disabled = false; });
+    // });
 
     // ============================================================
     // Fermer les dropdowns après un swap HTMX

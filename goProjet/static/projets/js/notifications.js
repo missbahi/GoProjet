@@ -10,6 +10,7 @@
             const message = data.error || `HTTP ${response.status}`;
             throw new Error(message);
         }
+        // Notifier le panneau cloche
         document.body.dispatchEvent(new CustomEvent('notifications:changed'));
         return data;
     }
@@ -126,19 +127,26 @@
         }
     });
 
-    // ============================================================
-    // Tout marquer comme lu
+        // ============================================================
+    // Tout marquer comme lu (depuis dropdown OU page liste)
     // ============================================================
     document.addEventListener('click', async function(e) {
-        if (!e.target.closest('#markAllRead')) return;
+
+        const btn = e.target.closest('#markAllRead, #markAllReadFromDropdown');
+        if (!btn) return;
 
         try {
-            const response = await fetch('/notifications/marquer-toutes-lues/', {
+            const url = btn.dataset.actionUrl || '/notifications/marquer-toutes-lues/';
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'X-CSRFToken': getCookie('csrftoken') },
             });
             const data = await readMutationResponse(response);
             if (data.success) {
+                // Fermer le dropdown si on vient du topbar
+                // const dropdown = document.getElementById('notificationDropdown');
+                // if (dropdown) dropdown.classList.add('hidden');
+
                 refreshNotificationsList();
                 showNotification(`Toutes marquées comme lues (${data.count})`, 'success');
             }
