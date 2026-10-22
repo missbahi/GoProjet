@@ -1,0 +1,14 @@
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block title %}Nouveau plan – GoPlan{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6 max-w-3xl">
+    <h1 class="text-2xl font-bold mb-6" style="color: var(--accent-primary);">
+        <i class="fas fa-plus-circle mr-2"></i> Nouveau plan
+    </h1>
+
+    {% include 'goplan/plans/_form_plan.html' %}
+</div>
+{% endblock %}

@@ -1,0 +1,1314 @@
+/* goplan/static/goplan/css/goplan.css */
+.goplan-table,
+.goplan-gantt-container,
+.goplan-gantt-split {
+    --goplan-row-height: 35px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CONTENEUR PRINCIPAL — Feuille "papier"
+   ══════════════════════════════════════════════════════════════ */
+.goplan-paper {
+    background: #f8f6ef;
+    color: #24485a;
+    border: 1px solid #7baec1;
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+/* En-tête de section */
+.goplan-section {
+    border: 1px solid #475569;
+    border-radius: 0.75rem;
+    background: rgba(15, 23, 42, 0.42);
+    overflow: hidden;
+}
+
+.goplan-section-header {
+    border-bottom: 1px solid #475569;
+    padding: 1rem 1.25rem;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   TABLES — Style papier
+   ══════════════════════════════════════════════════════════════ */
+.goplan-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #f8f6ef;
+    color: #24485a;
+    font-size: 0.8125rem;
+}
+
+.goplan-table thead {
+    background: #e7f1f5;
+    color: #376b82;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+}
+
+.goplan-table thead th {
+    padding: 0.5rem 0.75rem;
+    font-weight: 700;
+    border-bottom: 1px solid #8eb6c7;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.goplan-table tbody tr {
+    height: var(--goplan-row-height);
+    border-bottom: 1px solid #a9cad6;
+    transition: background-color 0.15s;
+}
+
+.goplan-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.goplan-table tbody tr:hover {
+    background-color: rgba(34, 211, 238, 0.06);
+}
+
+.goplan-table tbody tr.hidden {
+    display: none;
+}
+
+.goplan-table td {
+    padding: 0.125rem 0.5rem;
+    vertical-align: middle;
+}
+
+/* Champs inline — style "cellule papier" */
+.goplan-table input:not([type="hidden"]):not([type="checkbox"]),
+.goplan-table select,
+.goplan-table textarea {
+    box-sizing: border-box;
+    width: 100%;
+    height: 30px !important;
+    min-height: 30px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #24485a;
+    padding: 0.2rem 0.25rem;
+    line-height: 1.1;
+    box-shadow: none;
+    font-family: inherit;
+    font-size: 0.8125rem;
+}
+
+.goplan-table input:focus,
+.goplan-table select:focus,
+.goplan-table textarea:focus {
+    outline: 0;
+    border-bottom: 2px solid #5e9eb6;
+    background-color: rgba(34, 211, 238, 0.05);
+    box-shadow: none;
+}
+
+.goplan-table input::placeholder {
+    color: #8fa8b5;
+    font-style: italic;
+}
+
+/* Alignements spéciaux */
+.goplan-table input[type="number"] {
+    text-align: right;
+}
+
+.goplan-table .task-duree input,
+.goplan-table .task-date-fin input {
+    text-align: right;
+}
+
+/* Ligne vide en bas */
+.goplan-table tbody tr:last-child:not(.hidden) {
+    background-color: #fdfbf5;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOUTONS — Style situation-presets
+   ══════════════════════════════════════════════════════════════ */
+.goplan-presets-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid #5e9eb6;
+    border-radius: 50%;
+    background: #e7f1f5;
+    color: #376b82;
+    padding: 0;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.goplan-presets-btn:hover {
+    background: #d6e9f0;
+}
+
+.goplan-presets-btn:focus-visible {
+    outline: 2px solid #5e9eb6;
+    outline-offset: 2px;
+}
+
+/* Barre inférieure (bouton Ajouter + compteur) */
+.goplan-footer-bar {
+    background: #f8f6ef;
+    border-top: 1px solid #7baec1;
+    padding: 0.75rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.goplan-count {
+    color: #527889;
+    font-size: 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.goplan-count strong {
+    color: #2c667e;
+    font-weight: 700;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BOUTON SUPPRESSION LIGNE
+   ══════════════════════════════════════════════════════════════ */
+.goplan-delete-btn {
+    color: #b4534b;
+    padding: 0.25rem 0.35rem;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: background-color 0.15s;
+}
+
+.goplan-delete-btn:hover {
+    background-color: rgba(220, 38, 38, 0.12);
+    color: #991b1b;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ERREURS INLINE
+   ══════════════════════════════════════════════════════════════ */
+.goplan-task-error {
+    color: #b91c1c;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    margin: 0.15rem 0 0;
+    display: block;
+}
+
+.goplan-inline-error {
+    border: 1px solid #b91c1c;
+    background: #fef2f2;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+}
+
+.goplan-inline-error[hidden] {
+    display: none;
+}
+
+.goplan-table td.has-error input,
+.goplan-table td.has-error select {
+    border-bottom: 2px solid #dc2626;
+    background-color: rgba(254, 226, 226, 0.5);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   BARRE D'OUTILS HIÉRARCHIQUE
+   ══════════════════════════════════════════════════════════════ */
+.goplan-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    background: linear-gradient(135deg, #f8f6ef 0%, #f0ede5 100%);
+    border: 1px solid #a9cad6;
+    border-radius: 0.5rem;
+    box-shadow: 0 1px 3px rgba(36, 72, 90, 0.08),
+                0 1px 2px rgba(36, 72, 90, 0.04);
+    flex-wrap: wrap;
+}
+
+.goplan-sticky-controls {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.gantt-sticky-controls {
+    background: #f8f6ef;
+    border-radius: 0.5rem;
+    padding-bottom: 1px;
+    box-shadow: 0 3px 8px rgba(36, 72, 90, 0.12);
+}
+
+.gantt-editor-toggle {
+    margin-left: auto;
+}
+
+.goplan-link-summary {
+    display: block;
+    max-width: 240px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #376b82;
+    font-size: 0.75rem;
+}
+
+button.goplan-link-summary {
+    width: 100%;
+    text-align: left;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    cursor: pointer;
+}
+
+button.goplan-link-summary:hover,
+button.goplan-link-summary:focus-visible {
+    background: #d6e9f0;
+    outline: 1px solid #5e9eb6;
+}
+
+button.goplan-link-summary:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+
+.goplan-toolbar-label {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #527889;
+    padding-right: 0.5rem;
+    border-right: 1px solid #a9cad6;
+    margin-right: 0.25rem;
+}
+
+.goplan-toolbar-sep {
+    display: inline-block;
+    width: 1px;
+    height: 1.5rem;
+    background: #a9cad6;
+    margin: 0 0.25rem;
+}
+
+.goplan-toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: 1px solid #5e9eb6;
+    border-radius: 0.375rem;
+    background: transparent;
+    /* background: #ffffff; */
+    color: #376b82;
+    cursor: pointer;
+    padding: 0;
+    transition: background-color 0.15s,
+                border-color 0.15s,
+                transform 0.1s,
+                box-shadow 0.15s;
+    box-shadow: 0 1px 2px rgba(36, 72, 90, 0.05);
+}
+
+.goplan-toolbar-btn:hover {
+    background: var(--bg-hover);
+    border-color: #22d3ee;
+    box-shadow: 0 2px 4px rgba(34, 211, 238, 0.15);
+    transform: translateY(-1px);
+}
+
+.goplan-toolbar-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(36, 72, 90, 0.1);
+}
+
+.goplan-toolbar-btn:focus-visible {
+    outline: 2px solid #5e9eb6;
+    outline-offset: 2px;
+}
+
+.goplan-toolbar-btn i {
+    font-size: 0.875rem;
+    line-height: 1;
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.goplan-toolbar-btn:hover i {
+    opacity: 1;
+}
+
+
+/* ══════════════════════════════════════════════════════════════
+   THÈME SOMBRE
+   ══════════════════════════════════════════════════════════════ */
+ [data-theme="dark"] .goplan-toolbar {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .goplan-toolbar-btn i {
+    color: #22d3ee;
+    opacity: 0.9;
+}
+
+
+[data-theme="dark"] .goplan-toolbar-label {
+    color: #94a3b8;
+    border-right-color: #334155;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   STYLE PAR TYPE DE TÂCHE
+   ══════════════════════════════════════════════════════════════ */
+
+/* BORDURE GAUCHE DE COULEUR (visible en permanence) */
+.goplan-table tbody tr.task-row {
+    border-left: 4px solid transparent;
+    transition: border-left-color 0.2s, background-color 0.2s;
+}
+
+/* TÂCHE — Bleu (défaut) */
+.goplan-table tbody tr.task-row[data-type="TACHE"] {
+    border-left-color: #3b82f6;
+}
+
+/* JALON — Violet / Doré */
+.goplan-table tbody tr.task-row[data-type="JALON"] {
+    border-left-color: #a855f7;
+    background-color: rgba(168, 85, 247, 0.04);
+}
+
+/* GROUPE — Vert (parent / conteneur) */
+.goplan-table tbody tr.task-row[data-type="GROUPE"] {
+    border-left-color: #22c55e;
+    background-color: rgba(34, 197, 94, 0.04);
+    font-weight: 600;
+}
+
+/* RÉCURRENTE — Ambre */
+.goplan-table tbody tr.task-row[data-type="RECUR"] {
+    border-left-color: #f59e0b;
+    background-color: rgba(245, 158, 11, 0.04);
+}
+
+/* État actif (is-current) → on renforce la bordure */
+.goplan-table tbody tr.task-row.is-current {
+    border-left-width: 6px;
+}
+
+/* .goplan-table tbody tr.task-row.is-current[data-type="TACHE"] {
+    border-left-color: #60a5fa;
+}
+.goplan-table tbody tr.task-row.is-current[data-type="JALON"] {
+    border-left-color: #c084fc;
+}
+.goplan-table tbody tr.task-row.is-current[data-type="GROUPE"] {
+    border-left-color: #4ade80;
+}
+.goplan-table tbody tr.task-row.is-current[data-type="RECUR"] {
+    border-left-color: #fbbf24;
+} */
+
+/* ══════════════════════════════════════════════════════════════
+   BADGE DE TYPE (pastille)
+   ══════════════════════════════════════════════════════════════ */
+.goplan-type-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 0.25rem;
+    color: #fff;
+    line-height: 1.2;
+    margin-right: 0.35rem;
+    vertical-align: middle;
+}
+
+.goplan-type-badge[data-type="TACHE"] {
+    background: #3b82f6;
+}
+.goplan-type-badge[data-type="JALON"] {
+    background: #a855f7;
+}
+.goplan-type-badge[data-type="GROUPE"] {
+    background: #22c55e;
+}
+.goplan-type-badge[data-type="RECUR"] {
+    background: #f59e0b;
+}
+
+/* Icône de type (petite, discrète) */
+.goplan-type-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 50%;
+    font-size: 0.65rem;
+    color: #fff;
+    margin-right: 0.35rem;
+    flex-shrink: 0;
+}
+
+.goplan-type-icon[data-type="TACHE"] {
+    background: #3b82f6;
+}
+.goplan-type-icon[data-type="JALON"] {
+    background: #a855f7;
+}
+.goplan-type-icon[data-type="GROUPE"] {
+    background: #22c55e;
+}
+.goplan-type-icon[data-type="RECUR"] {
+    background: #f59e0b;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   THÈME SOMBRE — Renforcement
+   ══════════════════════════════════════════════════════════════ */
+[data-theme="dark"] .goplan-table tbody tr.task-row[data-type="TACHE"] {
+    background-color: rgba(59, 130, 246, 0.08);
+}
+[data-theme="dark"] .goplan-table tbody tr.task-row[data-type="JALON"] {
+    background-color: rgba(168, 85, 247, 0.10);
+}
+[data-theme="dark"] .goplan-table tbody tr.task-row[data-type="GROUPE"] {
+    background-color: rgba(34, 197, 94, 0.10);
+}
+[data-theme="dark"] .goplan-table tbody tr.task-row[data-type="RECUR"] {
+    background-color: rgba(245, 158, 11, 0.10);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   LIGNE COURANTE (sélectionnée)
+   ══════════════════════════════════════════════════════════════ */
+.goplan-table tbody tr.task-row.is-current {
+    background-color: rgba(34, 211, 238, 0.12) !important;
+    box-shadow: inset 4px 0 0 0 #22d3ee;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+.goplan-table tbody tr.task-row.is-current input,
+.goplan-table tbody tr.task-row.is-current select {
+    background-color: transparent !important;
+}
+
+/* Thème sombre */
+[data-theme="dark"] .goplan-table tbody tr.task-row.is-current {
+    background-color: rgba(34, 211, 238, 0.15) !important;
+    box-shadow: inset 4px 0 0 0 #22d3ee;
+}  
+
+/* ══════════════════════════════════════════════════════════════
+   BOUTONS TOOLBAR — État désactivé
+   ══════════════════════════════════════════════════════════════ */
+.goplan-toolbar-btn:disabled,
+.goplan-toolbar-btn[disabled] {
+    opacity: 0.3;
+    cursor: not-allowed;
+    filter: grayscale(0.7);
+    pointer-events: none;
+}
+
+.goplan-toolbar-btn:disabled:hover,
+.goplan-toolbar-btn[disabled]:hover {
+    transform: none;
+    box-shadow: none;
+    background: transparent;
+    border-color: #5e9eb6;
+}
+
+/* Thème sombre */
+[data-theme="dark"] .goplan-toolbar-btn:disabled,
+[data-theme="dark"] .goplan-toolbar-btn[disabled] {
+    opacity: 0.25;
+    background: rgba(34, 211, 238, 0.05);
+    border-color: rgba(34, 211, 238, 0.2);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   INDENTATION VISUELLE — uniquement sur la cellule Nom
+   ══════════════════════════════════════════════════════════════ */
+.goplan-table tbody tr.task-row .goplan-name-cell {
+    padding-left: calc(0.5rem + var(--indent-level, 0) * 1rem);
+    transition: padding-left 0.15s ease;
+}
+
+.goplan-table tbody tr.task-row.is-folded { display: none; }
+.goplan-name-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.15rem;
+}
+.goplan-name-wrap > input { flex: 1 1 auto; min-width: 0; }
+.goplan-fold-btn {
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #15803d;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+/* Keeps names aligned when the row has no sub-tasks. */
+.goplan-fold-btn[hidden] { display: inline-block; visibility: hidden; }
+.goplan-fold-btn:hover,
+.goplan-fold-btn:focus-visible { background: #d6e9f0; }
+
+/* Bonus : petit trait visuel d'indentation */
+.goplan-table tbody tr.task-row[data-indent="1"] .goplan-name-cell input { font-weight: 500; }
+.goplan-table tbody tr.task-row[data-indent="2"] .goplan-name-cell input { font-weight: 500; }
+.goplan-table tbody tr.task-row[data-indent="3"] .goplan-name-cell input { font-weight: 500; }
+
+/* ══════════════════════════════════════════════════════════════
+   GANTT — Bouton de vue actif
+   ══════════════════════════════════════════════════════════════ */
+.goplan-toolbar-btn.is-active {
+    background: #d6e9f0;
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.25);
+}
+
+[data-theme="dark"] .goplan-toolbar-btn.is-active {
+    background: rgba(34, 211, 238, 0.15);
+    border-color: #22d3ee;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GANTT — Adaptation Frappe Gantt au thème papier
+   ══════════════════════════════════════════════════════════════ */
+#gantt-svg {
+    min-width: 100%;
+    min-height: 300px;
+    font-family: inherit;
+}
+
+.goplan-gantt-container .bar {
+    fill: #3b82f6;
+}
+
+.goplan-gantt-container .bar-progress {
+    fill: #1d4ed8;
+}
+
+.goplan-gantt-container .bar-wrapper:hover .bar {
+    filter: brightness(0.9);
+}
+
+.goplan-gantt-container .grid-row {
+    fill: #f8f6ef;
+}
+
+.goplan-gantt-container .row-line,
+.goplan-gantt-container .grid-header {
+    stroke: #a9cad6;
+    stroke-width: 1;
+}
+
+.goplan-gantt-container .grid-background {
+    fill: #f8f6ef;
+}
+
+.goplan-gantt-container .grid-header {
+    fill: #e7f1f5;
+}
+
+.goplan-gantt-container .grid-row:nth-child(even) {
+    fill: #f8f6ef;
+}
+
+.goplan-gantt-container .upper-text,
+.goplan-gantt-container .lower-text,
+.goplan-gantt-container .bar-label.big {
+    fill: #376b82;
+}
+
+.goplan-gantt-container .tick {
+    stroke: #a9cad6;
+    stroke-opacity: 0.5;
+    stroke-width: 0.4;
+}
+
+.goplan-gantt-container .tick.thick {
+    stroke-width: 0.7;
+}
+
+.goplan-gantt-container .tick text {
+    fill: #527889;
+    font-size: 11px;
+}
+
+.gantt-calendar-bands,
+.gantt-calendar-lines {
+    pointer-events: none;
+}
+
+.gantt-calendar-bands rect {
+    fill: #527889;
+    fill-opacity: 0.12;
+}
+
+.gantt-calendar-lines line {
+    stroke: #7baec1;
+    stroke-width: 0.6;
+}
+
+.gantt-calendar-lines .gantt-period-month,
+.gantt-calendar-lines .gantt-header-divider {
+    stroke: #5e9eb6;
+    stroke-width: 0.9;
+}
+
+.gantt-calendar-lines .gantt-period-year {
+    stroke: #376b82;
+    stroke-width: 1.5;
+}
+
+#gantt-zoom-level {
+    min-width: 3.25rem;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.gantt-editor,
+.gantt-unsaved-dialog {
+    background: #f8f6ef;
+    color: #24485a;
+    border: 1px solid #7baec1;
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+}
+
+.gantt-editor {
+    position: relative;
+}
+
+.gantt-editor[hidden] {
+    display: none;
+}
+
+.gantt-editor fieldset {
+    min-width: 0;
+    overflow-x: auto;
+    padding-bottom: 0.4rem;
+}
+
+.gantt-link-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 0.75rem;
+}
+
+.gantt-link-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+#gantt-link-dialog {
+    max-width: min(850px, 95vw);
+}
+
+#gantt-link-list li {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #a9cad6;
+}
+
+.goplan-gantt-container .gantt-link-arrow {
+    fill: none;
+    stroke: var(--goplan-link-color, #527889);
+    stroke-width: 1.1;
+    pointer-events: none;
+}
+
+.goplan-gantt-container .gantt-link-label {
+    fill: var(--goplan-link-color, #24485a);
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.gantt-appearance-dialog {
+    box-sizing: border-box;
+    width: 370px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 32px);
+    margin: auto 16px auto auto;
+    padding: 20px;
+    overflow: auto;
+    border: 1px solid #7baec1;
+    border-radius: 12px;
+    background: #f8f6ef;
+    color: #24485a;
+}
+
+.gantt-appearance-dialog::backdrop {
+    background: rgba(36, 72, 90, 0.12);
+}
+
+.gantt-appearance-dialog h2 {
+    font-size: 1.125rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.gantt-appearance-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.gantt-appearance-fields label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.gantt-appearance-fields input,
+.gantt-appearance-fields select {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    height: auto;
+    padding: 6px 8px;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.gantt-appearance-fields input[type="color"] {
+    height: 38px;
+    padding: 3px;
+}
+
+#gantt-appearance-errors {
+    color: var(--accent-danger);
+    margin-bottom: 8px;
+}
+
+.gantt-editor-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    min-width: max-content;
+}
+
+.gantt-editor-field {
+    display: flex;
+    flex-direction: column;
+    width: 135px;
+    gap: 0.25rem;
+}
+
+.gantt-editor-field[hidden] {
+    display: none;
+}
+
+.gantt-editor-field label,
+.gantt-editor-field .goplan-field-label {
+    font-size: 0.75rem;
+    color: #527889;
+}
+
+.gantt-editor-field input,
+.gantt-editor-field select,
+.gantt-link-fields input,
+.gantt-link-fields select,
+#gantt-task-select {
+    box-sizing: border-box;
+    height: 30px;
+    min-height: 30px;
+    width: 100%;
+    background: transparent;
+    color: #24485a;
+    border: 1px solid #a9cad6;
+    border-radius: 0.25rem;
+    padding: 0.2rem 0.25rem;
+    font-size: 0.8125rem;
+    line-height: 1.1;
+}
+
+.gantt-field-nom {
+    width: 230px;
+}
+
+.gantt-field-couleur {
+    width: 90px;
+}
+
+.gantt-color-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.gantt-color-custom input[type="color"] {
+    width: 42px;
+    padding: 2px;
+    cursor: pointer;
+}
+
+.gantt-color-palette {
+    display: grid;
+    grid-template-columns: repeat(6, 28px);
+    gap: 8px;
+}
+
+.gantt-color-swatch {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid rgba(36, 72, 90, 0.35);
+    border-radius: 4px;
+    background: var(--swatch-color);
+    cursor: pointer;
+}
+
+.gantt-color-swatch[aria-pressed="true"],
+.gantt-color-swatch:focus-visible {
+    outline: 2px solid #24485a;
+    outline-offset: 1px;
+    box-shadow: inset 0 0 0 2px #fff;
+}
+
+.gantt-color-swatch:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.gantt-color-trigger {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 30px;
+    padding: 3px 8px;
+    border: 1px solid #a9cad6;
+    border-radius: 4px;
+    color: #24485a;
+    background: #fff;
+    cursor: pointer;
+}
+
+#gantt-color-preview {
+    width: 24px;
+    height: 20px;
+    border: 1px solid #7baec1;
+    border-radius: 3px;
+    background: #7baec1;
+}
+
+.gantt-color-panel {
+    box-sizing: border-box;
+    width: 250px;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    margin: auto;
+    padding: 16px;
+    overflow: auto;
+    border: 1px solid #7baec1;
+    border-radius: 10px;
+    background: #f8f6ef;
+    color: #24485a;
+    box-shadow: 0 8px 28px rgba(36, 72, 90, 0.25);
+}
+
+.gantt-color-panel-header,
+.gantt-color-custom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.gantt-color-caption {
+    margin: 8px 0;
+    font-size: 0.8125rem;
+}
+
+.gantt-color-custom {
+    margin: 14px 0 8px;
+    padding-top: 12px;
+    border-top: 1px solid #a9cad6;
+}
+
+.gantt-color-custom label {
+    font-size: 0.8125rem;
+}
+
+.gantt-field-links {
+    width: 190px;
+}
+
+.gantt-field-code,
+.gantt-field-duree,
+.gantt-field-avancement {
+    width: 90px;
+}
+
+#gantt-task-select {
+    max-width: 250px;
+}
+
+#gantt-delete-task[hidden] {
+    display: none;
+}
+
+#gantt-delete-task:not(:disabled) {
+    color: var(--accent-danger);
+}
+
+#gantt-delete-task i {
+    color: inherit;
+}
+
+#gantt-group-duration-info {
+    margin: 0.25rem 0 0.4rem;
+    color: #527889;
+}
+
+.gantt-editor-field input:disabled,
+.gantt-editor-field select:disabled,
+.task-row input:disabled,
+.task-row select:disabled {
+    background: #e7f1f5;
+    cursor: not-allowed;
+}
+
+.gantt-unsaved-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.goplan-gantt-container .gantt-selected .bar {
+    stroke: var(--accent-primary);
+    stroke-width: 3;
+}
+
+.goplan-gantt-container .gantt-selected .gantt-diamond {
+    stroke: var(--text-primary);
+    stroke-width: 2;
+}
+
+.goplan-gantt-container {
+    overflow-x: auto;
+    background: #f8f6ef;
+    color: #24485a;
+    border: 1px solid #7baec1;
+    border-radius: 0.75rem;
+}
+
+.goplan-gantt-container .popup-wrapper,
+.goplan-gantt-container .handle {
+    display: none;
+}
+
+.goplan-gantt-container .gantt-group .bar,
+.goplan-gantt-container .gantt-group .bar-progress {
+    opacity: 0;
+}
+
+.goplan-gantt-container .gantt-summary {
+    fill: #15803d;
+    stroke: #166534;
+    stroke-width: 1;
+}
+
+.goplan-gantt-container .gantt-group .bar-label {
+    fill: #166534;
+    transform: translateY(-11px);
+}
+
+.goplan-gantt-container .gantt-recurring .bar {
+    fill: #f59e0b;
+    stroke: #b45309;
+    stroke-dasharray: 4 2;
+}
+
+.goplan-gantt-container .gantt-recurring .bar-progress {
+    fill: #b45309;
+}
+
+.goplan-gantt-container .gantt-group .bar-label {
+    font-weight: bold;
+}
+
+.goplan-gantt-container .gantt-milestone .bar,
+.goplan-gantt-container .gantt-milestone .bar-progress {
+    opacity: 0;
+}
+
+.goplan-gantt-container .gantt-diamond {
+    fill: #a855f7;
+}
+
+.goplan-gantt-container .gantt-critical .gantt-diamond {
+    fill: #dc2626;
+}
+
+.goplan-gantt-container .bar-wrapper {
+    cursor: pointer;
+}
+
+.goplan-gantt-container .bar-wrapper:focus .bar {
+    stroke: var(--accent-primary);
+    stroke-width: 2;
+}
+
+.goplan-gantt-container .gantt-selected .gantt-summary,
+.goplan-gantt-container .bar-wrapper:focus .gantt-summary {
+    stroke: #22d3ee;
+    stroke-width: 2;
+}
+
+.goplan-gantt-container .gantt-critical .gantt-summary {
+    fill: #b4534b;
+    stroke: #991b1b;
+}
+
+.goplan-gantt-container .gantt-critical .bar {
+    fill: #b4534b;
+}
+
+.goplan-gantt-container .gantt-critical .bar-progress {
+    fill: #dc2626;
+}
+
+.goplan-gantt-container .bar-wrapper[style*="--goplan-task-color"] .bar,
+.goplan-gantt-container .bar-wrapper[style*="--goplan-task-color"] .gantt-summary,
+.goplan-gantt-container .bar-wrapper[style*="--goplan-task-color"] .gantt-diamond {
+    fill: var(--goplan-task-color);
+}
+
+.goplan-gantt-container .bar-wrapper[style*="--goplan-task-color"] .bar-progress {
+    fill: var(--goplan-task-color);
+    filter: brightness(0.75);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   GANTT SPLIT — Panneau gauche (noms toujours visibles)
+   ══════════════════════════════════════════════════════════════ */
+
+.goplan-gantt-split {
+    display: flex;
+    align-items: stretch;
+    min-height: 400px;
+    max-height: 75vh;
+    border: 1px solid #7baec1;
+    border-radius: 0.75rem;
+    overflow: auto;
+    background: #f8f6ef;
+    color: #24485a;
+}
+
+.goplan-gantt-split .goplan-gantt-container {
+    flex: 1 0 auto;
+    width: max-content;
+    min-width: 0;
+    min-height: max-content;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    overflow: visible;
+    background: transparent;
+}
+
+.goplan-gantt-split .gantt-container {
+    width: max-content;
+    overflow: visible;
+}
+
+.goplan-gantt-split #gantt-svg {
+    display: block;
+}
+
+.gantt-fixed-calendar {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    overflow: hidden;
+    background: #e7f1f5;
+    pointer-events: none;
+}
+
+.gantt-fixed-calendar[hidden] {
+    display: none;
+}
+
+.gantt-fixed-calendar svg {
+    display: block;
+    overflow: hidden;
+}
+
+/* ── Panneau gauche ── */
+.goplan-gantt-left {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    flex: 0 0 280px;
+    min-width: 0;
+    min-height: max-content;
+    display: flex;
+    flex-direction: column;
+    overflow: clip;
+    background: #f8f6ef;
+    border-right: 1px solid #a9cad6;
+}
+
+/* En-tête (hauteur calée sur celle du header Frappe via JS) */
+.goplan-gantt-left-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0 0.75rem;
+    min-height: 2.5rem;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #376b82;
+    background: #e7f1f5;
+    border-bottom: 1px solid #8eb6c7;
+    box-sizing: border-box;
+}
+
+/* Lignes */
+.goplan-gantt-left-body { flex: 0 0 auto; }
+
+.goplan-gantt-left-row {
+    appearance: none;
+    -webkit-appearance: none;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    height: var(--goplan-row-height);
+    box-sizing: border-box;
+    padding: 0 0.5rem;
+    border: 0;
+    border-bottom: 1px solid #a9cad6;
+    background: transparent;
+    color: #24485a;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+.goplan-gantt-left-row:hover { background: rgba(34, 211, 238, 0.06); }
+.goplan-gantt-left-row:focus-within {
+    outline: 2px solid #22d3ee;
+    outline-offset: -2px;
+}
+.goplan-gantt-left-row.is-selected {
+    background: rgba(34, 211, 238, 0.15);
+    box-shadow: inset 3px 0 0 0 #22d3ee;
+}
+.goplan-gantt-left-row.is-critical { color: #b4534b; }
+
+/* Pastille de type */
+.goplan-gantt-left-row .goplan-type-dot {
+    flex: 0 0 auto;
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: #3b82f6;
+}
+.goplan-gantt-left-row[data-type="JALON"]  .goplan-type-dot { background: #a855f7; }
+.goplan-gantt-left-row[data-type="GROUPE"] .goplan-type-dot { background: #15803d; }
+.goplan-gantt-left-row[data-type="RECUR"]  .goplan-type-dot { background: #f59e0b; }
+.goplan-gantt-left-row[data-type="GROUPE"] .goplan-task-label { font-weight: 700; }
+.goplan-gantt-left-row.is-critical .goplan-type-dot { background: #b4534b; }
+
+.goplan-gantt-left-row .goplan-task-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    align-self: stretch;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.goplan-gantt-group-toggle {
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0.25rem;
+    background: transparent;
+    color: #15803d;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.goplan-gantt-group-toggle:hover,
+.goplan-gantt-group-toggle:focus-visible {
+    background: #d6e9f0;
+}
+
+.goplan-gantt-left-row.is-critical .goplan-gantt-group-toggle {
+    color: #b4534b;
+}
+
+.goplan-gantt-left-empty {
+    padding: 1rem;
+    text-align: center;
+    color: #527889;
+    font-size: 0.8125rem;
+    font-style: italic;
+}
+
+/* Masquer les libellés dans le SVG (les noms sont dans le panneau gauche) */
+.goplan-gantt-split .gantt-container .bar-label,
+.goplan-gantt-split .gantt-container .bar-wrapper .bar-label {
+    display: none !important;
+}
+
+/* ── Responsive ── */
+@media (max-width: 767px) {
+    .goplan-gantt-left { flex: 0 0 200px; }
+}

@@ -90,10 +90,18 @@
 
             <!-- Zone de contenu (cible des swaps HTMX) -->
             <main class="flex-1 overflow-y-auto app-main-sidebar relative">
+                {# Bouton toggle sidebar — sticky, HTMX compatible #}
+                <button id="sidebar-toggle-btn"
+                        type="button"
+                        class="sidebar-toggle-btn"
+                        aria-label="Basculer la barre latérale"
+                        aria-controls="app-sidebar"
+                        aria-expanded="true"
+                        title="Masquer / Afficher la barre latérale (Ctrl+B)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
 
-                <!-- Barre de progression HTMX -->
                 <div id="htmx-progress"></div>
-
                 <div id="main-content" class="p-3 md:p-4" data-family="{% block data_family %}core{% endblock %}">
                     {% block content %}{% endblock %}
                 </div>
@@ -111,12 +119,19 @@
     <!-- ⚡ JS essentiels (chargés partout) -->
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
     <script src="{% static 'projets/js/sidebar.js' %}" defer></script>
+    <script src="{% static 'projets/js/sidebar-toggle.js' %}" defer></script>
     <script src="{% static 'projets/js/htmx-config.js' %}" defer></script>
     <script src="{% static 'projets/js/common.js' %}" defer></script>
     <script src="{% static 'projets/js/profile-manager.js' %}" defer></script>
     <script src="{% static 'projets/js/modals.js' %}" defer></script>
     <script src="{% static 'projets/js/version-notice.js' %}" defer></script>
     <script src="{% static 'projets/js/notifications-native.js' %}" defer></script>
+
+    <script src="{% static 'goplan/js/tree-node.js' %}" defer></script>
+    <script src="{% static 'goplan/js/gtask-node.js' %}" defer></script>
+    <script src="{% static 'goplan/js/work-calendar.js' %}" defer></script>
+    <script src="{% static 'goplan/js/task-links.js' %}" defer></script>
+    <script src="{% static 'goplan/js/taches-inline.js' %}" defer></script>
 
     {% block extra_js %}{% endblock %}
 </body>

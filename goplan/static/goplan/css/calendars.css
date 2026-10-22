@@ -1,0 +1,651 @@
+/* goplan/static/goplan/css/calendars.css */
+
+/* ══════════════════════════════════════════════════════════════
+   CALENDARS — Form + List (thème "papier" GoPlan)
+   ══════════════════════════════════════════════════════════════ */
+
+.calendar-form,
+.calendar-list {
+    --cal-paper:        #f8f6ef;
+    --cal-paper-alt:    #fdfbf5;
+    --cal-ink:          #24485a;
+    --cal-ink-soft:     #527889;
+    --cal-border:       #a9cad6;
+    --cal-border-strong:#7baec1;
+    --cal-accent:       #5e9eb6;
+    --cal-accent-cyan:  #22d3ee;
+    --cal-header-bg:    #e7f1f5;
+    --cal-danger:       #b4534b;
+    --cal-radius:       0.75rem;
+    --cal-radius-sm:    0.5rem;
+    --cal-shadow-sm:    0 1px 2px rgba(36, 72, 90, 0.06);
+    --cal-shadow-md:    0 2px 6px rgba(36, 72, 90, 0.10);
+}
+
+[data-theme="dark"] .calendar-form,
+[data-theme="dark"] .calendar-list {
+    --cal-paper:        #1e293b;
+    --cal-paper-alt:    #0f172a;
+    --cal-ink:          #cbd5e1;
+    --cal-ink-soft:     #94a3b8;
+    --cal-border:       #334155;
+    --cal-border-strong:#475569;
+    --cal-header-bg:    #0f172a;
+}
+
+/* ──────────────────────────────────────────────────────────
+   En-tête de page
+   ────────────────────────────────────────────────────────── */
+.calendar-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--cal-border);
+}
+
+.calendar-page-header h1 {
+    color: var(--cal-ink);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-page-header .subtitle {
+    margin-top: 0.35rem;
+    font-size: 0.875rem;
+    color: var(--cal-ink-soft);
+}
+
+.calendar-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Carte / section de formulaire
+   ────────────────────────────────────────────────────────── */
+.calendar-card {
+    background: var(--cal-paper);
+    color: var(--cal-ink);
+    border: 1px solid var(--cal-border-strong);
+    border-radius: var(--cal-radius);
+    overflow: hidden;
+    box-shadow: var(--cal-shadow-sm);
+}
+
+.calendar-card + .calendar-card {
+    margin-top: 1.5rem;
+}
+
+.calendar-card-header {
+    background: var(--cal-header-bg);
+    border-bottom: 1px solid var(--cal-border);
+    padding: 0.875rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.calendar-card-header h2 {
+    color: var(--cal-ink);
+    font-size: 1rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.calendar-card-header h2 i {
+    color: var(--cal-accent);
+}
+
+.calendar-card-body {
+    padding: 1.25rem;
+}
+
+.calendar-card-help {
+    padding: 0.75rem 1.25rem;
+    border-top: 1px dashed var(--cal-border);
+    color: var(--cal-ink-soft);
+    font-size: 0.8rem;
+    line-height: 1.45;
+    background: var(--cal-paper-alt);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Grille de champs
+   ────────────────────────────────────────────────────────── */
+.calendar-fields-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    .calendar-fields-grid {
+        grid-template-columns: 2fr 1fr;
+    }
+    .calendar-fields-grid .field-full {
+        grid-column: 1 / -1;
+    }
+}
+
+.calendar-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.calendar-field > label,
+.calendar-field > legend {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cal-ink-soft);
+    margin-bottom: 0.35rem;
+}
+
+.calendar-field input[type="text"],
+.calendar-field input[type="number"],
+.calendar-field input[type="date"],
+.calendar-field textarea,
+.calendar-field select {
+    width: 100%;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius-sm);
+    background: var(--cal-paper-alt);
+    color: var(--cal-ink);
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.calendar-field input:focus,
+.calendar-field textarea:focus,
+.calendar-field select:focus {
+    outline: none;
+    border-color: var(--cal-accent-cyan);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.18);
+}
+
+.calendar-field .errorlist,
+.calendar-field .errorlist li {
+    color: #b91c1c;
+    font-size: 0.75rem;
+    list-style: none;
+    margin: 0.15rem 0 0;
+    padding: 0;
+}
+
+.calendar-field.has-error input,
+.calendar-field.has-error select {
+    border-color: #dc2626;
+    background: rgba(254, 226, 226, 0.5);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Toggle « Par défaut » (checkbox stylée)
+   ────────────────────────────────────────────────────────── */
+.calendar-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius-sm);
+    background: var(--cal-paper-alt);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+}
+
+.calendar-toggle:hover {
+    border-color: var(--cal-accent);
+}
+
+.calendar-toggle input[type="checkbox"] {
+    accent-color: var(--cal-accent-cyan);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.calendar-toggle span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--cal-ink);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Sélecteur de jours (jours_ouvres)
+   S'applique à Django CheckboxSelectMultiple (ul > li > label)
+   ────────────────────────────────────────────────────────── */
+.calendar-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.calendar-days li {
+    margin: 0;
+}
+
+.calendar-days li label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    height: 2.5rem;
+    padding: 0 0.75rem;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--cal-ink-soft);
+    background: var(--cal-paper-alt);
+    border: 1px solid var(--cal-border);
+    border-radius: 9999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.calendar-days li label:hover {
+    border-color: var(--cal-accent);
+    color: var(--cal-ink);
+}
+
+/* Cacher la checkbox native mais la garder accessible */
+.calendar-days li input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* État sélectionné (Django n'ajoute pas de classe → :has) */
+.calendar-days li label:has(input[type="checkbox"]:checked) {
+    background: var(--cal-accent);
+    border-color: var(--cal-accent-cyan);
+    color: #ffffff;
+    box-shadow: 0 1px 3px rgba(34, 211, 238, 0.35);
+}
+
+.calendar-days li label:focus-within {
+    outline: 2px solid var(--cal-accent-cyan);
+    outline-offset: 2px;
+}
+
+/* Fallback pour navigateurs sans :has() */
+@supports not selector(:has(*)) {
+    .calendar-days li input[type="checkbox"]:checked + span,
+    .calendar-days li input[type="checkbox"]:checked {
+        /* On reste fonctionnel mais on perd le style actif */
+    }
+}
+
+/* ──────────────────────────────────────────────────────────
+   Table des exceptions
+   ────────────────────────────────────────────────────────── */
+.calendar-exceptions-wrap {
+    border: 1px solid var(--cal-border);
+    border-radius: var(--cal-radius-sm);
+    overflow: hidden;
+    background: var(--cal-paper-alt);
+}
+
+.calendar-exceptions {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+}
+
+.calendar-exceptions thead {
+    background: var(--cal-header-bg);
+    color: var(--cal-ink-soft);
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+}
+
+.calendar-exceptions thead th {
+    padding: 0.5rem 0.75rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--cal-border);
+    text-align: left;
+}
+
+.calendar-exceptions thead th:last-child {
+    text-align: center;
+    width: 3.5rem;
+}
+
+.calendar-exceptions tbody tr {
+    border-bottom: 1px solid var(--cal-border);
+    transition: background 0.15s;
+}
+
+.calendar-exceptions tbody tr:last-child {
+    border-bottom: none;
+}
+
+.calendar-exceptions tbody tr:hover {
+    background: rgba(34, 211, 238, 0.05);
+}
+
+.calendar-exceptions td {
+    padding: 0.375rem 0.5rem;
+    vertical-align: middle;
+}
+
+.calendar-exceptions td:last-child {
+    text-align: center;
+}
+
+.calendar-exceptions input[type="date"],
+.calendar-exceptions input[type="number"],
+.calendar-exceptions input[type="text"] {
+    width: 100%;
+    height: 2.25rem;
+    padding: 0 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: var(--cal-ink);
+    font-size: 0.8125rem;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.calendar-exceptions input:hover {
+    border-color: var(--cal-border);
+    background: var(--cal-paper);
+}
+
+.calendar-exceptions input:focus {
+    outline: none;
+    border-color: var(--cal-accent-cyan);
+    background: var(--cal-paper);
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
+}
+
+/* Colonne Heures — alignement à droite */
+.calendar-exceptions td:nth-child(2) input {
+    text-align: right;
+    max-width: 6rem;
+}
+
+/* Checkbox Supprimer */
+.calendar-exceptions label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--cal-ink-soft);
+}
+
+.calendar-exceptions input[type="checkbox"] {
+    accent-color: var(--cal-danger);
+    width: 1rem;
+    height: 1rem;
+    cursor: pointer;
+}
+
+.calendar-exceptions .errorlist {
+    color: #b91c1c;
+    font-size: 0.7rem;
+    margin: 0.15rem 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+/* Ligne vide (empty form cachée) */
+.calendar-exceptions tr.is-empty {
+    opacity: 0.6;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Bouton "Ajouter une exception"
+   ────────────────────────────────────────────────────────── */
+.calendar-add-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.45rem 0.875rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--cal-accent);
+    background: transparent;
+    border: 1px dashed var(--cal-accent);
+    border-radius: var(--cal-radius-sm);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.calendar-add-row:hover {
+    background: rgba(94, 158, 182, 0.12);
+    border-style: solid;
+    color: var(--cal-ink);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Footer de formulaire
+   ────────────────────────────────────────────────────────── */
+.calendar-form-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1.25rem;
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--cal-border);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Liste des calendriers
+   ────────────────────────────────────────────────────────── */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 768px) {
+    .calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.calendar-item {
+    position: relative;
+    background: var(--cal-paper);
+    border: 1px solid var(--cal-border-strong);
+    border-radius: var(--cal-radius);
+    padding: 1.25rem;
+    box-shadow: var(--cal-shadow-sm);
+    transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.calendar-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--cal-shadow-md);
+    border-color: var(--cal-accent);
+}
+
+.calendar-item.is-default {
+    border-left: 4px solid var(--cal-accent-cyan);
+    padding-left: calc(1.25rem - 3px);
+}
+
+.calendar-item-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.calendar-item-title {
+    color: var(--cal-ink);
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.3;
+    margin: 0;
+    word-break: break-word;
+}
+
+.calendar-item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #ffffff;
+    background: var(--cal-accent-cyan);
+    border-radius: 0.25rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Meta : jours + heures */
+.calendar-item-days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.calendar-day-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.75rem;
+    height: 1.75rem;
+    padding: 0 0.35rem;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--cal-ink-soft);
+    background: var(--cal-header-bg);
+    border-radius: 0.375rem;
+    text-transform: uppercase;
+}
+
+.calendar-day-chip.is-off {
+    opacity: 0.35;
+    text-decoration: line-through;
+}
+
+.calendar-item-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--cal-ink-soft);
+}
+
+.calendar-item-meta > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.calendar-item-meta i {
+    color: var(--cal-accent);
+    font-size: 0.7rem;
+}
+
+.calendar-item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.75rem;
+    border-top: 1px dashed var(--cal-border);
+}
+
+.calendar-item-actions .app-btn-secondary,
+.calendar-item-actions .app-btn-primary {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: center;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Empty state
+   ────────────────────────────────────────────────────────── */
+.calendar-empty {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    background: var(--cal-paper);
+    border: 2px dashed var(--cal-border-strong);
+    border-radius: var(--cal-radius);
+    color: var(--cal-ink-soft);
+}
+
+.calendar-empty i {
+    font-size: 2.5rem;
+    color: var(--cal-border-strong);
+    opacity: 0.7;
+}
+
+.calendar-empty p {
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+.calendar-empty a {
+    margin-top: 0.5rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Bannière info en haut de liste
+   ────────────────────────────────────────────────────────── */
+.calendar-info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1.125rem;
+    margin-bottom: 1.25rem;
+    background: var(--cal-header-bg);
+    border: 1px solid var(--cal-border);
+    border-left: 4px solid var(--cal-accent-cyan);
+    border-radius: var(--cal-radius-sm);
+    color: var(--cal-ink-soft);
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.calendar-info-banner i {
+    color: var(--cal-accent);
+    margin-top: 0.15rem;
+    flex-shrink: 0;
+}

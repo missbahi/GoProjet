@@ -1,10 +1,7 @@
 """Version de l'application et changelog."""
 
 # ⚠️ Bump cette valeur à chaque release notable
-from marshal import version
-
-
-APP_VERSION = "1.3.0"
+APP_VERSION = "2.0.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -15,6 +12,19 @@ APP_VERSION = "1.3.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.0.0": {
+        "date": "2026-10-22",
+        "titre": "GoPlan : plannings et diagrammes de Gantt",
+        "highlights": [
+            "Créez vos plannings avec des calendriers de travail (jours chômés, exceptions)",
+            "Saisissez les tâches en ligne : indentation, déplacement, repli des groupes",
+            "Diagramme de Gantt interactif : liaisons, couleurs, forme des barres et des liaisons",
+            "Importez et exportez vos plannings au format XML MS Project",
+            "Imprimez en A4 à A0, sur plusieurs pages, avec en-têtes et pieds personnalisés",
+            "Réglages d'impression enregistrés par planning : onglets, fond, largeur des colonnes",
+        ],
+        "niveau": "info",
+    },
     "1.3.0": {
         "date": "2026-10-15",
         "titre": "Notifications système et validation des situations",

@@ -1,0 +1,29 @@
+<dialog id="gantt-link-dialog" class="gantt-unsaved-dialog" aria-labelledby="gantt-link-title">
+    <form id="gantt-link-form" action="{% url 'goplan:save_gantt_link' plan.pk %}" method="post">
+        <div class="flex items-center justify-between gap-4 mb-3">
+            <h2 id="gantt-link-title">Liaisons de la tâche active</h2>
+            <button type="button" id="gantt-link-close" class="goplan-delete-btn" aria-label="Fermer les liaisons"><i class="fas fa-times" aria-hidden="true"></i></button>
+        </div>
+        <p class="text-sm mb-3">Le prédécesseur contraint la tâche active. Les dates de celle-ci et de ses successeurs seront recalculées en jours ouvrés.</p>
+        <p class="text-sm mb-3">Seules les tâches datées compatibles sont proposées : ni la tâche elle-même, ni ses ancêtres ou descendants, ni les tâches créant un cycle.</p>
+        <p id="gantt-link-errors" role="alert"></p>
+        <ul id="gantt-link-list" class="mb-3"></ul>
+        <div class="gantt-link-fields">
+            <label>Prédécesseur
+                <select id="gantt-link-predecessor" class="app-modal-input" required></select>
+            </label>
+            <label>Type
+                <select id="gantt-link-type" class="app-modal-input">
+                    <option value="FS">Fin → Début</option>
+                    <option value="SS">Début → Début</option>
+                    <option value="FF">Fin → Fin</option>
+                    <option value="SF">Début → Fin</option>
+                </select>
+            </label>
+            <label>Décalage (jours ouvrés)
+                <input id="gantt-link-lag" class="app-modal-input" type="number" step="1" min="-36500" max="36500" value="0" required>
+            </label>
+            <button type="submit" class="app-btn-primary">Enregistrer la liaison</button>
+        </div>
+    </form>
+</dialog>

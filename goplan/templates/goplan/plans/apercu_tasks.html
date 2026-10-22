@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu planning — {{ plan.nom }}</title>
+    <style>
+        :root {
+            --ink:   #19394a;
+            --muted: #617786;
+            --line:  #a9cad6;
+            --head:  #e7f1f5;
+            --paper: #fdfbf5;
+            --green: #356043;
+            --blue:  #2c667e;
+            --blue-strong: #075985;
+
+            /* Badges de type */
+            --type-tache:  #3b82f6;
+            --type-jalon:  #a855f7;
+            --type-groupe: #22c55e;
+            --type-recur:  #f59e0b;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            background: #dce7eb;
+            color: var(--ink);
+            font-family: Georgia, "Times New Roman", serif;
+        }
+
+        /* ═══ Toolbar ═══ */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            max-width: 1100px;
+            margin: 20px auto 0;
+            font-family: sans-serif;
+        }
+        .toolbar a,
+        .toolbar button {
+            border: 1px solid #5e9eb6;
+            border-radius: 4px;
+            background: #fff;
+            color: #24485a;
+            cursor: pointer;
+            padding: 9px 14px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+        .toolbar button { background: var(--blue-strong); color: #fff; border-color: var(--blue-strong); }
+        .detail-toggle { background: var(--head) !important; color: #24485a !important; border-color: #5e9eb6 !important; }
+        .detail-toggle[aria-pressed="true"] { background: #2c667e !important; color: #fff !important; }
+
+        /* ═══ Feuille papier ═══ */
+        .paper {
+            max-width: 1100px;
+            margin: 16px auto 32px;
+            padding: 42px 48px;
+            background: var(--paper);
+            box-shadow: 0 8px 30px rgba(35, 68, 84, .18);
+        }
+
+        /* ═══ En-tête ═══ */
+        .document-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 28px;
+            border-bottom: 2px solid #6d9fb2;
+            padding-bottom: 18px;
+        }
+        h1 { margin: 0 0 6px; font-size: 26px; }
+        h2 { margin: 0; font-size: 17px; }
+        p  { margin: 4px 0; }
+        .meta { color: var(--muted); font-size: 14px; text-align: right; }
+
+        /* ═══ Tableaux ═══ */
+        .table-wrap { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; }
+        th {
+            background: var(--head);
+            color: #376b82;
+            font-size: 11px;
+            letter-spacing: .04em;
+            text-align: left;
+            text-transform: uppercase;
+        }
+        th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; vertical-align: top; }
+        .amount { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        tfoot { font-weight: 700; color: var(--green); }
+        tfoot td { padding: 10px; border-top: 2px solid #6d9fb2; }
+
+        /* ═══ En-têtes de sections ═══ */
+        .section-heading {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            margin: 26px 0 10px;
+            padding: 9px 12px;
+        }
+        .planning-heading {
+            background: var(--head);
+            border-left: 4px solid var(--blue);
+            color: #24485a;
+        }
+        .planning-heading .meta-inline {
+            font-family: sans-serif;
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        /* ═══ Lignes de tâches ═══ */
+        .task-row td { transition: background-color 0.1s; }
+        .task-row.level-0 td { font-weight: 600; background: #f5fafc; }
+        .task-row[data-type="GROUPE"] td { background: #f1f7f9; }
+        .task-row[data-type="JALON"]  td { background: #faf6fd; }
+
+        .task-name { padding-left: 10px; }
+        .task-name.level-1 { padding-left: 28px; }
+        .task-name.level-2 { padding-left: 46px; }
+        .task-name.level-3 { padding-left: 64px; }
+        .task-name.level-4 { padding-left: 82px; }
+        .task-name.level-5 { padding-left: 100px; }
+
+        /* ═══ Badges de type ═══ */
+        .type-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 7px;
+            border-radius: 3px;
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+        .type-badge[data-type="TACHE"]  { background: var(--type-tache); }
+        .type-badge[data-type="JALON"]  { background: var(--type-jalon); }
+        .type-badge[data-type="GROUPE"] { background: var(--type-groupe); }
+        .type-badge[data-type="RECUR"]  { background: var(--type-recur); }
+
+        .type-badge i { font-size: 9px; }
+
+        /* ═══ Synthèse (encadré bas de page) ═══ */
+        .results-box {
+            border: 2px solid #6d9fb2;
+            margin-top: 28px;
+            padding: 14px 16px;
+            background: #f1f7f8;
+            font-family: sans-serif;
+        }
+        .results-box h2 { margin-bottom: 12px; color: #24485a; }
+        .results-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            border-top: 1px solid var(--line);
+            padding: 9px 0;
+        }
+        .results-row:first-of-type { border-top: 0; }
+        .results-row strong:last-child {
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        /* ═══ Note d'avertissement ═══ */
+        .note {
+            border-left: 3px solid #7baec1;
+            margin-top: 22px;
+            padding: 10px 14px;
+            background: #f1f7f8;
+            color: #3c5663;
+        }
+
+        /* ═══ Toggle résumé/détail ═══ */
+        .is-summary tr.task-detail-row { display: none; }
+
+        /* ═══ Prédécesseurs (compact) ═══ */
+        .pred-list { font-size: 12px; }
+        .pred-item {
+            display: inline-block;
+            padding: 1px 5px;
+            margin-right: 3px;
+            background: #eef5f7;
+            border-radius: 3px;
+            color: #24485a;
+            white-space: nowrap;
+        }
+        .pred-item .pred-type {
+            font-size: 10px;
+            color: var(--muted);
+            margin-left: 3px;
+        }
+
+        /* ═══ Responsive ═══ */
+        @media (max-width: 800px) {
+            .paper { margin: 0; padding: 24px 12px; }
+            .toolbar { margin: 12px 12px; flex-wrap: wrap; }
+            .document-header { display: block; }
+            .meta { margin-top: 14px; text-align: left; }
+            table { font-size: 12px; }
+            th, td { padding: 7px 6px; }
+        }
+
+        /* ═══ Impression ═══ */
+        @media print {
+            @page { size: A4 landscape; margin: 12mm; }
+            body { background: #fff; }
+            .toolbar { display: none !important; }
+            .paper { max-width: none; margin: 0; padding: 0; box-shadow: none; }
+            h2 { break-after: avoid; }
+            table { break-inside: avoid; }
+            .table-wrap { overflow: visible !important; }
+            thead { display: table-header-group; }
+            .task-row { break-inside: avoid; }
+            .task-row.level-0 { background: #eef5f7 !important; }
+            .task-row[data-type="GROUPE"] { background: #eef5f7 !important; }
+            .is-summary tr.task-detail-row { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="toolbar">
+    <a href="{% url 'goplan:gantt_plan' plan.id %}">Retour au Gantt</a>
+    <a href="{% url 'goplan:apercu_plan' plan.pk %}">Aperçu graphique</a>
+    <button type="button" class="detail-toggle" id="detailToggle" aria-pressed="false">
+        Afficher le détail
+    </button>
+    <button type="button" onclick="window.print()">Imprimer</button>
+</div>
+
+<main class="paper is-summary" id="planPreview">
+    {% if calendar_error %}<p role="alert">{{ calendar_error }}</p>{% endif %}
+
+    {# ═══════════════════════════════════════════════════════ #}
+    {# EN-TÊTE                                                  #}
+    {# ═══════════════════════════════════════════════════════ #}
+    <header class="document-header">
+        <div>
+            <h1>Aperçu du planning</h1>
+            <p><strong>{{ plan.nom }}</strong></p>
+            {% if plan.description %}
+                <p>{{ plan.description|truncatechars:140 }}</p>
+            {% endif %}
+        </div>
+        <div class="meta">
+            <p><strong>Du {{ date_min|date:'d/m/Y' }} au {{ date_max|date:'d/m/Y' }}</strong></p>
+            <p>Calendrier : {{ calendar_nom }}</p>
+            {% if plan.date_fin_cible %}
+                <p>Cible : {{ plan.date_fin_cible|date:'d/m/Y' }}</p>
+            {% endif %}
+        </div>
+    </header>
+
+    {# ═══════════════════════════════════════════════════════ #}
+    {# TABLEAU DES TÂCHES                                       #}
+    {# ═══════════════════════════════════════════════════════ #}
+    <section>
+        <div class="section-heading planning-heading">
+            <h2>Planning des tâches</h2>
+            <span class="meta-inline">
+                {{ total_tasks }} tâche(s)
+                {% if total_groupes %} · {{ total_groupes }} groupe(s){% endif %}
+                {% if total_jalons %} · {{ total_jalons }} jalon(s){% endif %}
+            </span>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:64px;">WBS</th>
+                        <th style="width:80px;">Code</th>
+                        <th>Désignation</th>
+                        <th style="width:90px;">Type</th>
+                        <th style="width:90px;">Début</th>
+                        <th style="width:90px;">Fin</th>
+                        <th class="amount" style="width:64px;">Durée</th>
+                        <th class="amount" style="width:64px;">Avanc.</th>
+                        <th style="width:130px;">Prédécesseurs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task, level in tasks_ordered %}
+                    <tr class="task-row level-{{ level }}
+                        {% if task.type_tache == 'GROUPE' %}group-row{% endif %}
+                        {% if task.type_tache == 'JALON' %}milestone-row{% endif %}
+                        {% if level > 0 %}task-detail-row{% endif %}"
+                        data-type="{{ task.type_tache }}"
+                        data-level="{{ level }}">
+
+                        <td><code style="font-size:11px; color:var(--muted);">{{ task.wbs|default:'—' }}</code></td>
+                        <td>{% if task.code %}<code style="font-size:11px;">{{ task.code }}</code>{% endif %}</td>
+                        <td class="task-name level-{{ level }}">
+                            {{ task.nom|default:'(sans nom)' }}
+                        </td>
+                        <td>
+                            {% if task.type_tache == 'JALON' %}
+                                <span class="type-badge" data-type="JALON"><i class="fas fa-flag"></i> Jalon</span>
+                            {% elif task.type_tache == 'GROUPE' %}
+                                <span class="type-badge" data-type="GROUPE"><i class="fas fa-layer-group"></i> Groupe</span>
+                            {% elif task.type_tache == 'RECUR' %}
+                                <span class="type-badge" data-type="RECUR"><i class="fas fa-redo"></i> Récur.</span>
+                            {% else %}
+                                <span class="type-badge" data-type="TACHE"><i class="fas fa-tasks"></i> Tâche</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ task.date_debut|date:'d/m/Y'|default:'—' }}</td>
+                        <td>{{ task.date_fin|date:'d/m/Y'|default:'—' }}</td>
+                        <td class="amount">
+                            {% if task.type_tache == 'JALON' %}0{% else %}{{ task.duree|floatformat:1 }}{% endif %} j
+                        </td>
+                        <td class="amount">{{ task.avancement|floatformat:0 }} %</td>
+                        <td>
+                            {% if task.predecessors_display %}
+                                <div class="pred-list">
+                                    {% for link in task.predecessors_display %}
+                                        <span class="pred-item" title="{{ link.predecesseur.nom }}">
+                                            {{ link.predecesseur.wbs|default:link.predecesseur.code|default:link.predecesseur.pk }}
+                                            <span class="pred-type">
+                                                {{ link.type_lien }}
+                                                {% if link.decalage_jours %}{{ link.decalage_jours|stringformat:'+d' }}j{% endif %}
+                                            </span>
+                                        </span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" style="font-style: italic; color: var(--muted); padding: 20px;">
+                            Aucune tâche enregistrée dans ce planning.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if tasks_ordered %}
+                <tfoot>
+                    <tr>
+                        <td colspan="6">
+                            Total tâches (hors groupes et jalons)
+                        </td>
+                        <td class="amount">{{ total_duration|floatformat:1 }} j</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </section>
+
+    {# ═══════════════════════════════════════════════════════ #}
+    {# SYNTHÈSE                                                 #}
+    {# ═══════════════════════════════════════════════════════ #}
+    <section class="results-box">
+        <h2>Synthèse du planning</h2>
+        <div class="results-row">
+            <strong>Nombre de tâches (hors groupes et jalons)</strong>
+            <strong>{{ total_tasks }}</strong>
+        </div>
+        <div class="results-row">
+            <strong>Groupes</strong>
+            <strong>{{ total_groupes }}</strong>
+        </div>
+        <div class="results-row">
+            <strong>Jalons</strong>
+            <strong>{{ total_jalons }}</strong>
+        </div>
+        <div class="results-row">
+            <strong>Durée cumulée (jours ouvrés)</strong>
+            <strong>{{ total_duration|floatformat:1 }} j</strong>
+        </div>
+        <div class="results-row">
+            <strong>Première date de début</strong>
+            <strong>{{ date_min|date:'d/m/Y' }}</strong>
+        </div>
+        <div class="results-row">
+            <strong>Dernière date de fin</strong>
+            <strong>{{ date_max|date:'d/m/Y' }}</strong>
+        </div>
+        {% if plan.date_fin_cible %}
+        <div class="results-row">
+            <strong>Écart avec la date cible</strong>
+            <strong>
+                {% if ecart_cible > 0 %}+{% endif %}{{ ecart_cible }} jour(s)
+            </strong>
+        </div>
+        {% endif %}
+    </section>
+
+    {# ═══════════════════════════════════════════════════════ #}
+    {# AVERTISSEMENTS                                           #}
+    {# ═══════════════════════════════════════════════════════ #}
+    {% if invalid_hierarchy %}
+    <section class="note">
+        <strong>Attention</strong>
+        <p>La hiérarchie du planning est incohérente (parent absent ou cycle).
+           Certaines tâches peuvent ne pas apparaître ici. Corrigez l'édition inline.</p>
+    </section>
+    {% endif %}
+
+    {% if undated_count %}
+    <section class="note">
+        <strong>Information</strong>
+        <p>{{ undated_count }} tâche(s) sans dates complètes sont incluses dans la liste mais
+           n'apparaissent pas dans la période globale.</p>
+    </section>
+    {% endif %}
+
+</main>
+
+<script>
+    (() => {
+        const preview = document.getElementById('planPreview');
+        const toggle  = document.getElementById('detailToggle');
+        if (!preview || !toggle) return;
+
+        toggle.addEventListener('click', () => {
+            const isDetailed = preview.classList.toggle('is-summary') === false;
+            toggle.textContent = isDetailed ? 'Afficher le résumé' : 'Afficher le détail';
+            toggle.setAttribute('aria-pressed', String(isDetailed));
+        });
+
+        // Impression : forcer le mode détail si aucun choix n'est fait ?
+        // On garde le comportement : ce que l'utilisateur voit, il l'imprime.
+    })();
+</script>
+
+</body>
+</html>

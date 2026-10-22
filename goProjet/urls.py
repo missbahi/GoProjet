@@ -24,8 +24,14 @@ from projets.views.site_views import views as site_views
 handler403 = 'projets.views.site_views.views.permission_denied'
 handler404 = 'projets.views.site_views.views.page_not_found'
 
+app_name = 'goplan'
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    
+    # URLs de l'application GoPlan
+    path('goplan/', include('goplan.urls', namespace='goplan')),
+
     # URLs PWA 
     path('', include('goProjet.pwa.urls')),
     # URLs de l'application projets

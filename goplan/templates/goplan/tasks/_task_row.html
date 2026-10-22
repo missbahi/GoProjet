@@ -1,0 +1,96 @@
+{# goplan/templates/goplan/tasks/_task_row.html #}
+<tr class="task-row"
+    data-type="{{ form.instance.type_tache|default:'TACHE' }}"
+    {% if form.instance.replie %}data-replie="1"{% endif %}>
+
+    {# ═══ Code + Icône ═══ #}
+    <td class="py-1 pr-2">
+        {{ form.id }}
+        {{ form.node_key }}
+        {{ form.parent_key }}
+        {{ form.ordre }}
+        {% for error in form.non_field_errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+        {% for hidden in form.hidden_fields %}
+            {% for error in hidden.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+        {% endfor %}
+        <div class="flex items-center gap-1">
+            {% if form.instance.type_tache == 'JALON' %}
+                <span class="goplan-type-icon" data-type="JALON"><i class="fas fa-flag"></i></span>
+            {% elif form.instance.type_tache == 'GROUPE' %}
+                <span class="goplan-type-icon" data-type="GROUPE"><i class="fas fa-layer-group"></i></span>
+            {% elif form.instance.type_tache == 'RECUR' %}
+                <span class="goplan-type-icon" data-type="RECUR"><i class="fas fa-redo"></i></span>
+            {% else %}
+                <span class="goplan-type-icon" data-type="TACHE"><i class="fas fa-tasks"></i></span>
+            {% endif %}
+            {{ form.code }}
+        </div>
+    </td>
+
+    {# ═══ Nom ═══ avec padding variable#}
+    <td class="py-1 pr-2 goplan-name-cell">
+        <div class="goplan-name-wrap">
+            <button type="button" class="goplan-fold-btn" data-fold hidden aria-expanded="true"
+                    title="Masquer les sous-tâches" aria-label="Masquer les sous-tâches">
+                <i class="fas fa-chevron-down" aria-hidden="true"></i>
+            </button>
+            {{ form.nom }}
+        </div>
+        {% for error in form.nom.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    {# ═══ Type ═══ #}
+    <td class="py-1 pr-2">
+        {{ form.type_tache }}
+        {% for error in form.type_tache.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    {# ═══ Durée ═══ #}
+    <td class="py-1 pr-2 text-right task-duree">
+        {{ form.duree }}
+        {% for error in form.duree.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    {# ═══ Dates ═══ #}
+    <td class="py-1 pr-2">
+        {{ form.date_debut }}
+        {% for error in form.date_debut.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+    <td class="py-1 pr-2 task-date-fin">
+        {{ form.date_fin }}
+        {% for error in form.date_fin.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    {# ═══ Contrainte ═══ #}
+    <td class="py-1 pr-2">
+        {{ form.contrainte }}
+        {% for error in form.contrainte.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    {# ═══ Avancement ═══ #}
+    <td class="py-1 pr-2">
+        {{ form.date_contrainte }}
+        {% for error in form.date_contrainte.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    <td class="py-1 pr-2 text-right">
+        {{ form.avancement }}
+        {% for error in form.avancement.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
+    </td>
+
+    <td class="py-1 pr-2 task-links">
+        <button type="button" class="goplan-link-summary" data-task-links
+                title="Gérer les liaisons de cette tâche" aria-label="Gérer les liaisons de cette tâche">—</button>
+    </td>
+
+    {# ═══ Delete ═══ #}
+    <td class="py-1 text-center">
+        <span class="hidden">{{ form.DELETE }}</span>
+        <button type="button"
+                class="goplan-delete-btn"
+                title="Supprimer la ligne"
+                aria-label="Supprimer la ligne">
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+</tr>

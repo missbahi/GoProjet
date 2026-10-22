@@ -1,0 +1,128 @@
+{# goplan/templates/goplan/plans/_form_plan.html #}
+{% load static %}
+
+<form method="post"
+      action="{% if plan %}{% url 'goplan:modifier_plan' plan.id %}{% else %}{% url 'goplan:creer_plan' %}{% endif %}"
+      class="space-y-6">
+
+    {% csrf_token %}
+
+    {# ═══════ Erreurs globales ═══════ #}
+    {% if form.non_field_errors %}
+    <div class="rounded border px-4 py-3 text-sm"
+         style="border-color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1); color: var(--accent-danger);">
+        {% for error in form.non_field_errors %}
+            <p>{{ error }}</p>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ═══════ Informations générales ═══════ #}
+    <div class="app-card p-4 md:p-6">
+        <h2 class="text-lg font-semibold mb-4 flex items-center gap-2"
+            style="color: var(--accent-primary);">
+            <i class="fas fa-info-circle"></i>
+            Informations générales
+        </h2>
+
+        <div class="grid gap-4 md:grid-cols-2">
+
+            {# Nom #}
+            <div class="md:col-span-2">
+                <label for="{{ form.nom.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.nom.label }} <span style="color: var(--accent-danger);">*</span>
+                </label>
+                {{ form.nom }}
+                {% for error in form.nom.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Description #}
+            <div class="md:col-span-2">
+                <label for="{{ form.description.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.description.label }}
+                </label>
+                {{ form.description }}
+                {% for error in form.description.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Date de début #}
+            <div>
+                <label for="{{ form.date_debut.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.date_debut.label }} <span style="color: var(--accent-danger);">*</span>
+                </label>
+                {{ form.date_debut }}
+                {% for error in form.date_debut.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Date de fin cible #}
+            <div>
+                <label for="{{ form.date_fin_cible.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.date_fin_cible.label }}
+                </label>
+                {{ form.date_fin_cible }}
+                {% for error in form.date_fin_cible.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Date d'état #}
+            <div>
+                <label for="{{ form.date_etat.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.date_etat.label }}
+                </label>
+                {{ form.date_etat }}
+                {% for error in form.date_etat.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+                <p class="mt-1 text-xs" style="color: var(--text-muted);">{{ form.date_etat.help_text }}</p>
+            </div>
+
+            {# Calendrier #}
+            <div class="md:col-span-2">
+                <label for="{{ form.calendrier.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.calendrier.label }}
+                </label>
+                {{ form.calendrier }}
+                {% for error in form.calendrier.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+                <p class="mt-1 text-xs" style="color: var(--text-muted);">
+                    <i class="fas fa-info-circle"></i>
+                    Utilisé pour le calcul des durées (jours ouvrés)
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+    {# ═══════ Actions ═══════ #}
+    <div class="flex flex-col sm:flex-row justify-end gap-3">
+        <a href="{% url 'goplan:liste_plans' %}"
+           class="app-btn-secondary justify-center">
+            <i class="fas fa-times mr-2"></i> Annuler
+        </a>
+        <button type="submit" class="app-btn-primary justify-center">
+            <i class="fas fa-save mr-2"></i>
+            {% if plan %}Enregistrer les modifications{% else %}Créer le plan{% endif %}
+        </button>
+    </div>
+
+</form>

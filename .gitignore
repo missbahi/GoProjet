@@ -77,3 +77,9 @@ Desktop.ini
 # Traductions (optionnel)
 *.pot
 *.mo
+
+# GoPlan : exemples, tests et icônes locaux (non versionnés)
+/goplan/exemples/
+/goplan/tests/
+/goplan/icons/
+/goplan/static/icons/

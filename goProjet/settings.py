@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     'anymail',
     # Vos applications
     'projets.apps.ProjetsConfig',
+    'goplan.apps.GoplanConfig',
 ]
 if DEBUG: INSTALLED_APPS.append('django_extensions')
 

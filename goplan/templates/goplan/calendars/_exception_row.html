@@ -1,0 +1,14 @@
+<tr>
+    <td class="p-2">
+        <label class="sr-only" for="{{ exception.date.id_for_label }}">Date</label>
+        {{ exception.date }}{{ exception.date.errors }}
+    </td>
+    <td class="p-2">
+        <label class="sr-only" for="{{ exception.heures.id_for_label }}">Heures</label>
+        {{ exception.heures }}{{ exception.heures.errors }}
+        {{ exception.non_field_errors }}
+    </td>
+    <td class="p-2">
+        <label for="{{ exception.DELETE.id_for_label }}">{{ exception.DELETE }} Supprimer</label>
+    </td>
+</tr>

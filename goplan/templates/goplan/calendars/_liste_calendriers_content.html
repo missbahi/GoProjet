@@ -1,0 +1,51 @@
+{# goplan/templates/goplan/calendars/_liste_calendriers content.html #}
+{% load static %}
+{% load formatters navigation %}
+
+{% breadcrumb %}
+
+<div class="container mx-auto px-4 py-6 max-w-6xl" 
+     data-family="app"
+     data-page-title="Calendriers" 
+     data-page-icon="fa-calendar-days">
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <h1 class="text-2xl font-bold" style="color: var(--accent-primary);">
+            <i class="fas fa-calendar-days mr-2"></i> Calendriers de travail
+        </h1>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary">Plannings</a>
+            <a href="{% url 'goplan:creer_calendrier' %}" class="app-btn-primary">
+                <i class="fas fa-plus mr-2"></i> Nouveau calendrier
+            </a>
+        </div>
+    </div>
+    <p class="mb-4 text-sm" style="color: var(--text-secondary);">
+        Définissez les jours ouvrés et les exceptions. Sans calendrier affecté,
+        le planning utilise le calendrier par défaut, sinon lundi–vendredi.
+        Les heures positives rendent la date ouvrée ; elles ne proratisent pas la durée des tâches.
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {% for calendar in calendars %}
+        <section class="app-card p-5">
+            <h2 class="text-lg font-semibold mb-2">{{ calendar.nom }}</h2>
+            {% if calendar.is_default %}<span class="app-badge app-badge-success">Par défaut</span>{% endif %}
+            <p class="text-sm my-3">{{ calendar.workday_labels|join:", " }} · {{ calendar.heures_par_jour }} h/jour</p>
+            <p class="text-sm mb-4">{{ calendar.exceptions_count }} exception(s) · {{ calendar.plans_count }} planning(s) · {{ calendar.resources_count }} ressource(s)</p>
+            <div class="flex flex-wrap gap-2">
+                <a href="{% url 'goplan:modifier_calendrier' calendar.pk %}" class="app-btn-secondary">Modifier</a>
+                <form method="post" action="{% url 'goplan:supprimer_calendrier' calendar.pk %}"
+                      onsubmit="return confirm('Supprimer ce calendrier ?');">
+                    {% csrf_token %}
+                    <button type="submit" class="app-btn-secondary"
+                            {% if calendar.plans_count or calendar.resources_count %}disabled title="Calendrier utilisé"{% endif %}>
+                        Supprimer
+                    </button>
+                </form>
+            </div>
+        </section>
+        {% empty %}
+        <div class="app-card p-6">Aucun calendrier. Créez votre premier calendrier de travail.</div>
+        {% endfor %}
+    </div>
+</div>

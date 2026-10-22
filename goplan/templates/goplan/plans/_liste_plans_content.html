@@ -1,0 +1,155 @@
+{# goplan/templates/goplan/plans/_liste_plans_content.html #}
+{% load static %}
+{% load formatters navigation %}
+{% breadcrumb %}
+
+<div class="container mx-auto px-4 py-6 max-w-6xl"
+     data-family="app" 
+     data-page-title="Plannings"
+     data-page-icon="fa-chart-gantt">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold mb-1"
+                style="color: var(--accent-primary);">
+                <i class="fas fa-chart-gantt mr-2"></i>
+                GoPlan — Planification
+            </h1>
+            <p class="text-sm" style="color: var(--text-secondary);">
+                {{ plans|length }} plan{{ plans|length|pluralize }} au total
+            </p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{% url 'goplan:import_mspdi' %}" class="app-btn-secondary">
+                <i class="fas fa-file-import mr-2"></i> Importation XML
+            </a>
+            <a href="{% url 'goplan:liste_calendriers' %}" class="app-btn-secondary">
+                <i class="fas fa-calendar-days mr-2"></i> Calendriers
+            </a>
+            
+            <button type="button"
+                    hx-get="{% url 'goplan:creer_plan' %}"
+                    hx-target="#modals-container"
+                    hx-swap="innerHTML"
+                    class="app-btn-primary">
+                <i class="fas fa-plus mr-2"></i> Nouveau plan
+            </button>
+            
+        </div>
+    </div>
+
+    {# ═══════ Liste ═══════ #}
+    {% if plans %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for plan in plans %}
+        <div class="app-card p-4 flex flex-col">
+
+            {# Titre #}
+            <div class="flex items-start justify-between mb-3">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-lg font-semibold truncate"
+                        style="color: var(--text-primary);">
+                        <a href="{% url 'goplan:taches_inline' plan.id %}"
+                           style="color: inherit; text-decoration: none;">
+                            {{ plan.nom }}
+                        </a>
+                    </h3>
+                    {% if plan.description %}
+                    <p class="text-xs mt-1 line-clamp-2"
+                       style="color: var(--text-secondary);">
+                        {{ plan.description|truncatechars:100 }}
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Infos #}
+            <div class="flex flex-wrap gap-2 text-xs mb-3">
+                <span class="app-badge app-badge-muted">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    {{ plan.date_debut|date:"d/m/Y" }}
+                </span>
+                {% if plan.date_fin_cible %}
+                <span class="app-badge app-badge-info">
+                    <i class="fas fa-flag-checkered mr-1"></i>
+                    {{ plan.date_fin_cible|date:"d/m/Y" }}
+                </span>
+                {% endif %}
+                <span class="app-badge app-badge-success">
+                    <i class="fas fa-tasks mr-1"></i>
+                    {{ plan.taches.count }} tâche{{ plan.taches.count|pluralize }}
+                </span>
+            </div>
+
+            {# Actions #}
+            <div class="flex items-center gap-1 mt-auto pt-3"
+                 style="border-top: 1px solid var(--border-default);">
+
+                <a href="{% url 'goplan:taches_inline' plan.id %}"
+                   class="app-action-btn"
+                   title="Editer le plan">
+                    <i class="fas fa-eye"></i>
+                </a>
+
+                <button type="button"
+                        hx-get="{% url 'goplan:modifier_plan' plan.id %}"
+                        hx-target="#modals-container"
+                        hx-swap="innerHTML"
+                        class="app-action-btn app-action-edit"
+                        title="Modifier">
+                    <i class="fas fa-pen"></i>
+                </button>
+                
+
+                <form method="post" action="{% url 'goplan:supprimer_plan' plan.id %}"
+                      onsubmit="return confirm('Supprimer ce planning et toutes ses tâches ?');">
+                    {% csrf_token %}
+                    <button type="submit" class="app-action-btn app-action-delete" title="Supprimer">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </form>
+                <div class="flex-1"></div>
+                <a href="{% url 'goplan:replace_mspdi' plan.pk %}" class="app-action-btn"
+                   title="Remplacer ce planning par un XML" aria-label="Remplacer ce planning par un XML">
+                    <i class="fas fa-file-import"></i>
+                </a>
+                <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="app-btn-secondary text-xs"
+                   title="Consulter le Gantt">
+                    <i class="fas fa-chart-gantt mr-1"></i> Gantt
+                </a>
+                <a href="{% url 'goplan:export_mspdi' plan.id %}" 
+                    class="app-btn-secondary"
+                    title="Exporter vers MS Project XML">
+                    <i class="fas fa-file-export mr-1"></i>
+                </a>
+                <a href="{% url 'goplan:apercu_plan' plan.pk %}" class="app-btn-secondary"
+                        target="_blank" rel="noopener"
+                        title="Ouvrir l'aperçu Gantt imprimable">
+                    <i class="fas fa-print mr-1"></i>
+                </a>
+            </div>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    {# ═══════ État vide ═══════ #}
+    <div class="app-card p-12 text-center">
+        <i class="fas fa-chart-gantt text-5xl mb-4"
+           style="color: var(--text-muted); opacity: 0.4;"></i>
+        <h3 class="text-lg font-semibold mb-2"
+            style="color: var(--text-primary);">
+            Aucun plan GoPlan
+        </h3>
+        <p class="text-sm mb-6" style="color: var(--text-secondary);">
+            Créez votre premier plan de planification.
+        </p>
+        <a href="{% url 'goplan:creer_plan' %}" class="app-btn-primary inline-flex">
+            <i class="fas fa-plus mr-2"></i> Créer un plan
+        </a>
+    </div>
+    {% endif %}
+
+</div>

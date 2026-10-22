@@ -106,3 +106,99 @@
         height: 100vh !important;
     }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SIDEBAR COLLAPSE — Bouton toggle (style Google Maps)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Transition douce du glissement */
+.sidebar {
+    transition: margin-left 0.25s ease;
+    will-change: margin-left;
+}
+
+/* État replié : la sidebar sort à gauche, le contenu prend sa place */
+body.sidebar-is-collapsed .sidebar {
+    margin-left: -18rem; /* = w-72 */
+}
+
+/* ──────────────────────────────────────────────────────────
+   Bouton — sticky, subtil, révélé au survol
+   ────────────────────────────────────────────────────────── */
+.sidebar-toggle-btn {
+    position: sticky;
+    top: 0.5rem;
+    z-index: 30;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+
+    /* sticky = occupe l'espace vertical → on annule via margin-bottom négative
+       pour que #main-content démarre sous le bouton sans espace parasite */
+    margin: 0.5rem 0 -1.75rem 0.5rem;
+
+    border-radius: 9999px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-default);
+    color: var(--text-secondary);
+
+    opacity: 0.35;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+
+    transition: opacity 0.2s ease,
+                background-color 0.2s ease,
+                transform 0.15s ease;
+}
+
+.sidebar-toggle-btn:hover {
+    opacity: 1;
+    background: var(--bg-hover);
+    transform: scale(1.1);
+}
+
+.sidebar-toggle-btn:focus-visible {
+    outline: 2px solid var(--accent-info, #22d3ee);
+    outline-offset: 2px;
+    opacity: 1;
+}
+
+.sidebar-toggle-btn i {
+    font-size: 0.7rem;
+    line-height: 1;
+    transition: transform 0.25s ease;
+    pointer-events: none;
+}
+
+/* Chevron inversé quand la sidebar est repliée */
+body.sidebar-is-collapsed .sidebar-toggle-btn {
+    opacity: 0.5;
+}
+body.sidebar-is-collapsed .sidebar-toggle-btn i {
+    transform: rotate(180deg);
+}
+
+/* ──────────────────────────────────────────────────────────
+   Thème sombre
+   ────────────────────────────────────────────────────────── */
+[data-theme="dark"] .sidebar-toggle-btn {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #334155;
+    color: #94a3b8;
+}
+[data-theme="dark"] .sidebar-toggle-btn:hover {
+    background: rgba(51, 65, 85, 0.9);
+    color: #e2e8f0;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Mobile : masqué (le drawer mobile a son propre contrôle)
+   ────────────────────────────────────────────────────────── */
+@media (max-width: 767px) {
+    .sidebar-toggle-btn {
+        display: none;
+    }
+}

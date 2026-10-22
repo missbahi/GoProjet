@@ -1,0 +1,13 @@
+{# goplan/templates/goplan/calendars/liste_calendriers.html #}
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'goplan/css/goplan.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% include "goplan/calendars/_liste_calendriers_content.html" %}
+{% endblock %}

@@ -1,0 +1,269 @@
+{# goplan/templates/goplan/plans/_modal_plan.html #}
+{% load static %}
+
+<style>
+    /* ══════════════════════════════════════════════════════════════
+   MODAL PLAN — Style HTMX
+   ══════════════════════════════════════════════════════════════ */
+.goplan-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998;
+    animation: goplanModalFadeIn 0.15s ease-out;
+}
+
+.goplan-modal-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+    width: 100%;
+    max-width: 640px;
+    max-height: 90vh;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: goplanModalSlideIn 0.2s ease-out;
+}
+
+.goplan-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+}
+
+.goplan-modal-body {
+    padding: 1.25rem;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.goplan-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+    margin-bottom: -1.25rem;
+}
+
+@keyframes goplanModalFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+@keyframes goplanModalSlideIn {
+    from { opacity: 0; transform: translate(-50%, -55%); }
+    to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Ajustements champs dans le modal */
+.goplan-modal-body input:not([type="hidden"]),
+.goplan-modal-body select,
+.goplan-modal-body textarea {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-default);
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+}
+
+.goplan-modal-body input:focus,
+.goplan-modal-body select:focus,
+.goplan-modal-body textarea:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.15);
+}
+
+</style>
+
+<div class="goplan-modal-backdrop" onclick="closeGoplanPlanModal()"></div>
+
+<div class="goplan-modal-card" role="dialog" aria-modal="true">
+
+    {# ═══════ En-tête ═══════ #}
+    <div class="goplan-modal-header">
+        <h2 class="text-lg font-semibold flex items-center gap-2"
+            style="color: var(--accent-primary);">
+            <i class="fas fa-{% if plan %}pen{% else %}plus-circle{% endif %}"></i>
+            {% if plan %}Modifier « {{ plan.nom }} »{% else %}Nouveau plan{% endif %}
+        </h2>
+        <button type="button"
+                class="app-action-btn"
+                onclick="closeGoplanPlanModal()"
+                aria-label="Fermer">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    {# ═══════ Formulaire ═══════ #}
+    <form hx-post="{% if plan %}{% url 'goplan:modifier_plan' plan.id %}{% else %}{% url 'goplan:creer_plan' %}{% endif %}"
+          hx-target="#modals-container"
+          hx-swap="innerHTML"
+          class="goplan-modal-body">
+
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="rounded border px-3 py-2 text-sm mb-3"
+             style="border-color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1); color: var(--accent-danger);">
+            {% for error in form.non_field_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="space-y-3">
+
+            {# Nom #}
+            <div>
+                <label for="{{ form.nom.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.nom.label }} <span style="color: var(--accent-danger);">*</span>
+                </label>
+                {{ form.nom }}
+                {% for error in form.nom.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Description #}
+            <div>
+                <label for="{{ form.description.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.description.label }}
+                </label>
+                {{ form.description }}
+            </div>
+
+            {# Dates #}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                    <label for="{{ form.date_debut.id_for_label }}"
+                           class="block text-sm font-medium mb-1"
+                           style="color: var(--text-primary);">
+                        {{ form.date_debut.label }} <span style="color: var(--accent-danger);">*</span>
+                    </label>
+                    {{ form.date_debut }}
+                    {% for error in form.date_debut.errors %}
+                        <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <div>
+                    <label for="{{ form.date_fin_cible.id_for_label }}"
+                           class="block text-sm font-medium mb-1"
+                           style="color: var(--text-primary);">
+                        {{ form.date_fin_cible.label }}
+                    </label>
+                    {{ form.date_fin_cible }}
+                </div>
+            </div>
+
+            {# Date d'état #}
+            <div>
+                <label for="{{ form.date_etat.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.date_etat.label }}
+                </label>
+                {{ form.date_etat }}
+                {% for error in form.date_etat.errors %}
+                    <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+                {% endfor %}
+            </div>
+
+            {# Calendrier #}
+            <div>
+                <label for="{{ form.calendrier.id_for_label }}"
+                       class="block text-sm font-medium mb-1"
+                       style="color: var(--text-primary);">
+                    {{ form.calendrier.label }}
+                </label>
+                {{ form.calendrier }}
+            </div>
+
+        </div>
+
+        {# ═══════ Footer ═══════ #}
+        <div class="goplan-modal-footer">
+            <button type="button"
+                    onclick="closeGoplanPlanModal()"
+                    class="app-btn-secondary">
+                <i class="fas fa-times mr-1"></i> Annuler
+            </button>
+            <button type="submit" class="app-btn-primary">
+                <i class="fas fa-save mr-1"></i>
+                {% if plan %}Enregistrer{% else %}Créer le plan{% endif %}
+            </button>
+        </div>
+
+    </form>
+</div>
+
+{# ════════════════════════════════════════════════════════════ #}
+{# SCRIPT AUTO-CONTENU DANS LE MODAL                         #}
+{# Chargé à chaque injection HTMX → pas de conflit              #}
+{# ════════════════════════════════════════════════════════════ #}
+<script>
+(function () {
+    'use strict';
+
+    // ══════════════════════════════════════════════════════════
+    // Fonction globale de fermeture
+    // ══════════════════════════════════════════════════════════
+    window.closeGoplanPlanModal = function () {
+        const container = document.getElementById('modals-container');
+        if (container) {
+            container.innerHTML = '';
+        }
+        document.body.style.overflow = '';
+    };
+
+    // ══════════════════════════════════════════════════════════
+    // Bloquer le scroll du body quand le modal est ouvert
+    // ══════════════════════════════════════════════════════════
+    document.body.style.overflow = 'hidden';
+
+    // ══════════════════════════════════════════════════════════
+    // Fermeture avec Échap
+    // ⚠️ On utilise un handler temporaire qu'on nettoie après
+    // ══════════════════════════════════════════════════════════
+    const escHandler = function (e) {
+        if (e.key === 'Escape') {
+            window.closeGoplanPlanModal();
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    // ══════════════════════════════════════════════════════════
+    // Nettoyage automatique si le modal est remplacé (HTMX)
+    // ══════════════════════════════════════════════════════════
+    document.addEventListener('htmx:beforeSwap', function cleanup(e) {
+        if (e.detail.target.id === 'modals-container') {
+            document.removeEventListener('keydown', escHandler);
+            document.removeEventListener('htmx:beforeSwap', cleanup);
+        }
+    });
+})();
+</script>

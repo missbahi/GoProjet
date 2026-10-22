@@ -1,0 +1,158 @@
+{# goplan/templates/goplan/calendars/_calendrier_form_content.html #}
+{% load static %}
+{% load formatters navigation %}
+
+{% breadcrumb %}
+
+<div class="container mx-auto px-4 py-6 max-w-4xl calendar-form"
+     data-family="app"
+     data-page-title="Calendrier"
+     data-page-icon="fa-calendar-days">
+
+    {# ═══════════════════════════════════════════════════════ #}
+    {# EN-TÊTE                                                  #}
+    {# ═══════════════════════════════════════════════════════ #}
+    <div class="calendar-page-header">
+        <div>
+            <h1>
+                <i class="fas fa-calendar-days"></i>
+                {% if calendar.pk %}Modifier le calendrier{% else %}Nouveau calendrier{% endif %}
+            </h1>
+            <p class="subtitle">
+                Définissez les jours ouvrés et les exceptions qui pilotent le calcul
+                des durées dans tous les plannings rattachés.
+            </p>
+        </div>
+        <div class="calendar-page-actions">
+            <a href="{% url 'goplan:liste_calendriers' %}" class="app-btn-secondary">
+                <i class="fas fa-arrow-left mr-1"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <form method="post" id="calendar-form" class="space-y-4">
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+
+        {# ═══════════════════════════════════════════════════ #}
+        {# CARTE 1 — Paramètres généraux                       #}
+        {# ═══════════════════════════════════════════════════ #}
+        <section class="calendar-card">
+            <header class="calendar-card-header">
+                <h2><i class="fas fa-sliders-h"></i> Paramètres généraux</h2>
+            </header>
+
+            <div class="calendar-card-body">
+                <div class="calendar-fields-grid">
+
+                    {# Nom #}
+                    <div class="calendar-field field-full">
+                        <label for="{{ form.nom.id_for_label }}">
+                            {{ form.nom.label }}
+                        </label>
+                        {{ form.nom }}
+                        {{ form.nom.errors }}
+                    </div>
+
+                    {# Heures / jour #}
+                    <div class="calendar-field">
+                        <label for="{{ form.heures_par_jour.id_for_label }}">
+                            {{ form.heures_par_jour.label }}
+                        </label>
+                        {{ form.heures_par_jour }}
+                        {{ form.heures_par_jour.errors }}
+                    </div>
+
+                    {# Par défaut (toggle) #}
+                    <div class="calendar-field">
+                        <label>Par défaut</label>
+                        <label class="calendar-toggle" for="{{ form.is_default.id_for_label }}"
+                            title="Utilisé pour les plannings sans calendrier explicitement affecté">
+                            {{ form.is_default }}
+                            <span>Calendrier par défaut</span>
+                        </label>
+                        {{ form.is_default.errors }}
+                    </div>
+
+                    {# Jours ouvrés #}
+                    <div class="calendar-field field-full">
+                        <fieldset>
+                            <legend>{{ form.jours_ouvres.label|default:"Jours ouvrés" }}</legend>
+                            <ul class="calendar-days">
+                                {{ form.jours_ouvres }}
+                            </ul>
+                            {{ form.jours_ouvres.errors }}
+                        </fieldset>
+                    </div>
+
+                </div>
+            </div>
+
+            <p class="calendar-card-help">
+                <i class="fas fa-info-circle mr-1"></i>
+                Le calendrier par défaut s'applique aux plannings sans calendrier affecté.
+            </p>
+        </section>
+
+        {# ═══════════════════════════════════════════════════ #}
+        {# CARTE 2 — Exceptions                                #}
+        {# ═══════════════════════════════════════════════════ #}
+        <section class="calendar-card">
+            <header class="calendar-card-header">
+                <h2><i class="fas fa-calendar-xmark"></i> Exceptions</h2>
+                <button type="button"
+                        class="calendar-add-row"
+                        id="calendar-add-exception"
+                        title="Ajouter une exception">
+                    <i class="fas fa-plus"></i> Ajouter
+                </button>
+            </header>
+
+            <div class="calendar-card-body">
+                {{ exceptions.management_form }}
+                {{ exceptions.non_form_errors }}
+
+                <div class="calendar-exceptions-wrap">
+                    <table class="calendar-exceptions">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Heures</th>
+                                <th>Retirer</th>
+                            </tr>
+                        </thead>
+                        <tbody id="calendar-exceptions">
+                            {% for exception in exceptions %}
+                                {% include "goplan/calendars/_exception_row.html" with exception=exception %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <template id="calendar-exception-template">
+                    {% include "goplan/calendars/_exception_row.html" with exception=exceptions.empty_form %}
+                </template>
+            </div>
+
+            <p class="calendar-card-help">
+                <i class="fas fa-circle-info mr-1"></i>
+                <strong>0 heure</strong> : jour chômé.
+                <strong>Plus de 0</strong> : jour ouvré exceptionnel, même le week-end.
+                Une seule exception par date ; les heures ne proratisent pas les durées.
+            </p>
+        </section>
+
+        {# ═══════════════════════════════════════════════════ #}
+        {# ACTIONS                                             #}
+        {# ═══════════════════════════════════════════════════ #}
+        <div class="calendar-form-footer">
+            <a href="{% url 'goplan:liste_calendriers' %}" class="app-btn-secondary">
+                <i class="fas fa-times mr-1"></i> Annuler
+            </a>
+            <button type="submit" class="app-btn-primary">
+                <i class="fas fa-save mr-1"></i>
+                {% if calendar.pk %}Enregistrer les modifications{% else %}Créer le calendrier{% endif %}
+            </button>
+        </div>
+    </form>
+</div>

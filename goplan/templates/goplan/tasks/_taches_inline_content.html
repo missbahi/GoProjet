@@ -1,0 +1,166 @@
+{# goplan/templates/goplan/tasks/_taches_inline.html #}
+{% load static %}
+{% load formatters navigation %}
+
+{% breadcrumb %}
+
+<div class="container mx-auto px-4 py-6 max-w-full"
+     data-goplan-inline
+     data-family="app" 
+     data-page-title="Édition inline"
+     data-page-icon="fa-chart-gantt">
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# EN-TÊTE                                                     #}
+    {# ═══════════════════════════════════════════════════════════ #}
+
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--accent-primary);">
+                <i class="fas fa-table mr-2"></i>
+                Édition inline — {{ plan.nom }}
+            </h1>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'goplan:replace_mspdi' plan.pk %}" class="app-btn-secondary">
+                <i class="fas fa-file-import mr-1"></i> Importation XML
+            </a>
+            <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="app-btn-secondary" title="Consulter le Gantt">
+                <i class="fas fa-chart-gantt mr-1"></i> Gantt
+            </a>
+            <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary">
+                <i class="fas fa-list mr-1"></i> Plannings
+            </a>
+        </div>
+    </div>
+
+    {# ═══════ Barre d'outils hiérarchique — PLEINE LARGEUR ═══════ #}
+    <div class="goplan-toolbar goplan-sticky-controls mb-3 w-full">
+        <span class="goplan-toolbar-label">
+            <i class="fas fa-sitemap mr-1"></i>
+        </span>
+
+        <button type="button" id="toolbar-indent" class="goplan-toolbar-btn" disabled
+                title="Indenter" aria-label="Indenter">
+            <i class="fas fa-indent"></i>
+        </button>
+        <button type="button" id="toolbar-outdent" class="goplan-toolbar-btn" disabled
+                title="Désindenter" aria-label="Désindenter">
+            <i class="fas fa-outdent"></i>
+        </button>
+
+        <span class="goplan-toolbar-sep"></span>
+
+        <button type="button" id="toolbar-up" class="goplan-toolbar-btn" disabled
+                title="Monter" aria-label="Monter">
+            <i class="fas fa-arrow-up"></i>
+        </button>
+        <button type="button" id="toolbar-down" class="goplan-toolbar-btn" disabled
+                title="Descendre" aria-label="Descendre">
+            <i class="fas fa-arrow-down"></i>
+        </button>
+        <span class="goplan-toolbar-sep"></span>
+        <button type="button" id="toolbar-links" class="goplan-toolbar-btn" disabled
+                title="Gérer les liaisons de la tâche active" aria-label="Gérer les liaisons de la tâche active">
+            <i class="fas fa-link"></i>
+        </button>
+    </div>
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# FORMULAIRE                                                  #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <form method="post"
+          action="{% url 'goplan:save_taches_inline' plan.id %}"
+          data-stylesheet="{% static 'goplan/css/goplan.css' %}"
+          data-plan-start="{{ plan.date_debut|date:'Y-m-d' }}"
+          data-fold-url="{% url 'goplan:toggle_task_fold' plan.id %}"
+          data-bound="{{ formset.is_bound|yesno:'true,false' }}"
+          id="tachesInlineForm">
+
+        {% csrf_token %}
+        {{ formset.management_form }}
+        {{ work_calendar|json_script:"goplan-work-calendar" }}
+        {% if calendar_error %}
+            <div class="goplan-inline-error mb-4" role="alert">{{ calendar_error }}</div>
+        {% endif %}
+        <div class="goplan-inline-error mb-4" data-task-error role="alert" hidden></div>
+        <p class="text-xs mb-3">Flèches Haut/Bas : même colonne, ligne précédente/suivante.
+            Alt + Haut/Bas : comportement natif du champ.</p>
+
+        {# Erreurs globales du formset #}
+        {% if formset.non_form_errors %}
+        <div class="rounded border px-4 py-3 text-sm mb-4"
+             style="border-color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1); color: var(--accent-danger);">
+            {% for error in formset.non_form_errors %}
+                <p>{{ error }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {# ═══════ Table éditable — Style papier GoPlan ═══════ #}
+        <div class="goplan-paper">
+            <div class="overflow-x-auto">
+                <table class="w-full goplan-table">
+                    <thead>
+                        <tr>
+                            <th class="px-2 py-2 text-left" style="width: 90px;">Code</th>
+                            <th class="px-2 py-2 text-left">Nom</th>
+                            <th class="px-2 py-2 text-left" style="width: 110px;">Type</th>
+                            <th class="px-2 py-2 text-right" style="width: 80px;">Durée (j)</th>
+                            <th class="px-2 py-2 text-left" style="width: 140px;">Début</th>
+                            <th class="px-2 py-2 text-left" style="width: 140px;">Fin</th>
+                            <th class="px-2 py-2 text-left" style="width: 130px;">Contrainte</th>
+                            <th class="px-2 py-2 text-left" style="width: 140px;">Date de contrainte</th>
+                            <th class="px-2 py-2 text-right" style="width: 90px;">Avanc.</th>
+                            <th class="px-2 py-2 text-left" style="width: 90px;">Liaisons</th>
+                            <th class="px-2 py-2 text-center" style="width: 50px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-tbody">
+                        {% for form in formset %}
+                            {% include 'goplan/tasks/_task_row.html' with form=form %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            {# ═══════ Barre inférieure : bouton Ajouter + compteur ═══════ #}
+            <div class="goplan-footer-bar">
+                <button type="button"
+                        id="task-add-btn"
+                        class="goplan-toolbar-btn"
+                        title="Ajouter une tâche"
+                        aria-label="Ajouter une tâche">
+                    <i class="fas fa-plus"></i>
+                </button>
+
+                <div class="goplan-count">
+                    <i class="fas fa-list-ol mr-1"></i>
+                    <strong id="task-count">0</strong> tâche(s)
+                </div>
+            </div>
+        </div>
+
+        {# ═══════ Actions ═══════ #}
+        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+            <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary justify-center">
+                <i class="fas fa-times mr-1"></i> Annuler
+            </a>
+            <button type="submit" class="app-btn-primary justify-center">
+                <i class="fas fa-save mr-1"></i> Enregistrer les modifications
+            </button>
+        </div>
+
+    </form>
+    <p data-link-status role="status" class="text-sm mt-3"></p>
+    {{ task_link_data|json_script:"goplan-inline-link-data" }}
+    {% include "goplan/tasks/_link_dialog.html" %}
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# TEMPLATE POUR LIGNE VIDE (utilisé par JS)                   #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <template id="task-empty-template">
+        {% include 'goplan/tasks/_task_row.html' with form=formset.empty_form %}
+    </template>
+
+</div>

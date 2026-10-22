@@ -2,7 +2,7 @@
 <div class="sidebar w-72 flex-shrink-0 hidden md:flex flex-col">
 
     <!-- En-tête -->
-    <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
+    <div class="p-4" style="border-bottom: 1px solid var(--border-default);"id="app-sidebar">
         <a href="{% url 'projets:landing' %}" class="inline-block">
             <img src="{% static 'images/logo-goprojet.svg' %}"
                  alt="Logo GoProjet"
@@ -40,6 +40,18 @@
                         class="sidebar-item {% if 'projets' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-project-diagram"></i>
                         <span>Projets</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'goplan:liste_plans' %}"
+                        hx-get="{% url 'goplan:liste_plans' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'plans' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Plannings</span>
                     </a>
                 </li>
                 <li>

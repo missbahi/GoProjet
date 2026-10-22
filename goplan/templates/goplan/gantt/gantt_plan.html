@@ -1,0 +1,19 @@
+{% extends "projets/home/base_sidebar.html" %}
+{% load static %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+    <link rel="stylesheet" href="{% static 'goplan/css/goplan.css' %}">
+{% endblock %}
+
+{% block content %}
+    {% include "goplan/gantt/_gantt_plan_content.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js"></script>
+    <script src="{% static 'goplan/js/gantt.js' %}" defer></script>
+{% endblock %}

@@ -1,0 +1,309 @@
+{# goplan/templates/goplan/gantt/_gantt_plan_content.html #}
+{% load static %}
+{% load formatters navigation %}
+{% breadcrumb %}
+
+<div class="container mx-auto px-4 py-6 max-w-full"
+     data-goplan-gantt
+     data-plan-start="{{ plan.date_debut|date:'Y-m-d' }}"
+     data-fold-url="{% url 'goplan:toggle_task_fold' plan.pk %}"
+     data-family="app"
+     data-page-title="Gantt"
+     data-page-icon="fa-chart-gantt">
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# EN-TÊTE                                                     #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+        <div>
+            <h1 class="text-2xl font-bold" style="color: var(--accent-primary);">
+                <i class="fas fa-chart-gantt mr-2"></i>
+                Gantt — {{ plan.nom }}
+            </h1>
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                Du {{ plan.date_debut|date:"d/m/Y" }}
+                {% if plan.date_fin_cible %}
+                    au {{ plan.date_fin_cible|date:"d/m/Y" }}
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# BARRE D'OUTILS — Mode d'affichage                          #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <p class="text-sm mb-3" style="color: var(--text-secondary);">
+        Cliquez sur une tâche pour la modifier, ou choisissez « Nouvelle tâche » pour ajouter une ligne.
+        L'axe affiche les jours calendaires ; les durées sont celles du planning en jours ouvrés.
+        Les bandes gris-bleu indiquent les jours non travaillés du calendrier du planning.
+    </p>
+    <p id="gantt-undated" role="status" class="mb-3 {% if not undated_count %}hidden{% endif %}">{{ undated_count }} tâche(s) sans dates complètes ou avec des dates inversées : non affichée(s). Utilisez la liste des tâches pour les modifier.</p>
+    <p id="gantt-hierarchy-warning" role="alert" class="mb-3 {% if not invalid_hierarchy %}hidden{% endif %}">Hiérarchie incohérente : corrigez les parents dans l'éditeur inline avant d'enregistrer.</p>
+    {% if calendar_error %}<p role="alert" class="mb-3">{{ calendar_error }}</p>{% endif %}
+    <p id="gantt-error" role="alert" class="hidden mb-3"></p>
+    <p id="gantt-status" role="status" class="text-sm mb-3"></p>
+    <noscript>JavaScript est nécessaire pour afficher le Gantt.</noscript>
+    <div class="goplan-sticky-controls gantt-sticky-controls">
+    <div class="goplan-toolbar mb-3 w-full">
+        <span class="goplan-toolbar-label">
+            <i class="fas fa-calendar-alt mr-1"></i> Vue
+        </span>
+        <!-- Vue buttons jour/semaine/mois -->
+        <button type="button" class="goplan-toolbar-btn gantt-view-btn"
+                data-view="Day" title="Jour" aria-label="Vue jour" aria-pressed="false" disabled>
+            <i class="fas fa-sun"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn gantt-view-btn is-active"
+                data-view="Week" title="Semaine" aria-label="Vue semaine" aria-pressed="true" disabled>
+            <i class="fas fa-calendar-week"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn gantt-view-btn"
+                data-view="Month" title="Mois" aria-label="Vue mois" aria-pressed="false" disabled>
+            <i class="fas fa-calendar"></i>
+        </button>
+        <span class="goplan-toolbar-sep"></span>
+        <!-- Zoom controls -->
+        <button type="button" id="gantt-zoom-out" class="goplan-toolbar-btn"
+                title="Zoom arrière" aria-label="Zoom arrière" disabled>
+            <i class="fas fa-magnifying-glass-minus" aria-hidden="true"></i>
+        </button>
+        <output id="gantt-zoom-level" class="goplan-toolbar-label" aria-live="polite"
+                aria-label="Niveau de zoom">100 %</output>
+        <button type="button" id="gantt-zoom-in" class="goplan-toolbar-btn"
+                title="Zoom avant" aria-label="Zoom avant" disabled>
+            <i class="fas fa-magnifying-glass-plus" aria-hidden="true"></i>
+        </button>
+        
+        <span class="goplan-toolbar-sep"></span>
+        <!-- Today button -->
+        <button type="button" id="gantt-today-btn" class="goplan-toolbar-btn"
+                title="Aujourd'hui" aria-label="Aujourd'hui" disabled>
+            <i class="fas fa-crosshairs"></i>
+        </button>
+
+        <span class="goplan-toolbar-sep"></span>
+        <!-- Active task controls -->
+        <label for="gantt-task-select" class="goplan-toolbar-label">Tâche active</label>
+        <select id="gantt-task-select" class="app-modal-input" aria-label="Tâche active">
+            <option value="">— Aucune —</option>
+        </select>
+        <span class="goplan-toolbar-sep" aria-hidden="true"></span>
+        <!-- New task button -->
+        <button type="button" id="gantt-new-task" class="goplan-toolbar-btn"
+                title="Nouvelle tâche" aria-label="Nouvelle tâche">
+            <i class="fas fa-file-circle-plus" aria-hidden="true"></i>
+        </button>
+        <button type="submit" form="gantt-task-form" class="goplan-toolbar-btn" id="gantt-save-task"
+                title="Ajouter la tâche" aria-label="Ajouter la tâche">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn" id="gantt-delete-task"
+                data-url="{% url 'goplan:delete_gantt_task' plan.pk %}"
+                title="Supprimer la tâche active" aria-label="Supprimer la tâche active" hidden disabled>
+            <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn" id="gantt-link-task"
+                title="Gérer les liaisons de la tâche active" aria-label="Gérer les liaisons de la tâche active" disabled>
+            <i class="fas fa-link" aria-hidden="true"></i>
+        </button>
+        <a href="{% url 'goplan:apercu_plan' plan.pk %}" 
+                class="goplan-toolbar-btn"
+                target="_blank" rel="noopener"
+                title="Ouvrir l'aperçu Gantt imprimable" aria-label="Aperçu Gantt et impression">
+            <i class="fas fa-print mr-1"></i>
+        </a>
+        <span class="goplan-toolbar-sep"></span>
+        <a href="{% url 'goplan:taches_inline' plan.id %}" 
+                class="goplan-toolbar-btn"
+                title="Édition inline" aria-label="Édition inline">
+            <i class="fas fa-table mr-1"></i>
+        </a>
+        <a href="{% url 'goplan:replace_mspdi' plan.pk %}" 
+                class="goplan-toolbar-btn"
+                title="Importer un fichier XML" aria-label="Importer un fichier XML">
+            <i class="fas fa-file-import mr-1"></i>
+        </a>
+        <a href="{% url 'goplan:export_mspdi' plan.id %}" 
+                class="goplan-toolbar-btn"
+                title="Exporter MS Project" aria-label="Exporter MS Project">
+            <i class="fas fa-file-export mr-1"></i>
+        </a>
+                
+        <span class="goplan-toolbar-sep" aria-hidden="true"></span>
+        <button type="button" class="goplan-toolbar-btn" id="gantt-open-appearance"
+                title="Apparence du planning" aria-label="Apparence du planning"
+                aria-haspopup="dialog" aria-controls="gantt-appearance-dialog">
+            <i class="fas fa-palette" aria-hidden="true"></i>
+        </button>
+
+        <!-- Toggle editor button -->
+        <button type="button" class="goplan-toolbar-btn gantt-editor-toggle" id="gantt-toggle-editor"
+                aria-controls="gantt-task-form" aria-expanded="true"
+                title="Masquer le formulaire de tâche" aria-label="Masquer le formulaire de tâche">
+            <i class="fas fa-chevron-up" aria-hidden="true"></i>
+        </button>
+    </div>
+
+    <form id="gantt-task-form" method="post" action="{% url 'goplan:save_gantt_task' plan.pk %}"
+          class="gantt-editor mb-4">
+        {% csrf_token %}
+        <p id="gantt-editor-context" class="text-sm mb-2" aria-live="polite">Nouvelle tâche — à la fin du planning</p>
+        <div id="gantt-form-errors" role="alert"></div>
+        <p id="gantt-group-duration-info" class="text-xs hidden" aria-live="polite">Les dates et la durée du groupe sont calculées depuis ses sous-tâches. Son type reste Groupe tant qu'il possède des enfants.</p>
+        <fieldset {% if calendar_error or invalid_hierarchy %}disabled{% endif %}>
+            <div class="gantt-editor-row">
+                {% for field in task_form %}
+                <div class="gantt-editor-field gantt-field-{{ field.name }}">
+                    {% if field.name == 'couleur' %}
+                    <label for="gantt-open-color">{{ field.label }}</label>
+                    {{ field }}
+                    <div class="gantt-color-controls">
+                        <button type="button" id="gantt-open-color" class="gantt-color-trigger"
+                                popovertarget="gantt-color-panel" aria-label="Choisir la couleur de la tâche"
+                                title="Choisir parmi des couleurs prédéfinies ou utiliser une couleur personnalisée">
+                            <span id="gantt-color-preview" aria-hidden="true"></span>
+                            <i class="fas fa-chevron-down" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div id="gantt-color-panel" class="gantt-color-panel" popover
+                         role="dialog" aria-labelledby="gantt-color-title">
+                        <div class="gantt-color-panel-header">
+                            <strong id="gantt-color-title">Couleur de la tâche</strong>
+                            <button type="button" class="goplan-toolbar-btn"
+                                    popovertarget="gantt-color-panel" popovertargetaction="hide"
+                                    aria-label="Fermer le choix de couleur">
+                                <i class="fas fa-xmark" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <p class="gantt-color-caption">Couleurs prédéfinies</p>
+                        <div class="gantt-color-palette" role="group" aria-label="Couleurs prédéfinies">
+                            <button type="button" class="gantt-color-swatch" data-task-color="#93c5fd" style="--swatch-color: #93c5fd;" title="Bleu clair" aria-label="Bleu clair" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#86efac" style="--swatch-color: #86efac;" title="Vert clair" aria-label="Vert clair" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#fcd34d" style="--swatch-color: #fcd34d;" title="Jaune" aria-label="Jaune" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#fca5a5" style="--swatch-color: #fca5a5;" title="Rouge clair" aria-label="Rouge clair" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#d8b4fe" style="--swatch-color: #d8b4fe;" title="Lavande" aria-label="Lavande" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#f9a8d4" style="--swatch-color: #f9a8d4;" title="Rose clair" aria-label="Rose clair" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#3b82f6" style="--swatch-color: #3b82f6;" title="Bleu" aria-label="Bleu" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#16a34a" style="--swatch-color: #16a34a;" title="Vert" aria-label="Vert" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#f59e0b" style="--swatch-color: #f59e0b;" title="Orange" aria-label="Orange" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#dc2626" style="--swatch-color: #dc2626;" title="Rouge" aria-label="Rouge" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#9333ea" style="--swatch-color: #9333ea;" title="Violet" aria-label="Violet" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#db2777" style="--swatch-color: #db2777;" title="Rose" aria-label="Rose" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#1e40af" style="--swatch-color: #1e40af;" title="Bleu foncé" aria-label="Bleu foncé" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#166534" style="--swatch-color: #166534;" title="Vert foncé" aria-label="Vert foncé" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#92400e" style="--swatch-color: #92400e;" title="Marron" aria-label="Marron" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#991b1b" style="--swatch-color: #991b1b;" title="Rouge foncé" aria-label="Rouge foncé" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#6b21a8" style="--swatch-color: #6b21a8;" title="Violet foncé" aria-label="Violet foncé" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#9d174d" style="--swatch-color: #9d174d;" title="Rose foncé" aria-label="Rose foncé" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#0d9488" style="--swatch-color: #0d9488;" title="Turquoise" aria-label="Turquoise" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#06b6d4" style="--swatch-color: #06b6d4;" title="Cyan" aria-label="Cyan" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#84cc16" style="--swatch-color: #84cc16;" title="Vert anis" aria-label="Vert anis" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#cbd5e1" style="--swatch-color: #cbd5e1;" title="Gris clair" aria-label="Gris clair" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#64748b" style="--swatch-color: #64748b;" title="Gris" aria-label="Gris" aria-pressed="false"></button>
+                            <button type="button" class="gantt-color-swatch" data-task-color="#1e293b" style="--swatch-color: #1e293b;" title="Anthracite" aria-label="Anthracite" aria-pressed="false"></button>
+                        </div>
+                        <div class="gantt-color-custom">
+                        <label for="gantt-task-color">Couleur personnalisée</label>
+                        <input type="color" id="gantt-task-color" value="#7baec1"
+                               aria-label="Couleur de la tâche">
+                        </div>
+                        <button type="button" id="gantt-reset-color" class="goplan-toolbar-btn"
+                                title="Rétablir la couleur automatique" aria-label="Rétablir la couleur automatique">
+                            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    {% else %}
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% endif %}
+                    <span class="goplan-task-error" data-error-for="{{ field.name }}"></span>
+                </div>
+                {% endfor %}
+                <div class="gantt-editor-field gantt-field-links" title="Liaisons entre tâches : prédécesseurs seulement">
+                    <span class="goplan-field-label">Liaisons</span>
+                    <output id="gantt-task-links" class="goplan-link-summary">—</output>
+                </div>
+                <div class="gantt-editor-field" id="gantt-position-field">
+                    <label for="gantt-position">Position</label>
+                    <select id="gantt-position" class="app-modal-input">
+                        <option value="end">À la fin du planning</option>
+                        <option value="before" disabled>Avant la tâche active</option>
+                    </select>
+                </div>
+            </div>
+        </fieldset>
+    </form>
+    </div>
+    <dialog id="gantt-unsaved-dialog" class="gantt-unsaved-dialog" aria-labelledby="gantt-unsaved-title">
+        <h2 id="gantt-unsaved-title">Modifications non enregistrées</h2>
+        <p>Enregistrez ou abandonnez votre saisie avant de changer de tâche.</p>
+        <div class="flex gap-2 mt-4">
+            <button type="button" data-decision="save" class="app-btn-primary">Enregistrer</button>
+            <button type="button" data-decision="discard" class="app-btn-secondary">Abandonner</button>
+            <button type="button" data-decision="stay" class="app-btn-secondary">Rester</button>
+        </div>
+    </dialog>
+    {% include "goplan/tasks/_link_dialog.html" %}
+    <dialog id="gantt-appearance-dialog" class="gantt-appearance-dialog" aria-labelledby="gantt-appearance-title">
+        <form id="gantt-appearance-form" action="{% url 'goplan:save_gantt_appearance' plan.pk %}" method="post">
+            {% csrf_token %}
+            <h2 id="gantt-appearance-title">Apparence du planning</h2>
+            <p class="text-sm mb-3">Aperçu immédiat sur le Gantt. Appliquer enregistre ces réglages pour ce planning uniquement.</p>
+            <div id="gantt-appearance-errors" role="alert"></div>
+            <fieldset>
+                <div class="gantt-appearance-fields">
+                    {% for field in appearance_form %}
+                    <div>
+                        {{ field.label_tag }}
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <button type="button" id="gantt-appearance-defaults" class="app-btn-secondary mt-3">Valeurs par défaut</button>
+            </fieldset>
+            <div class="flex flex-wrap gap-2 mt-4">
+                <button type="submit" class="app-btn-primary">Appliquer</button>
+                <button type="button" id="gantt-appearance-cancel" class="app-btn-secondary">Annuler</button>
+            </div>
+        </form>
+    </dialog>
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# CONTENEUR GANTT                                              #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <div class="goplan-gantt-split" tabindex="0" role="region"
+         aria-label="Planning : liste des tâches et diagramme de Gantt">
+
+        {# ═══ Panneau gauche : noms toujours visibles ═══ #}
+        <aside class="goplan-gantt-left" id="gantt-left-panel"
+            aria-label="Liste des tâches">
+            <div class="goplan-gantt-left-header" id="gantt-left-header">
+                <i class="fas fa-list" aria-hidden="true"></i>
+                <span>Tâches</span>
+            </div>
+            <div class="goplan-gantt-left-body" id="gantt-left-body">
+                {# Rempli par JS #}
+            </div>
+        </aside>
+
+        {# ═══ Zone Gantt (défilement commun avec la liste) ═══ #}
+        <div class="goplan-gantt-container">
+            <div id="gantt-empty"
+                class="hidden py-12 text-center"
+                style="color: var(--text-secondary);">
+                <i class="fas fa-inbox text-4xl mb-3 opacity-50"></i>
+                <p>Aucune tâche avec des dates renseignées.</p>
+                <a href="{% url 'goplan:taches_inline' plan.id %}"
+                class="app-btn-primary inline-flex mt-4">
+                    <i class="fas fa-plus mr-1"></i> Ajouter des tâches
+                </a>
+            </div>
+            <svg id="gantt-svg" class="gantt-target"></svg>
+        </div>
+
+    </div>
+
+{{ gantt_data|json_script:"goplan-gantt-data" }}
+{{ work_calendar|json_script:"goplan-gantt-calendar" }}
+{{ appearance_data|json_script:"goplan-gantt-appearance" }}
+</div>

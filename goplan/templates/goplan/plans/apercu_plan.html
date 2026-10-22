@@ -1,0 +1,432 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu Gantt — {{ plan.nom }}</title>
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
+    <link rel="stylesheet" href="{% static 'goplan/css/goplan.css' %}">
+    <link rel="stylesheet" href="{% static 'goplan/css/gantt-print.css' %}">
+    <style id="print-page-size">@page { size: 297mm 210mm; margin: 0; }</style>
+    <script src="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.min.js" defer></script>
+    <script src="{% static 'goplan/js/work-calendar.js' %}" defer></script>
+    <script src="{% static 'goplan/js/task-links.js' %}" defer></script>
+    <script src="{% static 'goplan/js/gantt.js' %}" defer></script>
+    <script src="{% static 'goplan/js/gantt-print.js' %}" defer></script>
+</head>
+<body class="gantt-print-page" data-print-plan="{{ plan.pk }}">
+<nav class="print-actions" aria-label="Actions de l'aperçu">
+    <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="print-btn print-btn-secondary">Retour au Gantt</a>
+    <a href="{% url 'goplan:apercu_plan' plan.pk %}?mode=tasks" class="print-btn print-btn-secondary">Tableau des tâches</a>
+    <button type="button" id="print-open-settings" class="print-btn print-btn-primary"
+            aria-haspopup="dialog" aria-controls="print-settings-dialog">Paramètres d'impression</button>
+    <button type="button" id="print-main-button" class="print-btn print-btn-primary" disabled>Imprimer / PDF</button>
+    <div class="print-zoom-controls" role="group" aria-label="Zoom de consultation">
+        <button type="button" id="print-zoom-out" class="print-btn print-btn-secondary" aria-label="Réduire le zoom">−</button>
+        <input type="range" id="print-zoom" min="10" max="110" step="1" value="100" aria-label="Zoom de consultation">
+        <output id="print-zoom-label" for="print-zoom" aria-live="polite">100 %</output>
+        <button type="button" id="print-zoom-in" class="print-btn print-btn-secondary" aria-label="Augmenter le zoom">+</button>
+        <button type="button" id="print-zoom-fit" class="print-btn print-btn-secondary">Ajuster à la largeur</button>
+    </div>
+</nav>
+<div id="print-fit-alert" class="print-fit-alert" role="alert" hidden>
+    <span id="print-fit-alert-text"></span>
+    <button type="button" id="print-fit-alert-button" class="print-btn print-btn-primary" hidden></button>
+</div>
+
+{# ═══════════════════════════════════════════════════════ #}
+{# LAYOUT : Settings | Preview                            #}
+{# ═══════════════════════════════════════════════════════ #}
+<div class="print-shell">
+
+    {# ═══ PANNEAU PARAMÈTRES ═══ #}
+    <dialog class="print-settings" id="print-settings-dialog" aria-labelledby="print-settings-title">
+        <header class="print-settings-header">
+            <button type="button" id="print-close-settings" class="print-link-btn"
+                    aria-label="Fermer les paramètres">X</button>
+            <h1 id="print-settings-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/>
+                </svg>
+                Impression
+            </h1>
+            <p class="print-settings-subtitle">Configurez la mise en page puis imprimez ou enregistrez en PDF.</p>
+        </header>
+
+        <form id="print-settings-form" class="print-settings-body" autocomplete="off" novalidate
+              data-save-url="{% url 'goplan:save_print_settings' plan.pk %}"
+              data-reset-url="{% url 'goplan:reset_print_settings' plan.pk %}">
+            {% csrf_token %}
+
+            <div class="print-tabs" role="tablist" aria-label="Catégories de réglages">
+                <button type="button" class="print-tab" role="tab" id="ps-tab-page" data-tab="page"
+                        aria-controls="ps-panel-page" aria-selected="true">Page</button>
+                <button type="button" class="print-tab" role="tab" id="ps-tab-content" data-tab="content"
+                        aria-controls="ps-panel-content" aria-selected="false" tabindex="-1">Contenu</button>
+                <button type="button" class="print-tab" role="tab" id="ps-tab-display" data-tab="display"
+                        aria-controls="ps-panel-display" aria-selected="false" tabindex="-1">Affichage</button>
+                <button type="button" class="print-tab" role="tab" id="ps-tab-texts" data-tab="texts"
+                        aria-controls="ps-panel-texts" aria-selected="false" tabindex="-1">Textes</button>
+            </div>
+
+            <section class="print-tabpanel" role="tabpanel" id="ps-panel-page" aria-labelledby="ps-tab-page">
+            {# ─── Format ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Format papier</legend>
+                <div class="print-segmented" role="group" aria-label="Format papier">
+                    <button type="button" class="print-segment" data-format="A4" aria-pressed="true">A4</button>
+                    <button type="button" class="print-segment" data-format="A3" aria-pressed="false">A3</button>
+                    <button type="button" class="print-segment" data-format="A2" aria-pressed="false">A2</button>
+                    <button type="button" class="print-segment" data-format="A1" aria-pressed="false">A1</button>
+                    <button type="button" class="print-segment" data-format="A0" aria-pressed="false">A0</button>
+                </div>
+            </fieldset>
+
+            {# ─── Orientation ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Orientation</legend>
+                <div class="print-segmented" role="group" aria-label="Orientation">
+                    <button type="button" class="print-segment"
+                            data-orientation="portrait" aria-pressed="false">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="7" y="3" width="10" height="18" rx="1"/>
+                        </svg>
+                        Portrait
+                    </button>
+                    <button type="button" class="print-segment"
+                            data-orientation="landscape" aria-pressed="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                             stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <rect x="3" y="7" width="18" height="10" rx="1"/>
+                        </svg>
+                        Paysage
+                    </button>
+                </div>
+            </fieldset>
+
+            {# ─── Marges ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Marges (mm)</legend>
+                <div class="print-margin-grid">
+                    <label class="print-date-field"><span>Haut</span>
+                        <input type="number" name="margin_top" min="0" max="30" step="1" required></label>
+                    <label class="print-date-field"><span>Bas</span>
+                        <input type="number" name="margin_bottom" min="0" max="30" step="1" required></label>
+                    <label class="print-date-field"><span>Gauche</span>
+                        <input type="number" name="margin_left" min="0" max="30" step="1" required></label>
+                    <label class="print-date-field"><span>Droite</span>
+                        <input type="number" name="margin_right" min="0" max="30" step="1" required></label>
+                </div>
+                <label class="print-check">
+                    <input type="checkbox" name="center_vertically">
+                    <span>Centrer verticalement un petit planning</span>
+                </label>
+            </fieldset>
+
+            {# ─── Pages et lisibilité ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Pages et lisibilité</legend>
+                <div class="print-margin-grid">
+                    <label class="print-date-field"><span>Pages en hauteur</span>
+                        <select name="vertical_pages">
+                            <option value="0">Automatique</option>
+                            {% for count in "123456789" %}<option value="{{ count }}">{{ count }}</option>{% endfor %}
+                            <option value="10">10</option><option value="12">12</option>
+                            <option value="15">15</option><option value="20">20</option>
+                        </select>
+                    </label>
+                    <label class="print-date-field"><span>Texte minimale. (pt)</span>
+                        <input type="number" name="min_font_size" min="5" max="12" step="1" required>
+                    </label>
+                    <label class="print-date-field"><span>Hauteur max. (mm)</span>
+                        <input type="number" name="max_row_height" min="5" max="15" step="1" required
+                               aria-describedby="ps-row-height-hint">
+                    </label>
+                </div>
+                <p class="print-hint" id="ps-row-height-hint">
+                    La hauteur des lignes fixe la taille du texte des tâches
+                    (<span id="ps-row-font">7 mm ≈ 7,4 pt</span>) : un papier plus grand contient
+                    davantage de lignes au lieu de les agrandir. Sous la taille minimale, l'aperçu
+                    propose de répartir les tâches sur plusieurs pages (en-têtes répétés).
+                </p>
+            </fieldset>
+            </section>
+
+            <section class="print-tabpanel" role="tabpanel" id="ps-panel-content" aria-labelledby="ps-tab-content" hidden>
+            {# ─── Échelle ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Échelle de temps</legend>
+                <div class="print-segmented" role="group" aria-label="Échelle de temps">
+                    <button type="button" class="print-segment"
+                            data-view="Day" aria-pressed="false">Jour</button>
+                    <button type="button" class="print-segment"
+                            data-view="Week" aria-pressed="true">Semaine</button>
+                    <button type="button" class="print-segment"
+                            data-view="Month" aria-pressed="false">Mois</button>
+                </div>
+            </fieldset>
+
+            {# ─── Période ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Période à imprimer</legend>
+                <label class="print-date-field"><span>Mode</span>
+                    <select name="period_mode">
+                        <option value="full">Toute la période</option>
+                        <option value="custom">Personnalisée</option>
+                        <option value="relative">Autour de la date d'état</option>
+                    </select>
+                </label>
+                <div class="print-date-row" data-period="custom">
+                    <label class="print-date-field">
+                        <span>Du</span>
+                        <input type="date" id="ps-date-start" name="period_start">
+                    </label>
+                    <label class="print-date-field">
+                        <span>Au</span>
+                        <input type="date" id="ps-date-end" name="period_end">
+                    </label>
+                </div>
+                <div class="print-date-row" data-period="relative">
+                    <label class="print-date-field">
+                        <span>Semaines avant</span>
+                        <input type="number" name="weeks_before" min="0" max="104" step="1">
+                    </label>
+                    <label class="print-date-field">
+                        <span>Semaines après</span>
+                        <input type="number" name="weeks_after" min="0" max="104" step="1">
+                    </label>
+                </div>
+                <p class="print-hint" data-period="relative">
+                    Date d'état :
+                    {% if plan.date_etat %}{{ plan.date_etat|date:"d/m/Y" }}{% else %}non renseignée — définissez-la dans les informations du planning.{% endif %}
+                </p>
+                <p class="print-hint" id="ps-range-summary"></p>
+            </fieldset>
+
+            {# ─── Tâches imprimées ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Tâches imprimées</legend>
+                <label class="print-date-field"><span>Niveau hiérarchique</span>
+                    <select name="outline_level">
+                        <option value="">Tous les niveaux</option>
+                        {% for level in "123456789" %}<option value="{{ level }}">Jusqu'au niveau {{ level }}</option>{% endfor %}
+                        <option value="10">Jusqu'au niveau 10</option>
+                    </select>
+                </label>
+                <label class="print-check">
+                    <input type="checkbox" name="show_undated_tasks">
+                    <span>Lister les tâches non datées (sans barre)</span>
+                </label>
+                <label class="print-check">
+                    <input type="checkbox" name="respect_collapsed">
+                    <span>Respecter les groupes repliés (éditeur / Gantt)</span>
+                </label>
+            </fieldset>
+
+            {# ─── Colonnes ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Colonnes du tableau</legend>
+                <p class="print-hint">Le nom de la tâche est toujours imprimé.</p>
+                <div class="print-check-grid">
+                    <label class="print-check"><input type="checkbox" name="col_code"><span>Code</span></label>
+                    <label class="print-check"><input type="checkbox" name="col_duree"><span>Durée</span></label>
+                    <label class="print-check"><input type="checkbox" name="col_debut"><span>Début</span></label>
+                    <label class="print-check"><input type="checkbox" name="col_fin"><span>Fin</span></label>
+                    <label class="print-check"><input type="checkbox" name="col_avancement"><span>Avancement</span></label>
+                    <label class="print-check"><input type="checkbox" name="col_predecesseurs"><span>Prédécesseurs</span></label>
+                </div>
+                <div class="print-margin-grid">
+                    <label class="print-date-field"><span>Largeur max. Nom (mm)</span>
+                        <input type="number" name="name_max_width" min="0" max="250" step="1" required
+                               aria-describedby="ps-column-width-hint"></label>
+                    <label class="print-date-field"><span>Largeur max. autres (mm)</span>
+                        <input type="number" name="column_max_width" min="0" max="80" step="1" required
+                               aria-describedby="ps-column-width-hint"></label>
+                </div>
+                <p class="print-hint" id="ps-column-width-hint">
+                    0 = largeur automatique. Au-delà de la largeur choisie, les textes sont tronqués « … ».
+                </p>
+            </fieldset>
+            </section>
+
+            <section class="print-tabpanel" role="tabpanel" id="ps-panel-display" aria-labelledby="ps-tab-display" hidden>
+            {# ─── Affichage ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Affichage</legend>
+                <div class="print-check-grid">
+                    <label class="print-check"><input type="checkbox" name="show_labels_on_bars"><span>Noms sur les barres</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_links"><span>Liaisons</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_progress"><span>Avancement</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_nonworking"><span>Jours non travaillés</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_grid"><span>Grille</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_today_marker"><span>Aujourd'hui</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_status_date"><span>Date d'état</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_legend"><span>Légende</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_print_date"><span>Date d'impression</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_warnings"><span>Avertissements</span></label>
+                    <label class="print-check"><input type="checkbox" name="show_footer"><span>Pied de page</span></label>
+                </div>
+                <div class="print-date-field print-color-field">
+                    <span id="ps-background-label">Choisir la couleur de fond du dessin parmis les presets</span>
+                    <div class="print-swatches" role="group" aria-labelledby="ps-background-label">
+                        {% for value, name in background_presets %}
+                        <button type="button" 
+                                class="print-swatch" 
+                                data-background="{{ value }}" 
+                                style="--swatch-color: {{ value }};" 
+                                title="{{ name }}" 
+                                aria-label="{{ name }}" 
+                                aria-pressed="false">
+                        </button>
+                        {% endfor %}
+                    </div>
+                    <div>
+                        <span>Ou définir une couleur personalisée</span>
+                        <input 
+                            type="color"
+                            name="background_color" 
+                            aria-labelledby="ps-background-label">
+                    </div>
+                </div>
+            </fieldset>
+            </section>
+
+            <section class="print-tabpanel" role="tabpanel" id="ps-panel-texts" aria-labelledby="ps-tab-texts" hidden>
+            {# ─── Textes ─── #}
+            <fieldset class="print-fieldset print-text-settings">
+                <legend>En-tête et pied de page</legend>
+                <label for="ps-header-title">Titre en haut de page</label>
+                <input id="ps-header-title" name="header_title" type="text" maxlength="200">
+                <label for="ps-header-subtitle">Sous-titre</label>
+                <textarea id="ps-header-subtitle" name="header_subtitle" rows="2" maxlength="500"></textarea>
+                <label for="ps-header-center">Texte au centre du haut</label>
+                <textarea id="ps-header-center" name="header_center" rows="2" maxlength="300"
+                          placeholder="Ex. : Planning d'exécution — indice B"></textarea>
+                <label for="ps-footer-title">Texte du pied de page</label>
+                <input id="ps-footer-title" name="footer_text" type="text" maxlength="300">
+                <p class="print-hint">
+                    Variables :
+                    {% for name in print_variables %}<code>{{ "{" }}{{ name }}{{ "}" }}</code>{% if not forloop.last %} {% endif %}{% endfor %}
+                </p>
+            </fieldset>
+
+            {# ─── Typographie ─── #}
+            <fieldset class="print-fieldset">
+                <legend>Typographie</legend>
+                <label class="print-date-field"><span>Police</span>
+                    <select name="font_family">
+                        {% for value, label in font_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                    </select>
+                </label>
+                <div class="print-type-grid">
+                    <span>Titre</span>
+                    <label class="print-date-field"><span>Taille (pt)</span>
+                        <input type="number" name="title_font_size" min="8" max="48" step="1" required></label>
+                    <label class="print-check"><input type="checkbox" name="title_bold"><span>Gras</span></label>
+                    <label class="print-date-field print-color-field"><span>Couleur</span>
+                        <input type="color" name="title_color"></label>
+                    <span>Sous-titre</span>
+                    <label class="print-date-field"><span>Taille (pt)</span>
+                        <input type="number" name="subtitle_font_size" min="6" max="24" step="1" required></label>
+                    <span></span><span></span>
+                    <span>Centre</span>
+                    <label class="print-date-field"><span>Taille (pt)</span>
+                        <input type="number" name="header_center_font_size" min="6" max="36" step="1" required></label>
+                    <label class="print-check"><input type="checkbox" name="header_center_bold"><span>Gras</span></label>
+                    <span></span>
+                    <span>Pied de page</span>
+                    <label class="print-date-field"><span>Taille (pt)</span>
+                        <input type="number" name="footer_font_size" min="6" max="16" step="1" required></label>
+                    <span></span><span></span>
+                </div>
+            </fieldset>
+            </section>
+
+            <p class="print-hint print-warning" id="print-status" role="status" hidden>
+                Préparation du diagramme…
+            </p>
+            <p class="print-hint print-error" id="print-error" role="alert" hidden></p>
+            <div class="print-hint print-error" id="ps-save-errors" role="alert" hidden></div>
+        </form>
+
+        <footer class="print-settings-footer">
+            <p class="print-hint print-save-status" id="ps-save-status" role="status"></p>
+            <div class="print-settings-actions">
+                <button type="button" id="ps-reset-settings" class="print-btn print-btn-secondary"
+                        title="Supprime les réglages enregistrés de ce planning">Par défaut</button>
+                <button type="button" id="ps-save-settings" class="print-btn print-btn-secondary">Enregistrer pour ce planning</button>
+            </div>
+            <div class="print-settings-actions">
+                <button type="button" id="print-done-settings" class="print-btn print-btn-secondary">Terminé</button>
+                <button type="button" id="print-button" class="print-btn print-btn-primary" disabled>
+                    Imprimer / PDF
+                </button>
+            </div>
+        </footer>
+    </dialog>
+
+    {# ═══ APERÇU LIVE ═══ #}
+    <main class="print-preview" id="print-preview-stage">
+        <div class="print-paper-stage">
+          <div class="print-pages" id="print-pages" title="Cliquer pour agrandir ; au zoom maximal, cliquer pour ajuster à la largeur.">
+            <div class="print-sheet" id="print-sheet">
+
+                <header class="print-document-header">
+                    <div class="print-header-main">
+                        <h1 id="print-header-title" class="print-header-title">{{ plan.nom }}</h1>
+                        <p class="print-description" id="print-header-subtitle"></p>
+                    </div>
+                    <p class="print-header-center" id="print-header-center" hidden></p>
+                    <div class="print-metadata">
+                        <p id="print-dates"></p>
+                        <p id="print-status-date" hidden></p>
+                        <p id="print-printed-on" hidden></p>
+                        <p id="print-calendar">
+                            Calendrier :
+                            {% if plan.calendrier %}{{ plan.calendrier.nom }}{% else %}Standard (Lun–Ven){% endif %}
+                        </p>
+                    </div>
+                </header>
+
+                <div id="print-warnings" class="print-warnings">
+                    {% if calendar_error %}<p>Calendrier invalide : {{ calendar_error }}</p>{% endif %}
+                    {% if invalid_hierarchy %}<p>Hiérarchie incohérente : corrigez les parents dans l'éditeur inline.</p>{% endif %}
+                    {% if undated_count %}<p data-warning="undated">{{ undated_count }} tâche(s) sans dates complètes ou inversées.</p>{% endif %}
+                </div>
+
+                <div id="print-chart" class="print-chart goplan-gantt-container"
+                     aria-label="Diagramme imprimable"></div>
+
+                <div id="print-legend" class="print-legend" hidden></div>
+
+                <footer class="print-document-footer" id="print-footer">
+                    <span id="print-task-count"></span>
+                    <span id="print-footer-title" class="print-footer-text"></span>
+                    <span id="print-paper-label" class="print-paper-label">A4 paysage</span>
+                </footer>
+            </div>
+          </div>
+        </div>
+    </main>
+
+</div>
+
+{{ print_settings|json_script:"goplan-print-settings" }}
+{{ print_rows|json_script:"goplan-print-rows" }}
+{{ print_context|json_script:"goplan-print-context" }}
+
+<div class="print-render-source" aria-hidden="true" inert>
+    {% include "goplan/gantt/_gantt_plan_content.html" %}
+</div>
+
+<noscript>
+    <p style="padding: 20px; background: #fef2f2; color: #991b1b;">
+        JavaScript est nécessaire pour préparer l'aperçu graphique.
+    </p>
+</noscript>
+</body>
+</html>
