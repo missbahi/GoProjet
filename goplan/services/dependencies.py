@@ -11,6 +11,13 @@ from .calendar import get_calendar_for_plan
 
 
 def shift_workdays(calendar, day, offset):
+    if offset == 0:
+        return day
+    if hasattr(calendar, "shift_working_days"):
+        try:
+            return calendar.shift_working_days(day, offset)
+        except ValidationError as error:
+            raise ValidationError("Le décalage dépasse la plage de dates disponible.") from error
     direction = 1 if offset > 0 else -1
     try:
         for _ in range(abs(offset)):
@@ -39,32 +46,35 @@ def _task_ancestors(tasks):
 def possible_predecessors(tasks, links):
     """Structural choices shared by the Gantt selector and POST validation."""
     ancestors = _task_ancestors(tasks)
-    outgoing = {task.pk: set() for task in tasks}
+    all_pks = {task.pk for task in tasks}
+    descendants = {pk: set() for pk in all_pks}
+    for task_pk, anc_set in ancestors.items():
+        for anc_pk in anc_set:
+            descendants[anc_pk].add(task_pk)
+
+    outgoing = {pk: set() for pk in all_pks}
     for task in tasks:
         if task.parent_id in outgoing:
             outgoing[task.pk].add(task.parent_id)
     for link in links:
         if link.predecesseur_id in outgoing and link.successeur_id in outgoing:
             outgoing[link.predecesseur_id].add(link.successeur_id)
+
     choices = {}
     for task in tasks:
-        reachable = {task.pk}
-        pending = [task.pk]
+        pk = task.pk
+        reachable = {pk}
+        pending = [pk]
         while pending:
             for successor_id in outgoing[pending.pop()]:
                 if successor_id not in reachable:
                     reachable.add(successor_id)
                     pending.append(successor_id)
-        choices[task.pk] = {
-            candidate.pk for candidate in tasks
-            if candidate.pk not in reachable
-            and task.pk not in ancestors[candidate.pk]
-            and candidate.pk not in ancestors[task.pk]
-        }
+        choices[pk] = all_pks - reachable - ancestors[pk] - descendants[pk]
     return choices
 
 
-def recalculate_dependencies(plan, tasks, links, seeds):
+def recalculate_dependencies(plan, tasks, links, seeds, calendar=None):
     """Recalculate affected successors only; caller owns the transaction."""
     by_id = {task.pk: task for task in tasks}
     incoming = {key: [] for key in by_id}
@@ -100,6 +110,8 @@ def recalculate_dependencies(plan, tasks, links, seeds):
                 queue.append(successor)
     if len(order) != len(tasks):
         raise ValidationError("Cette liaison crée un cycle entre les tâches.")
+    if not seeds:
+        return []
     affected = set(seeds)
     queue = deque(seeds)
     while queue:
@@ -107,7 +119,8 @@ def recalculate_dependencies(plan, tasks, links, seeds):
             if successor not in affected:
                 affected.add(successor)
                 queue.append(successor)
-    calendar = get_calendar_for_plan(plan)
+    if calendar is None:
+        calendar = get_calendar_for_plan(plan)
     changed = []
     for key in order:
         if key not in affected:
@@ -171,6 +184,7 @@ def recalculate_dependencies(plan, tasks, links, seeds):
             changed.append(task)
     if changed:
         GTask.objects.bulk_update(changed, ["date_debut", "date_fin", "duree"])
+    return changed
 
 
 def _rollup_group(task, children, calendar):

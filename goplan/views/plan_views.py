@@ -15,13 +15,13 @@ from ..forms import GPlanForm
 
 @login_required
 def liste_plans(request):
-    plans = GPlan.objects.all().order_by('-created_at')
+    plans = GPlan.objects.select_related('calendrier').order_by('-created_at')
 
     ctx = {
         'plans': plans,
         'breadcrumb_items': [
             crumb("Accueil", "projets:home"),
-            crumb("Plannings"), 
+            crumb("Plannings"),
         ],
     }
 
@@ -64,7 +64,7 @@ def creer_plan(request):
 @require_http_methods(["GET", "POST"])
 def modifier_plan(request, plan_id):
     """Modifier un plan, en page complète ou en modale HTMX."""
-    plan = get_object_or_404(GPlan, pk=plan_id)
+    plan = get_object_or_404(GPlan.objects.select_related('calendrier'), pk=plan_id)
 
     if request.method == 'POST':
         form = GPlanForm(request.POST, instance=plan)

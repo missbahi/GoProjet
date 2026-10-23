@@ -287,6 +287,8 @@
                     const row = rows.get(task.id);
                     if (!row) return;
                     Object.entries(task.values).forEach(([name, value]) => {
+                        // La couleur appartient au formulaire Gantt, pas aux lignes inline.
+                        if (name === 'couleur') return;
                         field(row, name).value = value ?? '';
                     });
                 });

@@ -228,6 +228,7 @@
     </style>
 </head>
 <body>
+{% for message in messages %}<div class="toolbar" role="status">{{ message }}</div>{% endfor %}
 
 <div class="toolbar">
     <a href="{% url 'goplan:gantt_plan' plan.id %}">Retour au Gantt</a>

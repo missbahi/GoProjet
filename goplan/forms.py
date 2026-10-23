@@ -6,6 +6,7 @@ from .models import GPlan, GPlanPrintSettings, GTask
 from .services.calendar import get_calendar_for_plan
 from .services.dependencies import recalculate_group_rollups
 
+
 class GPlanForm(forms.ModelForm):
     class Meta:
         model = GPlan
@@ -27,17 +28,18 @@ class GPlanForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Forcer les input_formats pour accepter les dates ISO
         self.fields['date_debut'].input_formats = ['%Y-%m-%d']
         self.fields['date_fin_cible'].input_formats = ['%Y-%m-%d']
         self.fields['date_etat'].input_formats = ['%Y-%m-%d']
-        
+
         # Appliquer la classe CSS
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'app-modal-input')
-        
+
         self.fields['calendrier'].empty_label = "— Sélectionner un calendrier —"
+
 
 class GPlanAppearanceForm(forms.ModelForm):
     class Meta:
@@ -110,10 +112,7 @@ class GTaskScheduleForm(forms.ModelForm):
             date_contrainte=cleaned.get("date_contrainte"),
         )
         try:
-            constraint.validate_constraint_dates(
-                None if self.group_schedule else cleaned.get("date_debut"),
-                None if self.group_schedule else cleaned.get("date_fin"),
-            )
+            constraint.validate_constraint_dates(None, None)
         except ValidationError as error:
             self.add_error(None, error)
         if self.group_schedule:
@@ -128,13 +127,14 @@ class GTaskScheduleForm(forms.ModelForm):
         svc = self.calendar_service
         if svc is None:
             return cleaned
-        if debut and fin and fin < debut:
-            self.add_error("date_fin", "La date de fin ne peut précéder la date de début.")
-            return cleaned
         if cleaned.get("type_tache") == GTask.Type.JALON:
             cleaned["duree"] = 0
             if debut:
                 cleaned["date_fin"] = debut
+            try:
+                constraint.validate_constraint_dates(cleaned.get("date_debut"), cleaned.get("date_fin"))
+            except ValidationError as error:
+                self.add_error(None, error)
             return cleaned
         if duree is not None and (duree <= 0 or duree * 2 != int(duree * 2)):
             self.add_error("duree", "La durée doit être positive, par pas d'une demi-journée.")
@@ -153,11 +153,7 @@ class GTaskScheduleForm(forms.ModelForm):
                 else:
                     self.add_error("duree", "Renseignez la durée ou les deux dates.")
             if debut and duree is not None:
-                expected_end = svc.add_working_days(debut, duree)
-                if fin and fin != expected_end:
-                    self.add_error("date_fin", "La fin ne correspond pas à la durée et au calendrier ouvré.")
-                else:
-                    cleaned["date_fin"] = expected_end
+                cleaned["date_fin"] = svc.add_working_days(debut, duree)
             constraint.validate_constraint_dates(cleaned.get("date_debut"), cleaned.get("date_fin"))
         except ValidationError as error:
             self.add_error(None, error)
@@ -192,7 +188,8 @@ class GTaskGanttForm(GTaskScheduleForm):
         fields = GTaskScheduleForm.Meta.fields + ['couleur']
         widgets = {**GTaskScheduleForm.Meta.widgets, 'couleur': forms.HiddenInput()}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, children_count=None, **kwargs):
+        self._children_count = children_count
         super().__init__(*args, **kwargs)
         self.fields['avancement'].widget.attrs['step'] = '0.01'
 
@@ -216,12 +213,42 @@ class GTaskGanttForm(GTaskScheduleForm):
     def clean(self):
         cleaned = super().clean()
         self.instance.type_tache = cleaned.get('type_tache', self.instance.type_tache)
-        children_count = self.instance.sous_taches.count() if self.instance.pk else 0
+        if self._children_count is not None:
+            children_count = self._children_count
+        else:
+            children_count = self.instance.sous_taches.count() if self.instance.pk else 0
         try:
             self.instance.validate_task_type(children_count)
         except ValidationError as error:
             self.add_error(None, error)
         return cleaned
+
+
+_INLINE_UPDATE_FIELDS = [
+    "parent", "ordre", "type_tache", "code", "nom", "duree",
+    "date_debut", "date_fin", "contrainte", "date_contrainte", "avancement",
+]
+
+_REVISION_TASK_FIELDS = tuple(
+    field.attname for field in GTask._meta.concrete_fields
+    if field.attname not in GTask.DISPLAY_STATE_FIELDS
+)
+
+
+def _task_state_tuple(task):
+    return (
+        task.parent_id,
+        task.ordre,
+        task.type_tache,
+        task.code,
+        task.nom,
+        task.duree,
+        task.date_debut,
+        task.date_fin,
+        task.contrainte,
+        task.date_contrainte,
+        task.avancement,
+    )
 
 
 class BaseGTaskInlineFormSet(BaseInlineFormSet):
@@ -234,6 +261,11 @@ class BaseGTaskInlineFormSet(BaseInlineFormSet):
             self.calendar_service = None
             self.calendar_error = error
         tasks = list(self.get_queryset())
+        self._tasks_list = tasks
+        self._tasks_by_pk = {task.pk: task for task in tasks}
+        self._db_snapshots = {task.pk: _task_state_tuple(task) for task in tasks}
+        self._pre_rollup_revision_values = None
+
         if self.is_bound:
             self.group_keys = set()
             for index in range(self.total_form_count()):
@@ -245,6 +277,10 @@ class BaseGTaskInlineFormSet(BaseInlineFormSet):
                         self.group_keys.add(parent_key)
         else:
             self.group_keys = {str(task.parent_id) for task in tasks if task.parent_id}
+            self._pre_rollup_revision_values = [
+                {attname: getattr(task, attname) for attname in _REVISION_TASK_FIELDS}
+                for task in tasks
+            ]
             if self.calendar_service:
                 try:
                     recalculate_group_rollups(
@@ -267,7 +303,34 @@ class BaseGTaskInlineFormSet(BaseInlineFormSet):
 
     def add_fields(self, form, index):
         super().add_fields(form, index)
-        form.fields['id'].queryset = self.get_queryset()
+        id_field = form.fields['id']
+        id_field.queryset = self.get_queryset()
+        tasks_by_pk = self._tasks_by_pk
+
+        # Évite la requête SQL unitaire `queryset.get(pk=...)` de ModelChoiceField.to_python par ligne
+        def _fast_to_python(value):
+            if value in id_field.empty_values:
+                return None
+            if isinstance(value, GTask):
+                return value
+            try:
+                key = int(str(value))
+            except (ValueError, TypeError):
+                raise ValidationError(
+                    id_field.error_messages["invalid_choice"],
+                    code="invalid_choice",
+                    params={"value": value},
+                )
+            obj = tasks_by_pk.get(key)
+            if obj is None:
+                raise ValidationError(
+                    id_field.error_messages["invalid_choice"],
+                    code="invalid_choice",
+                    params={"value": value},
+                )
+            return obj
+
+        id_field.to_python = _fast_to_python
 
     def clean(self):
         super().clean()
@@ -294,7 +357,7 @@ class BaseGTaskInlineFormSet(BaseInlineFormSet):
                 form.add_error('node_key', "Identifiant de ligne invalide ou dupliqué.")
             active[key] = form
 
-        expected_ids = set(self.get_queryset().values_list('pk', flat=True))
+        expected_ids = set(self._tasks_by_pk)
         if len(submitted_ids) != len(set(submitted_ids)) or set(submitted_ids) != expected_ids:
             raise ValidationError("Le contenu du planning a changé ou est incomplet. Rechargez la page.")
         if any(self.errors):
@@ -360,30 +423,43 @@ class BaseGTaskInlineFormSet(BaseInlineFormSet):
             raise ValueError("Le formset doit être valide avant la sauvegarde.")
 
         saved = {}
+        to_update = []
         for order, form in enumerate(self.hierarchy_forms):
             task = form.instance
             task.plan = self.instance
             parent_key = form.cleaned_data['parent_key']
-            task.parent = saved[parent_key] if parent_key else None
+            parent_obj = saved[parent_key] if parent_key else None
+            task.parent = parent_obj
+            task.parent_id = parent_obj.pk if parent_obj else None
             task.ordre = order
-            task.save()
+            if task.pk is None:
+                task.save()
+            elif _task_state_tuple(task) != self._db_snapshots.get(task.pk):
+                to_update.append(task)
             saved[form.cleaned_data['node_key']] = task
-        # Les enfants deplaces sont sauvegardes avant les suppressions CASCADE.
+
+        # Les enfants déplacés sont persistés en un seul bulk_update avant les suppressions CASCADE.
+        if to_update:
+            GTask.objects.bulk_update(to_update, _INLINE_UPDATE_FIELDS)
+
         for form in self.deleted_forms:
             if form.instance.pk:
                 form.instance.delete()
-        recalculate_group_rollups(self.instance, list(saved.values()), self.calendar_service)
-        return list(saved.values())
+
+        saved_list = list(saved.values())
+        recalculate_group_rollups(self.instance, saved_list, self.calendar_service)
+        return saved_list
 
 
 GTaskInlineFormSet = inlineformset_factory(
     GPlan, GTask,
     form=GTaskInlineForm,
     formset=BaseGTaskInlineFormSet,
-    extra=1,               # 1 ligne vide par défaut
+    extra=1, 
     can_delete=True,
     validate_min=False,
 )
+
 
 class GTaskModelForm(forms.ModelForm):
     class Meta:

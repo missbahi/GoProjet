@@ -18,6 +18,7 @@
 </head>
 <body class="gantt-print-page" data-print-plan="{{ plan.pk }}">
 <nav class="print-actions" aria-label="Actions de l'aperçu">
+    {% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
     <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="print-btn print-btn-secondary">Retour au Gantt</a>
     <a href="{% url 'goplan:apercu_plan' plan.pk %}?mode=tasks" class="print-btn print-btn-secondary">Tableau des tâches</a>
     <button type="button" id="print-open-settings" class="print-btn print-btn-primary"

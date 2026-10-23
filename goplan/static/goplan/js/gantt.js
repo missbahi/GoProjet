@@ -6,6 +6,38 @@
         return;
     }
     const initialized = new WeakSet();
+
+    // ══════════════════════════════════════════════════════════════
+    // SCROLL RESTORATION — HTMX, reload, tab close
+    // ══════════════════════════════════════════════════════════════
+    const scrollKey = () => 'goplan:scroll:' + window.location.pathname;
+
+    function saveGanttScroll() {
+        const scroller = document.querySelector('.goplan-gantt-split');
+        if (!scroller) return;
+        if (!scroller.scrollLeft && !scroller.scrollTop) return;
+        try {
+            sessionStorage.setItem(scrollKey(), JSON.stringify({
+                left: Math.round(scroller.scrollLeft),
+                top: Math.round(scroller.scrollTop),
+            }));
+        } catch (_) { /* mode privé */ }
+    }
+
+    function loadGanttScroll() {
+        try {
+            const raw = sessionStorage.getItem(scrollKey());
+            return raw ? JSON.parse(raw) : null;
+        } catch (_) { return null; }
+    }
+    // ══════════════════════════════════════════════════════════════
+
+    document.addEventListener('htmx:beforeSwap', saveGanttScroll);
+    window.addEventListener('pagehide', saveGanttScroll);
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') saveGanttScroll();
+    });
+
     const escapeHTML = value => value.replace(/[&<>"']/g, char => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
     }[char]));
@@ -96,6 +128,10 @@
         const colorSwatches = root.querySelectorAll('[data-task-color]');
         const colorPanel = root.querySelector('#gantt-color-panel');
         const colorPreview = root.querySelector('#gantt-color-preview');
+        const saveColorBtn = root.querySelector('#gantt-save-color');
+        const splitRoot     = root.querySelector('.goplan-gantt-split');
+        const openColorBtn = root.querySelector('#gantt-open-color');
+        const paintBtn = root.querySelector('#gantt-paint-mode');
         const select = root.querySelector('#gantt-task-select');
         const newButton = root.querySelector('#gantt-new-task');
         const deleteButton = root.querySelector('#gantt-delete-task');
@@ -137,6 +173,10 @@
         let baseline = '';
         let busy = false;
         let currentView = 'Week';
+        let initialColor = '';
+        let paintMode = false;
+        let paintColor = '';
+        let paintRestoreEditor = true;
         let zoomIndex = 1;
         const snapshot = () => JSON.stringify(fields.map(el => el.value));
         const dirty = () => snapshot() !== baseline;
@@ -162,17 +202,22 @@
             fillAppearance(savedAppearance.values);
             appearanceDialog.close();
         }
+
         root.querySelector('#gantt-open-appearance').addEventListener('click', () => {
             if (colorPanel.matches(':popover-open')) colorPanel.hidePopover();
             appearanceErrors.textContent = '';
             fillAppearance(savedAppearance.values);
             appearanceDialog.showModal();
         });
+
         appearanceFields.forEach(input => input.addEventListener('input', previewAppearance));
+
         root.querySelector('#gantt-appearance-defaults').addEventListener('click', () => {
             fillAppearance(savedAppearance.defaults);
         });
+
         appearanceCancel.addEventListener('click', cancelAppearance);
+
         appearanceDialog.addEventListener('keydown', event => {
             if (event.key === 'Escape') {
                 event.preventDefault();
@@ -180,10 +225,12 @@
                 cancelAppearance();
             }
         });
+
         appearanceDialog.addEventListener('cancel', event => {
             event.preventDefault();
             cancelAppearance();
         });
+
         appearanceForm.addEventListener('submit', async event => {
             event.preventDefault();
             if (savingAppearance || !appearanceForm.reportValidity()) return;
@@ -239,6 +286,36 @@
             }
         });
 
+        colorPanel.addEventListener('beforetoggle', event => {
+            if (event.newState === 'open') {
+                initialColor = (field('couleur').value || '').toLowerCase();
+                syncColorSaveButton();
+            }
+        });
+
+        saveColorBtn?.addEventListener('click', async () => {
+            if (saveColorBtn.disabled) return;
+            const ok = await saveTask();
+            if (!ok) return;
+            if (colorPanel.matches(':popover-open')) colorPanel.hidePopover();
+            openColorBtn.focus();
+        });
+
+        paintBtn?.addEventListener('click', () => {
+            if (paintMode) {
+                exitPaintMode();
+            } else {
+                enterPaintMode();
+            }
+        });
+
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && paintMode) {
+                event.preventDefault();
+                exitPaintMode();
+            }
+        });
+
         function syncColorPicker() {
             const custom = /^#[0-9a-f]{6}$/i.test(field('couleur').value);
             colorPicker.value = custom ? field('couleur').value : '#7baec1';
@@ -249,17 +326,127 @@
             colorSwatches.forEach(button => button.setAttribute(
                 'aria-pressed', String(button.dataset.taskColor === field('couleur').value.toLowerCase()),
             ));
+            syncColorSaveButton();
+        }
+
+        function syncColorSaveButton() {
+            if (!saveColorBtn) return;
+            const current = (field('couleur').value || '').toLowerCase();
+            saveColorBtn.disabled = busy || fieldset.disabled || current === initialColor;
+        }
+
+        function syncPaintButton() {
+            if (!paintBtn) return;
+            paintBtn.disabled = busy || !editId || fieldset.disabled;
+        }
+
+        function enterPaintMode() {
+            if (paintMode || !editId) return;
+            const color = (field('couleur').value || '').toLowerCase();
+            paintColor = color;
+            paintMode = true;
+            paintBtn.setAttribute('aria-pressed', 'true');
+            splitRoot?.classList.add('is-painting');
+
+            // Verrouille tous les contrôles sauf le brush
+            root.querySelectorAll(
+                '.goplan-toolbar-btn, .goplan-toolbar a, #gantt-task-select, .gantt-view-btn, ' +
+                '#gantt-task-form input, #gantt-task-form select, #gantt-task-form textarea, ' +
+                '#gantt-task-form button'
+            ).forEach(el => {
+                if (el === paintBtn) return;
+                el.dataset.paintWasDisabled = el.disabled ? '1' : '0';
+                el.disabled = true;
+                if (el.tagName === 'A') el.classList.add('is-disabled');
+            });
+
+            const label = color ? color : 'automatique';
+            status.textContent = `Mode reproduction — couleur ${label}. Cliquez sur les tâches. Échap ou re-clic sur le pinceau pour terminer.`;
+            paintRestoreEditor = !form.hidden;
+            setEditorVisible(false);
+        }
+
+        function exitPaintMode() {
+            if (!paintMode) return;
+            paintMode = false;
+            paintColor = '';
+            paintBtn.setAttribute('aria-pressed', 'false');
+            splitRoot?.classList.remove('is-painting');
+            root.querySelectorAll('[data-paint-was-disabled]').forEach(el => {
+                el.disabled = el.dataset.paintWasDisabled === '1';
+                el.classList.remove('is-disabled');
+                delete el.dataset.paintWasDisabled;
+            });
+            status.textContent = '';
+            syncPaintButton();
+            if (paintRestoreEditor) setEditorVisible(paintRestoreEditor);
+        }
+
+        async function applyPaintToTask(taskId) {
+            if (busy || !paintMode) return;
+            const task = byId.get(taskId);
+            if (!task) return;
+            if ((task.color || '').toLowerCase() === paintColor) return;
+
+            const payload = new FormData();
+            payload.set('task_id', taskId);
+            payload.set('color', paintColor);
+            payload.set('revision', data.revision);
+            setBusy(true);
+            try {
+                const response = await fetch(root.dataset.colorUrl, {
+                    method: 'POST', body: payload,
+                    headers: {
+                        'X-CSRFToken': field('csrfmiddlewaretoken').value,
+                        'Accept': 'application/json',
+                    },
+                });
+                if (response.redirected) throw new Error('Session expirée.');
+                const result = await response.json();
+                if (!response.ok) {
+                    const flat = result.errors ? Object.values(result.errors).flat().join(' ') : '';
+                    throw new Error(flat || `HTTP ${response.status}`);
+                }
+                updateData(result);
+                render();
+                const wrapper = svg.querySelector(`.bar-wrapper[data-id="${CSS.escape(taskId)}"]`);
+                wrapper?.classList.add('is-paint-flash');
+                setTimeout(() => wrapper?.classList.remove('is-paint-flash'), 400);
+                status.textContent = `Couleur appliquée à « ${task.name} ».`;
+            } catch (err) {
+                console.error('[GoPlan/Gantt] Application couleur', err);
+                status.textContent = `Échec : ${err.message}`;
+            } finally {
+                setBusy(false);
+                // setBusy(false) a réactivé tous les contrôles ; on remet le verrou paint
+                if (paintMode) {
+                    root.querySelectorAll(
+                        '.goplan-toolbar-btn, .goplan-toolbar a, #gantt-task-select, .gantt-view-btn, ' +
+                        '#gantt-task-form input, #gantt-task-form select, #gantt-task-form textarea, ' +
+                        '#gantt-task-form button'
+                    ).forEach(el => {
+                        if (el === paintBtn) return;
+                        if (el.dataset.paintWasDisabled === undefined) {
+                            el.dataset.paintWasDisabled = el.disabled ? '1' : '0';
+                        }
+                        el.disabled = true;
+                        if (el.tagName === 'A') el.classList.add('is-disabled');
+                    });
+                }
+            }
         }
         colorSwatches.forEach(button => button.addEventListener('click', () => {
             field('couleur').value = button.dataset.taskColor;
             syncColorPicker();
             markDirty();
         }));
+
         colorPicker.addEventListener('input', () => {
             field('couleur').value = colorPicker.value;
             syncColorPicker();
             markDirty();
         });
+
         resetColor.addEventListener('click', () => {
             field('couleur').value = '';
             syncColorPicker();
@@ -274,8 +461,11 @@
             editorToggle.setAttribute('aria-label', label);
             editorToggle.querySelector('i').className = visible ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
         }
+
         setEditorVisible(!form.hidden);
+
         editorToggle.addEventListener('click', () => setEditorVisible(form.hidden));
+
         submit.addEventListener('click', () => setEditorVisible(true));
 
         function showErrors(errors = {}) {
@@ -293,7 +483,6 @@
             root.querySelector('#gantt-form-errors').textContent = general.join(' ')
                 || (Object.keys(errors).length ? 'Corrigez les champs signalés.' : '');
         }
-
 
         function hasChildren(taskId) {
             return data.editable.some(task => task.parent_id === taskId);
@@ -360,9 +549,11 @@
                     }
                 }
             }
+            syncPaintButton();
         }
 
         function resetEditor(id = '') {
+            if (paintMode) exitPaintMode();
             if (colorPanel.matches(':popover-open')) colorPanel.hidePopover();
             editId = id;
             showErrors();
@@ -738,7 +929,7 @@
                         custom_popup_html: () => '',
                     });
                     applyZoom();
-                    scrollToFirstTask();
+                    if (!loadGanttScroll()) scrollToFirstTask();
                 }
             } catch (err) {
                 fixedCalendar.hidden = true;
@@ -763,6 +954,23 @@
             linkButton.disabled = value || !activeId || !calendar || data.invalid_hierarchy;
             deleteButton.disabled = value || !activeId || !calendar || data.invalid_hierarchy;
             form.setAttribute('aria-busy', String(value));
+            syncColorSaveButton();
+            syncPaintButton();
+            if (!value && paintMode) {
+                // busy terminé : re-verrouille tout sauf le brush
+                root.querySelectorAll(
+                    '.goplan-toolbar-btn, .goplan-toolbar a, #gantt-task-select, .gantt-view-btn, ' +
+                    '#gantt-task-form input, #gantt-task-form select, #gantt-task-form textarea, ' +
+                    '#gantt-task-form button'
+                ).forEach(el => {
+                    if (el === paintBtn) return;
+                    if (el.dataset.paintWasDisabled === undefined) {
+                        el.dataset.paintWasDisabled = el.disabled ? '1' : '0';
+                    }
+                    el.disabled = true;
+                    if (el.tagName === 'A') el.classList.add('is-disabled');
+                });
+            }
         }
 
         async function saveTask() {
@@ -962,19 +1170,25 @@
                 field('nom').focus();
             });
         }
+
         select.addEventListener('change', () => {
             const id = select.value;
             select.value = activeId;
             selectTask(id);
         });
+
         form.addEventListener('goplan:leave', event => transition(event.detail.proceed));
+
         newButton.addEventListener('click', () => transition(() => {
             resetEditor();
             setEditorVisible(true);
             field('nom').focus();
         }));
+
         position.addEventListener('change', updateContext);
+
         form.addEventListener('input', markDirty);
+
         form.addEventListener('change', event => {
             try {
                 syncGroupDurationRule();
@@ -1004,23 +1218,38 @@
             if (event.target.name === 'type_tache') syncGroupDurationRule();
             markDirty();
         });
+
         form.addEventListener('submit', event => { event.preventDefault(); saveTask(); });
+
         // Frappe 0.6.1 has no read-only option; changes go through the form only.
         svg.addEventListener('mousedown', event => {
             if (event.target.closest('.bar-wrapper')) event.stopImmediatePropagation();
         }, true);
+
         svg.addEventListener('click', event => {
             const wrapper = event.target.closest('.bar-wrapper');
-            if (wrapper) selectTask(wrapper.dataset.id);
-        });
-        svg.addEventListener('keydown', event => {
-            if (event.key !== 'Enter' && event.key !== ' ') return;
-            const wrapper = event.target.closest('.bar-wrapper');
-            if (wrapper) {
-                event.preventDefault();
+            if (!wrapper) return;
+            event.preventDefault();
+            if (paintMode) {
+                applyPaintToTask(wrapper.dataset.id);
+            } else {
                 selectTask(wrapper.dataset.id);
             }
         });
+
+        svg.addEventListener('keydown', event => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            const wrapper = event.target.closest('.bar-wrapper');
+            if (!wrapper) return;
+            if (paintMode) {
+                event.preventDefault();
+                event.stopPropagation();
+                applyPaintToTask(wrapper.dataset.id);
+                return;
+            }
+            selectTask(wrapper.dataset.id);
+        });
+
         buttons.forEach(button => button.addEventListener('click', () => {
             if (!gantt) return;
             currentView = button.dataset.view;
@@ -1044,7 +1273,9 @@
             scroller.scrollLeft = center * gantt.options.column_width - visibleWidth / 2;
             scroller.scrollTop = top;
         }
+
         zoomIn.addEventListener('click', () => changeZoom(1));
+
         zoomOut.addEventListener('click', () => changeZoom(-1));
 
         today.addEventListener('click', () => {
@@ -1058,7 +1289,9 @@
                 ? "Aujourd'hui est en dehors de la période affichée." : '';
             scroller.scrollLeft = Math.max(0, Math.min(x - visibleWidth / 2, width));
         });
+
         root.style.setProperty('--goplan-link-color', appearance.gantt_couleur_liaison);
+
         // Used by the print preview to print up to a hierarchy level.
         root.addEventListener('goplan:set-collapsed', event => {
             collapsed.clear();
@@ -1066,7 +1299,9 @@
             root.dataset.collapsedGroups = JSON.stringify([...collapsed]);
             render();
         });
+
         updateData(data);
+
         try {
             calendar = new window.GoPlanWorkCalendar(
                 JSON.parse(root.querySelector('#goplan-gantt-calendar').textContent),
@@ -1075,22 +1310,41 @@
             console.error('[GoPlan/Gantt] Calendrier', err);
             root.querySelector('#gantt-form-errors').textContent = err.message;
         }
+
         resetEditor();
+
         if (!calendar) showErrors({ __all__: ['Calendrier invalide : corrigez-le avant de saisir des tâches.'] });
+
         render();
+
         setBusy(false);
+
+        const savedScroll = loadGanttScroll();
+        if (savedScroll) {
+            requestAnimationFrame(() => {
+                scroller.scrollLeft = savedScroll.left;
+                scroller.scrollTop = savedScroll.top;
+            });
+        }
     }
 
     function init() {
         document.querySelectorAll('[data-goplan-gantt]').forEach(initialize);
     }
+
     window.GoPlanGantt = { init, visibleTasks, timelineDays, barGeometry, connectorPath };
+    
     window.addEventListener('beforeunload', event => {
         if (document.querySelector('#gantt-task-form[data-dirty="true"], #gantt-task-form[aria-busy="true"], #gantt-appearance-form[aria-busy="true"]')) {
             event.preventDefault();
             event.returnValue = '';
         }
     });
+
+    window.addEventListener('beforeunload', () => {
+        if (paintMode) exitPaintMode();
+    });
+
     document.addEventListener('htmx:confirm', event => {
         const form = document.querySelector('#gantt-task-form[data-dirty="true"], #gantt-task-form[aria-busy="true"]');
         if (!form || !event.detail.target?.contains(form)) return;
@@ -1099,8 +1353,12 @@
             detail: { proceed: () => event.detail.issueRequest(true) },
         }));
     });
+    
     document.addEventListener('DOMContentLoaded', init);
+    
     document.addEventListener('htmx:afterSettle', init);
+    
     document.addEventListener('htmx:historyRestore', init);
+    
     init();
 })();

@@ -7,18 +7,23 @@ from django.core.validators import MaxValueValidator, MinValueValidator, RegexVa
 import re
 import uuid
 
+PRINT_TEXT_VARIABLES = (
+    "plan", "description", "date_impression", "date_etat", "periode", "format", "calendrier",
+)
+
 class GWorkCalendar(models.Model):
     """Calendrier de travail (jours ouvrés, exceptions)."""
-    
-    nom = models.CharField(_("Nom"), max_length=100)
-    jours_ouvres = models.JSONField(_("Jours ouvrés"), default=list, help_text=_("Ex: [1,2,3,4,5] pour lundi-vendredi"),)
-    heures_par_jour = models.DecimalField(_("Heures/jour"), max_digits=5, decimal_places=2, default=8,)
-    # exceptions = models.JSONField(_("Jours fériés"), default=list, help_text=_("[{'date': 'YYYY-MM-DD', 'heures': 0}]"),)
-    is_default = models.BooleanField(_("Par défaut"), default=False)
 
-    # @property
-    # def exceptions_count(self):
-    #     return self.exceptions.count()
+    nom = models.CharField(_("Nom"), max_length=100)
+    jours_ouvres = models.JSONField(
+        _("Jours ouvrés"),
+        default=list,
+        help_text=_("Ex: [1,2,3,4,5] pour lundi-vendredi"),
+    )
+    heures_par_jour = models.DecimalField(
+        _("Heures/jour"), max_digits=5, decimal_places=2, default=8,
+    )
+    is_default = models.BooleanField(_("Par défaut"), default=False, db_index=True)
 
     @property
     def workday_chips(self):
@@ -27,8 +32,12 @@ class GWorkCalendar(models.Model):
             (1, "Lundi"), (2, "Mardi"), (3, "Mercredi"),
             (4, "Jeudi"), (5, "Vendredi"), (6, "Samedi"), (7, "Dimanche"),
         ]
+
     class Meta:
         verbose_name = _("Calendrier de travail")
+        indexes = [
+            models.Index(fields=["-is_default", "nom", "id"], name="goplan_cal_default_nom_idx"),
+        ]
 
     def __str__(self):
         return self.nom
@@ -106,16 +115,19 @@ class GPlan(models.Model):
     )
 
     # Lien générique optionnel (ex: vers Projet de GoProjet)
-    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True,)
+    content_type = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True)
     object_id = models.PositiveIntegerField(null=True, blank=True)
     source_object = GenericForeignKey('content_type', 'object_id')
 
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = _("Plan")
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=["content_type", "object_id"], name="goplan_plan_generic_idx"),
+        ]
 
     def __str__(self):
         return self.nom
@@ -154,6 +166,9 @@ class GResource(models.Model):
 
     class Meta:
         verbose_name = _("Ressource")
+        indexes = [
+            models.Index(fields=["content_type", "object_id"], name="goplan_resource_generic_idx"),
+        ]
 
     def __str__(self):
         return self.nom
@@ -178,33 +193,39 @@ class GTask(models.Model):
         FIN_MIN = 'FIN_MIN', _('Fin au plus tôt le')
         FIN_MAX = 'FIN_MAX', _('Fin au plus tard le')
 
-    plan = models.ForeignKey(GPlan, on_delete=models.CASCADE, related_name='taches',)
-    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sous_taches',)
+    plan = models.ForeignKey(GPlan, on_delete=models.CASCADE, related_name='taches')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='sous_taches')
     code = models.CharField(_("Code"), max_length=50, blank=True)
     nom = models.CharField(_("Nom"), max_length=255)
     description = models.TextField(blank=True)
-    type_tache = models.CharField(_("Type"), max_length=10, choices=Type.choices, default=Type.TACHE,)
-    duree = models.DecimalField(_("Durée (jours)"), max_digits=10, decimal_places=2, default=1, )
+    type_tache = models.CharField(_("Type"), max_length=10, choices=Type.choices, default=Type.TACHE)
+    duree = models.DecimalField(_("Durée (jours)"), max_digits=10, decimal_places=2, default=1)
     date_debut = models.DateField(null=True, blank=True)
     date_fin = models.DateField(null=True, blank=True)
-    contrainte = models.CharField(_("Contrainte"), max_length=20, choices=Contrainte.choices, default=Contrainte.ASAP,)
+    contrainte = models.CharField(_("Contrainte"), max_length=20, choices=Contrainte.choices, default=Contrainte.ASAP)
     date_contrainte = models.DateField(_("Date de contrainte"), null=True, blank=True)
     ordre = models.PositiveIntegerField(default=0)
-    avancement = models.DecimalField(_("Avancement (%)"), max_digits=5, decimal_places=2, default=0, )
+    avancement = models.DecimalField(_("Avancement (%)"), max_digits=5, decimal_places=2, default=0)
     # Marge calculée (pour chemin critique)
-    marge_totale = models.DecimalField(_("Marge totale (j)"), max_digits=10, decimal_places=2, null=True, blank=True, editable=False,)
+    marge_totale = models.DecimalField(_("Marge totale (j)"), max_digits=10, decimal_places=2, null=True, blank=True, editable=False)
     est_critique = models.BooleanField(_("Critique"), default=False, editable=False)
-    couleur = models.CharField(_("Couleur"), max_length=20, blank=True, help_text=_("Couleur personnalisée (optionnel)"), )
+    couleur = models.CharField(_("Couleur"), max_length=20, blank=True, help_text=_("Couleur personnalisée (optionnel)"))
     recurrence_rule = models.CharField(max_length=255, blank=True)
     # Identifiant stable pour l'échange MSPDI
-    uid = models.UUIDField(_("UID"), default=uuid.uuid4, editable=False, unique=True, 
-                           help_text=_("Identifiant stable pour l'échange MS Project"),)
+    uid = models.UUIDField(
+        _("UID"), default=uuid.uuid4, editable=False, unique=True,
+        help_text=_("Identifiant stable pour l'échange MS Project"),
+    )
     # Code WBS hiérarchique (ex: '1.2.3')
-    wbs = models.CharField(_("WBS"), max_length=50, blank=True, editable=False, default="", 
-                           help_text=_("Code hiérarchique calculé (ex: 1.2.3)"), )
+    wbs = models.CharField(
+        _("WBS"), max_length=50, blank=True, editable=False, default="",
+        help_text=_("Code hiérarchique calculé (ex: 1.2.3)"),
+    )
     # État d'affichage partagé par l'éditeur, le Gantt et l'aperçu ; exclu des contrôles de concurrence.
-    replie = models.BooleanField(_("Groupe replié"), default=False,
-                                 help_text=_("Sous-tâches masquées à l'écran et, en option, à l'impression."))
+    replie = models.BooleanField(
+        _("Groupe replié"), default=False,
+        help_text=_("Sous-tâches masquées à l'écran et, en option, à l'impression."),
+    )
     # Réservé à une prochaine version (masquer une ligne) : pas encore utilisé par l'interface.
     masquee = models.BooleanField(_("Ligne masquée"), default=False)
     DISPLAY_STATE_FIELDS = ("replie",)
@@ -212,6 +233,10 @@ class GTask(models.Model):
     class Meta:
         verbose_name = _("Tâche planifiée")
         ordering = ['plan', 'ordre', 'id']
+        indexes = [
+            models.Index(fields=["plan", "ordre", "id"], name="goplan_task_plan_ordre_idx"),
+            models.Index(fields=["plan", "parent"], name="goplan_task_plan_parent_idx"),
+        ]
 
     def __str__(self):
         return f"{self.code} {self.nom}".strip()
@@ -295,6 +320,9 @@ class GTaskDependency(models.Model):
                 name='goplan_no_self_dependency',
             ),
         ]
+        indexes = [
+            models.Index(fields=["successeur", "id"], name="goplan_dep_successeur_idx"),
+        ]
 
 
 class GTaskAssignment(models.Model):
@@ -315,11 +343,6 @@ class GTaskAssignment(models.Model):
     class Meta:
         verbose_name = _("Affectation")
         unique_together = [['tache', 'ressource']]
-
-
-PRINT_TEXT_VARIABLES = (
-    "plan", "description", "date_impression", "date_etat", "periode", "format", "calendrier",
-)
 
 
 def validate_print_text(value):
@@ -391,7 +414,6 @@ class GPlanPrintSettings(models.Model):
         TIMES = "times", "Times New Roman"
 
     margin_validators = [MinValueValidator(0), MaxValueValidator(30)]
-
 
     plan = models.OneToOneField(GPlan, on_delete=models.CASCADE, related_name="print_settings")
 

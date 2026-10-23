@@ -4,7 +4,39 @@
 .goplan-gantt-split {
     --goplan-row-height: 35px;
 }
+/* ══════════════════════════════════════════════════════════════
+   GOPLAN — Variables "papier" (adaptées au thème actif)
+   ══════════════════════════════════════════════════════════════ */
+:root,
+[data-theme="dark"] {
+    --goplan-paper-bg:            #1e293b;
+    --goplan-paper-bg-alt:        #0f172a;
+    --goplan-paper-bg-hover:      #334155;
+    --goplan-paper-ink:           #cbd5e1;
+    --goplan-paper-ink-soft:      #94a3b8;
+    --goplan-paper-ink-strong:    #e2e8f0;
+    --goplan-paper-border:        #334155;
+    --goplan-paper-border-strong: #475569;
+    --goplan-paper-gradient:      linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    --goplan-paper-shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.3);
+    --goplan-paper-shadow-md:     0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+    --goplan-paper-shadow-lg:     0 3px 8px rgba(0, 0, 0, 0.4);
+}
 
+[data-theme="light"] {
+    --goplan-paper-bg:            #f8f6ef;
+    --goplan-paper-bg-alt:        #f0ede5;
+    --goplan-paper-bg-hover:      #fdfbf5;
+    --goplan-paper-ink:           #24485a;
+    --goplan-paper-ink-soft:      #527889;
+    --goplan-paper-ink-strong:    #376b82;
+    --goplan-paper-border:        #a9cad6;
+    --goplan-paper-border-strong: #7baec1;
+    --goplan-paper-gradient:      linear-gradient(135deg, #f8f6ef 0%, #f0ede5 100%);
+    --goplan-paper-shadow-sm:     0 1px 2px rgba(36, 72, 90, 0.05);
+    --goplan-paper-shadow-md:     0 1px 3px rgba(36, 72, 90, 0.08), 0 1px 2px rgba(36, 72, 90, 0.04);
+    --goplan-paper-shadow-lg:     0 3px 8px rgba(36, 72, 90, 0.12);
+}
 /* ══════════════════════════════════════════════════════════════
    CONTENEUR PRINCIPAL — Feuille "papier"
    ══════════════════════════════════════════════════════════════ */
@@ -231,11 +263,11 @@
     align-items: center;
     gap: 0.375rem;
     padding: 0.5rem 0.75rem;
-    background: linear-gradient(135deg, #f8f6ef 0%, #f0ede5 100%);
-    border: 1px solid #a9cad6;
+    background: var(--goplan-paper-gradient);
+    color: var(--goplan-paper-ink);
+    border: 1px solid var(--goplan-paper-border);
     border-radius: 0.5rem;
-    box-shadow: 0 1px 3px rgba(36, 72, 90, 0.08),
-                0 1px 2px rgba(36, 72, 90, 0.04);
+    box-shadow: var(--goplan-paper-shadow-md);
     flex-wrap: wrap;
 }
 
@@ -246,10 +278,8 @@
 }
 
 .gantt-sticky-controls {
-    background: #f8f6ef;
+    background: transparent;
     border-radius: 0.5rem;
-    padding-bottom: 1px;
-    box-shadow: 0 3px 8px rgba(36, 72, 90, 0.12);
 }
 
 .gantt-editor-toggle {
@@ -262,7 +292,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: #376b82;
+    color: var(--goplan-paper-ink-strong);
     font-size: 0.75rem;
 }
 
@@ -278,8 +308,8 @@ button.goplan-link-summary {
 
 button.goplan-link-summary:hover,
 button.goplan-link-summary:focus-visible {
-    background: #d6e9f0;
-    outline: 1px solid #5e9eb6;
+    background: var(--goplan-paper-bg-hover);
+    outline: 1px solid var(--goplan-paper-border-strong);
 }
 
 button.goplan-link-summary:disabled {
@@ -294,9 +324,9 @@ button.goplan-link-summary:disabled {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #527889;
+    color: var(--goplan-paper-ink-soft);
     padding-right: 0.5rem;
-    border-right: 1px solid #a9cad6;
+    border-right: 1px solid var(--goplan-paper-border);
     margin-right: 0.25rem;
 }
 
@@ -304,7 +334,7 @@ button.goplan-link-summary:disabled {
     display: inline-block;
     width: 1px;
     height: 1.5rem;
-    background: #a9cad6;
+    background: var(--goplan-paper-border);
     margin: 0 0.25rem;
 }
 
@@ -314,22 +344,21 @@ button.goplan-link-summary:disabled {
     justify-content: center;
     width: 2.25rem;
     height: 2.25rem;
-    border: 1px solid #5e9eb6;
+    border: 1px solid var(--goplan-paper-border-strong);
     border-radius: 0.375rem;
     background: transparent;
-    /* background: #ffffff; */
-    color: #376b82;
+    color: var(--goplan-paper-ink-strong);
     cursor: pointer;
     padding: 0;
     transition: background-color 0.15s,
                 border-color 0.15s,
                 transform 0.1s,
                 box-shadow 0.15s;
-    box-shadow: 0 1px 2px rgba(36, 72, 90, 0.05);
+    box-shadow: var(--goplan-paper-shadow-sm);
 }
 
 .goplan-toolbar-btn:hover {
-    background: var(--bg-hover);
+    background: var(--goplan-paper-bg-hover);
     border-color: #22d3ee;
     box-shadow: 0 2px 4px rgba(34, 211, 238, 0.15);
     transform: translateY(-1px);
@@ -357,25 +386,11 @@ button.goplan-link-summary:disabled {
 }
 
 
-/* ══════════════════════════════════════════════════════════════
-   THÈME SOMBRE
-   ══════════════════════════════════════════════════════════════ */
- [data-theme="dark"] .goplan-toolbar {
-    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-    border-color: #334155;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
 [data-theme="dark"] .goplan-toolbar-btn i {
     color: #22d3ee;
     opacity: 0.9;
 }
 
-
-[data-theme="dark"] .goplan-toolbar-label {
-    color: #94a3b8;
-    border-right-color: #334155;
-}
 
 /* ══════════════════════════════════════════════════════════════
    STYLE PAR TYPE DE TÂCHE
@@ -538,7 +553,7 @@ button.goplan-link-summary:disabled {
     transform: none;
     box-shadow: none;
     background: transparent;
-    border-color: #5e9eb6;
+    border-color: var(--goplan-paper-border-strong);
 }
 
 /* Thème sombre */
@@ -696,16 +711,22 @@ button.goplan-link-summary:disabled {
     font-variant-numeric: tabular-nums;
 }
 
-.gantt-editor,
 .gantt-unsaved-dialog {
-    background: #f8f6ef;
-    color: #24485a;
-    border: 1px solid #7baec1;
+    background: var(--bg-surface, #f8f6ef);
+    color: var(--text-primary, #24485a);
+    border: 1px solid var(--border-default, #7baec1);
     border-radius: 0.5rem;
     padding: 0.75rem;
 }
 
+/* Le formulaire de tâche se conforme au thème "papier" du toolbar */
 .gantt-editor {
+    background: var(--goplan-paper-gradient);
+    color: var(--goplan-paper-ink);
+    border: 1px solid var(--goplan-paper-border);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    box-shadow: var(--goplan-paper-shadow-md);
     position: relative;
 }
 
@@ -838,7 +859,7 @@ button.goplan-link-summary:disabled {
 .gantt-editor-field label,
 .gantt-editor-field .goplan-field-label {
     font-size: 0.75rem;
-    color: #527889;
+    color: var(--goplan-paper-ink-soft);
 }
 
 .gantt-editor-field input,
@@ -851,12 +872,22 @@ button.goplan-link-summary:disabled {
     min-height: 30px;
     width: 100%;
     background: transparent;
-    color: #24485a;
-    border: 1px solid #a9cad6;
+    color: var(--goplan-paper-ink);
+    border: 1px solid var(--goplan-paper-border);
     border-radius: 0.25rem;
     padding: 0.2rem 0.25rem;
     font-size: 0.8125rem;
     line-height: 1.1;
+}
+
+.gantt-editor-field input:focus,
+.gantt-editor-field select:focus,
+.gantt-link-fields input:focus,
+.gantt-link-fields select:focus,
+#gantt-task-select:focus {
+    outline: none;
+    border-color: #22d3ee;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
 }
 
 .gantt-field-nom {
@@ -913,11 +944,17 @@ button.goplan-link-summary:disabled {
     gap: 10px;
     height: 30px;
     padding: 3px 8px;
-    border: 1px solid #a9cad6;
+    border: 1px solid var(--goplan-paper-border);
     border-radius: 4px;
-    color: #24485a;
-    background: #fff;
+    color: var(--goplan-paper-ink);
+    background: var(--goplan-paper-bg-alt);
     cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s;
+}
+
+.gantt-color-trigger:hover {
+    background: var(--goplan-paper-bg-hover);
+    border-color: #22d3ee;
 }
 
 #gantt-color-preview {
@@ -971,11 +1008,20 @@ button.goplan-link-summary:disabled {
 }
 
 .gantt-field-code,
-.gantt-field-duree,
-.gantt-field-avancement {
+.gantt-field-type_tache{
+    width: 70px;
+}
+.gantt-field-duree {
+    width: 80px;
+}
+.gantt-field-date_contrainte {
+    width: 120px;
+}
+.gantt-field-avancement,
+.gantt-field-date_fin,
+.gantt-field-date_debut {
     width: 90px;
 }
-
 #gantt-task-select {
     max-width: 250px;
 }
@@ -994,15 +1040,17 @@ button.goplan-link-summary:disabled {
 
 #gantt-group-duration-info {
     margin: 0.25rem 0 0.4rem;
-    color: #527889;
+    color: var(--goplan-paper-ink-soft);
 }
 
 .gantt-editor-field input:disabled,
 .gantt-editor-field select:disabled,
 .task-row input:disabled,
 .task-row select:disabled {
-    background: #e7f1f5;
+    background: var(--goplan-paper-bg-alt);
+    color: var(--goplan-paper-ink-soft);
     cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .gantt-unsaved-dialog::backdrop {
@@ -1311,4 +1359,143 @@ button.goplan-link-summary:disabled {
 /* ── Responsive ── */
 @media (max-width: 767px) {
     .goplan-gantt-left { flex: 0 0 200px; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   COLOR PANEL — Actions (reset + save)
+   ══════════════════════════════════════════════════════════════ */
+.gantt-color-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #a9cad6;
+}
+
+.gantt-color-actions #gantt-save-color {
+    flex: 1;
+    height: 32px;
+    font-size: 0.8125rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.gantt-color-actions #gantt-save-color:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.gantt-color-actions #gantt-save-color:disabled:hover {
+    background: inherit;
+    transform: none;
+    box-shadow: none;
+}
+/* ══════════════════════════════════════════════════════════════
+   PAINT MODE — Reproduire la couleur sur d'autres tâches
+   ══════════════════════════════════════════════════════════════ */
+.gantt-color-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.gantt-paint-btn {
+    flex: 0 0 auto;
+    color: #376b82;
+}
+
+.gantt-paint-btn[aria-pressed="true"] {
+    background: #075985;
+    color: #ffffff;
+    border-color: #075985;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45);
+}
+
+.gantt-paint-btn[aria-pressed="true"] i {
+    color: #ffffff;
+    opacity: 1;
+}
+
+.gantt-paint-btn[aria-pressed="true"]:hover {
+    background: #0c4a6e;
+    border-color: #0c4a6e;
+}
+
+/* Toutes les barres sont cliquables en mode peinture */
+/* ══════════════════════════════════════════════════════════════
+   PAINT MODE — Curseurs personnalisés
+   ══════════════════════════════════════════════════════════════ */
+
+/* Curseur par défaut du mode peinture : pot de peinture + goutte cyan */
+/* Hotspot (14, 27) = pointe de la goutte = point de clic */
+.goplan-gantt-split.is-painting {
+    cursor: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M8 0 L20 12 L14 18 L2 6 Z' fill='white' stroke='%23075985' stroke-width='2' stroke-linejoin='round'/><path d='M11 18 Q11 23 14 27 Q16 24 14 21 Q12 19 11 18 Z' fill='%2322d3ee' stroke='%23075985' stroke-width='1.5' stroke-linejoin='round'/></svg>") 14 27, copy;
+}
+
+/* Curseur au survol d'une barre : goutte verte + point blanc "prêt à appliquer" */
+.goplan-gantt-split.is-painting .bar-wrapper,
+.goplan-gantt-split.is-painting .bar-wrapper .bar,
+.goplan-gantt-split.is-painting .bar-wrapper .bar-progress,
+.goplan-gantt-split.is-painting .bar-wrapper .gantt-summary,
+.goplan-gantt-split.is-painting .bar-wrapper .gantt-diamond {
+    cursor: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M8 0 L20 12 L14 18 L2 6 Z' fill='white' stroke='%23075985' stroke-width='2' stroke-linejoin='round'/><path d='M11 18 Q11 23 14 27 Q16 24 14 21 Q12 19 11 18 Z' fill='%2316a34a' stroke='%23075985' stroke-width='1.5' stroke-linejoin='round'/><circle cx='13' cy='23' r='1.2' fill='white'/></svg>") 14 27, copy;
+}
+
+/* Barres éligibles : pointillés cyan (existant, on conserve) */
+.goplan-gantt-split.is-painting .bar-wrapper .bar,
+.goplan-gantt-split.is-painting .bar-wrapper .gantt-summary,
+.goplan-gantt-split.is-painting .bar-wrapper .gantt-diamond {
+    stroke: #22d3ee;
+    stroke-width: 1.5;
+    stroke-dasharray: 3 3;
+    transition: stroke 0.15s, stroke-width 0.15s;
+}
+
+/* Survol d'une barre : pointillés qui défilent, plus marqués */
+.goplan-gantt-split.is-painting .bar-wrapper:hover .bar,
+.goplan-gantt-split.is-painting .bar-wrapper:hover .gantt-summary,
+.goplan-gantt-split.is-painting .bar-wrapper:hover .gantt-diamond {
+    stroke-width: 2.5;
+    animation: goplan-paint-dash 0.6s linear infinite;
+}
+
+@keyframes goplan-paint-dash {
+    to { stroke-dashoffset: -12; }
+}
+
+/* Flash vert après application */
+.goplan-gantt-split .bar-wrapper.is-paint-flash .bar {
+    stroke: #22c55e !important;
+    stroke-width: 3 !important;
+    stroke-dasharray: none !important;
+    transition: stroke 0.1s;
+}
+
+/* Flash très bref quand la couleur est appliquée */
+.goplan-gantt-split .bar-wrapper.is-paint-flash .bar {
+    stroke: #22c55e !important;
+    stroke-width: 3 !important;
+    stroke-dasharray: none !important;
+    transition: stroke 0.1s;
+}
+
+/* En mode paint, neutralise visuellement la toolbar (les <a> ne sont pas disabled) */
+.goplan-gantt-split.is-painting ~ * .goplan-toolbar a.is-disabled,
+.goplan-toolbar a.is-disabled {
+    opacity: 0.3;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+[data-theme="dark"] .gantt-paint-btn[aria-pressed="true"] {
+    background: #0c4a6e;
+    border-color: #22d3ee;
+}
+[data-theme="dark"] .gantt-editor-field select option,
+[data-theme="dark"] #gantt-task-select option {
+    background: #1e293b;
+    color: #e2e8f0;
 }

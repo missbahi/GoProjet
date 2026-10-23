@@ -20,7 +20,20 @@ enfants, dans une transaction. Les règles de type sont vérifiées sur les
 enfants soumis pour l'édition inline, et sur les enfants enregistrés pour
 l'administration.
 Supprimer un groupe demande confirmation et supprime tout son sous-arbre.
+Dans le Gantt, les recalculs après suppression portent uniquement sur les tâches
+restantes ; supprimer la dernière tâche renvoie un diagramme vide.
 Une ligne supplémentaire laissée vide n'est pas enregistrée.
+
+Les dates sont corrigées automatiquement à l'ouverture de l'éditeur inline,
+du Gantt et de l'aperçu : le début est ramené au prochain jour ouvré et la fin
+est recalculée en conservant la durée en jours. Les corrections, les synthèses
+des groupes et les conséquences sur les liaisons sont enregistrées dans une
+transaction ; un message indique le nombre de tâches corrigées. Une contrainte
+incompatible annule les corrections et affiche une erreur.
+La sauvegarde inline et celle d'une tâche du Gantt appliquent la même priorité
+début + durée sur la fin saisie. Une durée absente reste calculable depuis les
+deux dates. Les durées sont exprimées en jours : passer de 7 h/j à 8 h/j ne
+convertit pas la durée et ne décale pas les dates à jours ouvrés identiques.
 
 Le chevron à gauche du nom replie ou déplie un groupe. Cet état (`GTask.replie`)
 est partagé avec le Gantt et l'aperçu d'impression, et enregistré
@@ -38,6 +51,10 @@ sont retirés. Les boutons Gantt des cartes et de l'éditeur ouvrent le Gantt
 avec sa ligne d'édition. La liste, la création et la modification des plannings sont
 conservées et ouvrent l'éditeur inline.
 
+Les écritures du Gantt verrouillent le planning et ses tâches dans une
+transaction. Le verrou du planning exclut le calendrier optionnel chargé par
+jointure, pour rester compatible avec PostgreSQL même sans calendrier associé.
+
 Le Gantt reçoit ses données depuis Django (JSON intégré, sans ancienne API).
 L'en-tête du calendrier et celui de la liste des tâches restent visibles lors
 du défilement vertical du diagramme. Les dates suivent le défilement horizontal
@@ -51,6 +68,10 @@ Un panneau « Couleur » regroupe 24 couleurs prédéfinies, le sélecteur perso
 est encadrée et reste synchronisée avec le sélecteur et l'aperçu du formulaire.
 Le panneau se ferme avec sa croix, Échap ou un clic à l'extérieur, sans perdre
 le choix en cours ; enregistrez la tâche pour appliquer la couleur au diagramme.
+Le bouton « Enregistrer » du panneau reste désactivé à l'ouverture et tant que
+la couleur n'a pas changé. Il enregistre le formulaire complet de la tâche
+et ferme le panneau uniquement en cas de succès ; en cas d'erreur, la saisie
+et le panneau restent disponibles pour correction.
 
 L'icône palette de la barre d'outils ouvre « Apparence du planning » :
 - arrondi des barres : rectangle, arrondi ou capsule ;
