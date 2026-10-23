@@ -1429,22 +1429,20 @@ button.goplan-link-summary:disabled {
    PAINT MODE — Curseurs personnalisés
    ══════════════════════════════════════════════════════════════ */
 
-/* Curseur par défaut du mode peinture : pot de peinture + goutte cyan */
-/* Hotspot (14, 27) = pointe de la goutte = point de clic */
-.goplan-gantt-split.is-painting {
-    cursor: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M8 0 L20 12 L14 18 L2 6 Z' fill='white' stroke='%23075985' stroke-width='2' stroke-linejoin='round'/><path d='M11 18 Q11 23 14 27 Q16 24 14 21 Q12 19 11 18 Z' fill='%2322d3ee' stroke='%23075985' stroke-width='1.5' stroke-linejoin='round'/></svg>") 14 27, copy;
-}
+/* ══════════════════════════════════════════════════════════════
+   PAINT MODE — Curseur PNG 32×30
+   ══════════════════════════════════════════════════════════════ */
 
-/* Curseur au survol d'une barre : goutte verte + point blanc "prêt à appliquer" */
+.goplan-gantt-split.is-painting,
 .goplan-gantt-split.is-painting .bar-wrapper,
 .goplan-gantt-split.is-painting .bar-wrapper .bar,
 .goplan-gantt-split.is-painting .bar-wrapper .bar-progress,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-summary,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-diamond {
-    cursor: url("data:image/svg+xml;charset=utf-8,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><path d='M8 0 L20 12 L14 18 L2 6 Z' fill='white' stroke='%23075985' stroke-width='2' stroke-linejoin='round'/><path d='M11 18 Q11 23 14 27 Q16 24 14 21 Q12 19 11 18 Z' fill='%2316a34a' stroke='%23075985' stroke-width='1.5' stroke-linejoin='round'/><circle cx='13' cy='23' r='1.2' fill='white'/></svg>") 14 27, copy;
+    cursor: url("../img/cursor.png") 4 26, copy;
 }
 
-/* Barres éligibles : pointillés cyan (existant, on conserve) */
+/* Barres éligibles : pointillés cyan */
 .goplan-gantt-split.is-painting .bar-wrapper .bar,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-summary,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-diamond {
@@ -1454,7 +1452,7 @@ button.goplan-link-summary:disabled {
     transition: stroke 0.15s, stroke-width 0.15s;
 }
 
-/* Survol d'une barre : pointillés qui défilent, plus marqués */
+/* Survol d'une barre : pointillés qui défilent */
 .goplan-gantt-split.is-painting .bar-wrapper:hover .bar,
 .goplan-gantt-split.is-painting .bar-wrapper:hover .gantt-summary,
 .goplan-gantt-split.is-painting .bar-wrapper:hover .gantt-diamond {
@@ -1474,13 +1472,6 @@ button.goplan-link-summary:disabled {
     transition: stroke 0.1s;
 }
 
-/* Flash très bref quand la couleur est appliquée */
-.goplan-gantt-split .bar-wrapper.is-paint-flash .bar {
-    stroke: #22c55e !important;
-    stroke-width: 3 !important;
-    stroke-dasharray: none !important;
-    transition: stroke 0.1s;
-}
 
 /* En mode paint, neutralise visuellement la toolbar (les <a> ne sont pas disabled) */
 .goplan-gantt-split.is-painting ~ * .goplan-toolbar a.is-disabled,
