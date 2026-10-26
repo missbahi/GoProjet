@@ -47,7 +47,25 @@
     border-radius: 0.75rem;
     overflow: hidden;
 }
-
+/* ══════════════════════════════════════════════════════════════
+   INLINE EDITOR — Reste en "papier clair" même en thème sombre
+   ══════════════════════════════════════════════════════════════
+   Le tableau des tâches conserve volontairement l'apparence
+   papier claire, indépendamment du thème global.
+   On fige donc les variables --goplan-paper-* sur les valeurs
+   claires UNIQUEMENT dans .goplan-paper (le wrapper du tableau).
+   ── Ne pas déplacer sur :root, ça casserait la toolbar du Gantt.
+*/
+.goplan-paper {
+    --goplan-paper-bg:            #f8f6ef;
+    --goplan-paper-bg-alt:        #f0ede5;
+    --goplan-paper-bg-hover:      #fdfbf5;
+    --goplan-paper-ink:           #24485a;
+    --goplan-paper-ink-soft:      #8fa8b5;
+    --goplan-paper-ink-strong:    #376b82;
+    --goplan-paper-border:        #a9cad6;
+    --goplan-paper-border-strong: #7baec1;
+}
 /* En-tête de section */
 .goplan-section {
     border: 1px solid #475569;
@@ -890,14 +908,6 @@ button.goplan-link-summary:disabled {
     box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.2);
 }
 
-.gantt-field-nom {
-    width: 230px;
-}
-
-.gantt-field-couleur {
-    width: 90px;
-}
-
 .gantt-color-controls {
     display: flex;
     gap: 4px;
@@ -1007,20 +1017,31 @@ button.goplan-link-summary:disabled {
     width: 190px;
 }
 
+.gantt-field-nom {
+    width: 230px;
+}
+
+.gantt-field-couleur {
+    width: 90px;
+}
+
 .gantt-field-code,
 .gantt-field-type_tache{
     width: 70px;
 }
 .gantt-field-duree {
-    width: 80px;
+    width: 90px;
 }
-.gantt-field-date_contrainte {
+.gantt-field-date_contrainte{
+    width: 120px;
+}
+.gantt-field-contrainte {
     width: 120px;
 }
 .gantt-field-avancement,
 .gantt-field-date_fin,
 .gantt-field-date_debut {
-    width: 90px;
+    width: 100px;
 }
 #gantt-task-select {
     max-width: 250px;
@@ -1439,7 +1460,7 @@ button.goplan-link-summary:disabled {
 .goplan-gantt-split.is-painting .bar-wrapper .bar-progress,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-summary,
 .goplan-gantt-split.is-painting .bar-wrapper .gantt-diamond {
-    cursor: url("../img/cursor.png") 4 26, copy;
+    cursor: url("../icons/cursor.png") 4 26, copy;
 }
 
 /* Barres éligibles : pointillés cyan */
@@ -1489,4 +1510,218 @@ button.goplan-link-summary:disabled {
 [data-theme="dark"] #gantt-task-select option {
     background: #1e293b;
     color: #e2e8f0;
+}
+/* ══════════════════════════════════════════════════════════════
+   TOOLBAR — Détails de la tâche active
+   ══════════════════════════════════════════════════════════════ */
+.goplan-active-task-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    max-width: 420px;
+    min-height: 2.25rem;
+    padding: 0 0.25rem;
+    color: var(--goplan-paper-ink);
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.goplan-active-task-info:empty {
+    display: none;
+}
+
+#inline-active-task-sep:has(+ #inline-active-task-info:empty) {
+    display: none;
+}
+
+.goplan-active-task-info .goplan-active-wbs,
+.goplan-active-task-info .goplan-active-code {
+    color: var(--goplan-paper-ink-soft);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.goplan-active-task-info .goplan-active-name {
+    color: var(--goplan-paper-ink);
+    font-weight: 600;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.goplan-active-task-info .goplan-active-sep {
+    color: var(--goplan-paper-border-strong);
+    opacity: 0.7;
+    user-select: none;
+}
+/* ══════════════════════════════════════════════════════════════
+   COPY / CUT / PASTE
+   ══════════════════════════════════════════════════════════════ */
+
+/* Ligne coupée : visuellement en attente, texte barré */
+.goplan-table tbody tr.task-row.is-cutting {
+    opacity: 0.45;
+    transition: opacity 0.2s;
+}
+.goplan-table tbody tr.task-row.is-cutting .goplan-name-cell input {
+    text-decoration: line-through;
+}
+
+/* Bouton Paste actif (buffer plein) */
+.goplan-toolbar-btn.has-buffer {
+    background: #075985;
+    color: #ffffff;
+    border-color: #075985;
+    box-shadow: 0 0 0 2px rgba(34, 211, 238, 0.45);
+}
+.goplan-toolbar-btn.has-buffer i {
+    color: #ffffff;
+    opacity: 1;
+}
+.goplan-toolbar-btn.has-buffer:hover {
+    background: #0c4a6e;
+    border-color: #0c4a6e;
+}
+[data-theme="dark"] .goplan-toolbar-btn.has-buffer {
+    background: #0c4a6e;
+    border-color: #22d3ee;
+}
+.goplan-table tbody {
+    overflow-anchor: none;
+}
+/* ══════════════════════════════════════════════════════════════
+   TOOLBAR — Actions (Annuler + Enregistrer) à droite
+   ══════════════════════════════════════════════════════════════ */
+.goplan-toolbar-actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--goplan-paper-border);
+    flex-wrap: wrap;
+}
+
+.goplan-toolbar-actions .app-btn-primary,
+.goplan-toolbar-actions .app-btn-secondary {
+    height: 2.25rem;
+    padding: 0 0.875rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+}
+
+.goplan-toolbar-actions .app-btn-primary:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    filter: grayscale(0.4);
+}
+
+@media (max-width: 767px) {
+    .goplan-toolbar-actions {
+        flex: 1 0 100%;
+        margin-left: 0;
+        margin-top: 0.5rem;
+        padding-left: 0;
+        padding-top: 0.5rem;
+        border-left: 0;
+        border-top: 1px solid var(--goplan-paper-border);
+        justify-content: flex-end;
+    }
+}
+/* ══════════════════════════════════════════════════════════════
+   PASTE PREVIEW DIALOG
+   ══════════════════════════════════════════════════════════════ */
+#paste-preview-dialog {
+    max-width: min(920px, 95vw);
+    width: 100%;
+}
+
+.paste-preview-table-wrap {
+    max-height: 340px;
+    overflow: auto;
+    border: 1px solid var(--goplan-paper-border);
+    border-radius: 0.375rem;
+    background: var(--goplan-paper-bg);
+}
+
+.paste-preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8125rem;
+    color: var(--goplan-paper-ink);
+}
+
+.paste-preview-table thead {
+    background: var(--goplan-paper-bg-alt);
+    color: var(--goplan-paper-ink-soft);
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    letter-spacing: 0.05em;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+.paste-preview-table th,
+.paste-preview-table td {
+    padding: 0.35rem 0.5rem;
+    border-bottom: 1px solid var(--goplan-paper-border);
+    text-align: left;
+    white-space: nowrap;
+}
+
+.paste-preview-table td.amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.paste-preview-table tr.is-replace {
+    background: rgba(34, 211, 238, 0.06);
+}
+
+.paste-preview-table tr.is-invalid {
+    opacity: 0.5;
+}
+
+.paste-preview-table tr.is-invalid td {
+    text-decoration: line-through;
+}
+
+.paste-preview-table td.icon-cell {
+    width: 1.75rem;
+    text-align: center;
+}
+
+.paste-preview-table tr.is-replace td.icon-cell::before {
+    content: "✎";
+    color: #0c4a6e;
+    font-weight: 700;
+}
+
+.paste-preview-table tr.is-create td.icon-cell::before {
+    content: "+";
+    color: #15803d;
+    font-weight: 700;
+}
+
+.paste-preview-table tr.is-invalid td.icon-cell::before {
+    content: "⚠";
+    color: #b45309;
+    font-weight: 700;
+}
+
+.paste-preview-warnings {
+    margin-top: 0.75rem;
+    color: #b45309;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+}
+
+.paste-preview-warnings:empty {
+    display: none;
 }

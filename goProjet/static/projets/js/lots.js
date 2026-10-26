@@ -5,8 +5,6 @@
     if (window.__lotsInitialized) return;
     window.__lotsInitialized = true;
 
-    console.log('[lots.js] Initialized');
-
     // ═══════════════════════════════════════════════════════════
     // TOGGLE PANNEAU AJOUT
     // ═══════════════════════════════════════════════════════════

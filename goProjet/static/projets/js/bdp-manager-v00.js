@@ -1277,7 +1277,7 @@ class BordereauManager {
      * Gère la suppression manuelle de lignes
      */
     handleManualRowDeletion(index, amount) {
-        console.log(`Suppression: ${amount} ligne(s) à l'index ${index}`);
+        // console.log(`Suppression: ${amount} ligne(s) à l'index ${index}`);
         
         const flatList = this.lineManager.getFlatList();
         
@@ -1293,7 +1293,7 @@ class BordereauManager {
             const line = flatList[lineIndex];
             
             if (line && line.parent) {
-                console.log(`Suppression de la ligne à l'index ${lineIndex}`);
+                // console.log(`Suppression de la ligne à l'index ${lineIndex}`);
                 line.parent.removeChild(line);
                 this.lineManager.lines.delete(line.id);
             }

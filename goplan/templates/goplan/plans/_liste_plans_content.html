@@ -104,8 +104,9 @@
                 <a href="{% url 'goplan:taches_inline' plan.id %}"
                    class="app-action-btn"
                    title="Editer le planning inline">
-                    <i class="fas fa-eye"></i>
+                    <i class="fas fa-tasks"></i>
                 </a>
+                {% if plan.taches.count > 0 %}
                 <a href="{% url 'goplan:gantt_plan' plan.id %}"
                    class="app-action-btn"
                    title="Editer le planning Gantt">
@@ -126,6 +127,7 @@
                    title="Aperçu du planning">
                     <i class="fas fa-print"></i>
                 </a>
+                {% endif %}
             </div>
 
         </div>

@@ -55,7 +55,7 @@ const ChartFactory = {
         return {
             render() {
                 // Logique de rendu spécifique
-                console.log(`Rendu du graphique dans ${elementId}`);
+                // console.log(`Rendu du graphique dans ${elementId}`);
             }
         };
     }

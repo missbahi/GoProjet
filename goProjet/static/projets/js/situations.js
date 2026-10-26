@@ -5,8 +5,6 @@
     if (window.__situationsInitialized) return;
     window.__situationsInitialized = true;
 
-    console.log('[situations.js] Initialized');
-
     // ═══════════════════════════════════════════════════════════
     // SUPPRESSION AJAX
     // ═══════════════════════════════════════════════════════════

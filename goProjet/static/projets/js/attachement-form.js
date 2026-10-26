@@ -179,7 +179,6 @@
         if (transmettreBtn) afficherLoading(transmettreBtn, texteLoading);
         
         // Soumettre le formulaire
-        console.log(`${action} de l'attachement...`);
         document.getElementById('attachement-form').submit();
         
         return true;

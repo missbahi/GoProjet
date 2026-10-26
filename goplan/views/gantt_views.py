@@ -300,6 +300,7 @@ def _gantt_data(
     editable = [{
         "id": str(task.pk),
         "label": str(task),
+        'wbs': task.wbs,
         "parent_id": str(task.parent_id) if task.parent_id else "",
         "possible_predecessors": [
             cand_str for cand_pk, cand_str in dated_ordered_pks

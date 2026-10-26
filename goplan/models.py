@@ -211,22 +211,20 @@ class GTask(models.Model):
     est_critique = models.BooleanField(_("Critique"), default=False, editable=False)
     couleur = models.CharField(_("Couleur"), max_length=20, blank=True, help_text=_("Couleur personnalisée (optionnel)"))
     recurrence_rule = models.CharField(max_length=255, blank=True)
+    
     # Identifiant stable pour l'échange MSPDI
-    uid = models.UUIDField(
-        _("UID"), default=uuid.uuid4, editable=False, unique=True,
-        help_text=_("Identifiant stable pour l'échange MS Project"),
-    )
+    uid = models.UUIDField(_("UID"), default=uuid.uuid4, editable=False, unique=True,
+        help_text=_("Identifiant stable pour l'échange MS Project"),)
+    
     # Code WBS hiérarchique (ex: '1.2.3')
-    wbs = models.CharField(
-        _("WBS"), max_length=50, blank=True, editable=False, default="",
-        help_text=_("Code hiérarchique calculé (ex: 1.2.3)"),
-    )
+    wbs = models.CharField(_("WBS"), max_length=50, blank=True, editable=False, default="",
+        help_text=_("Code hiérarchique calculé (ex: 1.2.3)"),)
+    
     # État d'affichage partagé par l'éditeur, le Gantt et l'aperçu ; exclu des contrôles de concurrence.
-    replie = models.BooleanField(
-        _("Groupe replié"), default=False,
-        help_text=_("Sous-tâches masquées à l'écran et, en option, à l'impression."),
-    )
-    # Réservé à une prochaine version (masquer une ligne) : pas encore utilisé par l'interface.
+    replie = models.BooleanField(_("Groupe replié"), default=False, 
+                                 help_text=_("Sous-tâches masquées à l'écran et, en option, à l'impression."),)
+    
+    # TODO: Réservé à une prochaine version (masquer une ligne) : pas encore utilisé par l'interface.
     masquee = models.BooleanField(_("Ligne masquée"), default=False)
     DISPLAY_STATE_FIELDS = ("replie",)
 

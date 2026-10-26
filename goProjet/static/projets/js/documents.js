@@ -5,8 +5,6 @@
     if (window.__documentsInitialized) return;
     window.__documentsInitialized = true;
 
-    console.log('[documents.js] Initialized');
-
     // ═══════════════════════════════════════════════════════════
     // ⚡ DÉLÉGATION GLOBALE (attachée UNE SEULE FOIS)
     // ═══════════════════════════════════════════════════════════

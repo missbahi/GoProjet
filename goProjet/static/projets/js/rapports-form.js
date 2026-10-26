@@ -5,8 +5,6 @@
     if (window.__rapportFormInitialized) return;
     window.__rapportFormInitialized = true;
 
-    console.log('[rapports-form] Initialized');
-
     /* ═══════════════════════════════════════════════════════════
        UPLOAD DE DOCUMENT
        ═══════════════════════════════════════════════════════════ */

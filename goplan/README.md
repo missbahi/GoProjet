@@ -8,47 +8,68 @@ Gantt, échanges XML MS Project (MSPDI) et impression A4 à A0.
 La barre d'outils agit sur la tâche sélectionnée, y compris les tâches racines
 et les nouvelles lignes non encore enregistrées. Indenter rattache la tâche
 à sa sœur précédente ; désindenter la place après son ancien parent.
+
 Les enfants restent attachés : les quatre actions déplacent le sous-arbre
 complet. Un jalon ou une tâche récurrente ne peut pas devenir parent.
+
 Un parent devient automatiquement un groupe, puis redevient une tâche simple
 lorsqu'il perd son dernier enfant.
 
 L'arbre JavaScript est la source de vérité pendant l'édition ; les champs
 cachés transmettent les clés de ligne, les parents et l'ordre au formset.
 La sauvegarde valide la hiérarchie soumise et crée les parents avant leurs
-enfants, dans une transaction. Les règles de type sont vérifiées sur les
-enfants soumis pour l'édition inline, et sur les enfants enregistrés pour
-l'administration.
+enfants, dans une transaction. 
+
+Les règles de type sont vérifiées sur les enfants soumis pour l'édition inline, et sur les enfants enregistrés pour l'administration.
+
 Supprimer un groupe demande confirmation et supprime tout son sous-arbre.
-Dans le Gantt, les recalculs après suppression portent uniquement sur les tâches
-restantes ; supprimer la dernière tâche renvoie un diagramme vide.
+Dans le Gantt, les recalculs après suppression portent uniquement sur les tâches restantes ; supprimer la dernière tâche renvoie un diagramme vide.
 Une ligne supplémentaire laissée vide n'est pas enregistrée.
 
+### Collage depuis Excel
+
+Dans le tableau inline, Ctrl+V reconnaît les données tabulées, y compris dans
+les champs Code et Nom. Un texte simple reste un collage normal dans le champ.
+Sur un tableau vide, cliquez sur le cadre du tableau avant de coller.
+Le format attendu, sans en-tête, est : Code, Nom, Type, Durée, Début.
+Le code peut être vide ; les cellules Excel entre guillemets peuvent contenir
+des tabulations, des retours à la ligne et des guillemets doublés.
+Les colonnes supplémentaires et les conversions de type sont signalées.
+
+Un aperçu permet de confirmer ou d'annuler. Les lignes remplacent les tâches
+visibles depuis la sélection ; le surplus est ajouté à la racine, en fin de
+tableau. Sans sélection, toutes les lignes sont ajoutées. Une ligne invalide
+est ignorée sans décaler les suivantes ni modifier sa tâche cible.
+Les groupes existants conservent leur type, leurs enfants et leurs dates
+calculées : seuls leur code et leur nom sont remplacés.
+
+Une durée vide vaut un jour ; sinon elle doit être positive, par pas de
+0,5 jour. Les jalons ont une durée nulle et une fin égale au début.
+Les dates acceptées sont `AAAA-MM-JJ` et `JJ/MM/AAAA` (aussi avec `-` ou `.`).
+Un début vide conserve celui de la cible, ou utilise le début du planning
+pour une création. Les dates de fin sont recalculées selon le calendrier ouvré.
+Le collage ne sauvegarde pas : cliquez ensuite sur « Enregistrer ».
+
 Les dates sont corrigées automatiquement à l'ouverture de l'éditeur inline,
-du Gantt et de l'aperçu : le début est ramené au prochain jour ouvré et la fin
-est recalculée en conservant la durée en jours. Les corrections, les synthèses
-des groupes et les conséquences sur les liaisons sont enregistrées dans une
-transaction ; un message indique le nombre de tâches corrigées. Une contrainte
-incompatible annule les corrections et affiche une erreur.
-La sauvegarde inline et celle d'une tâche du Gantt appliquent la même priorité
-début + durée sur la fin saisie. Une durée absente reste calculable depuis les
-deux dates. Les durées sont exprimées en jours : passer de 7 h/j à 8 h/j ne
+du Gantt et de l'aperçu : le début est ramené au prochain jour ouvré et la fin est recalculée en conservant la durée en jours. 
+Les corrections, les synthèses des groupes et les conséquences sur les liaisons sont enregistrées dans une transaction ; un message indique le nombre de tâches corrigées. 
+Une contrainte incompatible annule les corrections et affiche une erreur.
+La sauvegarde inline et celle d'une tâche du Gantt appliquent la même priorité début + durée sur la fin saisie. 
+Une durée absente reste calculable depuis les deux dates. 
+Les durées sont exprimées en jours : passer de 7 h/j à 8 h/j ne
 convertit pas la durée et ne décale pas les dates à jours ouvrés identiques.
 
-Le chevron à gauche du nom replie ou déplie un groupe. Cet état (`GTask.replie`)
-est partagé avec le Gantt et l'aperçu d'impression, et enregistré
-immédiatement, sans passer par « Enregistrer » ; il n'affecte ni le formulaire
-ni les contrôles de modification concurrente. Le repli d'une ligne non encore
-enregistrée vaut pour la page en cours seulement. Les
-flèches ↑/↓ sautent les lignes repliées ; indenter dans un groupe replié, ou
-une erreur de saisie dans une ligne cachée, déplie ses parents.
+Le chevron à gauche du nom replie ou déplie un groupe. Cet état (`GTask.replie`) est partagé avec le Gantt et l'aperçu d'impression, et enregistré
+immédiatement, sans passer par « Enregistrer » ; il n'affecte ni le formulaire ni les contrôles de modification concurrente. Le repli d'une ligne non encore enregistrée vaut pour la page en cours seulement. 
+
+Les flèches ↑/↓ sautent les lignes repliées ; indenter dans un groupe replié, ou une erreur de saisie dans une ligne cachée, déplie ses parents.
 Le champ `GTask.masquee` est réservé à une prochaine version (masquer une
 ligne) et n'est pas encore utilisé.
 
-Les tâches se gèrent dans cet éditeur et dans la ligne de saisie du Gantt ; les anciens écrans de
-détail et formulaires individuels, ainsi que leurs URL et API Gantt,
-sont retirés. Les boutons Gantt des cartes et de l'éditeur ouvrent le Gantt
-avec sa ligne d'édition. La liste, la création et la modification des plannings sont
+Les tâches se gèrent dans cet éditeur et dans la ligne de saisie du Gantt ; les anciens écrans de détail et formulaires individuels, ainsi que leurs URL et API Gantt, sont retirés. 
+Les boutons Gantt des cartes et de l'éditeur ouvrent le Gantt avec sa ligne d'édition. 
+
+La liste, la création et la modification des plannings sont
 conservées et ouvrent l'éditeur inline.
 
 Les écritures du Gantt verrouillent le planning et ses tâches dans une
@@ -60,18 +81,11 @@ L'en-tête du calendrier et celui de la liste des tâches restent visibles lors
 du défilement vertical du diagramme. Les dates suivent le défilement horizontal
 et restent synchronisées avec le zoom et les changements de vue.
 Le champ « Couleur » du formulaire personnalise la barre d'une tâche, d'un
-groupe ou d'un jalon après enregistrement. Le bouton de réinitialisation adjacent
-rétablit la couleur automatique du type. Ce choix est conservé au rechargement ;
-il ne modifie ni la forme de la barre ni les dates calculées des groupes.
-Un panneau « Couleur » regroupe 24 couleurs prédéfinies, le sélecteur personnalisé
-(mélangeur natif du navigateur) et la réinitialisation. La pastille sélectionnée
-est encadrée et reste synchronisée avec le sélecteur et l'aperçu du formulaire.
-Le panneau se ferme avec sa croix, Échap ou un clic à l'extérieur, sans perdre
-le choix en cours ; enregistrez la tâche pour appliquer la couleur au diagramme.
-Le bouton « Enregistrer » du panneau reste désactivé à l'ouverture et tant que
-la couleur n'a pas changé. Il enregistre le formulaire complet de la tâche
-et ferme le panneau uniquement en cas de succès ; en cas d'erreur, la saisie
-et le panneau restent disponibles pour correction.
+groupe ou d'un jalon après enregistrement. 
+Le bouton de réinitialisation adjacent rétablit la couleur automatique du type. Ce choix est conservé au rechargement ; il ne modifie ni la forme de la barre ni les dates calculées des groupes.
+Un panneau « Couleur » regroupe 24 couleurs prédéfinies, le sélecteur personnalisé (mélangeur natif du navigateur) et la réinitialisation. La pastille sélectionnée est encadrée et reste synchronisée avec le sélecteur et l'aperçu du formulaire.
+Le panneau se ferme avec sa croix, Échap ou un clic à l'extérieur, sans perdre le choix en cours ; enregistrez la tâche pour appliquer la couleur au diagramme.
+Le bouton « Enregistrer » du panneau reste désactivé à l'ouverture et tant que la couleur n'a pas changé. Il enregistre le formulaire complet de la tâche et ferme le panneau uniquement en cas de succès ; en cas d'erreur, la saisie et le panneau restent disponibles pour correction.
 
 L'icône palette de la barre d'outils ouvre « Apparence du planning » :
 - arrondi des barres : rectangle, arrondi ou capsule ;
@@ -81,14 +95,9 @@ L'icône palette de la barre d'outils ouvre « Apparence du planning » :
 - liaisons : angles droits, angles arrondis, tirets ou pointillés ;
 - couleur commune des traits, flèches et libellés de liaison.
 
-Les changements sont prévisualisés immédiatement. « Appliquer » les enregistre
-pour ce planning ; « Annuler » ou Échap restaure l'apparence enregistrée.
-« Valeurs par défaut » prépare une remise à zéro à confirmer par « Appliquer ».
+Les changements sont prévisualisés immédiatement. « Appliquer » les enregistre pour ce planning ; « Annuler » ou Échap restaure l'apparence enregistrée. « Valeurs par défaut » prépare une remise à zéro à confirmer par « Appliquer ».
 La couleur propre à chaque tâche reste prioritaire sur les couleurs par type,
-et les liaisons conservent leurs extrémités métier. L'aperçu ne modifie ni les
-tâches ni le brouillon en cours ; le zoom, le défilement et les replis sont
-conservés. Les modifications concurrentes de l'apparence sont refusées avec un
-message invitant à recharger.
+et les liaisons conservent leurs extrémités métier. L'aperçu ne modifie ni les tâches ni le brouillon en cours ; le zoom, le défilement et les replis sont conservés. Les modifications concurrentes de l'apparence sont refusées avec un message invitant à recharger.
 
 Appliquer la migration `0007_plan_gantt_appearance` avant d'utiliser cette
 version. Les plannings existants gardent l'apparence par défaut précédente.
@@ -99,17 +108,14 @@ Ces préférences sont propres à GoPlan et ne sont pas exportées en XML MSPDI.
 « Aperçu / Imprimer » sur les cartes, ou l'icône d'imprimante du Gantt, ouvre
 un aperçu graphique autonome. Le bouton « Paramètres d'impression » ouvre une
 fenêtre flottante non bloquante, fermable par « Terminé », « Fermer » ou Échap.
-Les réglages y sont répartis en quatre onglets : **Page** (format,
-orientation, marges, pages et lisibilité), **Contenu** (échelle, période,
-tâches, colonnes), **Affichage** et **Textes** (en-tête, pied de page,
-typographie). Le dernier onglet ouvert est mémorisé dans le navigateur ; une
-pastille orange signale un onglet aux modifications non enregistrées, une
-pastille rouge un réglage refusé à l'enregistrement (l'onglet concerné s'ouvre
-automatiquement). ←/→, Début et Fin naviguent entre les onglets.
-Choisissez A4, A3, A2, A1 ou A0 en portrait ou paysage,
-puis le calendrier Jour, Semaine ou Mois. Le diagramme remplit toute la
-largeur imprimable ; il n'est jamais étiré verticalement, si bien que le texte
-des tâches garde ses proportions et suit la hauteur des lignes.
+Les réglages y sont répartis en quatre onglets : 
+**Page** (format, orientation, marges, pages et lisibilité), 
+**Contenu** (échelle, période, tâches, colonnes), 
+**Affichage** et **Textes** (en-tête, pied de page, typographie). 
+Le dernier onglet ouvert est mémorisé dans le navigateur ; une pastille orange signale un onglet aux modifications non enregistrées, une pastille rouge un réglage refusé à l'enregistrement (l'onglet concerné s'ouvre automatiquement). 
+←/→, Début et Fin naviguent entre les onglets.
+Choisissez A4, A3, A2, A1 ou A0 en portrait ou paysage, puis le calendrier Jour, Semaine ou Mois. 
+Le diagramme remplit toute la largeur imprimable ; il n'est jamais étiré verticalement, si bien que le texte des tâches garde ses proportions et suit la hauteur des lignes.
 L'aperçu à l'écran s'adapte à la largeur disponible (jusqu'à 110 % de la
 taille naturelle). Le curseur sur le papier devient une loupe : un clic
 agrandit progressivement, puis revient à l'ajustement au maximum. Le curseur

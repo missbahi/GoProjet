@@ -60,10 +60,46 @@
             <i class="fas fa-arrow-down"></i>
         </button>
         <span class="goplan-toolbar-sep"></span>
+        <button type="button" class="goplan-toolbar-btn" id="inline-copy-task"
+                title="Copier la tâche active" aria-label="Copier la tâche active" disabled>
+            <i class="fas fa-copy" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn" id="inline-cut-task"
+                title="Couper la tâche active" aria-label="Couper la tâche active" disabled>
+            <i class="fas fa-scissors" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="goplan-toolbar-btn" id="inline-paste-task"
+                title="Coller" aria-label="Coller" disabled>
+            <i class="fas fa-paste" aria-hidden="true"></i>
+        </button>
+        <span class="goplan-toolbar-sep"></span>
+        <button type="button" class="goplan-toolbar-btn" id="inline-delete-task"
+                title="Supprimer la tâche active" aria-label="Supprimer la tâche active" disabled>
+            <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
         <button type="button" id="toolbar-links" class="goplan-toolbar-btn" disabled
                 title="Gérer les liaisons de la tâche active" aria-label="Gérer les liaisons de la tâche active">
             <i class="fas fa-link"></i>
         </button>
+        <span class="goplan-toolbar-sep" id="inline-active-task-sep" aria-hidden="true"></span>
+        <output id="inline-active-task-info"
+                class="goplan-active-task-info"
+                aria-live="polite"
+                aria-label="Détails de la tâche active">
+        </output>
+        
+        <!-- Toolbar actions Cancel / Save -->
+        <div class="goplan-toolbar-actions">
+            <!-- <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary">
+                <i class="fas fa-times mr-1"></i> Annuler
+            </a> -->
+            <button type="submit" form="tachesInlineForm"
+                    class="app-btn-primary" id="inline-save-task" disabled
+                    title="Enregistrer les modifications du planning">
+                <i class="fas fa-save mr-1"></i> Enregistrer
+            </button>
+        </div>
+
     </div>
 
     {# ═══════════════════════════════════════════════════════════ #}
@@ -86,6 +122,10 @@
         <div class="goplan-inline-error mb-4" data-task-error role="alert" hidden></div>
         <p class="text-xs mb-3">Flèches Haut/Bas : même colonne, ligne précédente/suivante.
             Alt + Haut/Bas : comportement natif du champ.</p>
+        <p id="inline-paste-help" class="text-xs mb-3">
+            Collage Excel (Ctrl+V) : colonnes Code, Nom, Type, Durée, Début, sans en-tête.
+            Un aperçu précède toute modification. Sans sélection, les tâches sont ajoutées en fin de tableau.
+        </p>
 
         {# Erreurs globales du formset #}
         {% if formset.non_form_errors %}
@@ -98,7 +138,8 @@
         {% endif %}
 
         {# ═══════ Table éditable — Style papier GoPlan ═══════ #}
-        <div class="goplan-paper">
+        <div class="goplan-paper" tabindex="0" aria-label="Tableau des tâches"
+             aria-describedby="inline-paste-help">
             <div class="overflow-x-auto">
                 <table class="w-full goplan-table">
                     <thead>
@@ -141,20 +182,63 @@
             </div>
         </div>
 
-        {# ═══════ Actions ═══════ #}
-        <div class="flex flex-col sm:flex-row justify-end gap-3 mt-6">
-            <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary justify-center">
-                <i class="fas fa-times mr-1"></i> Annuler
-            </a>
-            <button type="submit" class="app-btn-primary justify-center">
-                <i class="fas fa-save mr-1"></i> Enregistrer les modifications
-            </button>
-        </div>
 
     </form>
     <p data-link-status role="status" class="text-sm mt-3"></p>
     {{ task_link_data|json_script:"goplan-inline-link-data" }}
     {% include "goplan/tasks/_link_dialog.html" %}
+
+    {# ═══════════════════════════════════════════════════════════ #}
+    {# DIALOG COLLER DEPUIS EXCEL #}
+    {# ═══════════════════════════════════════════════════════════ #}
+    <dialog id="paste-preview-dialog" class="gantt-unsaved-dialog" aria-labelledby="paste-preview-title">
+        <form id="paste-preview-form" method="dialog">
+            <div class="flex items-center justify-between gap-4 mb-3">
+                <h2 id="paste-preview-title">
+                    <i class="fas fa-paste mr-1"></i> Coller depuis Excel
+                </h2>
+                <button type="button" id="paste-preview-close" class="goplan-delete-btn"
+                        aria-label="Fermer">
+                    <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <p id="paste-preview-summary" class="text-sm mb-3" aria-live="polite"></p>
+            <p class="text-sm mb-3">
+                Les lignes remplacent les tâches visibles à partir de la sélection ; les suivantes sont ajoutées en fin de tableau.
+                Une ligne invalide laisse sa tâche cible inchangée. Pour un groupe existant, seuls Code et Nom sont remplacés.
+                Durée vide : 1 jour. Début vide : date de la tâche cible, sinon début du planning.
+            </p>
+
+            <div class="paste-preview-table-wrap">
+                <table class="paste-preview-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Code</th>
+                            <th>Nom</th>
+                            <th>Type</th>
+                            <th class="amount">Durée</th>
+                            <th>Début</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="paste-preview-tbody"></tbody>
+                </table>
+            </div>
+
+            <p id="paste-preview-warnings" class="paste-preview-warnings" role="alert"></p>
+
+            <div class="flex justify-end gap-2 mt-4">
+                <button type="button" id="paste-preview-cancel" class="app-btn-secondary">
+                    Annuler
+                </button>
+                <button type="submit" class="app-btn-primary" id="paste-preview-confirm">
+                    <i class="fas fa-check mr-1"></i> Coller
+                </button>
+            </div>
+        </form>
+    </dialog>
 
     {# ═══════════════════════════════════════════════════════════ #}
     {# TEMPLATE POUR LIGNE VIDE (utilisé par JS)                   #}

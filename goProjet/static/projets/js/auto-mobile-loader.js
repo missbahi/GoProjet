@@ -29,16 +29,12 @@
         init();
     }
     
-    function init() {
-        console.log('🚀 Chargement de l\'optimisation mobile...');
-        
+    function init() {        
         // 1. Charger le CSS
         loadStyle('/static/projets/css/mobile-upload-min.css');
         
         // 2. Charger le script principal
-        loadScript('/static/projets/js/mobile-upload-optimizer.js', () => {
-            console.log('✅ Mobile Upload Optimizer chargé avec succès!');
-        });
+        loadScript('/static/projets/js/mobile-upload-optimizer.js');
     }
     
 })();

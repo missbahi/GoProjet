@@ -68,7 +68,7 @@
                 warning: 'color: #f59e0b; font-weight: bold;',
                 error: 'color: #ef4444; font-weight: bold;'
             };
-            console.log(`%c📱 MobileUpload: ${message}`, styles[type] || styles.info);
+            // console.log(`%c📱 MobileUpload: ${message}`, styles[type] || styles.info);
         }
     };
     

@@ -121,7 +121,7 @@
         config.css.forEach(injectCss);
         config.js.forEach(injectJs);
         loaded.add(family);
-        console.log(`[HTMX] Assets Famille "${family}" chargés`);
+        // console.log(`[HTMX] Assets Famille "${family}" chargés`);
     }
 
     // ═══════════════════════════════════════════════════════════

@@ -12,7 +12,7 @@ class ProjetsConfig(AppConfig):
             # Import des signaux
             try:
                 import projets.signals
-                print(f"✅ Tous les signaux chargés pour {self.name}")
+                # print(f"✅ Tous les signaux chargés pour {self.name}")
                 
                 # OU import spécifique
                 # import projets.signals.notifications

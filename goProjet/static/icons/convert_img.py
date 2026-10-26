@@ -3,10 +3,11 @@ from PIL import Image, ImageDraw
 import os
 
 # 1. Créer le dossier
+os.makedirs('goProjet/static/icons', exist_ok=True)
 
 
 # 2. VOTRE ICÔNE - Modifiez ce chemin
-GoIcon = "GoIcon.png"  # ← MODIFIEZ ICI
+GoIcon = "GoIcon.png"
 
 try:
     # 3. Redimensionner votre icône existante
@@ -18,8 +19,8 @@ try:
     # 512x512 pour les splash screens
     img.resize((512, 512)).save('icon-512x512.png')
     
-    print("✅ Icônes créées à partir de logo existant !")
-    print("📁 Dossier: goProjet/static/icons/")
+    # print("✅ Icônes créées à partir de logo existant !")
+    # print("📁 Dossier: goProjet/static/icons/")
     
 except FileNotFoundError:
     print("⚠️  Icône non trouvée. Création par défaut...")

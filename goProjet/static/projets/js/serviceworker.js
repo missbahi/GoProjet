@@ -13,37 +13,37 @@ const urlsToCache = [
 ];
 
 self.addEventListener('install', event => {
-    console.log('[Service Worker] Installation');
+    // console.log('[Service Worker] Installation');
     
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('[Service Worker] Mise en cache des ressources initiales');
+                // console.log('[Service Worker] Mise en cache des ressources initiales');
                 return cache.addAll(urlsToCache);
             })
             .then(() => {
-                console.log('[Service Worker] Installation terminée');
+                // console.log('[Service Worker] Installation terminée');
                 return self.skipWaiting();
             })
     );
 });
 
 self.addEventListener('activate', event => {
-    console.log('[Service Worker] Activation');
+    // console.log('[Service Worker] Activation');
     
     event.waitUntil(
         caches.keys().then(cacheNames => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
-                        console.log('[Service Worker] Suppression ancien cache:', cacheName);
+                        // console.log('[Service Worker] Suppression ancien cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         })
         .then(() => {
-            console.log('[Service Worker] Prêt à gérer les requêtes');
+            // console.log('[Service Worker] Prêt à gérer les requêtes');
             return self.clients.claim();
         })
     );
@@ -67,7 +67,7 @@ self.addEventListener('fetch', event => {
             .then(cachedResponse => {
                 // Si en cache, retourner
                 if (cachedResponse) {
-                    console.log('[Service Worker] Ressource depuis cache:', url.pathname);
+                    // console.log('[Service Worker] Ressource depuis cache:', url.pathname);
                     return cachedResponse;
                 }
 
@@ -89,7 +89,7 @@ self.addEventListener('fetch', event => {
                         return response;
                     })
                     .catch(error => {
-                        console.log('[Service Worker] Hors ligne, fallback:', error);
+                        // console.log('[Service Worker] Hors ligne, fallback:', error);
                         
                         // Pour les pages HTML
                         if (event.request.headers.get('accept').includes('text/html')) {

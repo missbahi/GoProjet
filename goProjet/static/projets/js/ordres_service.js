@@ -5,8 +5,6 @@
     if (window.__ordresServiceInitialized) return;
     window.__ordresServiceInitialized = true;
 
-    console.log('[ordres_service.js] Initialized');
-
     // ═══════════════════════════════════════════════════════════
     // TOGGLE FORMULAIRE PLIABLE
     // ═══════════════════════════════════════════════════════════

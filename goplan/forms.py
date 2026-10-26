@@ -165,8 +165,12 @@ class GTaskInlineForm(GTaskScheduleForm):
     parent_key = forms.CharField(widget=forms.HiddenInput(), required=False, max_length=100)
 
     class Meta(GTaskScheduleForm.Meta):
-        fields = GTaskScheduleForm.Meta.fields + ['ordre']
-        widgets = {**GTaskScheduleForm.Meta.widgets, 'ordre': forms.HiddenInput()}
+        fields = GTaskScheduleForm.Meta.fields + ['ordre', 'couleur']
+        widgets = {
+            **GTaskScheduleForm.Meta.widgets,
+            'ordre': forms.HiddenInput(),
+            'couleur': forms.HiddenInput(),
+        }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -83,10 +83,12 @@
 
     // Annuler/reprendre sur interaction utilisateur
     document.addEventListener('mouseenter', function(e) {
+        if (!(e.target instanceof Element)) return;
         if (e.target.closest('#notificationDropdown')) clearNotifAutoClose();
     }, true);
 
     document.addEventListener('mouseleave', function(e) {
+        if (!(e.target instanceof Element)) return;
         if (e.target.closest('#notificationDropdown')) {
             const dropdown = getNotifDropdown();
             if (dropdown && !dropdown.classList.contains('hidden')) startNotifAutoClose();

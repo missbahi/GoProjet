@@ -65,7 +65,7 @@
     // ============================================================
     document.body.addEventListener('htmx:afterSwap', function(e) {
         if (e.target.id === 'liste-utilisateurs-container') {
-            console.log('[utilisateurs] Liste rafraîchie');
+            // console.log('[utilisateurs] Liste rafraîchie');
         }
     });
 

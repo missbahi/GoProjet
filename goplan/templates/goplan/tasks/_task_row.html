@@ -9,6 +9,7 @@
         {{ form.node_key }}
         {{ form.parent_key }}
         {{ form.ordre }}
+        {{ form.couleur }}
         {% for error in form.non_field_errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}
         {% for hidden in form.hidden_fields %}
             {% for error in hidden.errors %}<p class="goplan-task-error">{{ error }}</p>{% endfor %}

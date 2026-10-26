@@ -52,6 +52,4 @@
         e.preventDefault();
         btn.click();
     });
-
-    console.log('[GoProjet] sidebar-toggle.js prêt.');
 })();

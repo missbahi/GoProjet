@@ -209,7 +209,7 @@ if PWA_CONFIG['ENABLED']:
     print("✅ PWA activée")
     
     # Configuration PWA
-    PWA_APP_NAME = 'goProjet'
+    PWA_APP_NAME = 'GoProjet'
     PWA_APP_DESCRIPTION = 'Gestion de projets collaboratifs'
     PWA_APP_THEME_COLOR = '#0A0302'
     PWA_APP_BACKGROUND_COLOR = '#ffffff'

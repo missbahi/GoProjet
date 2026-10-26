@@ -311,7 +311,7 @@
                 
                 if (confirm('Voulez-vous vraiment supprimer cette ligne parent et TOUS ses enfants ? Cette action est irréversible.')) {
                     // Ici, vous feriez un appel AJAX pour supprimer du côté serveur
-                    console.log('Suppression hiérarchique demandée pour ligne:', ligneId, 'lot:', lotId);
+                    // console.log('Suppression hiérarchique demandée pour ligne:', ligneId, 'lot:', lotId);
                     
                     // Pour l'instant, on montre juste une alerte
                     window.showWarningMessage('Fonctionnalité de suppression à implémenter côté serveur');
@@ -325,7 +325,7 @@
                 const ligneId = this.dataset.ligneId;
                 
                 if (confirm('Voulez-vous supprimer cette ligne ?')) {
-                    console.log('Suppression simple demandée pour ligne:', ligneId);
+                    // console.log('Suppression simple demandée pour ligne:', ligneId);
                     window.showWarningMessage('Fonctionnalité de suppression à implémenter côté serveur');
                 }
             });
