@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # ⚠️ Bump cette valeur à chaque release notable
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.1.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,18 @@ APP_VERSION = "2.0.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.1.0": {
+        "date": "2026-10-23",
+        "titre": "Améliorations et correctifs",
+        "highlights": [
+            "Ajout de nouvelles fonctionnalités pour l'importation XML",
+            "Amélioration de l'importation des fichiers XML existants",
+            "Ajout d'une fonctionnalité d'Ordre de service pour avanant de prolongation de délai",
+            "Amélioration des performances de l'interface",
+            "Correction de bugs mineurs",
+        ],
+        "niveau": "info",
+    },
     "2.0.0": {
         "date": "2026-10-22",
         "titre": "GoPlan : plannings et diagrammes de Gantt",

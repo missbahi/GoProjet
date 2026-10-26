@@ -12,7 +12,9 @@ from django.core import signing
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import DatabaseError, transaction
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.views.decorators.http import require_http_methods
 
 from ..import_forms import ImportedPlanForm, XmlImportForm
@@ -54,6 +56,7 @@ def _summary(imported, xml):
 @login_required
 @require_http_methods(["GET", "POST"])
 def import_mspdi(request, plan_id=None):
+    dialog_request = request.headers.get("X-GoPlan-Dialog") == "xml-import"
     target = get_object_or_404(GPlan, pk=plan_id) if plan_id else None
     replacing = target is not None
     upload_form = XmlImportForm(
@@ -109,7 +112,10 @@ def import_mspdi(request, plan_id=None):
                         saved = None
                 if saved is not None:
                     messages.success(request, f"Planning « {saved.nom} » importé.")
-                    return redirect("goplan:taches_inline", plan_id=saved.pk)
+                    response = redirect("goplan:taches_inline", plan_id=saved.pk)
+                    if dialog_request:
+                        return JsonResponse({"redirect": response.url})
+                    return response
             elif upload_form.is_valid():
                 xml = upload_form.cleaned_data["fichier"].read()
                 with transaction.atomic():
@@ -140,4 +146,8 @@ def import_mspdi(request, plan_id=None):
             logger.exception("Échec de l'import XML vers le planning %s", plan_id)
             upload_form.add_error(None, "Import impossible. Aucune modification n'a été sauvegardée. Relancez l'import.")
             context.pop("final_form", None)
+    if dialog_request:
+        return JsonResponse({
+            "html": render_to_string("goplan/plans/_import_plan_form.html", context, request=request),
+        })
     return render(request, "goplan/plans/import_plan.html", context)

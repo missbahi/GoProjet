@@ -142,7 +142,8 @@
                        style="color: var(--text-muted);">Durée d'extension</label>
                 <p class="font-semibold text-sm md:text-base"
                    style="color: var(--accent-warning);">
-                    {{ ordre.duree_extension }} jours
+                    {{ ordre.extension_formatee }}
+                    {% if ordre.type_os.code == 'OSVD' %} — {{ ordre.get_motif_display }}{% endif %}
                 </p>
             </div>
             {% endif %}

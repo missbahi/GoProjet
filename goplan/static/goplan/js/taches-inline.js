@@ -1238,6 +1238,22 @@
             event.preventDefault();
         }, true);
 
+        document.addEventListener('goplan:before-import', event => {
+            if (!form.isConnected) return;
+            if (linkBusy || isSubmitting || computeDirty()) {
+                event.preventDefault();
+                report('Enregistrez les modifications du planning et attendez la fin de l’enregistrement avant d’importer un XML.');
+            }
+        });
+
+        document.addEventListener('goplan:before-export', event => {
+            if (!form.isConnected) return;
+            if (linkBusy || isSubmitting || computeDirty()) {
+                event.preventDefault();
+                report('Enregistrez les modifications du planning et attendez la fin de l’enregistrement avant d’exporter un XML.');
+            }
+        });
+
         window.addEventListener('beforeunload', event => {
             if (!form.isConnected || isSubmitting || !computeDirty()) return;
             event.preventDefault();

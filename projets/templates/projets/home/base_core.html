@@ -35,6 +35,7 @@
     <link rel="stylesheet" href="{% static 'projets/css/layout.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/components.css' %}">
     <link rel="stylesheet" href="{% static 'projets/css/version-notice.css' %}">
+    <link rel="stylesheet" href="{% static 'goplan/css/import-dialog.css' %}">
     {% include "includes/_toast_assets.html" %}
 
     <style>
@@ -115,6 +116,8 @@
     {% include "includes/_version_notice.html" %}
     <div id="modals-container"></div>
     <div id="modals-nested-container"></div>
+    {% include "goplan/plans/_import_dialog.html" %}
+    {% include "goplan/plans/_export_dialog.html" %}
 
     <!-- JS essentiels (chargés partout) -->
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
@@ -132,6 +135,8 @@
     <script src="{% static 'goplan/js/work-calendar.js' %}" defer></script>
     <script src="{% static 'goplan/js/task-links.js' %}" defer></script>
     <script src="{% static 'goplan/js/taches-inline.js' %}" defer></script>
+    <script src="{% static 'goplan/js/import-dialog.js' %}" defer></script>
+    <script src="{% static 'goplan/js/export-dialog.js' %}" defer></script>
 
     {% block extra_js %}{% endblock %}
 </body>

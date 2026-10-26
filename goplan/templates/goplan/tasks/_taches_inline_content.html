@@ -22,14 +22,23 @@
             </h1>
         </div>
         <div class="flex gap-2">
-            <a href="{% url 'goplan:replace_mspdi' plan.pk %}" class="app-btn-secondary">
-                <i class="fas fa-file-import mr-1"></i> Importation XML
+            <a href="{% url 'goplan:replace_mspdi' plan.pk %}" 
+                data-xml-import
+                class="app-btn-secondary"
+                title="Remplacer par un MS Project XML">
+                <i class="fas fa-file-import mr-1"></i>Import XML
             </a>
+            {% if plan.taches.count > 0 %}
+            <a href="{% url 'goplan:export_mspdi' plan.pk %}" 
+                data-xml-export data-plan-name="{{ plan.nom }}"
+                data-export-filename="{% if plan.nom|slugify %}{{ plan.nom|slugify }}{% else %}plan-{{ plan.pk }}{% endif %}.xml"
+                class="app-btn-secondary"
+                title="Exporter vers un MS Project XML">
+                <i class="fas fa-file-export mr-1"></i>Export XML
+            </a>
+            {% endif %}
             <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="app-btn-secondary" title="Consulter le Gantt">
                 <i class="fas fa-chart-gantt mr-1"></i> Gantt
-            </a>
-            <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary">
-                <i class="fas fa-list mr-1"></i> Plannings
             </a>
         </div>
     </div>

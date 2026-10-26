@@ -1,0 +1,37 @@
+#xml-import-dialog,
+#xml-export-dialog {
+    width: min(48rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    padding: 1rem;
+    overflow-y: auto;
+    color: var(--text-primary);
+    background: var(--modal-bg);
+    border: 1px solid var(--border-default);
+    border-radius: 0.75rem;
+}
+
+#xml-export-dialog {
+    width: min(30rem, calc(100vw - 2rem));
+}
+
+#xml-export-dialog [data-xml-export-filename],
+#xml-export-dialog [data-xml-export-name] {
+    overflow-wrap: anywhere;
+}
+
+#xml-import-dialog::backdrop,
+#xml-export-dialog::backdrop {
+    background: var(--modal-overlay);
+}
+
+#xml-import-dialog [data-xml-import-error],
+#xml-export-dialog [data-xml-export-error] {
+    color: var(--accent-danger);
+}
+
+#xml-import-dialog input:not([type="checkbox"]):not([type="hidden"]),
+#xml-import-dialog textarea,
+#xml-import-dialog select {
+    max-width: 100%;
+}

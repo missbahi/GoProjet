@@ -21,7 +21,7 @@
             </p>
         </div>
         <div class="flex flex-wrap gap-2">
-            <a href="{% url 'goplan:import_mspdi' %}" class="app-btn-secondary">
+            <a href="{% url 'goplan:import_mspdi' %}" data-xml-import class="app-btn-secondary">
                 <i class="fas fa-file-import mr-2"></i> Importation XML
             </a>
             <a href="{% url 'goplan:liste_calendriers' %}" class="app-btn-secondary">
@@ -113,11 +113,14 @@
                     <i class="fas fa-chart-gantt"></i>
                 </a>
                 <a href="{% url 'goplan:export_mspdi' plan.id %}"
+                   data-xml-export data-plan-name="{{ plan.nom }}"
+                   data-export-filename="{% if plan.nom|slugify %}{{ plan.nom|slugify }}{% else %}plan-{{ plan.pk }}{% endif %}.xml"
                    class="app-action-btn"
                    title="Exporter le planning vers MS Project XML">
                     <i class="fas fa-file-export"></i>
                 </a>
                 <a href="{% url 'goplan:replace_mspdi' plan.id %}"
+                   data-xml-import
                    class="app-action-btn"
                    title="Remplacer le planning par un MS Project XML">
                     <i class="fas fa-file-import"></i>

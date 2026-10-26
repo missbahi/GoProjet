@@ -157,7 +157,7 @@ window.TYPES_OS_DATA = {
         code: '{{ type.code }}',
         prerequis: [{% for p in type.precedent_obligatoire.all %}'{{ p.code }}'{% if not forloop.last %},{% endif %}{% endfor %}],
         unique: {{ type.unique_dans_projet|yesno:"true,false" }},
-        showDuree: {% if type.code == "OSA" or type.code == "OSR" %}true{% else %}false{% endif %},
+        showDuree: {% if type.code == "OSA" or type.code == "OSR" or type.code == "OSVD" %}true{% else %}false{% endif %},
         showMontant: {% if type.code == "OSC10" or type.code == "OSV" %}true{% else %}false{% endif %}
     }{% if not forloop.last %},{% endif %}
     {% endfor %}

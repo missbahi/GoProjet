@@ -1049,6 +1049,9 @@ class OrdreServiceForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.projet = kwargs.pop('projet', None)
         super().__init__(*args, **kwargs)
+        if self.projet is not None:
+            self.instance.projet = self.projet
+        self.fields['unite_extension'].required = False
         
         # Appliquer les classes CSS à tous les champs
         for field_name, field in self.fields.items():
@@ -1063,6 +1066,9 @@ class OrdreServiceForm(forms.ModelForm):
         # Valeur par défaut pour statut
         if not self.instance.pk:
             self.fields['statut'].initial = 'BROUILLON'
+
+    def clean_unite_extension(self):
+        return self.cleaned_data.get('unite_extension') or 'JOURS'
 
 class DocumentAdministratifForm(forms.ModelForm):
     """

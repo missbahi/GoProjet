@@ -89,6 +89,8 @@ def home(request):
             couleur, statut_color = '#16a34a', 'Presque terminé'
         date_debut = projet.date_debut or date.today()
         date_fin_prevue = projet.ajouter_delai(date_debut)
+        if projet.ordres_service.filter(type_os__code='OSVD', statut='NOTIFIE').exists():
+            date_fin_prevue = projet.date_fin_previsionnelle() or date_fin_prevue
         chart_data['projets'].append({
             'id': projet.id,
             'nom': projet.nom,

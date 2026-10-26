@@ -26,7 +26,7 @@
                     <option value="">Sélectionnez un type</option>
                     {% for type in types_disponibles %}
                     <option value="{{ type.id }}"
-                            {% if ordre_a_modifier and ordre_a_modifier.type_os.id == type.id %}selected{% endif %}
+                            {% if form.type_os.value|stringformat:"s" == type.id|stringformat:"s" %}selected{% endif %}
                             data-code="{{ type.code }}">
                         {{ type.code }} - {{ type.nom }}
                     </option>
@@ -107,11 +107,11 @@
         <div id="champs_conditionnels" class="hidden">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
                 <div id="champ_duree" class="hidden">
-                    <label for="duree_extension" class="app-modal-label">Durée d'extension (jours)</label>
+                    <label for="duree_extension" class="app-modal-label">Durée supplémentaire (jours par défaut)</label>
                     <input type="number" id="duree_extension" name="duree_extension"
-                           class="app-modal-input"
-                           {% if ordre_a_modifier and ordre_a_modifier.duree_extension %}value="{{ ordre_a_modifier.duree_extension }}"{% endif %}
-                           placeholder="Durée en jours">
+                           class="app-modal-input" min="0" step="1"
+                           value="{{ form.duree_extension.value|default_if_none:'' }}"
+                           placeholder="Durée supplémentaire">
                 </div>
                 <div id="champ_montant" class="hidden">
                     <label for="montant_supplementaire" class="app-modal-label">Montant supplémentaire (DH)</label>
@@ -119,6 +119,30 @@
                            class="app-modal-input" min="0" max="9999999.99"
                            {% if ordre_a_modifier and ordre_a_modifier.montant_supplementaire %}value="{{ ordre_a_modifier.montant_supplementaire }}"{% else %}value="0.00"{% endif %}
                            placeholder="Montant en DH">
+                </div>
+                <div id="champs_avenant_delai" class="hidden mt-4 sm:col-span-2">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="unite_extension" class="app-modal-label">Unité de la prolongation</label>
+                            <select id="unite_extension" name="unite_extension" class="app-modal-input">
+                                <option value="JOURS" {% if form.unite_extension.value != 'MOIS' %}selected{% endif %}>Jours</option>
+                                <option value="MOIS" {% if form.unite_extension.value == 'MOIS' %}selected{% endif %}>Mois calendaires</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="motif" class="app-modal-label">Motif de la prolongation</label>
+                            <select id="motif" name="motif" class="app-modal-input">
+                                {% for value, label in form.fields.motif.choices %}
+                                <option value="{{ value }}" {% if form.motif.value == value %}selected{% endif %}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-sm mt-2" style="color: var(--text-secondary);">
+                        Une durée positive, un motif et une date d'effet sont requis pour notifier cet avenant.
+                        CIRCULAIRE_09_2022 : six mois calendaires cumulés maximum par marché.
+                        Un brouillon n'a aucun effet sur le délai.
+                    </p>
                 </div>
             </div>
         </div>

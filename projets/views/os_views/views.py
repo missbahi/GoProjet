@@ -5,6 +5,7 @@ from datetime import datetime
 
 import requests
 from django.apps import apps
+from django.db import transaction
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -369,8 +370,11 @@ class AfficherDocumentView(View):
 # ------------------------ Views pour Ordres de Service ------------------------
 @login_required
 @modules_projet_required
+@transaction.atomic
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
+    if request.method == 'POST':
+        projet = get_object_or_404(Projet.objects.select_for_update(), id=projet_id)
     ordres_service = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
     ordre_a_modifier = None
     if 'modifier_ordre' in request.GET:
@@ -460,14 +464,16 @@ def ordres_service(request, projet_id):
     elif not projet.ordres_service.filter(type_os__code='OSC', statut='NOTIFIE').exists():
         codes_autorises = ['OSC']
     else:
-        dernier_os = projet.ordres_service.filter(statut='NOTIFIE').order_by('-ordre_sequence').first()
+        dernier_os = projet.ordres_service.filter(statut='NOTIFIE').exclude(
+            type_os__code='OSVD',
+        ).order_by('-ordre_sequence').first()
         dernier_os_type = dernier_os.type_os.code if dernier_os and dernier_os.type_os else None
         if dernier_os_type in ['OSC', 'OSR']:
-            codes_autorises = ['OSA', 'OSC10', 'OSV', 'AUTRE']
+            codes_autorises = ['OSA', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
         elif dernier_os_type == 'OSA':
-            codes_autorises = ['OSR', 'OSC10', 'OSV', 'AUTRE']
+            codes_autorises = ['OSR', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
         else:
-            codes_autorises = ['OSA', 'OSR', 'OSC10', 'OSV', 'AUTRE']
+            codes_autorises = ['OSA', 'OSR', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
 
     types_disponibles = TypeOrdreService.objects.filter(code__in=codes_autorises).prefetch_related('precedent_obligatoire')
     context = {
@@ -600,8 +606,11 @@ def details_ordre_service(request, projet_id, ordre_id):
     return render(request, 'projets/ordres_service/details_ordre_service.html', ctx)
 
 @modules_projet_required
+@transaction.atomic
 def notifier_ordre_service(request, projet_id, ordre_id):
     projet = get_object_or_404(Projet, id=projet_id)
+    if request.method == 'POST':
+        projet = get_object_or_404(Projet.objects.select_for_update(), id=projet_id)
     ordre = get_object_or_404(OrdreService, id=ordre_id, projet=projet)
 
     if request.method == 'POST':

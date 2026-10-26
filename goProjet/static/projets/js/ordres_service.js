@@ -47,9 +47,8 @@
     // ═══════════════════════════════════════════════════════════
     // CHAMPS CONDITIONNELS SELON TYPE OS
     // ═══════════════════════════════════════════════════════════
-    const typesOsData = window.TYPES_OS_DATA || {};
-
     function updateChampsConditionnels() {
+        const typesOsData = window.TYPES_OS_DATA || {};
         const typeOsSelect = document.getElementById('type_os');
         const champsConditionnels = document.getElementById('champs_conditionnels');
         const champDuree = document.getElementById('champ_duree');
@@ -57,11 +56,17 @@
         const typeOsInfo = document.getElementById('type_os_info');
         const prerequisInfo = document.getElementById('prerequis_info');
         const uniciteInfo = document.getElementById('unicite_info');
+        const avenantFields = document.getElementById('champs_avenant_delai');
 
         if (!typeOsSelect || !champsConditionnels) return;
 
         const selectedTypeId = typeOsSelect.value;
         const typeData = typesOsData[selectedTypeId];
+        const isExtension = typeData?.code === 'OSVD';
+        avenantFields?.classList.toggle('hidden', !isExtension);
+        avenantFields?.querySelectorAll('input,select').forEach(input => {
+            input.disabled = !isExtension;
+        });
 
         if (!typeData) {
             champsConditionnels.classList.add('hidden');

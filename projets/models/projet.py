@@ -13,6 +13,16 @@ from django.db.models import Q
 from django.core.exceptions import ValidationError
 
 # ------------------------ Entreprise ------------------------ #
+def ajouter_mois_calendaires(date_depart, mois):
+    index = date_depart.month - 1 + mois
+    annee = date_depart.year + index // 12
+    mois = index % 12 + 1
+    return date_depart.replace(
+        year=annee, month=mois,
+        day=min(date_depart.day, calendar.monthrange(annee, mois)[1]),
+    )
+
+
 class Entreprise(models.Model):
     nom = models.CharField(_("Nom de l'entreprise"), max_length=200)
     contact = models.CharField(_("Contact"), max_length=150, blank=True)
@@ -253,6 +263,8 @@ class Projet(models.Model):
         """Met à jour les indicateurs de statut pour la page d'accueil"""
         if self.date_debut and self.delai and self.statut in [self.Statut.EN_COURS, self.Statut.EN_ARRET]:
             date_limite = self.ajouter_delai(self.date_debut)
+            if self.ordres_service.filter(type_os__code='OSVD', statut='NOTIFIE').exists():
+                date_limite = self.date_fin_previsionnelle() or date_limite
             self.en_retard = date.today() > date_limite and self.avancement < 100
         
         self.a_traiter = self.statut == self.Statut.APPEL_OFFRE and self.date_limite_soumission and self.date_limite_soumission >= date.today()
@@ -429,7 +441,50 @@ class Projet(models.Model):
                 jours_arret += max(0, (evenement.date_effet - debut_arret).days)
                 debut_arret = None
 
-        return self.ajouter_delai(osc.date_effet) + timedelta(days=jours_arret)
+        echeance = self.echeance_avec_avenants(
+            self.ajouter_delai(osc.date_effet), date_reference=date_reference,
+        )
+        return echeance + timedelta(days=jours_arret)
+
+    def echeance_avec_avenants(self, echeance, date_reference=None, candidat=None):
+        avenants = list(self.ordres_service.filter(
+            type_os__code='OSVD', statut='NOTIFIE',
+        ).exclude(pk=candidat.pk if candidat else None).select_related('type_os'))
+        if candidat is not None:
+            avenants.append(candidat)
+        avenants.sort(key=lambda os: (os.ordre_sequence or 2147483647, os.pk or 2147483647))
+        mois_circulaire = jours_circulaire = 0
+        reference_circulaire = None
+        for avenant in avenants:
+            if date_reference and (not avenant.date_effet or avenant.date_effet > date_reference):
+                continue
+            duree = avenant.duree_extension
+            if duree is None or duree <= 0:
+                raise ValidationError({'duree_extension': "Renseignez une prolongation strictement positive."})
+            if avenant.motif == 'CIRCULAIRE_09_2022':
+                if reference_circulaire is None:
+                    reference_circulaire = echeance
+                if avenant.unite_extension == 'MOIS':
+                    mois_circulaire += duree
+                else:
+                    jours_circulaire += duree
+                # Référence fixe : ne pas renouveler le plafond à chaque avenant.
+                try:
+                    depasse = mois_circulaire > 6 or jours_circulaire > (
+                        ajouter_mois_calendaires(reference_circulaire, 6)
+                        - ajouter_mois_calendaires(reference_circulaire, mois_circulaire)).days
+                except (ValueError, OverflowError) as error:
+                    raise ValidationError({'duree_extension': "Prolongation hors de la plage de dates disponible."}) from error
+                if depasse:
+                    raise ValidationError({
+                        'duree_extension': "Selon la CIRCULAIRE_09_2022, les prolongations cumulées "
+                        "ne peuvent excéder six mois calendaires.",
+                    })
+            try:
+                echeance = avenant.ajouter_extension(echeance)
+            except (ValueError, OverflowError) as error:
+                raise ValidationError({'duree_extension': "Prolongation hors de la plage de dates disponible."}) from error
+        return echeance
     
     def get_historique_periodes(self, date_reference=None):
         if date_reference is None:
@@ -521,6 +576,7 @@ class TypeOrdreService(models.Model):
         ('OSR', 'OS de Reprise'),
         ('OSC10', 'OS de Continuation jusqu\'à 10%'),
         ('OSV', 'OS d\'Approbation d\'Avenant'),
+        ('OSVD', "OS d'avenant de délai"),
         ('AUTRE', 'Autre OS'),
     ]
     
@@ -561,6 +617,17 @@ class OrdreService(models.Model):
     
     # Champs spécifiques selon le type
     duree_extension = models.IntegerField(null=True, blank=True, default=0, help_text="Durée d'extension en jours")
+    unite_extension = models.CharField(
+        max_length=5, choices=Projet.UniteDelai.choices, default='JOURS',
+    )
+    motif = models.CharField(
+        max_length=30, blank=True, default='',
+        choices=[
+            ('CIRCULAIRE_09_2022', 'Circulaire 09/2022'),
+            ('CIRCONSTANCES_IMPREVUES', 'Circonstances imprévues'),
+            ('AUTRE', 'Autre justification'),
+        ],
+    )
     montant_supplementaire = models.DecimalField(max_digits=12, decimal_places=2, default=0, null=True, blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
@@ -586,13 +653,41 @@ class OrdreService(models.Model):
             ).aggregate(models.Max('ordre_sequence'))['ordre_sequence__max'] or 0
             self.ordre_sequence = dernier_ordre + 1
         super().save(*args, **kwargs)
+        if self.type_os.code == 'OSVD':
+            self.projet.update_status_flags(force_save=False)
+            Projet.objects.filter(pk=self.projet_id).update(en_retard=self.projet.en_retard)
     
     def clean(self):
         super().clean()
         errors = {}
-        
-        if not self.pk or not hasattr(self, 'projet') or self.projet is None:
+
+        if not self.projet_id or not self.type_os_id:
             return
+
+        if self.type_os.code == 'OSVD':
+            if self.duree_extension is not None and self.duree_extension < 0:
+                errors['duree_extension'] = "La prolongation doit être strictement positive."
+            if self.statut == 'NOTIFIE':
+                if not self.duree_extension or self.duree_extension <= 0:
+                    errors['duree_extension'] = "Renseignez une prolongation strictement positive avant notification."
+                if not self.date_effet:
+                    errors['date_effet'] = "La date d'effet est obligatoire avant notification."
+                if not self.motif:
+                    errors['motif'] = "Précisez le motif de la prolongation."
+                osc = self.projet.ordres_service.filter(
+                    type_os__code='OSC', statut='NOTIFIE', date_effet__isnull=False,
+                ).order_by('ordre_sequence').first()
+                if not osc or not self.projet.delai or self.projet.delai <= 0:
+                    errors['type_os'] = "Un commencement notifié et un délai contractuel positif sont requis."
+                elif self.date_effet and self.date_effet < osc.date_effet:
+                    errors['date_effet'] = "L'avenant ne peut prendre effet avant le commencement."
+                if not errors:
+                    try:
+                        self.projet.echeance_avec_avenants(
+                            self.projet.ajouter_delai(osc.date_effet), candidat=self,
+                        )
+                    except ValidationError as error:
+                        errors.update(error.message_dict)
         
         if self.statut == 'NOTIFIE':
             prerequis = self.type_os.precedent_obligatoire.all()
@@ -619,7 +714,7 @@ class OrdreService(models.Model):
                 dernier_os = OrdreService.objects.filter(
                     projet=self.projet,
                     statut='NOTIFIE'
-                ).exclude(pk=self.pk).order_by('-ordre_sequence').first()
+                ).exclude(pk=self.pk).exclude(type_os__code='OSVD').order_by('-ordre_sequence').first()
                 
                 if dernier_os and dernier_os.type_os.code == 'OSA':
                     errors['type_os'] = "Un OS d'arrêt ne peut pas suivre un autre OS d'arrêt"
@@ -642,7 +737,17 @@ class OrdreService(models.Model):
     #     return self.fichier.build_url(flags='attahement')
     @property
     def influence_delai(self):
-        return self.type_os.code in ['OSC', 'OSA', 'OSR']
+        return self.type_os.code in ['OSC', 'OSA', 'OSR', 'OSVD']
+
+    def ajouter_extension(self, echeance):
+        if self.unite_extension == 'MOIS':
+            return ajouter_mois_calendaires(echeance, self.duree_extension)
+        return echeance + timedelta(days=self.duree_extension)
+
+    @property
+    def extension_formatee(self):
+        unite = 'mois' if self.unite_extension == 'MOIS' else 'jours'
+        return f'{self.duree_extension or 0} {unite}'
 
     @property
     def influence_budget(self):

@@ -1,0 +1,67 @@
+<div class="container mx-auto px-4 py-6 max-w-3xl" data-page-title="Importation XML" data-family="app">
+    <h2 id="xml-import-title" class="text-2xl font-bold mb-4" tabindex="-1" style="color: var(--accent-primary);">
+        <i class="fas fa-file-import mr-2"></i>
+        {% if plan %}Remplacer « {{ plan.nom }} » par un XML{% else %}Importer un nouveau planning{% endif %}
+    </h2>
+    {% if plan %}
+    <div role="alert" class="app-card p-4 mb-4" style="border: 1px solid var(--accent-danger);">
+        <strong>Attention : remplacement définitif.</strong>
+        Toutes les tâches, liaisons et affectations actuelles seront supprimées.
+        Le titre, la description, les dates et le calendrier seront remplacés ;
+        le rattachement projet sera retiré, car il n'est pas fourni par le XML.
+        Rien ne sera modifié avant votre confirmation finale.
+    </div>
+    {% endif %}
+    <p class="mb-4 text-sm">
+        Format MS Project XML (MSPDI), 5 Mo maximum.
+        Les horaires intrajournaliers, ressources et affectations ne sont pas repris.
+    </p>
+    {% if final_form %}
+    <section class="app-card p-4 mb-4">
+        <h2 class="font-semibold mb-2">Fichier validé — finaliser le planning</h2>
+        <p>{{ summary.tasks }} tâches et {{ summary.links }} liaisons seront intégrées.</p>
+        {% if summary.resources or summary.assignments %}
+        <p role="alert" style="color: var(--accent-danger);">
+            Le XML contient {{ summary.resources }} ressource(s) et {{ summary.assignments }} affectation(s)
+            qui ne seront pas importées.
+        </p>
+        {% endif %}
+        <p class="text-sm mt-2">
+            Renseignez le titre et la description. Les dates et le calendrier proviennent du XML
+            et ne sont pas modifiables à cette étape ; ils le seront après l'import.
+        </p>
+    </section>
+    <form method="post" action="{{ request.path }}" data-xml-import-form class="app-card p-4 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="import_token" value="{{ import_token }}">
+        {{ final_form.non_field_errors }}
+        {% for field in final_form %}
+        <div>
+            {{ field.label_tag }} {{ field }}
+            <div role="alert" style="color: var(--accent-danger);">{{ field.errors }}</div>
+        </div>
+        {% endfor %}
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="app-btn-primary">
+                {% if plan %}Confirmer le remplacement{% else %}Créer le planning importé{% endif %}
+            </button>
+            <a href="{% url 'goplan:liste_plans' %}" data-xml-import-cancel class="app-btn-secondary">Annuler</a>
+        </div>
+    </form>
+    {% else %}
+    <form method="post" action="{{ request.path }}" enctype="multipart/form-data" data-xml-import-form class="app-card p-4 space-y-4">
+        {% csrf_token %}
+        <div role="alert" style="color: var(--accent-danger);">{{ upload_form.non_field_errors }}</div>
+        {% for field in upload_form %}
+        <div>
+            {{ field.label_tag }} {{ field }}
+            <div role="alert" style="color: var(--accent-danger);">{{ field.errors }}</div>
+        </div>
+        {% endfor %}
+        <div class="flex flex-wrap gap-3">
+            <button type="submit" class="app-btn-primary">Valider le fichier XML</button>
+            <a href="{% url 'goplan:liste_plans' %}" data-xml-import-cancel class="app-btn-secondary">Annuler</a>
+        </div>
+    </form>
+    {% endif %}
+</div>

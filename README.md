@@ -19,6 +19,29 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 La version et les nouveautés affichées à la connexion sont définies dans
 [projets/version.py](projets/version.py).
 
+### Avenants de délai des ordres de service
+
+Après notification de l'OS de commencement, le type **OSVD — OS d'avenant de
+délai** permet de saisir une durée supplémentaire entière en jours ou en mois
+calendaires et son motif. La durée positive, le motif et la date d'effet sont
+obligatoires pour notifier l'OS. Les brouillons et les OS annulés n'allongent
+pas le délai ; les OS notifiés sont pris en compte à partir de leur date d'effet.
+Le délai initial du marché est conservé, et les arrêts/reprises gardent leur
+calcul actuel.
+
+Le motif `CIRCULAIRE_09_2022` plafonne les prolongations cumulées du marché à
+**six mois calendaires**, jamais à un forfait de 180 jours. Les quantités en
+mois et en jours relevant de la circulaire sont cumulées séparément, puis
+comparées à six mois depuis l'échéance contractuelle précédant le premier avenant
+de ce motif (prolongations antérieures incluses, arrêts exclus). Cette référence
+reste fixe pour ne pas renouveler le plafond à chaque notification. Les autres motifs ne
+consomment pas ce plafond. Un mois ajouté conserve le jour si possible, sinon
+utilise le dernier jour du mois ; aucune journée n'est soustraite à l'extension.
+L'annulation d'un avenant retire sa contribution sans modifier le délai initial.
+
+Après mise à jour, exécuter `python manage.py migrate` pour créer les champs et
+le nouveau type d'OS.
+
 ## Technologies
 
 Django 5.2.5 · HTML/CSS/JavaScript · Handsontable · Tailwind CSS ·

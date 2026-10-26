@@ -340,7 +340,15 @@ sont verrouillés pendant cette étape uniquement. Aucun planning ni calendrier
 n'est créé avant cette confirmation ; annuler ne laisse pas de données.
 
 Depuis une carte, l'éditeur inline ou le Gantt, « Importation XML » propose le
-remplacement complet du planning. Une acceptation explicite est requise lors de
+remplacement complet du planning dans un dialogue partagé. L'import d'un nouveau
+planning depuis la liste utilise le même dialogue. La sélection du fichier,
+l'aperçu, la confirmation et les erreurs restent dans ce dialogue sans quitter
+l'écran. Annuler ou Échap le ferme sans modifier les données ; pendant une
+requête, la fermeture et les doubles soumissions sont bloquées. Après succès,
+l'éditeur inline du planning importé est ouvert. Les modifications non
+enregistrées dans l'éditeur inline ou le Gantt doivent être sauvegardées avant
+l'ouverture. Les URL d'import restent utilisables en page complète sans JavaScript.
+Une acceptation explicite est requise lors de
 la sélection puis à la confirmation finale. L'identifiant et les URL restent
 les mêmes, mais les tâches, liaisons, affectations, titre, description, dates et
 calendrier sont remplacés. Le rattachement projet est effacé (absent du XML).
@@ -352,6 +360,14 @@ unique et valable 30 minutes. Les ressources/affectations non importées sont
 signalées à l'écran avant validation. Le fichier `goplan/exemples/planning-achevement-amdl-20-10-26xml.xml`
 est couvert par un test d'import réel puis export/réimport : 91 tâches utiles
 (18 groupes), 55 liaisons et un calendrier de 7 h/jour.
+
+L'export XML depuis la liste, l'éditeur inline et le Gantt ouvre un dialogue
+compact indiquant le planning, le format MSPDI et le nom du fichier. Le bouton
+« Télécharger XML » affiche la génération puis « Téléchargement lancé » après
+réception du fichier ; cela ne garantit pas son enregistrement sur le disque.
+Les erreurs restent dans le dialogue avec possibilité de réessayer. Les
+modifications non enregistrées bloquent l'export pour éviter de télécharger une
+ancienne version. Le téléchargement direct reste accessible sans JavaScript.
 
 Limites de cette première version : granularité des dates au jour (pas de
 conservation des heures de début/fin ni des plages horaires originales),
