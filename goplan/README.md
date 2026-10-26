@@ -1,5 +1,10 @@
 # GoPlan
 
+Les contrôles de version des tâches et liaisons normalisent les décimaux à la
+précision des champs en base. Une sauvegarde ou un recalcul de groupe ne doit
+pas provoquer un faux conflit lors de la suppression suivante d'une liaison ;
+les modifications concurrentes réelles restent refusées avec le statut HTTP 409.
+
 Plannings de travaux : tâches hiérarchiques, calendriers ouvrés, diagramme de
 Gantt, échanges XML MS Project (MSPDI) et impression A4 à A0.
 

@@ -1,4 +1,5 @@
 from collections import defaultdict
+from decimal import Decimal
 import hashlib
 import json
 import logging
@@ -7,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db import DatabaseError, transaction
+from django.db import DatabaseError, models, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_GET, require_POST
@@ -226,6 +227,20 @@ def _revision(tasks, links=None, task_values=None):
         ]
     else:
         values = task_values
+    decimal_fields = {
+        field.attname: field.decimal_places
+        for field in GTask._meta.concrete_fields
+        if isinstance(field, models.DecimalField)
+    }
+    # Les valeurs en mémoire et relues en base doivent avoir la même précision.
+    values = [
+        {
+            name: format(Decimal(str(value)), f".{decimal_fields[name]}f")
+            if name in decimal_fields and value is not None else value
+            for name, value in row.items()
+        }
+        for row in values
+    ]
     if links is None:
         link_values = list(_plan_links(tasks).values(
             "pk", "predecesseur_id", "successeur_id", "type_lien", "decalage_jours",
