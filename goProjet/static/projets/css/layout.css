@@ -122,55 +122,68 @@ body.sidebar-is-collapsed .sidebar {
     margin-left: -18rem; /* = w-72 */
 }
 
+/* État replié : la sidebar sort à gauche, le contenu prend sa place */
+body.app-topbar-is-hidden .app-topbar {
+    transform: translateY(-100%) !important;
+    display: none !important; /* Masque la barre supérieure */
+}
+
 /* ──────────────────────────────────────────────────────────
-   Bouton — sticky, subtil, révélé au survol
+   Bouton — sticky, sidebar
    ────────────────────────────────────────────────────────── */
 .sidebar-toggle-btn {
     position: sticky;
-    top: 0.5rem;
+    top: 1.6rem;
+    left: 0;
+
     z-index: 30;
 
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
 
-    /* sticky = occupe l'espace vertical → on annule via margin-bottom négative
-       pour que #main-content démarre sous le bouton sans espace parasite */
-    margin: 0.5rem 0 -1.75rem 0.5rem;
+    width: 28px;
+    height: 48px;
 
-    border-radius: 9999px;
-    background: var(--bg-elevated);
+    /* collé au bord gauche */
+    margin: 0.5rem 0 -64px 0;
+
+    /* Google Maps style */
+    border-radius: 0 16px 16px 0;
+
+    background: var(--bg-page);
     border: 1px solid var(--border-default);
+    border-left: none;
+
     color: var(--text-secondary);
 
-    opacity: 0.35;
+    opacity: 0.5;
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
 
-    transition: opacity 0.2s ease,
-                background-color 0.2s ease,
-                transform 0.15s ease;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.12);
+
+    transition:
+        background-color 0.2s ease,
+        transform 0.15s ease,
+        opacity 0.2s ease;
 }
-
-.sidebar-toggle-btn:hover {
-    opacity: 1;
-    background: var(--bg-hover);
-    transform: scale(1.1);
-}
-
-.sidebar-toggle-btn:focus-visible {
-    outline: 2px solid var(--accent-info, #22d3ee);
-    outline-offset: 2px;
-    opacity: 1;
-}
-
 .sidebar-toggle-btn i {
-    font-size: 0.7rem;
-    line-height: 1;
+    font-size: 0.9rem;
     transition: transform 0.25s ease;
-    pointer-events: none;
+}
+.sidebar-toggle-btn:hover {
+    background: var(--bg-hover);
+    opacity: 1;
+}
+
+.sidebar-toggle-btn::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 6px;
+    bottom: 6px;
+    width: 1px;
+    background: var(--border-default);
 }
 
 /* Chevron inversé quand la sidebar est repliée */
@@ -180,7 +193,6 @@ body.sidebar-is-collapsed .sidebar-toggle-btn {
 body.sidebar-is-collapsed .sidebar-toggle-btn i {
     transform: rotate(180deg);
 }
-
 /* ──────────────────────────────────────────────────────────
    Thème sombre
    ────────────────────────────────────────────────────────── */
@@ -201,4 +213,81 @@ body.sidebar-is-collapsed .sidebar-toggle-btn i {
     .sidebar-toggle-btn {
         display: none;
     }
+}
+/* ──────────────────────────────────────────────────────────
+   Bouton — sticky, Topbar
+   ────────────────────────────────────────────────────────── */
+.topbar-toggle-btn {
+    position: sticky;
+    top: 0rem;
+    left: 0rem;
+    /* transform: translateX(-50%); */
+
+    z-index: 40;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 48px;
+    height: 28px;
+
+    background: var(--bg-page);
+    border: 1px solid var(--border-default);
+    border-top: none;
+
+    /* version horizontale du toggle sidebar */
+    border-radius: 0 0 16px 16px;
+
+    color: var(--text-secondary);
+
+    opacity: 0.5;
+    cursor: pointer;
+
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+
+    transition:
+        background-color 0.2s ease,
+        opacity 0.2s ease,
+        transform 0.15s ease;
+}
+
+.topbar-toggle-btn:hover {
+    background: var(--bg-hover);
+    opacity: 1;
+}
+
+.topbar-toggle-btn i {
+    font-size: 0.9rem;
+    transition: transform 0.25s ease;
+}
+.topbar-toggle-btn::before {
+    content: "";
+    position: absolute;
+
+    top: 0;
+    left: 6px;
+    right: 6px;
+
+    height: 1px;
+    background: var(--border-default);
+}
+/* Chevron inversé quand la topbar est repliée */
+body.app-topbar-is-hidden .topbar-toggle-btn {
+    opacity: 0.5;
+}
+body.app-topbar-is-hidden .topbar-toggle-btn i {
+    transform: rotate(180deg);
+}
+/* ──────────────────────────────────────────────────────────
+   Thème sombre pour le topbar
+   ────────────────────────────────────────────────────────── */
+[data-theme="dark"] .topbar-toggle-btn {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: #334155;
+    color: #94a3b8;
+}
+[data-theme="dark"] .topbar-toggle-btn:hover {
+    background: rgba(51, 65, 85, 0.9);
+    color: #e2e8f0;
 }

@@ -66,7 +66,7 @@
         }
     </style>
 
-    {# ⚡ CSS spécifiques à la famille de pages #}
+    {# CSS spécifiques à la famille de pages #}
     {% block extra_css %}{% endblock %}
     {% block extra_head %}{% endblock %}
 </head>
@@ -101,7 +101,16 @@
                         title="Masquer / Afficher la barre latérale (Ctrl+B)">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-
+                {# Bouton toggle sidebar — sticky, HTMX compatible #}
+                <button id="topbar-toggle-btn"
+                        type="button"
+                        class="topbar-toggle-btn"
+                        aria-label="Basculer la barre supérieure"
+                        aria-controls="app-topbar"
+                        aria-expanded="true"
+                        title="Masquer / Afficher la barre supérieure (Ctrl+T)">
+                    <i class="fas fa-angle-up"></i>
+                </button>
                 <div id="htmx-progress"></div>
                 <div id="main-content" class="p-3 md:p-4" data-family="{% block data_family %}core{% endblock %}">
                     {% block content %}{% endblock %}
@@ -122,7 +131,7 @@
     <!-- JS essentiels (chargés partout) -->
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
     <script src="{% static 'projets/js/sidebar.js' %}" defer></script>
-    <script src="{% static 'projets/js/sidebar-toggle.js' %}" defer></script>
+    <script src="{% static 'projets/js/sidebar-topbar-toggle.js' %}" defer></script>
     <script src="{% static 'projets/js/htmx-config.js' %}" defer></script>
     <script src="{% static 'projets/js/common.js' %}" defer></script>
     <script src="{% static 'projets/js/profile-manager.js' %}" defer></script>
