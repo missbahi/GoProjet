@@ -15,8 +15,11 @@
     --goplan-paper-ink:           #cbd5e1;
     --goplan-paper-ink-soft:      #94a3b8;
     --goplan-paper-ink-strong:    #e2e8f0;
+    --goplan-paper-link-delete:   #ef4444;
+    --goplan-paper-link-edit:     rgb(15, 189, 15);
     --goplan-paper-border:        #334155;
     --goplan-paper-border-strong: #475569;
+    --goplan-paper-link-text:     #bdc8e3;
     --goplan-paper-gradient:      linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
     --goplan-paper-shadow-sm:     0 1px 2px rgba(0, 0, 0, 0.3);
     --goplan-paper-shadow-md:     0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
@@ -30,8 +33,11 @@
     --goplan-paper-ink:           #24485a;
     --goplan-paper-ink-soft:      #527889;
     --goplan-paper-ink-strong:    #376b82;
+    --goplan-paper-link-delete:   #ef4444;
+    --goplan-paper-link-edit:     rgb(15, 189, 15);
     --goplan-paper-border:        #a9cad6;
     --goplan-paper-border-strong: #7baec1;
+    --goplan-paper-link-text:     #202739;
     --goplan-paper-gradient:      linear-gradient(135deg, #f8f6ef 0%, #f0ede5 100%);
     --goplan-paper-shadow-sm:     0 1px 2px rgba(36, 72, 90, 0.05);
     --goplan-paper-shadow-md:     0 1px 3px rgba(36, 72, 90, 0.08), 0 1px 2px rgba(36, 72, 90, 0.04);
@@ -61,6 +67,7 @@
     --goplan-paper-bg-alt:        #f0ede5;
     --goplan-paper-bg-hover:      #fdfbf5;
     --goplan-paper-ink:           #24485a;
+    --goplan-paper-select:        #010d1c;
     --goplan-paper-ink-soft:      #8fa8b5;
     --goplan-paper-ink-strong:    #376b82;
     --goplan-paper-border:        #a9cad6;
@@ -227,23 +234,53 @@
 }
 
 /* ══════════════════════════════════════════════════════════════
-   BOUTON SUPPRESSION LIGNE
+   BOUTON MODIFIER / SUPPRESSION LIGNE
    ══════════════════════════════════════════════════════════════ */
-.goplan-delete-btn {
-    color: #b4534b;
-    padding: 0.25rem 0.35rem;
-    background: transparent;
-    border: 0;
+.gantt-link-btn-delete, 
+.gantt-link-btn-edit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0.35rem 0.8rem;
+    /* border: 1px solid var(--border-default); */
+    border-radius: 0.5rem;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
     cursor: pointer;
-    border-radius: 0.25rem;
-    transition: background-color 0.15s;
+    opacity: 0.8;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.15s ease;
+}
+.gantt-link-btn-delete {
+    background-color: var(--goplan-paper-link-delete);
+}
+.gantt-link-btn-edit {
+    background-color: var(--accent-green);
+}
+.gantt-link-btn-delete:hover,
+.gantt-link-btn-edit:hover {
+    opacity: 1;
+}
+.gantt-link-close-btn {
+    min-height: 32px;
+    padding: 0.35rem 0.8rem;
+    border-radius: 0.5rem;
+    color: var(--goplan-paper-link-text);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    opacity: 0.5;
 }
 
-.goplan-delete-btn:hover {
-    background-color: rgba(220, 38, 38, 0.12);
-    color: #991b1b;
+.gantt-link-close-btn:hover {
+    opacity: 1;
+    /* background-color: var(--goplan-paper-ink-strong); */
 }
-
 /* ══════════════════════════════════════════════════════════════
    ERREURS INLINE
    ══════════════════════════════════════════════════════════════ */
@@ -772,7 +809,8 @@ button.goplan-link-summary:disabled {
 }
 
 #gantt-link-dialog {
-    max-width: min(850px, 95vw);
+    width: min(700px, 90vw);
+    max-width: 700px;
 }
 
 #gantt-link-list li {
@@ -782,6 +820,19 @@ button.goplan-link-summary:disabled {
     justify-content: space-between;
     padding: 0.4rem 0;
     border-bottom: 1px solid #a9cad6;
+}
+#gantt-link-list li span {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.gantt-link-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
 }
 
 .goplan-gantt-container .gantt-link-arrow {
@@ -889,8 +940,8 @@ button.goplan-link-summary:disabled {
     height: 30px;
     min-height: 30px;
     width: 100%;
-    background: transparent;
-    color: var(--goplan-paper-ink);
+    background: var(--goplan-paper-bg);
+    color: var(--goplan-paper-link);
     border: 1px solid var(--goplan-paper-border);
     border-radius: 0.25rem;
     padding: 0.2rem 0.25rem;
@@ -1444,11 +1495,6 @@ button.goplan-link-summary:disabled {
     background: #0c4a6e;
     border-color: #0c4a6e;
 }
-
-/* Toutes les barres sont cliquables en mode peinture */
-/* ══════════════════════════════════════════════════════════════
-   PAINT MODE — Curseurs personnalisés
-   ══════════════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════════════
    PAINT MODE — Curseur PNG 32×30

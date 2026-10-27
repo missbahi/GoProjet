@@ -42,7 +42,7 @@
                 label.textContent = `${editable.get(link.predecessor)?.label || 'Tâche hors planning'} — ${link.type} (${link.lag >= 0 ? '+' : ''}${link.lag} j ouvrés)`;
                 const modify = document.createElement('button');
                 modify.type = 'button';
-                modify.className = 'app-btn-secondary';
+                // modify.className = 'goplan-modify-btn';
                 modify.textContent = 'Modifier';
                 if (!possible.has(link.predecessor)) {
                     modify.dataset.incompatibleLink = '';
@@ -55,11 +55,18 @@
                 });
                 const remove = document.createElement('button');
                 remove.type = 'button';
-                remove.className = 'goplan-delete-btn';
+                // remove.className = 'goplan-delete-btn';
                 remove.textContent = 'Supprimer';
                 remove.setAttribute('aria-label', `Supprimer la liaison depuis ${editable.get(link.predecessor)?.label}`);
                 remove.addEventListener('click', () => persist('delete', link.predecessor));
-                row.append(label, modify, remove);
+
+                const actions = document.createElement('div');
+                actions.className = 'gantt-link-actions';
+                modify.classList.add('gantt-link-btn', 'gantt-link-btn-edit');
+                remove.classList.add('gantt-link-btn', 'gantt-link-btn-delete');
+                actions.append(modify, remove);
+                row.append(label, actions);
+
                 list.appendChild(row);
             });
             if (!list.children.length) list.textContent = 'Aucun prédécesseur.';
@@ -104,7 +111,8 @@
         }
 
         form.addEventListener('submit', event => { event.preventDefault(); persist('save'); });
-        form.querySelector('#gantt-link-close').addEventListener('click', () => dialog.close());
+        const closeBtn = form.querySelector('#gantt-link-close');
+        closeBtn?.addEventListener('click', () => dialog.close());
         dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
         return {
             open(id) {
