@@ -2,6 +2,7 @@
 Django settings for goProjet project.
 """
 
+import importlib
 import os
 from pathlib import Path
 import dj_database_url
@@ -72,7 +73,8 @@ INSTALLED_APPS = [
     'projets.apps.ProjetsConfig',
     'goplan.apps.GoplanConfig',
 ]
-if DEBUG: INSTALLED_APPS.append('django_extensions')
+if DEBUG and importlib.util.find_spec('django_extensions'):
+    INSTALLED_APPS.append('django_extensions')
 
 # --- 5. MIDDLEWARE ---
 MIDDLEWARE = [

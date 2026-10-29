@@ -24,6 +24,13 @@ venv-1/
 # Scripts
 scripts/
 
+# Fichiers js de test
+*.cjs
+scripts/*.cjs
+
+# dumps
+dumps/
+
 # ══════════════════════════════════════════════════════════════
 # FICHIERS SENSIBLES — NE JAMAIS COMMITER
 # ══════════════════════════════════════════════════════════════
@@ -83,3 +90,10 @@ Desktop.ini
 /goplan/tests/
 /goplan/icons/
 /goplan/static/icons/
+
+# Backup
+requirements_.txt
+requirements-dev.txt
+
+# Fichiers utilitaires locaux
+pyproject.toml
