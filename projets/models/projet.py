@@ -1046,11 +1046,12 @@ class Line:
         return f"{self.designation} ({self.amount()})"
 
 class LineBPU(Line):
-    def __init__(self, id=None, parent=None, numero="", designation="New Line", unite="", quantite=Decimal('0.00'), pu=Decimal('0.00')):
+    def __init__(self, id=None, parent=None, numero="", designation="New Line", unite="", quantite=Decimal('0.00'), pu=Decimal('0.00'), expanded: bool = True):
         super().__init__(id=id, parent=parent, numero=numero, designation=designation,)
         self.unite = unite
         self.quantite = quantite
         self.pu = pu
+        self.expanded = expanded
     
     def get_child_by_id(self, id):
         for child in self.children:
@@ -1077,6 +1078,7 @@ class LotProjet(models.Model):
         _("Taux de TVA (%)"), max_digits=5, decimal_places=2, null=True, blank=True,
         help_text=_("0 = lot hors TVA. Laisser vide pour utiliser le taux du projet.")
     )
+    bordereau_config = models.JSONField(default=dict, blank=True, verbose_name=_("Configuration du bordereau"))
 
     class Meta:
         verbose_name = _("Lot du projet")
@@ -1129,6 +1131,7 @@ class LotProjet(models.Model):
                 unite=ligne.unite,
                 quantite=ligne.quantite,
                 pu=ligne.prix_unitaire,
+                expanded=ligne.expanded,
             )
 
         for ligne in lignes:
@@ -1156,6 +1159,7 @@ class LigneBordereau(models.Model):
     
     niveau = models.IntegerField(_("Niveau hiérarchique"), default=0)
     est_titre = models.BooleanField(_("Est un titre"), default=False)
+    expanded = models.BooleanField(_("Ligne développée"), default=True)
     ordre_affichage = models.IntegerField(_("Ordre d'affichage"), default=0)
         
     class Meta:

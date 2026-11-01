@@ -99,6 +99,7 @@ projets_urlpatterns = [
     path('api/projet/lots/<int:projet_id>/export-excel/', lot_views.export_bordereau_excel, name='export_bordereau_excel'),
 
     path('projet/<int:projet_id>/lot/<int:lot_id>/saisie/', lot_views.saisie_bordereau, name='saisie_bordereau'),
+    path('projet/<int:projet_id>/lot/<int:lot_id>/apparence/', lot_views.sauvegarder_config_bordereau, name='sauvegarder_config_bordereau'),
     path('api/lot/<int:lot_id>/save/', lot_views.sauvegarder_lignes_bordereau, name='sauvegarder_lignes_bordereau'),
     # Aperçu avant impression du bordereau des prix
     path('projets/<int:projet_id>/lots/apercu/', lot_views.apercu_impression_bordereau, name='apercu_impression_bordereau'),

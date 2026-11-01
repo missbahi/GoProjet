@@ -55,7 +55,7 @@
     font-size: 12px !important;
 }
 
-/* Alternance des lignes */
+/* Alternance conservée pour les grilles Handsontable existantes. */
 .handsontable-custom tbody tr:nth-child(even) td {
     background: var(--bg-elevated) !important;
 }

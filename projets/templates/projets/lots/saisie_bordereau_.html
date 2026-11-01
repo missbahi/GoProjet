@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="{{ user.profile.theme|default:'dark' }}">
+<head> 
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   
+    <title>Bordereau - {{ lot.nom }}</title>
+    
+    {% load static %}
+    {% load formatters %}
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/bordereau.css' %}">
+
+    <script src="{% static 'projets/js/nombre-lettres.js' %}"></script>
+    <script src="{% static 'goplan/js/tree-node.js' %}"></script>
+    <script src="{% static 'projets/js/bdp-table-native.js' %}"></script>
+    <script src="{% static 'projets/js/bdp-manager-v00.js' %}"></script>
+    <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    
+    {% include "includes/_toast_assets.html" %}
+</head>
+<body>
+
+    <div class="main-container">
+        <!-- En-tête -->
+        <header class="header-section">          
+            <div class="text-center">
+                <h1 class="text-2xl md:text-4xl font-bold text-cyan-400 mb-3 md:mb-4 flex items-center justify-center gap-2 md:gap-3">
+                    <i class="fas fa-file-invoice text-lg md:text-xl"></i>
+                    Bordereau de Prix
+                </h1>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-2 md:gap-4 text-sm md:text-base">
+                    <span class="text-[#AECBD6]">Projet :</span>
+                    <span class="font-bold text-cyan-300 border-b-2 border-cyan-400 pb-1 text-sm md:text-xl">
+                        {{ lot.projet.nom }}
+                    </span>
+                    <span class="text-[#AECBD6]">Lot :</span>
+                    <span class="font-bold text-green-300 border-b-2 border-green-400 pb-1 text-sm md:text-xl">
+                        {{ lot.nom }}
+                    </span>
+                </div>
+                
+            </div>
+        </header>
+
+       <!-- Boutons de navigation + Toggle thème -->
+        <div class="navigation-buttons flex flex-col sm:flex-row sm:items-center gap-2 mb-3 md:mb-4">
+
+            <!-- Groupe des boutons de navigation -->
+            <button onclick="window.location.href='{% url 'projets:lots_projet' lot.projet.id %}'" 
+                    class="btn btn-success">
+                <i class="fas fa-cubes"></i> Retour aux lots
+            </button>
+            <button onclick="window.location.href='{% url 'projets:dashboard' lot.projet.id %}'" 
+                    class="btn btn-info">
+                <i class="fa-solid fa-diagram-project"></i> Retour au projet
+            </button>
+            <button onclick="window.location.href='{% url 'home' %}'" 
+                    class="btn btn-warning">
+                <i class="fa-solid fa-house"></i> Accueil
+            </button>
+
+            <!-- ⚡ Toggle thème (poussé à droite) -->
+            <button type="button"
+                    data-theme-toggle
+                    class="theme-toggle-btn sm:ml-auto"
+                    title="Basculer le thème clair/sombre">
+                <i data-theme-toggle-icon class="fas fa-sun"></i>
+            </button>
+
+        </div>
+
+        <!-- Barre d'outils -->
+        <div class="menu menu-fixed flex justify-between items-center p-2 md:p-3 rounded-lg border border-gray-600 shadow-lg mb-3 md:mb-4">
+            <!-- Partie gauche : Boutons -->
+            <div class="flex items-center no-print">
+                <div class="flex flex-wrap gap-1 md:gap-2">
+                    <!-- Bouton Sauvegarde -->
+                    <button onclick="saveData()" 
+                            id="save-btn"
+                            class="btn-toolbar btn-toolbar-primary group opacity-50 cursor-not-allowed"
+                            title="Aucune modification à enregistrer"
+                            disabled>
+                        <i class="fas fa-save"></i>
+                    </button>
+                    <button onclick="toggleExpandedAll()"
+                            id="toggle-expanded-all-btn"
+                            class="btn-toolbar btn-toolbar-info group"
+                            title="Réduire toutes les lignes filles">
+                        <i class="fas fa-compress-alt"></i>
+                    </button>
+                    <div id="loading-indicator" class="hidden ml-2">
+                        <i class="fas fa-spinner fa-spin text-cyan-400"></i>
+                        <span class="text-sm ml-1">Chargement...</span>
+                    </div>
+                    <!-- Bouton Ajouter ligne enfant -->
+                    <button onclick="insertChildLine()" 
+                            class="btn-toolbar btn-toolbar-warning group"
+                            title="Ajouter une ligne enfant">
+                        <i class="fas fa-add"></i>
+                    </button>
+                    
+                    <!-- Boutons Indentation -->
+                    <button onclick="desindente()" 
+                            class="btn-toolbar btn-toolbar-secondary group"
+                            title="Désindenter (niveau -1)">
+                        <i class="fas fa-outdent"></i>
+                    </button>
+                    <button onclick="indente()" 
+                            class="btn-toolbar btn-toolbar-info group"
+                            data-tooltip="Indenter (Tab)"
+                            title="Indenter (Tab)">
+                        <i class="fas fa-indent"></i>
+                    </button>
+                    <!-- Bouton Monter -->
+                    <button onclick="moveUp()" 
+                            class="btn-toolbar btn-toolbar-purple group"
+                            title="Monter la ligne">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+
+                    <!-- Bouton Descendre -->
+                    <button onclick="moveDown()" 
+                            class="btn-toolbar btn-toolbar-purple group"
+                            title="Descendre la ligne">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                    <!-- Boutons Export -->
+                    <button onclick="exportExcel()" 
+                            class="btn-toolbar btn-toolbar-success group"
+                            title="Exporter en Excel">
+                        <i class="fas fa-file-excel"></i>
+                    </button>
+                    
+                    <button onclick="exportPDF()" 
+                            class="btn-toolbar btn-toolbar-danger group"
+                            title="Exporter en PDF">
+                        <i class="fas fa-file-pdf"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Partie droite : Toast d'enregistrement + Affichage somme -->
+            <div id="toolbarToast" class="toolbar-toast hidden"></div>
+            <div id="selectionSumDisplay" class="selection-sum-display ml-2 text-right min-w-[120px] hidden">
+                <!-- La somme s'affichera ici dynamiquement -->
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% include "projets/home/_action_messages.html" %}
+
+        <div id="dynamic-messages" class="mb-4"></div>
+
+        <!-- Contenu principal -->
+        <div class="content-section">
+            <div class="mb-3 md:mb-4">
+                <h3 class="text-lg md:text-xl font-bold text-cyan-400 mb-3 md:mb-4 flex items-center justify-center gap-2">
+                    <i class="fas fa-table"></i>
+                    Détail des Prix Unitaires
+                </h3>
+                <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
+            </div>
+        </div>
+        
+        <!-- Total général -->
+        <div class="total-section">
+            <div class="flex flex-col sm:flex-row justify-between items-center gap-2">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-calculator text-cyan-400 text-lg md:text-xl"></i>
+                    <h5 class="text-cyan-300 text-base md:text-lg font-bold">
+                        Total général du lot HT
+                    </h5>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="total-lot" class="text-white text-xl md:text-2xl font-bold">
+                        0.00 MAD
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+    <script>
+        // Passer les données Django au JavaScript
+        window.bordereauData = JSON.parse('{{ lignes|escapejs }}');
+        window.lotId = {{ lot.id }};
+        window.lotNom = '{{ lot.nom|escapejs }}';
+        window.csrfToken = '{{ csrf_token }}';
+        window.saveUrl = '{% url 'projets:sauvegarder_lignes_bordereau' lot.id %}';
+    </script>
+{% include "projets/home/_messages.html" %}
+</body>
+</html>

@@ -1,17 +1,30 @@
 import json
+import hashlib
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.db import DatabaseError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
 from projets.decorators import chef_projet_required
 from projets.exporters import ExcelExporter
+from projets.forms import BORDEREAU_APPEARANCE_DEFAULTS, BordereauAppearanceForm
 from projets.manager import LigneHierarchique
 from projets.models import LigneBordereau, LotProjet, Projet
 from projets.utils.navigation import crumb, project_crumbs
 from django.views.decorators.http import require_POST
+
+
+def _bordereau_appearance_data(lot):
+    values = {**BORDEREAU_APPEARANCE_DEFAULTS, **(lot.bordereau_config or {})}
+    revision = hashlib.sha256(json.dumps(values, sort_keys=True).encode()).hexdigest()
+    return {
+        'values': values,
+        'defaults': BORDEREAU_APPEARANCE_DEFAULTS,
+        'revision': revision,
+    }
 
 
 @chef_projet_required
@@ -31,18 +44,48 @@ def saisie_bordereau(request, projet_id, lot_id):
             'niveau': ligne.level(),
             'est_titre': ligne.has_children(),
             'parent_id': ligne.parent.id if ligne.parent else None,
-            '_expanded': False,
+            '_expanded': ligne.expanded,
         }
         for ligne in lot_root.get_descendants()
     ]
 
     json_str = json.dumps(data, ensure_ascii=False)
+    appearance_data = _bordereau_appearance_data(lot)
 
     return render(request, 'projets/lots/saisie_bordereau.html', {
         'lot': lot,
         'root': lot_root,
         'lignes': json_str,
+        'appearance_data': appearance_data,
+        'appearance_form': BordereauAppearanceForm(initial=appearance_data['values']),
     })
+
+
+@chef_projet_required
+@require_POST
+def sauvegarder_config_bordereau(request, projet_id, lot_id):
+    try:
+        with transaction.atomic():
+            lot = get_object_or_404(
+                LotProjet.objects.select_for_update(), id=lot_id, projet_id=projet_id,
+            )
+            current = _bordereau_appearance_data(lot)
+            if request.POST.get('revision') != current['revision']:
+                return JsonResponse({'errors': {
+                    '__all__': ['La configuration a changé. Rechargez la page avant de réessayer.'],
+                }}, status=409)
+
+            form = BordereauAppearanceForm(request.POST)
+            if not form.is_valid():
+                return JsonResponse({'errors': form.errors}, status=400)
+
+            lot.bordereau_config = form.cleaned_data
+            lot.save(update_fields=['bordereau_config'])
+            return JsonResponse(_bordereau_appearance_data(lot))
+    except DatabaseError:
+        return JsonResponse({'errors': {
+            '__all__': ['Impossible d’enregistrer la configuration. Aucune modification sauvegardée.'],
+        }}, status=500)
 
 
 def _iter_lignes_bordereau_hierarchiques(projet):
@@ -73,6 +116,12 @@ def sauvegarder_lignes_bordereau(request, lot_id):
             lot = get_object_or_404(LotProjet, id=lot_id)
 
             lignes_existantes = {ligne.id: ligne for ligne in LigneBordereau.objects.filter(lot=lot)}
+            for row in body:
+                if '_expanded' in row and not isinstance(row['_expanded'], bool):
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': "L'état développé d'une ligne doit être un booléen.",
+                    }, status=400)
             id_mapping = {}
             lignes_existantes_utilisees = set()
 
@@ -88,6 +137,7 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                     ligne.prix_unitaire = Decimal(str(row.get('prix_unitaire', 0)))
                     ligne.niveau = row.get('niveau', 0)
                     ligne.est_titre = row.get('est_titre', False)
+                    ligne.expanded = row.get('_expanded', ligne.expanded)
                     ligne.ordre_affichage = index
                     ligne.montant_calcule = row.get('montant', 0)
 
@@ -104,6 +154,7 @@ def sauvegarder_lignes_bordereau(request, lot_id):
                         prix_unitaire=Decimal(str(row.get('prix_unitaire', 0))),
                         niveau=row.get('niveau', 0),
                         est_titre=row.get('est_titre', False),
+                        expanded=row.get('_expanded', True),
                         ordre_affichage=index,
                         montant_calcule=row.get('montant', 0)
                     )
@@ -486,4 +537,3 @@ def export_bordereau_excel(request, projet_id):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
-

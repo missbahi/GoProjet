@@ -6,227 +6,34 @@
 // CLASSES DE BASE OPTIMISÉES
 // ============================================================================
 
-class Line {
+class Line extends TreeNode {
     constructor(id = null, numero = "", designation = "", unite = "", 
                 quantite = 0, pu = 0, parent = null, expanded = true) {
-        this.id = id || this.generateId();
-        this.children = [];
-        this.numero = numero;
-        this.designation = designation;
+        super({
+            id: id || `line_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+            numero,
+            designation,
+            parent,
+            expanded,
+        });
         this.unite = unite;
         this.quantite = parseFloat(quantite) || 0;
         this.prix_unitaire = parseFloat(pu) || 0;
-        this.parent = parent;
-        this.expanded = expanded;
-        
-        // Cache pour optimisation
-        this._cachedAmount = null;
-        this._cachedLevel = null;
-    }
-
-    generateId() {
-        return `line_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-    }
-
-    get level() {
-        if (this._cachedLevel !== null) return this._cachedLevel;
-        
-        let level = 0;
-        let current = this.parent;
-        while (current) {
-            level++;
-            current = current.parent;
-        }
-        
-        this._cachedLevel = level;
-        return level;
-    }
-
-    get hasChildren() {
-        return this.children.length > 0;
     }
 
     get amount() {
         if (this._cachedAmount !== null) return this._cachedAmount;
-        
+
         if (this.hasChildren) {
-            const total = this.children.reduce((sum, child) => sum + child.amount, 0);
-            this._cachedAmount = total;
-            return total;
+            this._cachedAmount = this.children.reduce((sum, child) => sum + child.amount, 0);
+        } else {
+            this._cachedAmount = this._computeOwnAmount();
         }
-        
-        const total = this.quantite * this.prix_unitaire;
-        this._cachedAmount = total;
-        return total;
+        return this._cachedAmount;
     }
 
-    invalidateCache() {
-        this._cachedAmount = null;
-        this._cachedLevel = null;
-
-        // Le niveau des descendants dépend de ce nœud (ex: après indent/desindent)
-        this.invalidateChildrenLevel();
-
-        // Le montant des ancêtres dépend de ce nœud
-        if (this.parent) {
-            this.parent.invalidateAmountCache();
-        }
-    }
-
-    invalidateChildrenLevel() {
-        this.children.forEach(child => {
-            child._cachedLevel = null;
-            child.invalidateChildrenLevel();
-        });
-    }
-
-    invalidateAmountCache() {
-        this._cachedAmount = null;
-        if (this.parent) {
-            this.parent.invalidateAmountCache();
-        }
-    }
-
-    getChildIndex(child) {
-        return this.children.indexOf(child);
-    }
-
-    getNextSibling() {
-        if (!this.parent) return null;
-        const index = this.parent.getChildIndex(this);
-        return this.parent.children[index + 1] || null;
-    }
-
-    getPreviousSibling() {
-        if (!this.parent) return null;
-        const index = this.parent.getChildIndex(this);
-        return this.parent.children[index - 1] || null;
-    }
-
-    getFirstChild() {
-        return this.children[0] || null;
-    }
-
-    getLastChild() {
-        return this.children[this.children.length - 1] || null;
-    }
-
-    indent() {
-        const previousSibling = this.getPreviousSibling();
-        
-        // Ne peut pas indenter s'il n'y a pas de frère précédent
-        if (!previousSibling) return false;
-        
-        const parent = this.parent;
-        if (!parent) return false;
-        
-        // Retirer de l'ancien parent
-        parent.removeChild(this);
-        
-        // Ajouter au frère précédent comme enfant
-        previousSibling.addChild(this);
-        
-        return true;
-    }
-
-    desindent() {
-        const parent = this.parent;
-        
-        // Doit avoir un parent et ne pas être à la racine
-        if (!parent || !parent.parent) return false;
-        
-        const grandParent = parent.parent;
-        const parentIndex = grandParent.getChildIndex(parent);
-        
-        // Retirer du parent actuel
-        parent.removeChild(this);
-        
-        // Insérer après le parent dans le grand-parent
-        grandParent.insertChildAt(this, parentIndex + 1);
-        
-        return true;
-    }
-
-    addChild(child) {
-        child.parent = this;
-        this.children.push(child);
-        this.invalidateCache();
-    }
-
-    insertChildAt(child, index) {
-        child.parent = this;
-        this.children.splice(index, 0, child);
-        this.invalidateCache();
-    }
-
-    removeChild(child) {
-        const index = this.children.indexOf(child);
-        if (index !== -1) {
-            this.children.splice(index, 1);
-            child.parent = null;
-            this.invalidateCache();
-            return true;
-        }
-        return false;
-    }
-
-    moveChild(child, newIndex) {
-        const currentIndex = this.getChildIndex(child);
-        if (currentIndex === -1) return false;
-        
-        // Retirer de l'index actuel
-        this.children.splice(currentIndex, 1);
-        
-        // Insérer à la nouvelle position
-        this.children.splice(newIndex, 0, child);
-        this.invalidateCache();
-        return true;
-    }
-
-    moveChildUp(child) {
-        const index = this.getChildIndex(child);
-        if (index > 0) {
-            return this.moveChild(child, index - 1);
-        }
-        return false;
-    }
-
-    moveChildDown(child) {
-        const index = this.getChildIndex(child);
-        if (index !== -1 && index < this.children.length - 1) {
-            return this.moveChild(child, index + 1);
-        }
-        return false;
-    }
-
-    moveUp() {
-        if (!this.parent) return false;
-        return this.parent.moveChildUp(this);
-    }
-
-    moveDown() {
-        if (!this.parent) return false;
-        return this.parent.moveChildDown(this);
-    }
-
-    get descendantIds() {
-        const ids = [];
-        const traverse = (line) => {
-            line.children.forEach(child => {
-                ids.push(child.id);
-                traverse(child);
-            });
-        };
-        traverse(this);
-        return ids;
-    }
-
-    toggleExpanded() {
-        if (this.hasChildren) {
-            this.expanded = !this.expanded;
-            return true;
-        }
-        return false;
+    _computeOwnAmount() {
+        return this.quantite * this.prix_unitaire;
     }
 }
 
@@ -598,7 +405,7 @@ class LineManager {
 
     getLineIndexById(id) {
         this.updateFlatIndex();
-        return this.flatIndex.get(id) || -1;
+        return this.flatIndex.get(id) ?? -1;
     }
 
     invalidateCache() {
@@ -651,10 +458,7 @@ class LineManager {
         // automatiquement leur parent, il ne faut pas les indenter séparément.
         const siblings = lines.filter(line => line.parent === oldParent);
 
-        siblings.forEach(line => {
-            oldParent.removeChild(line);
-            newParent.addChild(line);
-        });
+        siblings.forEach(line => line.indent());
 
         if (siblings.length > 0) {
             this.invalidateCache();
@@ -676,19 +480,11 @@ class LineManager {
         const firstLine = lines[0];
         const oldParent = firstLine.parent;
         if (!oldParent || !oldParent.parent) return 0;
-        const grandParent = oldParent.parent;
-
         // Ne garder que les vraies lignes sœurs de la première (voir indentLine).
         const siblings = lines.filter(line => line.parent === oldParent);
 
-        // Index calculé une seule fois puis incrémenté : l'ancien parent ne bouge
-        // pas dans grandParent.children pendant la boucle, ce qui préserve l'ordre.
-        let insertIndex = grandParent.getChildIndex(oldParent) + 1;
-        siblings.forEach(line => {
-            oldParent.removeChild(line);
-            grandParent.insertChildAt(line, insertIndex);
-            insertIndex++;
-        });
+        // Insérer à chaque fois après le parent inverse l'ordre si on avance.
+        [...siblings].reverse().forEach(line => line.desindent());
 
         if (siblings.length > 0) {
             this.invalidateCache();
@@ -781,18 +577,16 @@ class LineManager {
 class EmptyLineManager {
     constructor(lineManager) {
         this.lineManager = lineManager;
-        this.emptyLineThreshold = 3; // Garder 3 lignes vides à la fin
+        this.emptyLineThreshold = 1;
     }
     
     /**
      * Vérifie si une ligne est vide
      */
     isEmptyLine(line) {
-        return !line.designation || 
-               line.designation.trim() === '' || 
-               (line.quantite === 0 && 
-                line.prix_unitaire === 0 && 
-                (!line.numero || line.numero.trim() === ''));
+        return [line.numero, line.designation, line.unite].every(
+            value => !value || value.trim() === ''
+        ) && line.quantite === 0 && line.prix_unitaire === 0;
     }
     
     /**
@@ -806,11 +600,11 @@ class EmptyLineManager {
      * Ajoute des lignes vides à la fin si nécessaire
      */
     ensureEmptyLines() {
-        const flatList = this.lineManager.getFlatList();
+        const rootLines = this.lineManager.root.children;
         let emptyLinesCount = 0;
 
-        for (let index = flatList.length - 1; index >= 0; index--) {
-            if (!this.isRemovableEmptyLine(flatList[index])) break;
+        for (let index = rootLines.length - 1; index >= 0; index--) {
+            if (!this.isRemovableEmptyLine(rootLines[index])) break;
             emptyLinesCount++;
         }
         
@@ -888,12 +682,14 @@ class BordereauManager {
         this.lotNom = options.lotNom || 'Bordereau';
         this.csrfToken = options.csrfToken || '';
         this.saveUrl = options.saveUrl || '';
+        this.renderer = options.renderer || window.bordereauRenderer || 'handsontable';
         this.isSyncing = false; // Éviter les boucles de synchronisation
         this.dataChanged = false;
         this.allLinesExpanded = true;
         
         // Initialisation
         this.hot = null;
+        this.tableView = null;
         this.lineManager = null;
         this.colMontantIndex = 8; // Index de la colonne "montant"
         this.initialize();
@@ -906,16 +702,16 @@ class BordereauManager {
         // Charger les données initiales si présentes
         if (window.bordereauData && Array.isArray(window.bordereauData)) {
             this.lineManager = new LineManager(this.lotNom, window.bordereauData);
-
-            // FORCER TOUTES LES LIGNES À ÊTRE EXPANDED À L'OUVERTURE
-            this.expandAllLines();
         }
         
-        // Initialiser Handsontable
-        this.initHandsontable();
+        if (this.renderer === 'native' && window.NativeBordereauTable) {
+            this.initNativeTable();
+        } else {
+            this.initHandsontable();
+        }
         
         // Configurer les raccourcis clavier
-        this.setupKeyboardShortcuts();
+        if (this.renderer !== 'native') this.setupKeyboardShortcuts();
         this.setupPlainTextPaste();
         this.markDataSaved();
     }
@@ -929,10 +725,9 @@ class BordereauManager {
         if (atEnd) {
             newLine = this.lineManager.addEmptyLine();
         } else {
-            const selected = this.hot.getSelected();
-            if (selected && selected.length > 0) {
-                const index = selected[0][0];
-                newLine = this.lineManager.addEmptyLineAt(index + 1);
+            const selection = this.getSafeSelection();
+            if (selection) {
+                newLine = this.lineManager.addEmptyLineAt(selection.startRow + 1);
             } else {
                 newLine = this.lineManager.addEmptyLine();
             }
@@ -944,10 +739,7 @@ class BordereauManager {
         // Sélectionner la nouvelle ligne
         setTimeout(() => {
             const newIndex = this.lineManager.getLineIndexById(newLine.id);
-            if (newIndex !== -1) {
-                this.hot.selectCell(newIndex, 4); // Colonne Désignation
-                this.hot.scrollViewportTo(newIndex);
-            }
+            if (newIndex !== -1) this.focusCell(newIndex, 4);
         }, 50);
         
         return newLine;
@@ -962,17 +754,22 @@ class BordereauManager {
     }
 
     toggleExpandedAll() {
-        const shouldExpand = !this.allLinesExpanded;
+        const parents = Array.from(this.lineManager.lines.values()).filter(line => line.hasChildren);
+        if (parents.length === 0) return;
+        const shouldExpand = parents.some(line => !line.expanded);
         this.lineManager.lines.forEach(line => {
             if (line.hasChildren) line.expanded = shouldExpand;
         });
         this.allLinesExpanded = shouldExpand;
         this.lineManager.invalidateCache();
         this.refreshTable();
+        this.markDataChanged();
         this.updateExpandAllButton();
     }
 
     updateExpandAllButton() {
+        this.allLinesExpanded = Array.from(this.lineManager.lines.values())
+            .every(line => !line.hasChildren || line.expanded);
         const button = document.getElementById('toggle-expanded-all-btn');
         if (!button) return;
 
@@ -984,11 +781,12 @@ class BordereauManager {
 
     markDataChanged() {
         this.dataChanged = true;
+        this.changeRevision = (this.changeRevision || 0) + 1;
         const saveBtn = document.getElementById('save-btn');
         if (saveBtn) {
-            saveBtn.disabled = false;
+            saveBtn.disabled = Boolean(this.saving);
             saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-            saveBtn.title = 'Enregistrer les modifications';
+            if (!this.saving) saveBtn.title = 'Enregistrer les modifications';
         }
     }
 
@@ -1001,6 +799,154 @@ class BordereauManager {
             saveBtn.title = 'Aucune modification à enregistrer';
         }
     }
+
+    initNativeTable() {
+        const container = document.getElementById(this.containerId);
+        if (!container) {
+            console.error(`Container #${this.containerId} non trouvé`);
+            return;
+        }
+        const appearanceElement = document.getElementById('bdp-appearance-data');
+        this.appearanceData = appearanceElement
+            ? JSON.parse(appearanceElement.textContent)
+            : { values: {}, defaults: {}, revision: '' };
+        this.appearance = { ...this.appearanceData.values };
+
+        this.tableView = new window.NativeBordereauTable(container, {
+            parseNumber: value => this.lineManager.parseFrenchNumber(value),
+            onCellChange: (row, property, value) => {
+                let normalized = value;
+                if (property === 'quantite' || property === 'prix_unitaire') {
+                    if (normalized === null || normalized < 0) {
+                        this.showMessage('Les quantités et prix doivent être des nombres positifs.', 'warning');
+                        return false;
+                    }
+                }
+                this.handleCellChange(row, property, normalized);
+                this.markDataChanged();
+                this.updateTotal();
+                this.scheduleEmptyLineCheck();
+                return normalized;
+            },
+            onSelectionChange: () => {
+                this.displaySelectionSum();
+                this.updateToolbar();
+            },
+            onToggleExpansion: row => this.toggleExpansion(row),
+            onDelete: () => this.executeRowAction('delete'),
+            getRowActions: () => this.getRowActions(),
+            onRowAction: action => this.executeRowAction(action),
+        });
+        this.tableView.setAppearance(this.appearance);
+        this.setupAppearanceDialog();
+        this.refreshTable();
+    }
+
+    setupAppearanceDialog() {
+        const dialog = document.getElementById('bdp-appearance-dialog');
+        const form = document.getElementById('bdp-appearance-form');
+        const errorBox = document.getElementById('bdp-appearance-errors');
+        if (!dialog || !form || !errorBox) return;
+
+        const fields = Array.from(form.querySelectorAll('input:not([type="hidden"])'));
+        const cancel = document.getElementById('bdp-appearance-cancel');
+        const defaults = document.getElementById('bdp-appearance-defaults');
+        const presets = Array.from(form.querySelectorAll('[data-color-preset]'));
+        let activeColorField = form.querySelector('input[type="color"]');
+        const updatePresetState = () => presets.forEach(button => {
+            button.setAttribute('aria-pressed', String(
+                button.dataset.colorPreset.toLowerCase() === activeColorField?.value.toLowerCase(),
+            ));
+        });
+        const fill = values => {
+            fields.forEach(field => {
+                if (values[field.name] !== undefined) field.value = values[field.name];
+            });
+            updatePresetState();
+            this.previewAppearance(fields);
+        };
+
+        document.getElementById('bdp-open-appearance')?.addEventListener('click', () => {
+            errorBox.textContent = '';
+            fill(this.appearanceData.values);
+            dialog.showModal();
+        });
+        form.addEventListener('focusin', event => {
+            if (event.target.matches('input[type="color"]')) {
+                activeColorField = event.target;
+                updatePresetState();
+            }
+        });
+        fields.forEach(field => field.addEventListener('input', () => {
+            if (field.type === 'color') activeColorField = field;
+            updatePresetState();
+            this.previewAppearance(fields);
+        }));
+        presets.forEach(button => button.addEventListener('click', () => {
+            if (!activeColorField) return;
+            activeColorField.value = button.dataset.colorPreset;
+            activeColorField.dispatchEvent(new Event('input', { bubbles: true }));
+            activeColorField.focus();
+        }));
+        defaults?.addEventListener('click', () => fill(this.appearanceData.defaults));
+        cancel?.addEventListener('click', () => {
+            fill(this.appearanceData.values);
+            dialog.close();
+        });
+        dialog.addEventListener('cancel', event => {
+            event.preventDefault();
+            fill(this.appearanceData.values);
+            dialog.close();
+        });
+        form.addEventListener('submit', async event => {
+            event.preventDefault();
+            if (!form.reportValidity()) return;
+            errorBox.textContent = '';
+            const payload = new FormData(form);
+            payload.set('revision', this.appearanceData.revision);
+            form.setAttribute('aria-busy', 'true');
+            form.querySelector('fieldset').disabled = true;
+            form.querySelector('[type="submit"]').disabled = true;
+            if (cancel) cancel.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: 'POST',
+                    body: payload,
+                    headers: {
+                        'X-CSRFToken': form.elements.namedItem('csrfmiddlewaretoken').value,
+                        Accept: 'application/json',
+                    },
+                });
+                const result = await response.json();
+                if (!response.ok) {
+                    errorBox.textContent = Object.values(result.errors || {}).flat().join(' ')
+                        || `Enregistrement refusé (HTTP ${response.status}).`;
+                    return;
+                }
+                this.appearanceData = result;
+                fill(result.values);
+                dialog.close();
+                this.showToolbarToast('Configuration du bordereau enregistrée.');
+            } catch (error) {
+                errorBox.textContent = error.message || 'Impossible d’enregistrer la configuration.';
+            } finally {
+                form.setAttribute('aria-busy', 'false');
+                form.querySelector('fieldset').disabled = false;
+                form.querySelector('[type="submit"]').disabled = false;
+                if (cancel) cancel.disabled = false;
+            }
+        });
+    }
+
+    previewAppearance(fields) {
+        const values = Object.fromEntries(fields.map(field => [
+            field.name,
+            field.type === 'number' ? Number(field.value) : field.value,
+        ]));
+        this.appearance = { ...this.appearance, ...values };
+        this.tableView?.setAppearance(this.appearance);
+    }
     
     initHandsontable() {
         const container = document.getElementById(this.containerId);
@@ -1010,6 +956,33 @@ class BordereauManager {
         }
 
         this.hot = new Handsontable(container, this.getHotConfig());
+        this.tableView = {
+            getSelection: () => this.getSelectionState(this.hot?.getSelected()),
+            getSelectedCellValues: () => {
+                const ranges = this.hot?.getSelected() || [];
+                const values = [];
+                const visited = new Set();
+                ranges.forEach(([startRow, startCol, endRow, endCol]) => {
+                    for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row++) {
+                        for (let column = Math.min(startCol, endCol); column <= Math.max(startCol, endCol); column++) {
+                            const key = `${row}:${column}`;
+                            if (visited.has(key)) continue;
+                            visited.add(key);
+                            values.push(this.hot.getDataAtCell(row, column));
+                        }
+                    }
+                });
+                return values;
+            },
+            selectCell: (row, column) => this.hot?.selectCell(row, column),
+            scrollToRow: row => this.hot?.scrollViewportTo(row),
+            setRows: rows => this.hot?.loadData(rows),
+            setHiddenRows: rows => this.hot?.updateSettings({
+                hiddenRows: { rows, indicators: false },
+            }),
+            render: () => this.hot?.render(),
+            setCellValue: (row, property, value) => this.hot?.setDataAtRowProp(row, property, value),
+        };
         
         // Initialiser l'affichage hiérarchique
         setTimeout(() => this.updateHiddenRows(), 100);
@@ -1069,14 +1042,7 @@ class BordereauManager {
                     },
                     remove_row: {
                         name: 'Supprimer la(les) ligne(s)',
-                        callback: (key, selection) => {
-                            const selected = this.getSafeSelection();
-                            if (!selected) return;
-                            const startRow = selected.startRow;
-                            const endRow = selected.endRow;
-                            const amount = endRow - startRow + 1;
-                            this.handleManualRowDeletion(startRow, amount);
-                        }
+                        callback: () => this.handleSelectedRowDeletion(),
                     },
                     sep1: { name: '---------' },
                     copy: {
@@ -1263,10 +1229,7 @@ class BordereauManager {
         if (newLines.length > 0) {
             setTimeout(() => {
                 const firstNewIndex = this.lineManager.getLineIndexById(newLines[0].id);
-                if (firstNewIndex !== -1) {
-                    this.hot.selectCell(firstNewIndex, 4);
-                    this.hot.scrollViewportTo(firstNewIndex);
-                }
+                if (firstNewIndex !== -1) this.focusCell(firstNewIndex, 4);
             }, 50);
         }
         
@@ -1307,12 +1270,55 @@ class BordereauManager {
         // Sélectionner la ligne suivante
         setTimeout(() => {
             const newIndex = Math.min(index, this.lineManager.nbLines - 1);
-            if (newIndex >= 0) {
-                this.hot.selectCell(newIndex, 4);
-                this.hot.scrollViewportTo(newIndex);
-            }
+            if (newIndex >= 0) this.focusCell(newIndex, 4);
         }, 50);
         
+        return true;
+    }
+
+    handleSelectedRowDeletion() {
+        const selectedIds = new Set(this.getSelectedLineIds());
+        if (selectedIds.size === 0) return false;
+
+        const flatList = this.lineManager.getFlatList();
+        const selectedLines = flatList.filter(line => selectedIds.has(line.id));
+        if (selectedLines.some(line => line.hasChildren)
+            && !window.confirm('Supprimer également les sous-lignes des groupes sélectionnés ?')) {
+            return false;
+        }
+
+        const roots = selectedLines.filter(line => {
+            for (let parent = line.parent; parent; parent = parent.parent) {
+                if (selectedIds.has(parent.id)) return false;
+            }
+            return true;
+        });
+        const removedLines = new Set();
+        roots.forEach(line => {
+            removedLines.add(line);
+            line.descendants.forEach(descendant => removedLines.add(descendant));
+        });
+
+        if (removedLines.size >= flatList.length) {
+            this.showMessage('Impossible de supprimer toutes les lignes', 'warning');
+            return false;
+        }
+
+        const nextIndex = Math.min(...roots.map(line => flatList.indexOf(line)));
+        roots
+            .sort((left, right) => flatList.indexOf(right) - flatList.indexOf(left))
+            .forEach(line => line.parent?.removeChild(line));
+        removedLines.forEach(line => this.lineManager.lines.delete(line.id));
+
+        this.lineManager.invalidateCache();
+        this.refreshTable(true);
+        this.markDataChanged();
+
+        setTimeout(() => {
+            const row = Math.min(nextIndex, this.lineManager.nbLines - 1);
+            if (row >= 0) this.focusCell(row, 4);
+        }, 50);
+
         return true;
     }
 
@@ -1361,19 +1367,17 @@ class BordereauManager {
     }
 
     refreshTable() {
-        if (!this.hot) return;
+        if (!this.tableView) return;
+        const viewport = this.tableView.captureViewport?.();
+        this.lineManager.ensureEmptyLinesForEditing();
+        this.tableView.setRows(this.lineManager.toTableData());
         
-        // 1. Mettre à jour les données sans recréer la configuration de la grille
-        this.hot.loadData(this.lineManager.toTableData());
-        
-        // 2. Mettre à jour les lignes cachées
         this.updateHiddenRows();
-        
-        // 3. Mettre à jour le total
         this.updateTotal();
-        
-        // 4. Forcer un rendu
-        this.hot.render();
+        this.tableView.render();
+        this.updateToolbar();
+        this.updateExpandAllButton();
+        this.tableView.restoreViewport?.(viewport);
     }
 
     // ============================================================================
@@ -1411,7 +1415,8 @@ class BordereauManager {
         
         // Mettre à jour le montant affiché
         if (property === 'quantite' || property === 'prix_unitaire') {
-            this.hot.setDataAtRowProp(row, 'montant', line.amount);
+            this.tableView?.setCellValue(row, 'montant', line.amount);
+            this.tableView?.refreshAmounts?.(this.lineManager.toTableData());
         }
     }
 
@@ -1466,19 +1471,13 @@ class BordereauManager {
     toggleExpansion(row) {
         if (this.lineManager.toggleExpansion(row)) {
             this.refreshTable();
+            this.markDataChanged();
         }
     }
 
     updateHiddenRows() {
-        if (!this.hot) return;
-        
-        const hiddenRows = this.lineManager.getHiddenRows();
-        this.hot.updateSettings({
-            hiddenRows: {
-                rows: hiddenRows,
-                indicators: false
-            }
-        });
+        if (!this.tableView?.setHiddenRows) return;
+        this.tableView.setHiddenRows(this.lineManager.getHiddenRows());
     }
 
     // ============================================================================
@@ -1547,27 +1546,120 @@ class BordereauManager {
     // ============================================================================
 
     getSafeSelection() {
-        if (!this.hot) return null;
-        
-        const selected = this.hot.getSelected();
-        if (!selected || !Array.isArray(selected) || selected.length === 0) {
-            return null;
+        const selection = this.tableView?.getSelection();
+        if (!selection?.ranges?.length) return null;
+        const activeRow = selection.activeCell?.row;
+        return selection.ranges.find(range => activeRow >= range.startRow && activeRow <= range.endRow)
+            || selection.ranges[0];
+    }
+
+    getSelectedLineIds() {
+        return this.tableView?.getSelection()?.lineIds || [];
+    }
+
+    getRowActions() {
+        const selection = this.tableView?.getSelection();
+        const range = this.getSafeSelection();
+        const line = range ? this.lineManager.getLineByFlatIndex(range.startRow) : null;
+        const hasSingleRange = selection?.ranges?.length === 1;
+        const canMove = Boolean(line && range?.nbRows === 1 && hasSingleRange);
+        const selectedIds = new Set(selection?.lineIds || []);
+        const removedLines = new Set();
+        this.lineManager.getFlatList().forEach(item => {
+            if (!selectedIds.has(item.id)) return;
+            removedLines.add(item);
+            item.descendants.forEach(descendant => removedLines.add(descendant));
+        });
+        return [
+            { id: 'add-child', toolbarId: 'toolbar-add-child', method: 'insertChildLine',
+                label: 'Insérer une ligne avant', icon: 'fas fa-plus', group: 0,
+                enabled: !selection || canMove },
+            { id: 'delete', toolbarId: 'toolbar-delete', method: 'handleSelectedRowDeletion',
+                label: 'Supprimer cette ligne', icon: 'fas fa-trash', group: 0,
+                enabled: removedLines.size > 0 && removedLines.size < this.lineManager.nbLines },
+            { id: 'up', toolbarId: 'toolbar-up', method: 'moveUp',
+                label: 'Monter en haut', icon: 'fas fa-arrow-up', group: 1,
+                enabled: Boolean(canMove && line.canMoveUp()) },
+            { id: 'down', toolbarId: 'toolbar-down', method: 'moveDown',
+                label: 'Descendre en bas', icon: 'fas fa-arrow-down', group: 1,
+                enabled: Boolean(canMove && line.canMoveDown()) },
+            { id: 'indent', toolbarId: 'toolbar-indent', method: 'indente',
+                label: 'Avancer (Indenter) →', icon: 'fas fa-indent', group: 2,
+                enabled: Boolean(line && hasSingleRange && line.getPreviousSibling()) },
+            { id: 'outdent', toolbarId: 'toolbar-outdent', method: 'desindente',
+                label: 'Reculer (Désindenter) ←', icon: 'fas fa-outdent', group: 2,
+                enabled: Boolean(line && hasSingleRange && line.parent?.parent) },
+        ];
+    }
+
+    executeRowAction(id) {
+        const action = this.getRowActions().find(item => item.id === id);
+        if (!action?.enabled) {
+            this.showMessage('Cette action n’est pas disponible pour la sélection actuelle.', 'warning');
+            return false;
         }
-        
-        const [startRow, startCol, endRow, endCol] = selected[0];
-        
-        return {
-            startRow: Math.min(startRow, endRow),
-            startCol: Math.min(startCol, endCol),
-            endRow: Math.max(startRow, endRow),
-            endCol: Math.max(startCol, endCol),
-            isSingleCell: (startRow === endRow && startCol === endCol),
-            nbRows: endRow - startRow + 1
+        return this[action.method]();
+    }
+
+    updateToolbar() {
+        if (this.renderer !== 'native' || !this.tableView) return;
+
+        this.getRowActions().forEach(action => {
+            const button = document.getElementById(action.toolbarId);
+            if (!button) return;
+            button.disabled = !action.enabled;
+            button.setAttribute('aria-disabled', String(!action.enabled));
+            button.title = action.label;
+            button.setAttribute('aria-label', action.label);
+            const icon = button.querySelector('i');
+            if (icon) icon.className = action.icon;
+        });
+        const states = {
+            'toggle-expanded-all-btn': Array.from(this.lineManager.lines.values()).some(item => item.hasChildren),
         };
+
+        Object.entries(states).forEach(([id, enabled]) => {
+            const button = document.getElementById(id);
+            if (!button) return;
+            button.disabled = !enabled;
+            button.setAttribute('aria-disabled', String(!enabled));
+        });
+    }
+
+    getSelectionState(rawRanges) {
+        if (!Array.isArray(rawRanges) || rawRanges.length === 0) return null;
+
+        const flatList = this.lineManager.getFlatList();
+        const lineIds = new Set();
+        const ranges = rawRanges.map(([startRow, startCol, endRow, endCol]) => {
+            const range = {
+                startRow: Math.min(startRow, endRow),
+                startCol: Math.min(startCol, endCol),
+                endRow: Math.max(startRow, endRow),
+                endCol: Math.max(startCol, endCol),
+                isSingleCell: startRow === endRow && startCol === endCol,
+                nbRows: Math.abs(endRow - startRow) + 1,
+            };
+
+            for (let row = range.startRow; row <= range.endRow; row++) {
+                const line = flatList[row];
+                if (line) lineIds.add(line.id);
+            }
+            return range;
+        });
+
+        return { ranges, lineIds: Array.from(lineIds) };
+    }
+
+    focusCell(row, column = 4) {
+        if (!this.tableView?.selectCell) return false;
+        this.tableView.selectCell(row, column);
+        this.tableView.scrollToRow?.(row);
+        return true;
     }
 
     formatNumber(value, decimals = 2) {
-        return value.toLocaleString('en-US', {
+        return value.toLocaleString('fr-FR', {
             minimumFractionDigits: decimals,
             maximumFractionDigits: decimals
         });
@@ -1585,12 +1677,12 @@ class BordereauManager {
     setupKeyboardShortcuts() {
         document.addEventListener('keydown', (e) => {
             // Tab pour indenter/désindenter
-            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && this.hot) {
+            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && this.tableView) {
                 e.preventDefault();
-                const selected = this.hot.getSelected();
-                if (!selected || selected.length === 0) return;
-                
-                const startRow = selected[0][0];
+                const selected = this.getSafeSelection();
+                if (!selected) return;
+
+                const startRow = selected.startRow;
                 
                 if (e.shiftKey) {
                     // Désindenter
@@ -1643,42 +1735,29 @@ class BordereauManager {
         }, true);
     }
 
-    showSumSelectedCells(hotInstance) {
-        const selection = hotInstance.getSelected();
-        if (!selection) return;
-        
-        let [startRow, startCol, endRow, endCol] = selection[0];
-
-        // Ajuster si nécessaire
-        if (startRow > endRow) [startRow, endRow] = [endRow, startRow];
-        if (startCol > endCol) [startCol, endCol] = [endCol, startCol];
-
+    showSumSelectedCells() {
+        const values = this.tableView?.getSelectedCellValues?.() || [];
         let sum = 0;
         let cellCount = 0;
-        
-        for (let row = startRow; row <= endRow; row++) {
-            for (let col = startCol; col <= endCol; col++) {
-                // if (col < 3 || col > 7) continue;
-                
-                const rowData = hotInstance.getSourceDataAtRow(row);
-                let value = parseFloat(hotInstance.getDataAtCell(row, col)) || 0;
-                
-                if (!isNaN(value) && value !== 0) {
-                    sum += value;
-                    cellCount++;
-                }
+
+        values.forEach(value => {
+            const numericValue = Number.parseFloat(value) || 0;
+            if (Number.isFinite(numericValue) && numericValue !== 0) {
+                sum += numericValue;
+                cellCount++;
             }
-        }
+        });
+
         return { sum, cellCount };
     }
 
     displaySelectionSum() {
-        if (!this.hot) return;
-        
+        if (!this.tableView) return;
+
         const displayElement = document.getElementById('selectionSumDisplay');
         if (!displayElement) return;
 
-        const result = this.showSumSelectedCells(this.hot);
+        const result = this.showSumSelectedCells();
         if (result && result.cellCount > 1) {
             const formattedSum = this.formatNumber(result.sum);
             const average = this.formatNumber(result.sum / result.cellCount) || 0;
@@ -1736,23 +1815,22 @@ class BordereauManager {
     // ============================================================================
 
     insertChildLine() {
-        const selected = this.hot?.getSelected();
-        if (!selected || selected.length === 0) {
-            alert("Veuillez sélectionner une ligne");
-            return;
+        const selected = this.getSafeSelection();
+        const activeRow = this.tableView?.getSelection()?.activeCell?.row ?? selected?.startRow;
+        const currentLine = activeRow === undefined ? null : this.lineManager.getLineByFlatIndex(activeRow);
+        const parent = currentLine?.parent || this.lineManager.root;
+        const index = currentLine ? parent.children.indexOf(currentLine) : parent.children.length;
+        const newLine = new Line(null, '', 'Nouvelle ligne', '', 1, 0);
+        if (!parent.insertChildAt(newLine, index)) {
+            this.showMessage('Impossible d’insérer une ligne.', 'warning');
+            return false;
         }
-        
-        const startRow = selected[0][0];
-        const newLine = this.lineManager.insertOrUpdateLineAt(startRow + 1, {
-            numero: '',
-            designation: 'Nouvelle ligne',
-            unite: '',
-            quantite: 1,
-            prix_unitaire: 0,
-            expanded: true
-        });
-        
+        this.lineManager.lines.set(newLine.id, newLine);
+        this.lineManager.invalidateCache();
+        this.markDataChanged();
         this.refreshTable();
+        this.focusCell(this.lineManager.getLineIndexById(newLine.id), 4);
+        return newLine;
     }
 
     indente() {
@@ -1804,8 +1882,7 @@ class BordereauManager {
         if (newIndex !== -1) {
             this.markDataChanged();
             this.refreshTable();
-            // Reselect the moved line
-            this.hot.selectCell(newIndex, selected.startCol);
+            this.focusCell(newIndex, selected.startCol);
         }
     }
 
@@ -1821,17 +1898,21 @@ class BordereauManager {
         if (newIndex !== -1) {
             this.markDataChanged();
             this.refreshTable();
-            // Reselect the moved line
-            this.hot.selectCell(newIndex, selected.startCol);
+            this.focusCell(newIndex, selected.startCol);
         }
     }
 
     saveData() {
         const saveBtn = document.getElementById('save-btn');
-        if (!this.dataChanged) return;
+        if (!this.dataChanged || this.saving) return;
+        this.saving = true;
+        const savedRevision = this.changeRevision;
         if (saveBtn) {
             saveBtn.disabled = true;
-            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enregistrement...';
+            saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>';
+            saveBtn.setAttribute('aria-busy', 'true');
+            saveBtn.setAttribute('aria-label', 'Enregistrement en cours');
+            saveBtn.title = 'Enregistrement en cours';
         }
         
         const flatList = this.lineManager.getFlatList();
@@ -1845,10 +1926,11 @@ class BordereauManager {
             prix_unitaire: line.prix_unitaire,
             niveau: line.level,
             est_titre: line.hasChildren,
+            _expanded: line.expanded,
             parent_id: line.parent ? line.parent.id : null
         }));
 
-        fetch(this.saveUrl, {
+        return fetch(this.saveUrl, {
             method: "POST",
             headers: {
                 'Content-Type': 'application/json',
@@ -1859,7 +1941,6 @@ class BordereauManager {
         .then(response => response.json())
         .then(data => {
             if (data.status === 'ok') {
-                saveBtn.innerHTML = '<i class="fas fa-save"></i>';
                 this.showToolbarToast(data.message, 'success');
                 if (data.lignes) {
                     Object.entries(data.lignes).forEach(([oldId, newId]) => {
@@ -1871,7 +1952,7 @@ class BordereauManager {
                     });
                     this.lineManager.invalidateCache();
                 }
-                this.markDataSaved();
+                if (this.changeRevision === savedRevision) this.markDataSaved();
             } else {
                 throw new Error(data.message);
             }
@@ -1881,8 +1962,13 @@ class BordereauManager {
             this.showToolbarToast("Erreur d'enregistrement : " + error.message, 'error');
         })
         .finally(() => {
+            this.saving = false;
             if (saveBtn) {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i>';
+                saveBtn.removeAttribute('aria-busy');
+                saveBtn.setAttribute('aria-label', 'Enregistrer les modifications');
+                saveBtn.title = this.dataChanged
+                    ? 'Enregistrer les modifications' : 'Aucune modification à enregistrer';
                 if (this.dataChanged) {
                     saveBtn.disabled = false;
                     saveBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1891,12 +1977,23 @@ class BordereauManager {
         });
     }
 
+    getExportRows() {
+        return this.lineManager.getFlatList().map(line => [
+            line.numero,
+            line.designation,
+            line.unite,
+            line.quantite,
+            line.prix_unitaire,
+            line.amount,
+        ]);
+    }
+
     exportExcel() {
-        const exportData = this.hot.getData().filter(row => row && row[1] !== null && row[1] !== '');
+        const exportData = this.getExportRows();
         const wb = XLSX.utils.book_new();
         const wsData = [
             ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'],
-            ...exportData.map(row => [row[3], row[4], row[5], row[6], row[7], row[8]])
+            ...exportData,
         ];
         const ws = XLSX.utils.aoa_to_sheet(wsData);
         XLSX.utils.book_append_sheet(wb, ws, "Bordereau");
@@ -1906,9 +2003,9 @@ class BordereauManager {
     exportPDF() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const exportData = this.hot.getData().filter(row => row && row[1] !== null && row[1] !== '');
+        const exportData = this.getExportRows();
         const headers = ['N°', 'Désignation', 'Unité', 'Quantité', 'PU (DH)', 'Montant (DH)'];
-        const body = exportData.map(row => [row[3], row[4], row[5], row[6], row[7], row[8]]);
+        const body = exportData;
         
         doc.text(`Bordereau des prix unitaires - ${this.lotNom}`, 14, 15);
         doc.autoTable({
@@ -1939,6 +2036,8 @@ window.saveData = function() { window.bordereauManager?.saveData(); };
 window.toggleExpandedAll = function() { window.bordereauManager?.toggleExpandedAll(); };
 window.insertChildLine = function() { window.bordereauManager?.insertChildLine(); };
 window.indente = function() { window.bordereauManager?.indente(); };
+window.runBordereauAction = function(action) { return window.bordereauManager?.executeRowAction(action); };
+window.addBordereauEmptyLine = function() { return window.bordereauManager?.addNewEmptyLine(); };
 window.desindente = function() { window.bordereauManager?.desindente(); };
 window.moveUp = function() { window.bordereauManager?.moveUp(); };
 window.moveDown = function() { window.bordereauManager?.moveDown(); };
@@ -1954,7 +2053,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 containerId: 'hot',
                 lotNom: window.lotNom || 'Bordereau',
                 csrfToken: window.csrfToken || '',
-                saveUrl: window.saveUrl || ''
+                saveUrl: window.saveUrl || '',
+                renderer: window.bordereauRenderer
+                    || (new URLSearchParams(window.location.search).get('renderer') === 'native'
+                        ? 'native' : 'handsontable'),
             });
         }, 100);
     }
