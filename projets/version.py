@@ -1,6 +1,6 @@
 """Version de l'application et changelog."""
 
-# ⚠️ Bump cette valeur à chaque release notable
+# Bump cette valeur à chaque release notable
 APP_VERSION = "2.2.0"
 
 # Semver : MAJOR.MINOR.PATCH

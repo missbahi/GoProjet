@@ -45,6 +45,7 @@ BORDEREAU_APPEARANCE_DEFAULTS = {
     'header_height': 42,
     'font_size': 13,
     'sticky_header': True,
+    'row_headers': False,
     'width_numero': 100,
     'width_designation': 500,
     'width_unite': 100,
@@ -83,6 +84,7 @@ class BordereauAppearanceForm(forms.Form):
     font_size = forms.IntegerField(label="Taille du texte (px)", min_value=10, max_value=24,
                                    widget=forms.NumberInput(attrs={'min': 10, 'max': 24, 'step': 1}))
     sticky_header = forms.BooleanField(label="En-tête fixe", required=False)
+    row_headers = forms.BooleanField(label="Afficher les en-têtes de lignes", required=False)
     width_numero = forms.IntegerField(min_value=60, max_value=200, widget=forms.HiddenInput)
     width_designation = forms.IntegerField(min_value=240, max_value=1200, widget=forms.HiddenInput)
     width_unite = forms.IntegerField(min_value=55, max_value=180, widget=forms.HiddenInput)

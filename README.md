@@ -212,6 +212,24 @@ Ces options restent facultatives et sont configurées par l'adaptateur métier :
   Les titres ne sont pas automatiquement conservés si seuls leurs enfants
   correspondent : l'adaptateur définit la politique hiérarchique du filtre.
 - `freezeColumns: n` fige les n premières colonnes par `position: sticky`.
+  `rowHeaders: true` ajoute des en-têtes de lignes numérotés selon la position
+  dans la liste courante ; `rowHeaders: (row, rowIndex) => texte` personnalise
+  leur libellé. Désactivés par défaut, ils ne changent pas les indices des
+  colonnes métier, les données, le tri ni le clipboard. Un clic sélectionne
+  toute la ligne sans éditer ; Maj étend aux lignes intermédiaires en mode
+  range/multi, Ctrl/Cmd ajoute en mode multi. Les lignes masquées restent exclues.
+  Les boutons sont accessibles au clavier (Entrée/Espace) et au menu contextuel.
+  `rowHeaderWidth: 44` règle leur largeur ; `freezeRowHeaders: true` les fige
+  horizontalement, indépendamment de `freezeColumns` (défaut : false).
+  Le bordereau ne les active pas, pour éviter une seconde numérotation sur mobile.
+  Leur visibilité peut désormais être réglée dans la configuration générique
+  (`configuration.rowHeaders`) et dans le dialogue Apparence du bordereau
+  (« Afficher les en-têtes de lignes »). Ce dernier conserve le réglage par lot,
+  avec aperçu, annulation et retour aux valeurs par défaut (masqué).
+  La croix de fermeture et Échap annulent l'aperçu comme le bouton Annuler ;
+  la fermeture est désactivée pendant l'enregistrement.
+  Les deux formulaires alignent les paramètres dans des tables ; les contrôles
+  couleur et HEX sont compacts, avec un texte HEX nuancé en thème sombre.
   Les offsets suivent les redimensionnements et les remplacements de colonnes.
   Le double-clic sur une poignée ajuste la largeur au contenu visible et à
   l'en-tête, dans les limites `minWidth` / `maxWidth`, puis émet les hooks habituels.
@@ -237,8 +255,10 @@ masquées. Une validation refusée conserve l'éditeur ; aux extrémités, le fo
 reste sur la cellule courante. Entrée valide sans déplacement, Échap annule.
 L'ancienne option `editOnClick` est ignorée, même lorsqu'elle vaut `true`.
 
-Le bordereau actif utilise le clipboard, le tri hiérarchique et le gel de
-N° + désignation. Les colonnes numériques des
+Le bordereau actif utilise le clipboard et le tri hiérarchique, sans colonnes
+figées (`freezeColumns: 0`) : N° et désignation défilent avec les autres colonnes,
+y compris sur petits écrans. Le défilement horizontal et vertical reste dans
+le conteneur interne TableView. Les colonnes numériques des
 titres sont en lecture seule. Les nouvelles lignes collées sont créées à la racine.
 
 Le défilement est ancré sur l'identité de ligne lors d'un `setData()` ou d'un rendu

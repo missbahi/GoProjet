@@ -105,6 +105,11 @@
  * @property {boolean} [omitNullValues=false] Exclude null/undefined from selected values.
  * @property {boolean} [viewport=true] Preserve scroll anchor on rebuild.
  * @property {number} [freezeColumns=0] Non-negative number of leading sticky columns.
+ * @property {boolean|function(Object, number): string} [rowHeaders=false] Row position
+ * numbers or custom text. Click selects the entire row; Shift extends, Ctrl/Cmd adds.
+ * @property {number} [rowHeaderWidth=44] Positive row header width in pixels.
+ * @property {boolean} [freezeRowHeaders=false] Freeze row headers horizontally,
+ * independently of freezeColumns. Row headers are excluded from data/clipboard indexes.
  * @property {TableViewAppearance} [appearance] Presentation defaults/overrides.
  * @property {TableViewHierarchy} [hierarchy] Disabled with warning if columnKey is absent.
  * @property {TableViewRowActions} [rowActions] Disabled with warning if referenced column absent.
@@ -199,7 +204,16 @@
                 background: var(--tv-header-color); color: var(--tv-header-text-color);
                 font-weight: 700; text-align: center;
             }
-            .table-view-table.has-sticky-header th { position: sticky; top: 0; z-index: 2; }
+            .table-view-table.has-sticky-header thead th { position: sticky; top: 0; z-index: 2; }
+            .table-view-table tbody th.tv-row-header {
+                height: var(--tv-row-height); user-select: none;
+            }
+            .table-view-table .tv-row-header button {
+                border: 0; padding: 0; width: 100%; background: transparent;
+                color: inherit; font: inherit; cursor: pointer;
+            }
+            .table-view-table .tv-row-header.is-selected { background: var(--tv-selection-color); }
+            .table-view-table thead th.tv-frozen { z-index: 4; }
             .table-view-table tr.is-current > td { background: var(--tv-selection-color); }
             .table-view-table tr.is-title > td { color: var(--tv-title-color); font-weight: 700; }
             .table-view-table tr > td.is-amount { color: var(--tv-amount-color); font-weight: 600; }
@@ -297,13 +311,15 @@
             .table-view-config .tv-config-description {
                 margin: 8px 14px; font-size: 13px; color: #527889;
             }
-            .table-view-config .tv-config-row {
-                display: grid; grid-template-columns: minmax(160px, 200px) minmax(0, 1fr);
-                gap: 12px; align-items: start; padding: 10px 14px;
-                border-top: 1px solid #eaebec; border-left: 3px solid transparent;
-            }
+            .table-view-config .tv-config-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            .table-view-config .tv-config-row td { padding: 10px 14px; border-top: 1px solid #eaebec; vertical-align: middle; }
+            .table-view-config .tv-config-row td:first-child { width: 45%; border-left: 3px solid transparent; }
+            .table-view-config .tv-config-row.is-modified td:first-child { border-left-color: #0ea5e9; }
             .table-view-config .tv-config-row.is-modified { border-left-color: #0ea5e9; }
-            .table-view-config label { padding-top: 6px; font-size: 13px; font-weight: 500; }
+            .table-view-config label {
+                padding: 0; margin: 0; font-size: 13px; font-weight: 500;
+                color: inherit; text-transform: none; letter-spacing: normal;
+            }
             .table-view-config .tv-config-control {
                 display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;
             }
@@ -318,8 +334,20 @@
             .table-view-config input[name$=".color"],
             .table-view-config input[name$=".background"] { flex-basis: 140px; width: 140px; }
             .table-view-config input[type="color"] {
-                flex: 0 0 44px; width: 44px; height: 32px; padding: 2px; cursor: pointer;
+                flex: 0 0 36px; width: 36px; height: 28px; padding: 2px; cursor: pointer;
             }
+            .table-view-config input.tv-config-hex { flex: 0 0 auto; width: calc(7ch + 18px); font-family: Consolas, monospace; }
+            .table-view-config input.tv-config-hex { color: #527889; }
+            [data-theme="dark"] .table-view-config input.tv-config-hex { background: #243341; color: #aecbd6; }
+            [data-theme="dark"] .table-view-config { color: #d5e4eb; }
+            [data-theme="dark"] .table-view-config fieldset { background: #243341; border-color: #527889; }
+            .table-view-config legend { color: inherit; }
+            [data-theme="dark"] .table-view-config .tv-config-description { color: #aecbd6; }
+            [data-theme="dark"] .table-view-config .tv-config-row td { border-top-color: #527889; }
+            [data-theme="dark"] .table-view-config input:not([type="checkbox"]),
+            [data-theme="dark"] .table-view-config select { background: #1c2935; color: #d5e4eb; }
+            [data-theme="dark"] .table-view-config input.tv-config-hex { color: #aecbd6; }
+            [data-theme="dark"] .table-view-config .tv-config-tabs button:not([aria-selected="true"]) { background: #243341; }
             .table-view-config [aria-invalid="true"] { outline: 2px solid #b91c1c; }
             .table-view-config button { font: inherit; cursor: pointer; }
             .table-view-config button:disabled { opacity: .5; cursor: not-allowed; }
@@ -357,13 +385,17 @@
     class TableView {
         handleContextMenu(event) {
             if (!this.options.rowActions?.contextMenu) return;
-            const cell = event.target.closest('td[data-row][data-column]');
+            const cell = event.target.closest('td[data-row][data-column], th[data-row-header]');
             if (!cell || !this.wrapper.contains(cell)) return;
             event.preventDefault();
-            const rowIndex = Number(cell.dataset.row);
-            const columnIndex = Number(cell.dataset.column);
+            const rowIndex = Number(cell.dataset.row ?? cell.dataset.rowHeader);
+            const columnIndex = Number(cell.dataset.column ?? 0);
             if (!this.finishEdit()) return;
-            if (!this.isSelected(rowIndex, columnIndex)) this.selectCell(rowIndex, columnIndex);
+            if (cell.dataset.rowHeader !== undefined) {
+                if (!this.columns.every((column, index) => this.isSelected(rowIndex, index))) {
+                    this.selectRowFromHeader(rowIndex, {});
+                }
+            } else if (!this.isSelected(rowIndex, columnIndex)) this.selectCell(rowIndex, columnIndex);
             this.openContextMenu(event.clientX, event.clientY, rowIndex);
         }
     
@@ -471,6 +503,17 @@
                 && (!Number.isInteger(options.freezeColumns) || options.freezeColumns < 0)) {
                 throw new TypeError('freezeColumns must be a non-negative integer.');
             }
+            if (options.rowHeaders !== undefined && typeof options.rowHeaders !== 'boolean'
+                && typeof options.rowHeaders !== 'function') {
+                throw new TypeError('rowHeaders must be a boolean or a function.');
+            }
+            if (options.rowHeaderWidth !== undefined
+                && (!Number.isFinite(options.rowHeaderWidth) || options.rowHeaderWidth <= 0)) {
+                throw new TypeError('rowHeaderWidth must be a positive finite number.');
+            }
+            if (options.freezeRowHeaders !== undefined && typeof options.freezeRowHeaders !== 'boolean') {
+                throw new TypeError('freezeRowHeaders must be a boolean.');
+            }
             // Initialize instance properties with validated and defaulted values.
             this.container = container;
             this.columns = this.validateColumns(options.columns);
@@ -480,6 +523,7 @@
                 throw new TypeError('coalescePreview must be "none", "raf", or a boolean.');
             }
             this.featureOptions = { hierarchy: options.hierarchy, rowActions: options.rowActions };
+            this.rowHeaderRenderer = typeof options.rowHeaders === 'function' ? options.rowHeaders : null;
             this.options = this.optionsForColumns(this.columns, {
                 ...options,
                 coalescePreview: coalescePreview === true || coalescePreview === 'raf' ? 'raf' : 'none',
@@ -568,7 +612,8 @@
             const grouped = this.columns.some(column => column.group);
             const headerCount = grouped ? 2 : 1;
             table.setAttribute('aria-rowcount', String(this.data.length + headerCount));
-            table.setAttribute('aria-colcount', String(this.columns.length));
+            const rowHeaders = Boolean(this.options.rowHeaders);
+            table.setAttribute('aria-colcount', String(this.columns.length + Number(rowHeaders)));
             if (this.selectionMode !== 'single') table.setAttribute('aria-multiselectable', 'true');
             table.classList.toggle('has-sticky-header', this.appearance.stickyHeader);
             Object.entries(this.appearance).forEach(([key, value]) => {
@@ -578,10 +623,15 @@
             });
             if (this.options.label) table.setAttribute('aria-label', this.options.label);
             const totalWidth = this.columns.reduce((total, column) =>
-                total + this.getColumnWidth(column), 0);
+                total + this.getColumnWidth(column), rowHeaders ? this.options.rowHeaderWidth ?? 44 : 0);
             table.style.width = `${totalWidth}px`;
 
             const colgroup = document.createElement('colgroup');
+            if (rowHeaders) {
+                const col = document.createElement('col');
+                col.style.width = `${this.options.rowHeaderWidth ?? 44}px`;
+                colgroup.appendChild(col);
+            }
             this.columns.forEach(column => {
                 const col = document.createElement('col');
                 col.style.width = `${this.getColumnWidth(column)}px`;
@@ -593,6 +643,7 @@
             if (grouped) {
                 const groups = document.createElement('tr');
                 groups.setAttribute('aria-rowindex', '1');
+                if (rowHeaders) groups.appendChild(this.createRowHeaderCorner());
                 this.columns.forEach((column, index) => {
                     const previous = this.columns[index - 1];
                     const boundary = index === (this.options.freezeColumns || 0);
@@ -610,10 +661,12 @@
             }
             const headerRow = document.createElement('tr');
             headerRow.setAttribute('aria-rowindex', String(headerCount));
+            if (rowHeaders) headerRow.appendChild(this.createRowHeaderCorner());
             this.columns.forEach((column, index) => {
                 const th = document.createElement('th');
                 th.scope = 'col';
                 th.dataset.column = String(index);
+                th.setAttribute('aria-colindex', String(index + 1 + Number(rowHeaders)));
                 const label = column.label == null ? column.key : String(column.label);
                 if (column.sortable) {
                     const button = document.createElement('button');
@@ -648,13 +701,29 @@
                 this.styleRow(tr, row, rowIndex);
                 tr.hidden = this.hiddenRows.has(rowIndex);
                 tr.setAttribute('aria-rowindex', String(rowIndex + headerCount + 1));
+                if (rowHeaders) {
+                    const header = document.createElement('th');
+                    header.scope = 'row';
+                    header.setAttribute('role', 'rowheader');
+                    header.setAttribute('aria-colindex', '1');
+                    header.dataset.rowHeader = String(rowIndex);
+                    header.className = 'tv-row-header';
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.textContent = this.rowHeaderLabel(row, rowIndex);
+                    button.setAttribute('aria-label', `Select row ${button.textContent}`);
+                    button.addEventListener('click', event => this.selectRowFromHeader(rowIndex, event));
+                    button.addEventListener('keydown', event => event.stopPropagation());
+                    header.appendChild(button);
+                    tr.appendChild(header);
+                }
                 this.columns.forEach((column, columnIndex) => {
                     const td = document.createElement('td');
                     td.dataset.row = String(rowIndex);
                     td.dataset.column = String(columnIndex);
                     td.tabIndex = this.isActive(rowIndex, columnIndex) ? 0 : -1;
                     td.setAttribute('role', 'gridcell');
-                    td.setAttribute('aria-colindex', String(columnIndex + 1));
+                    td.setAttribute('aria-colindex', String(columnIndex + 1 + Number(rowHeaders)));
                     if (this.editing?.rowIndex === rowIndex
                         && this.editing.columnKey === column.key) {
                         if (draft) {
@@ -680,6 +749,39 @@
             element.className = this.options.rowClassName?.(row, rowIndex) || '';
             element.classList.toggle('is-current', this.activeCell?.rowIndex === rowIndex);
             if (this.options.hierarchy?.isGroup?.(row, rowIndex)) element.classList.add('is-title');
+        }
+
+        rowHeaderLabel(row, rowIndex) {
+            return String(typeof this.options.rowHeaders === 'function'
+                ? this.options.rowHeaders(row, rowIndex) : rowIndex + 1);
+        }
+
+        createRowHeaderCorner() {
+            const corner = document.createElement('th');
+            corner.className = 'tv-row-header-corner';
+            corner.setAttribute('aria-colindex', '1');
+            corner.setAttribute('aria-label', 'Row headers');
+            return corner;
+        }
+
+        selectRowFromHeader(rowIndex, event) {
+            if (this.hiddenRows.has(rowIndex) || !this.data[rowIndex] || !this.finishEdit()) return;
+            const target = { rowIndex, columnIndex: 0 };
+            const start = event.shiftKey && this.selectionMode !== 'single' && this.anchorCell
+                ? this.anchorCell.rowIndex : rowIndex;
+            const range = {
+                startRow: Math.min(start, rowIndex), endRow: Math.max(start, rowIndex),
+                startCol: 0, endCol: this.columns.length - 1,
+            };
+            this.ranges = this.selectionMode === 'multi' && (event.ctrlKey || event.metaKey)
+                ? [...this.ranges, range] : [range];
+            if (!event.shiftKey || this.selectionMode === 'single' || !this.anchorCell) {
+                this.anchorCell = { ...target };
+            }
+            this.activeCell = target;
+            this.applySelection();
+            this.focusCell(rowIndex, 0);
+            this.options.onSelectionChange?.(this.getSelectedCell());
         }
 
         // Prefer a custom renderer over formatting; strings are inserted as text, not HTML.
@@ -959,17 +1061,23 @@
         // Update layout without rebuilding rows or interrupting the resize gesture.
         updateColumnWidth(columnIndex, width) {
             const table = this.wrapper.querySelector('table');
-            const col = table?.querySelectorAll('col')[columnIndex];
+            const col = table?.querySelectorAll('col')[columnIndex + Number(Boolean(this.options.rowHeaders))];
             if (!table || !col) return;
             col.style.width = `${width}px`;
             table.style.width = `${this.columns.reduce((total, column) =>
-                total + this.getColumnWidth(column), 0)}px`;
+                total + this.getColumnWidth(column),
+                this.options.rowHeaders ? this.options.rowHeaderWidth ?? 44 : 0)}px`;
             this.updateStickyColumns();
         }
 
         updateStickyColumns() {
             const offsets = [];
-            let left = 0;
+            let left = this.options.rowHeaders && this.options.freezeRowHeaders
+                ? this.options.rowHeaderWidth ?? 44 : 0;
+            this.wrapper.querySelectorAll('.tv-row-header, .tv-row-header-corner').forEach(cell => {
+                cell.classList.toggle('tv-frozen', this.options.freezeRowHeaders === true);
+                cell.style.left = this.options.freezeRowHeaders ? '0px' : '';
+            });
             this.columns.forEach(column => {
                 offsets.push(left);
                 left += this.getColumnWidth(column);
@@ -1268,6 +1376,12 @@
         }
 
         applyRowSelection(row, rowIndex) {
+            const header = row.querySelector('[data-row-header]');
+            if (header) {
+                const selected = this.columns.every((column, index) => this.isSelected(rowIndex, index));
+                header.setAttribute('aria-selected', String(selected));
+                header.classList.toggle('is-selected', selected);
+            }
             row.querySelectorAll('td[data-column]').forEach(cell => {
                 const active = this.isActive(rowIndex, Number(cell.dataset.column));
                 const selected = this.isSelected(rowIndex, Number(cell.dataset.column));
@@ -1413,6 +1527,11 @@
             const tr = this.wrapper.querySelector(`tbody tr[data-row="${rowIndex}"]`);
             if (!row || !tr) throw new RangeError('Cannot refresh a missing row.');
             this.styleRow(tr, row, rowIndex);
+            const headerButton = tr.querySelector('[data-row-header] button');
+            if (headerButton) {
+                headerButton.textContent = this.rowHeaderLabel(row, rowIndex);
+                headerButton.setAttribute('aria-label', `Select row ${headerButton.textContent}`);
+            }
             this.wrapper.querySelectorAll(`td[data-row="${rowIndex}"]`).forEach(cell => {
                 const column = this.columns[Number(cell.dataset.column)];
                 if (cell.querySelector('[data-table-view-editor]')
@@ -2057,6 +2176,7 @@
         getConfiguration() {
             return {
                 version: 1,
+                rowHeaders: Boolean(this.options.rowHeaders),
                 appearance: { ...this.appearance },
                 columns: this.columns.map(column => ({
                     key: column.key, label: column.label ?? column.key, type: column.type || 'text',
@@ -2089,6 +2209,8 @@
                 fail('Invalid TableView configuration.');
             }
             const appearance = { ...this.appearance, ...configuration.appearance };
+            const rowHeaders = configuration.rowHeaders ?? Boolean(this.options.rowHeaders);
+            if (typeof rowHeaders !== 'boolean') fail('rowHeaders must be a boolean.');
             Object.keys(COLOR_FIELDS).forEach(key => {
                 if (!isColor(appearance[key])) fail(`Invalid color: ${key}.`);
             });
@@ -2129,6 +2251,9 @@
             const appearanceChanged = Object.keys(APPEARANCE_DEFAULTS)
                 .some(key => this.appearance[key] !== appearance[key]);
             this.cancelEdit();
+            if (rowHeaders !== Boolean(this.options.rowHeaders)) {
+                this.options.rowHeaders = rowHeaders && this.rowHeaderRenderer ? this.rowHeaderRenderer : rowHeaders;
+            }
             this.appearance = Object.fromEntries(Object.keys(APPEARANCE_DEFAULTS)
                 .map(key => [key, appearance[key]]));
             this.columns = columns;
@@ -2206,8 +2331,11 @@
                 const details = document.createElement('p');
                 details.className = 'tv-config-description';
                 details.textContent = description;
-                const controls = document.createElement('div');
-                fieldset.append(legend, details, controls);
+                const controls = document.createElement('tbody');
+                const settingsTable = document.createElement('table');
+                settingsTable.className = 'tv-config-table';
+                settingsTable.appendChild(controls);
+                fieldset.append(legend, details, settingsTable);
                 panel.appendChild(fieldset);
                 form.appendChild(panel);
                 tabList.appendChild(button);
@@ -2219,8 +2347,10 @@
             // Create a new field (input control) within the given parent group, with the specified name, 
             // label, value, type, and additional attributes.
             function field(parent, name, label, value, type = 'text', attributes = {}) {
-                const wrapper = document.createElement('div');
+                const wrapper = document.createElement('tr');
                 wrapper.className = 'tv-config-row';
+                const labelCell = document.createElement('td');
+                const valueCell = document.createElement('td');
                 const caption = document.createElement('label');
                 caption.textContent = label;
                 const controls = document.createElement('div');
@@ -2272,7 +2402,31 @@
                 input.addEventListener('input', changed);
                 input.addEventListener('change', changed);
                 controls.append(input, resetButton, error);
-                wrapper.append(caption, controls);
+                if (type === 'color') {
+                    const hex = document.createElement('input');
+                    hex.type = 'text';
+                    hex.className = 'tv-config-hex';
+                    hex.maxLength = 7;
+                    hex.value = input.value;
+                    hex.setAttribute('aria-label', `HEX ${label}`);
+                    hex.addEventListener('input', () => {
+                        const valid = /^#[\da-f]{6}$/i.test(hex.value);
+                        input.setCustomValidity(valid ? '' : 'Use #RRGGBB.');
+                        hex.setAttribute('aria-invalid', String(!valid));
+                        if (valid) {
+                            input.value = hex.value;
+                            changed();
+                        } else changed();
+                    });
+                    input.addEventListener('input', () => { hex.value = input.value; hex.removeAttribute('aria-invalid'); });
+                    controls.insertBefore(hex, resetButton);
+                    entry.hex = hex;
+                } else if (name.endsWith('.color') || name.endsWith('.background')) {
+                    input.classList.add('tv-config-hex');
+                }
+                labelCell.appendChild(caption);
+                valueCell.appendChild(controls);
+                wrapper.append(labelCell, valueCell);
                 parent.appendChild(wrapper);
                 fields.set(name, entry);
             }
@@ -2286,12 +2440,20 @@
             function restoreField(entry) {
                 if (entry.input.type === 'checkbox') entry.input.checked = entry.baseline;
                 else entry.input.value = entry.baseline;
+                if (entry.hex) {
+                    entry.hex.value = entry.input.value;
+                    entry.hex.removeAttribute('aria-invalid');
+                }
                 validateField(entry);
             }
 
             // Native constraints cover bounds/steps/patterns; locales need an Intl check as well.
             function validateField({ input, error }) {
                 input.setCustomValidity('');
+                const entry = fields.get(input.name);
+                if (entry?.hex && !/^#[\da-f]{6}$/i.test(entry.hex.value)) {
+                    input.setCustomValidity('Use #RRGGBB.');
+                }
                 if (input.name.endsWith('.locale') && input.value) {
                     try {
                         if (!Intl.NumberFormat.supportedLocalesOf([input.value]).length) {
@@ -2313,11 +2475,13 @@
             function updateDirty() {
                 let changed = false;
                 fields.forEach(entry => {
-                    const modified = readValue(entry.input) !== entry.baseline;
+                    const modified = readValue(entry.input) !== entry.baseline
+                        || Boolean(entry.hex && entry.hex.value.toLowerCase() !== String(entry.baseline).toLowerCase());
                     changed ||= modified;
                     entry.row.classList.toggle('is-modified', modified);
                     entry.resetButton.hidden = !modified;
                     entry.resetButton.disabled = busy;
+                    if (entry.hex) entry.hex.disabled = busy;
                 });
                 tabs.forEach(({ button, panel }) => {
                     button.classList.toggle('is-modified', Boolean(panel.querySelector('.is-modified')));
@@ -2339,6 +2503,8 @@
                     'number', { min, max, step: 1, required: '' }));
             field(appearance, 'appearance.stickyHeader', 'Sticky header',
                 configuration.appearance.stickyHeader, 'checkbox');
+            configuration = { ...configuration, rowHeaders: configuration.rowHeaders ?? false };
+            field(appearance, 'rowHeaders', 'Show row headers', configuration.rowHeaders, 'checkbox');
 
             configuration.columns.forEach((column, index) => {
                 const controls = group(`Column: ${column.label}`, `Technical key: ${column.key}`);

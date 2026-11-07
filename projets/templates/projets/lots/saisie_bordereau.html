@@ -199,7 +199,7 @@
                     <i class="fas fa-table"></i>
                     Détail des Prix Unitaires
                 </h3>
-                <div id="hot" class="table-view-container rounded-xl overflow-hidden"></div>
+                <div id="hot" class="table-view-container rounded-xl"></div>
             </div>
             <button type="button" id="bdp-add-empty-line"
                     onclick="addBordereauEmptyLine()"
@@ -216,6 +216,11 @@
                 action="{% url 'projets:sauvegarder_config_bordereau' lot.projet.id lot.id %}"
                 method="post">
                 {% csrf_token %}
+                <button type="button" id="bdp-appearance-close"
+                        class="bdp-appearance-close"
+                        aria-label="Fermer sans enregistrer" title="Fermer sans enregistrer">
+                    <span aria-hidden="true">&times;</span>
+                </button>
                 <h2 id="bdp-appearance-title">Apparence du bordereau</h2>
                 <p class="bdp-appearance-intro">
                     Aperçu immédiat dans le tableau. Les réglages sont enregistrés pour ce lot.
@@ -225,94 +230,107 @@
                 <fieldset>
                     <section class="bdp-appearance-section">
                         <h3>Couleurs</h3>
-                        <div class="bdp-appearance-field">
+                        <table class="bdp-appearance-table"><tbody>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.row_color.id_for_label }}">{{ appearance_form.row_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.row_color }}
                                 <input type="text" data-hex-for="row_color" aria-label="Code hexadécimal du fond des lignes"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.text_color.id_for_label }}">{{ appearance_form.text_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.text_color }}
                                 <input type="text" data-hex-for="text_color" aria-label="Code hexadécimal du texte des cellules"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                            <label class="bdp-auto-toggle" for="{{ appearance_form.text_color_auto.id_for_label }}">
+                            </td><td><label class="bdp-auto-toggle" for="{{ appearance_form.text_color_auto.id_for_label }}">
                                 {{ appearance_form.text_color_auto }} Automatique
                             </label>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.header_color.id_for_label }}">{{ appearance_form.header_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.header_color }}
                                 <input type="text" data-hex-for="header_color" aria-label="Code hexadécimal du fond de l’en-tête"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.border_color.id_for_label }}">{{ appearance_form.border_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.border_color }}
                                 <input type="text" data-hex-for="border_color" aria-label="Code hexadécimal des bordures"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.title_color.id_for_label }}">{{ appearance_form.title_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.title_color }}
                                 <input type="text" data-hex-for="title_color" aria-label="Code hexadécimal des titres hiérarchiques"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.active_color.id_for_label }}">{{ appearance_form.active_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.active_color }}
                                 <input type="text" data-hex-for="active_color" aria-label="Code hexadécimal de la cellule active"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.selection_color.id_for_label }}">{{ appearance_form.selection_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.selection_color }}
                                 <input type="text" data-hex-for="selection_color" aria-label="Code hexadécimal du fond de sélection"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                            <label class="bdp-auto-toggle" for="{{ appearance_form.selection_color_auto.id_for_label }}">
+                            </td><td><label class="bdp-auto-toggle" for="{{ appearance_form.selection_color_auto.id_for_label }}">
                                 {{ appearance_form.selection_color_auto }} Automatique
                             </label>
-                        </div>
-                        <div class="bdp-appearance-field">
+                        </td></tr>
+                        <tr class="bdp-appearance-field"><td>
                             <label for="{{ appearance_form.amount_color.id_for_label }}">{{ appearance_form.amount_color.label }}</label>
+                            </td><td>
                             <div class="bdp-appearance-color-inputs">
                                 {{ appearance_form.amount_color }}
                                 <input type="text" data-hex-for="amount_color" aria-label="Code hexadécimal des montants"
                                        pattern="#[0-9A-Fa-f]{6}" maxlength="7" autocomplete="off">
                             </div>
-                        </div>
+                            </td><td></td></tr>
+                        </tbody></table>
                     </section>
 
                     <section class="bdp-appearance-section">
                         <h3>Dimensions</h3>
+                        <table class="bdp-appearance-table"><tbody>
                         {% for field in appearance_form %}
                             {% if field.name == 'row_height' or field.name == 'header_height' or field.name == 'font_size' %}
-                                <div class="bdp-appearance-field">
+                                <tr class="bdp-appearance-field"><td>
                                     <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                                    {{ field }}
-                                    <span class="bdp-hint">px</span>
-                                </div>
+                                    </td><td>{{ field }}</td>
+                                    <td><span class="bdp-hint">px</span></td>
+                                </tr>
                             {% endif %}
                         {% endfor %}
-                        <div class="bdp-appearance-field">
-                            <label class="bdp-auto-toggle" for="{{ appearance_form.sticky_header.id_for_label }}">
-                                {{ appearance_form.sticky_header }} {{ appearance_form.sticky_header.label }}
-                            </label>
-                        </div>
+                        <tr class="bdp-appearance-field"><td>
+                            <label for="{{ appearance_form.sticky_header.id_for_label }}">{{ appearance_form.sticky_header.label }}</label>
+                        </td><td>{{ appearance_form.sticky_header }}</td><td></td></tr>
+                        <tr class="bdp-appearance-field"><td>
+                            <label for="{{ appearance_form.row_headers.id_for_label }}">{{ appearance_form.row_headers.label }}</label>
+                        </td><td>{{ appearance_form.row_headers }}</td><td></td></tr>
+                        </tbody></table>
                     </section>
 
                     <p class="bdp-appearance-note">

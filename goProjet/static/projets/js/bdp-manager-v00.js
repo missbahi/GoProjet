@@ -811,7 +811,8 @@ class BordereauManager {
             rowKey: 'id',
             locale: 'fr-FR',
             selectionMode: 'multi',
-            freezeColumns: 2,
+            rowHeaders: this.appearance.row_headers === true,
+            freezeColumns: 0,
             resizableHeader: true,
             headerResizeLabel: 'Redimensionner la hauteur de l’en-tête',
             onHeaderResize: ({ height }) => {
@@ -840,6 +841,9 @@ class BordereauManager {
                 this.lineManager.invalidateCache();
                 this.markDataChanged();
             },
+            rowHeaders: true,
+            rowHeaderWidth: 50,
+            freezeRowHeaders: true,
             liveEdit: false,
             appearance: this.getTableAppearance(),
             columns: this.getTableColumns(),
@@ -1007,6 +1011,7 @@ class BordereauManager {
     applyTableAppearance(values) {
         if (!this.tableView) return;
         const configuration = this.tableView.getConfiguration();
+        configuration.rowHeaders = values.row_headers === true;
         configuration.appearance = {
             ...configuration.appearance,
             ...this.getTableAppearance(values),
@@ -1022,6 +1027,7 @@ class BordereauManager {
 
         const fields = Array.from(form.querySelectorAll('input[name]:not([type="hidden"])'));
         const cancel = document.getElementById('bdp-appearance-cancel');
+        const close = document.getElementById('bdp-appearance-close');
         const defaults = document.getElementById('bdp-appearance-defaults');
         const colorFields = new Map(Array.from(form.querySelectorAll('input[type="color"]'))
             .map(field => [field.name, field]));
@@ -1089,14 +1095,16 @@ class BordereauManager {
             this.previewAppearance(fields);
         }));
         defaults?.addEventListener('click', () => fill(this.appearanceData.defaults));
-        cancel?.addEventListener('click', () => {
+        const dismiss = () => {
+            if (form.getAttribute('aria-busy') === 'true') return;
             fill(openingValues);
             dialog.close();
-        });
+        };
+        cancel?.addEventListener('click', dismiss);
+        close?.addEventListener('click', dismiss);
         dialog.addEventListener('cancel', event => {
             event.preventDefault();
-            fill(openingValues);
-            dialog.close();
+            dismiss();
         });
         form.addEventListener('submit', async event => {
             event.preventDefault();
@@ -1123,6 +1131,7 @@ class BordereauManager {
             form.querySelector('fieldset').disabled = true;
             form.querySelector('[type="submit"]').disabled = true;
             if (cancel) cancel.disabled = true;
+            if (close) close.disabled = true;
 
             try {
                 const response = await fetch(form.action, {
@@ -1150,6 +1159,7 @@ class BordereauManager {
                 form.querySelector('fieldset').disabled = false;
                 form.querySelector('[type="submit"]').disabled = false;
                 if (cancel) cancel.disabled = false;
+                if (close) close.disabled = false;
             }
         });
     }

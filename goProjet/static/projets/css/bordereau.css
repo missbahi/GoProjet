@@ -439,8 +439,15 @@ label {
     text-align: center;
 }
 
+#hot {
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+}
+
 #hot .table-view-scroll {
     max-height: 72vh;
+    -webkit-overflow-scrolling: touch;
 }
 
 #hot .table-view-table {
@@ -679,8 +686,6 @@ label {
     }
     
     #hot {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
         border-radius: 8px;
     }
         
@@ -886,6 +891,17 @@ label {
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
 }
 .bdp-appearance-dialog::backdrop { background: rgba(0, 0, 0, 0.45); }
+.bdp-appearance-close {
+    position: absolute; top: 8px; right: 8px;
+    width: 32px; height: 32px; padding: 0;
+    border: 0; border-radius: 6px; background: transparent;
+    color: var(--text-secondary); font-size: 24px; cursor: pointer;
+}
+.bdp-appearance-close:hover { background: var(--input-bg); color: var(--text-primary); }
+.bdp-appearance-close:focus-visible { outline: 2px solid var(--accent-primary); }
+.bdp-appearance-close:disabled { opacity: 0.5; cursor: not-allowed; }
+.bdp-appearance-dialog h2 { padding-right: 28px; }
+.bdp-appearance-dialog fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
 .bdp-appearance-dialog h2 {
     margin: 0 0 4px;
     font-size: 1.125rem;
@@ -913,12 +929,16 @@ label {
 
 /* Lignes de champ : label | input | (valeur/hint) */
 .bdp-appearance-field {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 0;
     border-bottom: 1px solid var(--border-subtle);
+}
+.bdp-appearance-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.bdp-appearance-field td { padding: 6px 4px; vertical-align: middle; }
+.bdp-appearance-field td:first-child { width: auto; overflow-wrap: anywhere; }
+.bdp-appearance-field td:nth-child(2) { width: 124px; }
+.bdp-appearance-field td:nth-child(3) { width: 88px; }
+.bdp-appearance-field td > label {
+    margin: 0; font-size: 0.8125rem; color: var(--text-primary);
+    text-transform: none; letter-spacing: normal;
 }
 .bdp-appearance-field:last-child { border-bottom: 0; }
 .bdp-appearance-field > label {
@@ -945,16 +965,21 @@ label {
     border-radius: 5px;
     cursor: pointer;
 }
-.bdp-appearance-field input[type="text"][data-hex] {
-    width: 80px;
+.bdp-appearance-field input[type="text"][data-hex-for] {
+    box-sizing: content-box;
+    width: 7ch;
+    flex: 0 0 auto;
+    min-width: 0;
     padding: 4px 6px;
     font: 12px 'Consolas', monospace;
     text-transform: uppercase;
     border: 1px solid var(--border-default);
     border-radius: 5px;
     background: var(--input-bg);
-    color: var(--text-primary);
+    color: var(--text-secondary);
 }
+[data-theme="dark"] .bdp-appearance-field input[data-hex-for] { color: #aecbd6; }
+.bdp-appearance-color-inputs input[type="color"] { flex: 0 0 36px; min-width: 36px; }
 .bdp-appearance-field input[type="number"] {
     width: 64px;
     padding: 5px 6px;
@@ -1018,8 +1043,10 @@ label {
 /* Responsive */
 @media (max-width: 480px) {
     .bdp-appearance-dialog { padding: 16px; }
-    .bdp-appearance-field {
-        grid-template-columns: minmax(0, 1fr) auto;
-    }
+    .bdp-appearance-actions { flex-wrap: wrap; }
+    .bdp-appearance-actions .spacer { display: none; }
+    .bdp-appearance-field td { padding: 6px 2px; }
+    .bdp-appearance-field td:nth-child(3) { width: 65px; }
+    .bdp-appearance-field .bdp-auto-toggle { flex-wrap: wrap; white-space: normal; font-size: 11px; }
     .bdp-appearance-field .bdp-hint { display: none; }
 }
