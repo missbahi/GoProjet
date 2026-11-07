@@ -345,4 +345,3 @@ urlpatterns += notifications_urlpatterns
 #     # Santé des API
 #     path('api/health/', revision.api_health_check, name='api_health_check'),
 # ]
-

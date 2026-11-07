@@ -9,7 +9,7 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 ## Fonctionnalités
 
 - Projets, lots, documents administratifs et ordres de service
-- Bordereaux de prix hiérarchiques (tableau natif), décomptes et attachements
+- Bordereaux de prix hiérarchiques, décomptes et attachements
 - Suivi d'exécution, situations mensuelles, planning des ateliers, ressources
 - Workflow de validation, utilisateurs, notifications
 - Export Excel et PDF
@@ -21,7 +21,13 @@ La version et les nouveautés affichées à la connexion sont définies dans
 
 ### Menu contextuel du bordereau des prix
 
-Le clic droit cible uniquement la ligne cliquée et ouvre les actions avec icônes :
+Le bordereau utilise TableView sur les données du lot. Le gestionnaire ne prend
+plus en charge Handsontable ni le paramètre de choix du renderer.
+L'ancien template `saisie_bordereau_.html` est conservé comme archive, mais n'est
+plus compatible avec le gestionnaire actuel. Handsontable reste utilisé dans
+les formulaires d'attachements ; ses ressources ne sont pas supprimées.
+
+Le clic droit ouvre les actions de la sélection ou cible la cellule cliquée :
 insérer une ligne avant, supprimer, monter ou descendre d'un cran parmi les lignes
 sœurs, indenter et désindenter. Les commandes, icônes et états désactivés sont
 partagés avec la barre d'outils. L'insertion crée une sœur juste avant la ligne
@@ -59,6 +65,188 @@ racine. Dès qu'elle contient une donnée, une nouvelle ligne vide prend le
 relais. Le bouton **+**, à gauche du pied des totaux, ajoute une ligne vide
 supplémentaire à la fin et y place le curseur. Les lignes vides ajoutées
 volontairement sont conservées pendant l'édition.
+
+### TableView et apparence du bordereau
+
+Le bordereau utilise le composant générique `goProjet/static/projets/js/table-view.js`.
+Les largeurs de colonnes se règlent directement en tirant le bord droit des
+en-têtes ; leur bord inférieur permet de régler la hauteur des en-têtes.
+Le dialogue d'apparence permet de personnaliser les couleurs et les dimensions.
+Cliquer sur **Appliquer** enregistre les réglages et les dimensions courantes
+pour le lot ; les redimensionnements seuls ne sont pas sauvegardés.
+
+Le socle expose `getConfiguration()`, `applyConfiguration()` et
+`TableView.mountConfiguration()` sans dépendance Django. Les colonnes numériques
+acceptent `locale`, `decimals`, `useGrouping` et `hideZero`. `getValue` permet
+les cellules calculées ; les hooks de lignes/cellules restent côté adaptateur.
+Avec `liveEdit`, `onDataChange` distingue `preview`, `commit` et `rollback` :
+ne pas sauvegarder les aperçus. `onCellChange` reste réservé à la validation finale.
+Une exception de ce hook est journalisée et signalée par `onValidationError` :
+la valeur avant appel est restaurée et le brouillon reste modifiable/annulable.
+Le hook reste synchrone et doit laisser les autres données métier intactes en cas
+de rejet ; TableView ne peut pas annuler ses effets externes.
+
+`preview` modifie immédiatement la donnée partagée. Seule la ligne éditée est
+rafraîchie par TableView ; les `refreshRow()` ciblés sur les lignes dépendantes
+restent à la charge de l'application. `coalescePreview: 'raf'` (ou `true`) regroupe le
+rafraîchissement et la notification du dernier aperçu valide en un seul appel
+par frame (rAF), sans différer la mutation. Valider vide la file avant `commit` ;
+annuler, masquer la ligne éditée, remplacer les données/colonnes, appliquer une
+configuration ou détruire l'instance supprime l'aperçu en attente et émet `rollback`.
+`undefined`, `'none'` et `false` notifient immédiatement ; toute autre valeur
+est refusée. Les exceptions synchrones de `onDataChange`, dans les quatre phases,
+sont journalisées et affichées dans une alerte sans bloquer l'éditeur. Le hook
+facultatif `onDataChangeError({ error, event, table })` permet à l'application de
+signaler une désynchronisation. Ce hook est une notification, pas une validation :
+une erreur ne peut annuler les données acceptées ni les effets externes déjà produits.
+La bannière est retirée lorsqu'une notification ultérieure réussit ; ce retrait
+ne garantit pas à lui seul la réparation des effets externes d'une notification échouée.
+
+`mountConfiguration` exige un `onApply` atomique : une exception ou un rejet
+doit laisser la cible inchangée, ou l'adaptateur doit restaurer son état avant
+de rejeter. Le formulaire ne peut pas annuler des mutations externes partielles.
+Il fournit une copie de la configuration candidate et garde son dernier état
+accepté ainsi que le brouillon en cas de rejet.
+
+Ces options restent facultatives et sont configurées par l'adaptateur métier :
+
+- `rowKey` : propriété d'identité unique (chaîne non vide ou nombre fini).
+  `setData()` conserve sélection et masquage par identité, même après réordonnancement ;
+  une identité supprimée ne sélectionne pas automatiquement sa voisine.
+- `selectionMode: 'single' | 'range' | 'multi'` (défaut : `single`).
+  `getSelection()` expose les plages, indices et clés ; `getSelectedCellValues()`
+  retourne les valeurs calculées via `getValue`, sans doublons ni lignes masquées.
+  Par défaut, `null`, `undefined` et `''` sont conservés sans conversion.
+  `omitNullValues: true` exclut uniquement `null` et `undefined`, jamais `''` ni zéro.
+  `getSelectedCellValues({ structured: true, omitNullValues: false })` renvoie
+  `{ values, cells }` avec les mêmes positions dans les deux listes. Chaque cellule
+  expose `rowIndex`, `columnIndex`, `rowKey`, `columnKey`, `row`, `column` et `value`.
+  `row` est la donnée partagée ; `column` est une copie superficielle.
+- `setHiddenRows(indices)` et `getHiddenRows()` : masquage réversible, navigation
+  limitée aux lignes visibles. Masquer une cellule en édition annule son aperçu.
+- `hierarchy: { columnKey, isGroup, getLevel, isExpanded, onToggle }` :
+  indentation à partir de zéro et boutons accessibles ; l'adaptateur gère les descendants.
+  L'éditeur reste dans `.tv-hierarchy-content` avec indentation et chevron conservés,
+  même après `render()`. Une colonne référencée absente désactive la fonctionnalité
+  avec un avertissement ; son retour la réactive sans modifier les options de l'appelant.
+- `rowActions: { columnKey, contextMenu, items, onAction }` : actions en cellule
+  et/ou menu clavier. `items` est un tableau ou une fonction recevant
+  `{ row, rowIndex, table, selection }`. Chaque action définit `id`, `label`,
+  et éventuellement `symbol`, `enabled`, `inline`, `group`.
+- `isRowEditable`, `renderCell` (contenu uniquement, retourner `true` pour remplacer
+  le rendu par défaut), `refreshRow()` et `setAppearance()` complètent les hooks.
+  `allowEmpty: false` interdit explicitement une valeur vide sans modifier le défaut.
+- `onAppearanceChange(appearance)` reçoit une copie après un changement effectif
+  accepté, via `setAppearance` ou `applyConfiguration`. `onConfigurationChange`
+  reçoit la configuration après application, remplacement des colonnes et
+  redimensionnement manuel (fin de geste ou pas clavier) ; `onColumnResize` reste disponible.
+  `onAppearanceChange` couvre uniquement l'apparence globale, pas les largeurs
+  ni le schéma des colonnes ; utiliser `onConfigurationChange` pour persister la disposition.
+- `getColumns()` renvoie des copies superficielles avec les largeurs effectives
+  et les callbacks. `setColumns(definitions)` remplace les colonnes sans recréer
+  l'instance : validation préalable, annulation de l'édition, sélection remappée
+  par clé et conservation des largeurs des clés existantes si omises. Les colonnes
+  retirées disparaissent de la sélection ; une plage devenue discontinue est
+  divisée sans sélectionner les nouvelles colonnes intercalées. La cellule active
+  devient nulle si sa colonne est retirée. Données et masquage sont conservés.
+  Au moins une colonne est obligatoire ; les définitions invalides (dont les clés
+  dupliquées) sont refusées sans mutation. Les références manquantes de
+  `hierarchy`/`rowActions` avertissent et désactivent seulement la fonctionnalité concernée.
+
+### Interactions TableView : clipboard, tri et colonnes
+
+- `clipboard: { copy: true, paste: true, parseTsv: true }` active les événements
+  copier/coller natifs du navigateur sur les cellules sélectionnées. Dans un
+  éditeur, le copier/coller de texte reste natif. Échap ou Entrée permet de
+  revenir à la grille avant de coller un bloc. `copyText()` et `pasteText(text)`
+  fournissent les mêmes opérations par API. `TableView.parseTsv` /
+  `stringifyTsv` gèrent tabulations, CR/LF, champs entre guillemets et guillemets
+  doublés. Les valeurs calculées sont copiées ; `null` devient un champ vide.
+  Plusieurs sélections sont copiées dans leur rectangle englobant, avec des
+  champs vides dans les trous ; les lignes masquées sont exclues.
+- Le collage part de la cellule active, saute par défaut les lignes masquées et ignore
+  les cellules en lecture seule sans décaler les colonnes. Un dépassement de
+  colonnes est refusé ; un dépassement de lignes ajoute des lignes via
+  `createRow({ rowIndex, table })`, ou des objets vides avec une identité UUID si
+  `rowKey` est défini. La fabrique doit être sans effet externe.
+  Pour un tableau métier, `createRow` doit renvoyer un nouvel objet complet :
+  identité unique, niveaux/indicateurs hiérarchiques, valeurs numériques initiales,
+  objets imbriqués et tous les champs nécessaires aux renderers, validateurs et
+  `getValue`. Le défaut minimal n'est adapté qu'aux tableaux simples sans ces exigences.
+  Toutes les cellules sont parsées et validées avant mutation. Le hook synchrone
+  `onPaste({ changes, newRows, data, source, table })` peut refuser par `false`
+  ou exception, sans modifier la cible. Il doit être sans effet de bord.
+  `onCellChange` n'est pas appelé cellule par cellule pour éviter des mutations
+  externes partielles ; après acceptation, `onDataChange` reçoit une notification
+  de lot avec `phase: 'paste'`, `changes` et `newRows`. L'adaptateur y synchronise
+  son modèle métier. Les erreurs des événements sont journalisées, affichées
+  dans une alerte et transmises à `onClipboardError(error)` ; `pasteText` lève
+  directement l'erreur. Le collage ne déclenche aucune sauvegarde réseau.
+  `clipboard.includeHiddenRows: true` parcourt toute la liste plate à partir
+  de la cellule cible, y compris les lignes masquées, sans se limiter aux frères.
+  Cette option est activée dans le bordereau : les lignes
+  existantes gardent leur parent ; après la fin de la liste plate, les lignes
+  supplémentaires sont créées sous Root. Le masquage et les protections de
+  lecture seule restent inchangés ; le tri hiérarchique n'est pas modifié.
+- `column.sortable: true` active le tri au clic sur l'en-tête (ou Entrée/Espace
+  sur son bouton). `sortBy(key, 'asc' | 'desc')` expose le tri par API.
+  Le tri est stable, utilise `getValue`, compare les nombres numériquement et
+  les chaînes avec `Intl.Collator`. Les valeurs nulles viennent après les valeurs
+  renseignées en ordre croissant. Avec `hierarchy.getLevel`, les frères sont triés
+  récursivement en conservant chaque sous-arbre ; les niveaux doivent être des
+  entiers positifs ou nuls dans une liste préordonnée.
+  TableView est seul responsable du calcul de l'ordre. Le hook synchrone
+  `onSort({ column, direction, rows })` reçoit cet ordre avant son application et
+  les notifications de sélection. Il doit le recopier dans le modèle existant,
+  sans retrier, changer les parents, reconstruire les données ni rappeler
+  `setData`/`sortBy`. `false` refuse le tri ; une exception se propage. En cas de
+  rejet, l'adaptateur doit laisser son modèle inchangé. Les promesses sont interdites.
+  Dans le bordereau, il réordonne directement les enfants existants du
+  `LineManager` : ce changement sera enregistré au prochain Enregistrer.
+  Le tri est une opération ponctuelle ; il n'est pas réappliqué automatiquement
+  après édition ou collage.
+- `setFilter(predicate)` compose le filtre avec le masquage manuel existant ;
+  `setFilter(null)` retire uniquement le filtre. `getHiddenRows()` retourne
+  l'union des deux masques. Le filtre est réévalué lors de `setData`, du tri,
+  du collage et des modifications validées ; utiliser une fonction pure.
+  Les titres ne sont pas automatiquement conservés si seuls leurs enfants
+  correspondent : l'adaptateur définit la politique hiérarchique du filtre.
+- `freezeColumns: n` fige les n premières colonnes par `position: sticky`.
+  Les offsets suivent les redimensionnements et les remplacements de colonnes.
+  Le double-clic sur une poignée ajuste la largeur au contenu visible et à
+  l'en-tête, dans les limites `minWidth` / `maxWidth`, puis émet les hooks habituels.
+- `column.group` (chaîne) regroupe les colonnes contiguës sous une seconde
+  rangée d'en-têtes. Un groupe traversant la frontière figée est scindé pour
+  conserver un défilement cohérent ; les en-têtes restent fixes verticalement.
+- En mode `range` ou `multi`, maintenir le bouton gauche sur une cellule et
+  glisser sélectionne un rectangle dans toutes les directions, sans sélectionner
+  le texte ni ouvrir l'éditeur. Maj étend depuis l'ancre ; Ctrl/Cmd conserve les
+  autres plages en mode `multi`. Le clic simple conserve son comportement
+  d'activation ; la saisie dans un éditeur reste indépendante du glisser de grille.
+
+Un clic active la cellule et lui donne le focus en **mode Navigation**, sans
+ouvrir l'éditeur ni sélectionner son texte. Les quatre flèches déplacent la
+cellule active (en sautant les lignes masquées), sans ouvrir l'éditeur ; aux
+bords du tableau, elles restent sur place sans faire défiler la page.
+Un double-clic ouvre le **mode Édition** et sélectionne le contenu de l'éditeur
+natif. Entrée/F2 restent disponibles pour ouvrir l'édition au clavier.
+Dans l'éditeur, les flèches restent natives (curseur, sélection de texte).
+Seuls Tab/Maj+Tab valident puis déplacent le focus vers la cellule suivante/
+précédente en mode Navigation, avec passage à la ligne et saut des lignes
+masquées. Une validation refusée conserve l'éditeur ; aux extrémités, le focus
+reste sur la cellule courante. Entrée valide sans déplacement, Échap annule.
+L'ancienne option `editOnClick` est ignorée, même lorsqu'elle vaut `true`.
+
+Le bordereau actif utilise le clipboard, le tri hiérarchique et le gel de
+N° + désignation. Les colonnes numériques des
+titres sont en lecture seule. Les nouvelles lignes collées sont créées à la racine.
+
+Le défilement est ancré sur l'identité de ligne lors d'un `setData()` ou d'un rendu
+(`viewport: false` désactive cet ancrage). `destroy()` retire les écouteurs globaux.
+
+`TableView.version` expose la version du composant (`0.3.0`), distincte du
+schéma de configuration. Les options, colonnes et contrats de callbacks sont
+décrits par les typedefs JSDoc en tête du composant.
 
 ### Avenants de délai des ordres de service
 
@@ -114,7 +302,6 @@ requirements.txt
 ## Tests
 
 ```bash
-python manage.py test
 node --test goplan/tests/
 ```
 

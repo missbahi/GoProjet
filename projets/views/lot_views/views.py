@@ -27,12 +27,8 @@ def _bordereau_appearance_data(lot):
     }
 
 
-@chef_projet_required
-def saisie_bordereau(request, projet_id, lot_id):
-    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
-    lot_root = lot.to_line_tree()
-
-    data = [
+def _bordereau_rows(lot_root):
+    return [
         {
             'id': ligne.id,
             'numero': ligne.numero,
@@ -49,6 +45,12 @@ def saisie_bordereau(request, projet_id, lot_id):
         for ligne in lot_root.get_descendants()
     ]
 
+
+@chef_projet_required
+def saisie_bordereau(request, projet_id, lot_id):
+    lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
+    lot_root = lot.to_line_tree()
+    data = _bordereau_rows(lot_root)
     json_str = json.dumps(data, ensure_ascii=False)
     appearance_data = _bordereau_appearance_data(lot)
 

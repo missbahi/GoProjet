@@ -32,12 +32,19 @@ from django.utils import timezone
 
 BORDEREAU_APPEARANCE_DEFAULTS = {
     'row_color': '#f8f6ef',
+    'text_color': '#24485a',
+    'text_color_auto': True,
     'header_color': '#f0ede5',
     'title_color': '#24485a',
     'active_color': '#7baec1',
+    'selection_color': '#d8e2e4',
+    'selection_color_auto': True,
+    'border_color': '#a9cad6',
     'amount_color': '#15803d',
     'row_height': 26,
     'header_height': 42,
+    'font_size': 13,
+    'sticky_header': True,
     'width_numero': 100,
     'width_designation': 500,
     'width_unite': 100,
@@ -53,25 +60,36 @@ _HEX_COLOR_VALIDATOR = RegexValidator(r'^#[0-9A-Fa-f]{6}$', 'Utilisez une couleu
 class BordereauAppearanceForm(forms.Form):
     row_color = forms.CharField(label="Fond des lignes", validators=[_HEX_COLOR_VALIDATOR],
                                 widget=forms.TextInput(attrs={'type': 'color'}))
+    text_color = forms.CharField(label="Texte des cellules", validators=[_HEX_COLOR_VALIDATOR],
+                                 widget=forms.TextInput(attrs={'type': 'color'}))
+    text_color_auto = forms.BooleanField(label="Automatique", required=False)
     header_color = forms.CharField(label="Fond de l’en-tête", validators=[_HEX_COLOR_VALIDATOR],
+                                   widget=forms.TextInput(attrs={'type': 'color'}))
+    border_color = forms.CharField(label="Bordures du tableau", validators=[_HEX_COLOR_VALIDATOR],
                                    widget=forms.TextInput(attrs={'type': 'color'}))
     title_color = forms.CharField(label="Titres hiérarchiques", validators=[_HEX_COLOR_VALIDATOR],
                                   widget=forms.TextInput(attrs={'type': 'color'}))
     active_color = forms.CharField(label="Sélection et cellule active", validators=[_HEX_COLOR_VALIDATOR],
                                    widget=forms.TextInput(attrs={'type': 'color'}))
+    selection_color = forms.CharField(label="Fond de sélection", validators=[_HEX_COLOR_VALIDATOR],
+                                      widget=forms.TextInput(attrs={'type': 'color'}))
+    selection_color_auto = forms.BooleanField(label="Automatique", required=False)
     amount_color = forms.CharField(label="Montants", validators=[_HEX_COLOR_VALIDATOR],
                                    widget=forms.TextInput(attrs={'type': 'color'}))
-    row_height = forms.IntegerField(label="Hauteur des lignes (px)", min_value=22, max_value=48,
-                                    widget=forms.NumberInput(attrs={'min': 22, 'max': 48, 'step': 1}))
-    header_height = forms.IntegerField(label="Hauteur de l’en-tête (px)", min_value=32, max_value=72,
-                                       widget=forms.NumberInput(attrs={'min': 32, 'max': 72, 'step': 1}))
-    width_numero = forms.IntegerField(label="N° (px)", min_value=60, max_value=200)
-    width_designation = forms.IntegerField(label="Désignation (px)", min_value=240, max_value=1200)
-    width_unite = forms.IntegerField(label="Unité (px)", min_value=55, max_value=180)
-    width_quantite = forms.IntegerField(label="Quantité (px)", min_value=80, max_value=220)
-    width_prix_unitaire = forms.IntegerField(label="Prix unitaire (px)", min_value=100, max_value=260)
-    width_montant = forms.IntegerField(label="Montant (px)", min_value=100, max_value=260)
-    width_actions = forms.IntegerField(label="Actions (px)", min_value=36, max_value=80)
+    row_height = forms.IntegerField(label="Hauteur des lignes (px)", min_value=22, max_value=80,
+                                    widget=forms.NumberInput(attrs={'min': 22, 'max': 80, 'step': 1}))
+    header_height = forms.IntegerField(label="Hauteur de l’en-tête (px)", min_value=28, max_value=100,
+                                       widget=forms.NumberInput(attrs={'min': 28, 'max': 100, 'step': 1}))
+    font_size = forms.IntegerField(label="Taille du texte (px)", min_value=10, max_value=24,
+                                   widget=forms.NumberInput(attrs={'min': 10, 'max': 24, 'step': 1}))
+    sticky_header = forms.BooleanField(label="En-tête fixe", required=False)
+    width_numero = forms.IntegerField(min_value=60, max_value=200, widget=forms.HiddenInput)
+    width_designation = forms.IntegerField(min_value=240, max_value=1200, widget=forms.HiddenInput)
+    width_unite = forms.IntegerField(min_value=55, max_value=180, widget=forms.HiddenInput)
+    width_quantite = forms.IntegerField(min_value=80, max_value=220, widget=forms.HiddenInput)
+    width_prix_unitaire = forms.IntegerField(min_value=100, max_value=260, widget=forms.HiddenInput)
+    width_montant = forms.IntegerField(min_value=100, max_value=260, widget=forms.HiddenInput)
+    width_actions = forms.IntegerField(min_value=36, max_value=80, widget=forms.HiddenInput)
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('initial', BORDEREAU_APPEARANCE_DEFAULTS)

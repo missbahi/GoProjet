@@ -418,7 +418,7 @@ class LineManager {
     }
 
     /**
-     * Convertit toutes les lignes en format tableau pour Handsontable
+     * Convertit toutes les lignes en données pour le tableau
      */
     toTableData() {
         return this.getFlatList().map(line => ({
@@ -682,13 +682,11 @@ class BordereauManager {
         this.lotNom = options.lotNom || 'Bordereau';
         this.csrfToken = options.csrfToken || '';
         this.saveUrl = options.saveUrl || '';
-        this.renderer = options.renderer || window.bordereauRenderer || 'handsontable';
         this.isSyncing = false; // Éviter les boucles de synchronisation
         this.dataChanged = false;
         this.allLinesExpanded = true;
         
         // Initialisation
-        this.hot = null;
         this.tableView = null;
         this.lineManager = null;
         this.colMontantIndex = 8; // Index de la colonne "montant"
@@ -704,15 +702,10 @@ class BordereauManager {
             this.lineManager = new LineManager(this.lotNom, window.bordereauData);
         }
         
-        if (this.renderer === 'native' && window.NativeBordereauTable) {
-            this.initNativeTable();
-        } else {
-            this.initHandsontable();
+        if (!window.TableView) {
+            throw new Error('TableView n’est pas chargé.');
         }
-        
-        // Configurer les raccourcis clavier
-        if (this.renderer !== 'native') this.setupKeyboardShortcuts();
-        this.setupPlainTextPaste();
+        this.initTableView();
         this.markDataSaved();
     }
 
@@ -739,7 +732,7 @@ class BordereauManager {
         // Sélectionner la nouvelle ligne
         setTimeout(() => {
             const newIndex = this.lineManager.getLineIndexById(newLine.id);
-            if (newIndex !== -1) this.focusCell(newIndex, 4);
+            if (newIndex !== -1) this.focusCell(newIndex, 1);
         }, 50);
         
         return newLine;
@@ -799,8 +792,8 @@ class BordereauManager {
             saveBtn.title = 'Aucune modification à enregistrer';
         }
     }
-
-    initNativeTable() {
+ 
+    initTableView() {
         const container = document.getElementById(this.containerId);
         if (!container) {
             console.error(`Container #${this.containerId} non trouvé`);
@@ -812,34 +805,213 @@ class BordereauManager {
             : { values: {}, defaults: {}, revision: '' };
         this.appearance = { ...this.appearanceData.values };
 
-        this.tableView = new window.NativeBordereauTable(container, {
-            parseNumber: value => this.lineManager.parseFrenchNumber(value),
-            onCellChange: (row, property, value) => {
-                let normalized = value;
-                if (property === 'quantite' || property === 'prix_unitaire') {
-                    if (normalized === null || normalized < 0) {
-                        this.showMessage('Les quantités et prix doivent être des nombres positifs.', 'warning');
-                        return false;
+        this.tableView = new window.TableView(container, {
+            label: 'Détail des prix unitaires',
+            data: this.lineManager.toTableData(),
+            rowKey: 'id',
+            locale: 'fr-FR',
+            selectionMode: 'multi',
+            freezeColumns: 2,
+            resizableHeader: true,
+            headerResizeLabel: 'Redimensionner la hauteur de l’en-tête',
+            onHeaderResize: ({ height }) => {
+                this.appearance.header_height = height;
+            },
+            clipboard: { copy: true, paste: true, parseTsv: true, includeHiddenRows: true },
+            createRow: () => ({
+                id: new Line().id, numero: '', designation: '', unite: '',
+                quantite: 0, prix_unitaire: 0, niveau: 1, est_titre: false,
+                _expanded: true, montant: 0,
+            }),
+            onSort: ({ rows }) => {
+                const children = new Map();
+                rows.forEach(row => {
+                    const line = this.lineManager.lines.get(row.id);
+                    if (!line?.parent) throw new Error('Ligne inconnue lors du tri du bordereau.');
+                    if (!children.has(line.parent)) children.set(line.parent, []);
+                    children.get(line.parent).push(line);
+                });
+                children.forEach((ordered, parent) => {
+                    if (ordered.length !== parent.children.length) {
+                        throw new Error('Tri incomplet du bordereau.');
                     }
+                });
+                children.forEach((ordered, parent) => { parent.children.splice(0, parent.children.length, ...ordered); });
+                this.lineManager.invalidateCache();
+                this.markDataChanged();
+            },
+            liveEdit: false,
+            appearance: this.getTableAppearance(),
+            columns: this.getTableColumns(),
+            hierarchy: {
+                columnKey: 'designation',
+                isGroup: row => row.est_titre,
+                getLevel: row => Math.max(0, row.niveau - 1),
+                isExpanded: row => row._expanded,
+                onToggle: rowIndex => this.toggleExpansion(rowIndex),
+            },
+            rowActions: {
+                contextMenu: true,
+                items: () => this.getRowActions().map(action => ({
+                    id: action.id,
+                    label: action.label,
+                    group: action.group,
+                    inline: false,
+                    enabled: action.id === 'delete' || action.enabled,
+                })),
+                onAction: action => this.executeRowAction(action),
+            },
+            rowClassName: row => row.est_titre
+                ? `native-bdp-title-row title-row-level-${Math.min(row.niveau, 4)}` : '',
+            isCellEditable: ({ column, row }) => {
+                if (['numero', 'designation', 'unite'].includes(column.key)) return true;
+                return !row.est_titre && ['quantite', 'prix_unitaire'].includes(column.key);
+            },
+            onCellChange: ({ rowIndex, column, value }) => {
+                if ((column.key === 'quantite' || column.key === 'prix_unitaire')
+                    && (value === '' || value < 0)) {
+                    this.showMessage('Les quantités et prix doivent être des nombres positifs.', 'warning');
+                    return false;
                 }
-                this.handleCellChange(row, property, normalized);
+                this.handleCellChange(rowIndex, column.key, value);
                 this.markDataChanged();
                 this.updateTotal();
                 this.scheduleEmptyLineCheck();
-                return normalized;
             },
+            onDataChange: event => {
+                if (event.phase === 'paste') {
+                    event.newRows.forEach(row => {
+                        const line = new Line(row.id);
+                        this.lineManager.root.addChild(line);
+                        this.lineManager.lines.set(line.id, line);
+                    });
+                    this.lineManager.invalidateCache();
+                    event.changes.forEach(({ row, column, value }) => {
+                        this.handleCellChange(this.lineManager.getLineIndexById(row.id), column.key, value);
+                    });
+                    this.markDataChanged();
+                    this.refreshTable();
+                } else if (event.phase === 'commit') {
+                    this.lineManager.getFlatList().forEach((line, index) => {
+                        if (line.hasChildren) this.tableView.refreshRow(index);
+                    });
+                }
+            },
+            onClipboardError: error => this.showMessage(error.message, 'warning'),
             onSelectionChange: () => {
                 this.displaySelectionSum();
                 this.updateToolbar();
             },
-            onToggleExpansion: row => this.toggleExpansion(row),
-            onDelete: () => this.executeRowAction('delete'),
-            getRowActions: () => this.getRowActions(),
-            onRowAction: action => this.executeRowAction(action),
+            onValidationError: ({ column }) => {
+                if (column.type === 'number') {
+                    this.showMessage('Saisir un nombre positif ou nul.', 'warning');
+                }
+            },
         });
-        this.tableView.setAppearance(this.appearance);
+        this.updateHiddenRows();
         this.setupAppearanceDialog();
         this.refreshTable();
+    }
+
+    // Return the column definitions for the table, including appearance settings and validation rules.
+    getTableColumns() {
+        const appearance = this.appearance || this.appearanceData?.values || {};
+        return [
+            { key: 'numero', label: 'N°', sortable: true, width: appearance.width_numero || 100,
+                minWidth: 60, maxWidth: 200, editable: true },
+            { key: 'designation', label: 'Désignation', sortable: true, width: appearance.width_designation || 500,
+                minWidth: 240, maxWidth: 1200, editable: true },
+            { key: 'unite', label: 'Unité', sortable: false, width: appearance.width_unite || 100,
+                minWidth: 55, maxWidth: 180, align: 'center', editable: true },
+            { key: 'quantite', label: 'Quantité', type: 'number', sortable: false,
+                width: appearance.width_quantite || 120, minWidth: 80, maxWidth: 220,
+                decimals: 3, hideZero: true, allowEmpty: false,
+                validate: value => value >= 0 || 'La quantité doit être positive ou nulle.' },
+            { key: 'prix_unitaire', label: 'PU (DH)', type: 'number', sortable: false,
+                width: appearance.width_prix_unitaire || 140, minWidth: 100, maxWidth: 260,
+                decimals: 2, hideZero: true, allowEmpty: false,
+                validate: value => value >= 0 || 'Le prix doit être positif ou nul.' },
+            { key: 'montant', label: 'Montant (DH)', type: 'number', sortable: true,
+                width: appearance.width_montant || 160, minWidth: 100, maxWidth: 260,
+                decimals: 2, hideZero: true, className: 'native-bdp-amount',
+                editable: false, getValue: (_row, rowIndex) =>
+                    this.lineManager.getLineByFlatIndex(rowIndex)?.amount ?? 0 },
+        ];
+    }
+
+    // Return the appearance settings for the table, including row, header, and active row colors.
+    getTableAppearance(values = this.appearance || {}) {
+        const rowColor = values.row_color || '#f8f6ef';
+        const headerColor = values.header_color || '#f0ede5';
+        const activeColor = values.active_color || '#7baec1';
+        const computedTextColor = this.getContrastingInk([
+            rowColor,
+            this.blendColor(activeColor, rowColor, 0.14),
+            this.blendColor(activeColor, rowColor, 0.22),
+        ]);
+        return {
+            rowColor,
+            textColor: values.text_color_auto === false
+                ? values.text_color || computedTextColor : computedTextColor,
+            headerColor,
+            headerTextColor: this.getContrastingInk(headerColor),
+            titleColor: values.title_color || '#24485a',
+            amountColor: values.amount_color || '#15803d',
+            activeColor,
+            selectionColor: values.selection_color_auto === false
+                ? values.selection_color || this.blendColor(activeColor, rowColor, 0.14)
+                : this.blendColor(activeColor, rowColor, 0.14),
+            borderColor: values.border_color || '#a9cad6',
+            rowHeight: Number(values.row_height) || 26,
+            headerHeight: Number(values.header_height) || 42,
+            fontSize: Number(values.font_size) || 13,
+            stickyHeader: values.sticky_header !== false,
+        };
+    }
+
+    getContrastingInk(colors) {
+        const parsed = (Array.isArray(colors) ? colors : [colors]).map(value => {
+            const match = /^#([0-9a-f]{6})$/i.exec(String(value || ''));
+            return match ? [0, 2, 4].map(index =>
+                parseInt(match[1].slice(index, index + 2), 16)) : null;
+        }).filter(Boolean);
+        if (!parsed.length) return '#24485a';
+        const luminance = channels => channels
+            .map(channel => {
+                channel /= 255;
+                return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+            })
+            .reduce((sum, channel, index) => sum + channel * [0.2126, 0.7152, 0.0722][index], 0);
+        const contrast = (foreground, background) => {
+            const first = luminance(foreground);
+            const second = luminance(background);
+            return (Math.max(first, second) + 0.05) / (Math.min(first, second) + 0.05);
+        };
+        const darkInk = [36, 72, 90];
+        const lightInk = [248, 246, 239];
+        const minimumContrast = ink => Math.min(...parsed.map(background =>
+            contrast(ink, background)));
+        return minimumContrast(darkInk) >= minimumContrast(lightInk) ? '#24485a' : '#f8f6ef';
+    }
+
+    blendColor(foreground, background, opacity) {
+        const parse = color => [0, 2, 4].map(index =>
+            parseInt(color.slice(index + 1, index + 3), 16));
+        const front = parse(foreground);
+        const back = parse(background);
+        return `#${front.map((value, index) =>
+            Math.round(value * opacity + back[index] * (1 - opacity))
+            .toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    applyTableAppearance(values) {
+        if (!this.tableView) return;
+        const configuration = this.tableView.getConfiguration();
+        configuration.appearance = {
+            ...configuration.appearance,
+            ...this.getTableAppearance(values),
+        };
+        this.tableView.applyConfiguration(configuration);
     }
 
     setupAppearanceDialog() {
@@ -848,61 +1020,104 @@ class BordereauManager {
         const errorBox = document.getElementById('bdp-appearance-errors');
         if (!dialog || !form || !errorBox) return;
 
-        const fields = Array.from(form.querySelectorAll('input:not([type="hidden"])'));
+        const fields = Array.from(form.querySelectorAll('input[name]:not([type="hidden"])'));
         const cancel = document.getElementById('bdp-appearance-cancel');
         const defaults = document.getElementById('bdp-appearance-defaults');
-        const presets = Array.from(form.querySelectorAll('[data-color-preset]'));
-        let activeColorField = form.querySelector('input[type="color"]');
-        const updatePresetState = () => presets.forEach(button => {
-            button.setAttribute('aria-pressed', String(
-                button.dataset.colorPreset.toLowerCase() === activeColorField?.value.toLowerCase(),
-            ));
+        const colorFields = new Map(Array.from(form.querySelectorAll('input[type="color"]'))
+            .map(field => [field.name, field]));
+        const hexFields = new Map(Array.from(form.querySelectorAll('[data-hex-for]'))
+            .map(field => [field.dataset.hexFor, field]));
+        const autoColorFields = {
+            text_color_auto: 'text_color',
+            selection_color_auto: 'selection_color',
+        };
+        let openingValues;
+        const updateHexFields = () => colorFields.forEach((field, name) => {
+            const hex = hexFields.get(name);
+            if (!hex) return;
+            hex.value = field.value;
+            hex.setCustomValidity('');
+            hex.removeAttribute('aria-invalid');
+        });
+        const updateAutoColorState = () => Object.entries(autoColorFields).forEach(([toggleName, colorName]) => {
+            const toggle = form.elements.namedItem(toggleName);
+            const color = colorFields.get(colorName);
+            const hex = hexFields.get(colorName);
+            const automatic = toggle.checked;
+            color.closest('.bdp-appearance-color-inputs').classList.toggle('is-auto', automatic);
+            color.disabled = automatic;
+            hex.disabled = automatic;
+            color.title = automatic ? 'La couleur est calculée automatiquement.' : '';
+            hex.title = color.title;
         });
         const fill = values => {
             fields.forEach(field => {
-                if (values[field.name] !== undefined) field.value = values[field.name];
+                if (values[field.name] === undefined) return;
+                if (field.type === 'checkbox') field.checked = Boolean(values[field.name]);
+                else field.value = values[field.name];
             });
-            updatePresetState();
+            updateHexFields();
+            updateAutoColorState();
             this.previewAppearance(fields);
         };
 
         document.getElementById('bdp-open-appearance')?.addEventListener('click', () => {
             errorBox.textContent = '';
-            fill(this.appearanceData.values);
+            openingValues = {
+                ...this.appearanceData.values,
+                header_height: this.tableView.getConfiguration().appearance.headerHeight,
+            };
+            fill(openingValues);
             dialog.showModal();
         });
-        form.addEventListener('focusin', event => {
-            if (event.target.matches('input[type="color"]')) {
-                activeColorField = event.target;
-                updatePresetState();
-            }
-        });
         fields.forEach(field => field.addEventListener('input', () => {
-            if (field.type === 'color') activeColorField = field;
-            updatePresetState();
+            if (field.type === 'color') {
+                const hex = hexFields.get(field.name);
+                if (hex) hex.value = field.value;
+            }
+            if (field.type === 'checkbox') updateAutoColorState();
             this.previewAppearance(fields);
         }));
-        presets.forEach(button => button.addEventListener('click', () => {
-            if (!activeColorField) return;
-            activeColorField.value = button.dataset.colorPreset;
-            activeColorField.dispatchEvent(new Event('input', { bubbles: true }));
-            activeColorField.focus();
+        hexFields.forEach((hex, colorName) => hex.addEventListener('input', () => {
+            const color = colorFields.get(colorName);
+            const value = hex.value.trim();
+            const valid = /^#[\da-f]{6}$/i.test(value);
+            hex.setCustomValidity(valid ? '' : 'Utilisez une couleur au format #RRGGBB.');
+            hex.toggleAttribute('aria-invalid', !valid);
+            if (!valid) return;
+            color.value = value.toLowerCase();
+            this.previewAppearance(fields);
         }));
         defaults?.addEventListener('click', () => fill(this.appearanceData.defaults));
         cancel?.addEventListener('click', () => {
-            fill(this.appearanceData.values);
+            fill(openingValues);
             dialog.close();
         });
         dialog.addEventListener('cancel', event => {
             event.preventDefault();
-            fill(this.appearanceData.values);
+            fill(openingValues);
             dialog.close();
         });
         form.addEventListener('submit', async event => {
             event.preventDefault();
             if (!form.reportValidity()) return;
             errorBox.textContent = '';
+            const widthFields = {
+                numero: 'width_numero',
+                designation: 'width_designation',
+                unite: 'width_unite',
+                quantite: 'width_quantite',
+                prix_unitaire: 'width_prix_unitaire',
+                montant: 'width_montant',
+            };
+            this.tableView.getConfiguration().columns.forEach(column => {
+                const fieldName = widthFields[column.key];
+                if (fieldName) {
+                    form.elements.namedItem(fieldName).value = String(Math.round(column.width));
+                }
+            });
             const payload = new FormData(form);
+            colorFields.forEach((field, name) => payload.set(name, field.value));
             payload.set('revision', this.appearanceData.revision);
             form.setAttribute('aria-busy', 'true');
             form.querySelector('fieldset').disabled = true;
@@ -942,227 +1157,13 @@ class BordereauManager {
     previewAppearance(fields) {
         const values = Object.fromEntries(fields.map(field => [
             field.name,
-            field.type === 'number' ? Number(field.value) : field.value,
+            field.type === 'checkbox' ? field.checked
+                : field.type === 'number' ? Number(field.value) : field.value,
         ]));
         this.appearance = { ...this.appearance, ...values };
-        this.tableView?.setAppearance(this.appearance);
+        this.applyTableAppearance(this.appearance);
     }
     
-    initHandsontable() {
-        const container = document.getElementById(this.containerId);
-        if (!container) {
-            console.error(`Container #${this.containerId} non trouvé`);
-            return;
-        }
-
-        this.hot = new Handsontable(container, this.getHotConfig());
-        this.tableView = {
-            getSelection: () => this.getSelectionState(this.hot?.getSelected()),
-            getSelectedCellValues: () => {
-                const ranges = this.hot?.getSelected() || [];
-                const values = [];
-                const visited = new Set();
-                ranges.forEach(([startRow, startCol, endRow, endCol]) => {
-                    for (let row = Math.min(startRow, endRow); row <= Math.max(startRow, endRow); row++) {
-                        for (let column = Math.min(startCol, endCol); column <= Math.max(startCol, endCol); column++) {
-                            const key = `${row}:${column}`;
-                            if (visited.has(key)) continue;
-                            visited.add(key);
-                            values.push(this.hot.getDataAtCell(row, column));
-                        }
-                    }
-                });
-                return values;
-            },
-            selectCell: (row, column) => this.hot?.selectCell(row, column),
-            scrollToRow: row => this.hot?.scrollViewportTo(row),
-            setRows: rows => this.hot?.loadData(rows),
-            setHiddenRows: rows => this.hot?.updateSettings({
-                hiddenRows: { rows, indicators: false },
-            }),
-            render: () => this.hot?.render(),
-            setCellValue: (row, property, value) => this.hot?.setDataAtRowProp(row, property, value),
-        };
-        
-        // Initialiser l'affichage hiérarchique
-        setTimeout(() => this.updateHiddenRows(), 100);
-
-        // Mettre à jour le total initial
-        this.updateTotal();
-    }
-
-    getHotConfig() {
-        return {
-            data: this.lineManager.toTableData(),
-            columns: [
-                {data: '_expanded', type: 'checkbox', title: 'e', width: 10},
-                {data: 'niveau', type: 'text', title: 'N', width: 20, 
-                 renderer: this.hierarchyRenderer.bind(this)},
-                {data: 'est_titre', type: 'checkbox', title: 'T', width: 20, 
-                 hidden: true, renderer: this.hierarchyRenderer.bind(this)},
-                {data: 'numero', type: 'text', title: 'N°', width: 60, 
-                 renderer: this.hierarchyRenderer.bind(this)},
-                {data: 'designation', type: 'text', title: 'Désignation', width: 700, 
-                 renderer: this.hierarchyRenderer.bind(this)},
-                {data: 'unite', type: 'text', title: 'Unité', width: 60, 
-                 renderer: this.hierarchyRenderer.bind(this)},
-                {data: 'quantite', type: 'numeric', numericFormat: { pattern: '0,0.000' }, 
-                 title: 'Quantité', width: 100, renderer: this.numericRenderer.bind(this)},
-                {data: 'prix_unitaire', type: 'numeric', numericFormat: { pattern: '0,0.00' }, 
-                 title: 'PU (DH)', width: 100, renderer: this.numericRenderer.bind(this)},
-                {data: 'montant', type: 'numeric', readOnly: true, 
-                 numericFormat: { pattern: '0,0.00' }, title: 'Montant (DH)', width: 120, 
-                 renderer: this.montantRenderer.bind(this)},
-            ],
-            rowHeaders: false,
-            colHeaders: true,
-            licenseKey: 'non-commercial-and-evaluation',
-            copyPaste: {
-                rowsLimit: Infinity,
-                columnsLimit: Infinity,
-                pasteMode: 'overwrite',
-            },
-            hiddenColumns: {columns: [0, 1, 2], indicators: false},
-            hiddenRows: {rows: [], indicators: false},
-            minSpareRows: 0, // Plus de lignes vides pour faciliter le collage
-            height: 'auto',
-            width: 'auto',
-            rowHeights: 40,
-            manualColumnResize: true,
-            outsideClickDeselects: false,
-            
-            // Menu contextuel personnalisé
-            contextMenu: {
-                items: {
-                    row_above: {
-                        name: 'Insérer une ligne au-dessus',
-                    },
-                    row_below: {
-                        name: 'Insérer une ligne en dessous',
-                    },
-                    remove_row: {
-                        name: 'Supprimer la(les) ligne(s)',
-                        callback: () => this.handleSelectedRowDeletion(),
-                    },
-                    sep1: { name: '---------' },
-                    copy: {
-                        name: 'Copier',
-                        callback: () => {
-                            this.hot.getPlugin('copyPaste').copy();
-                        }
-                    },
-                    paste: {
-                        name: 'Coller',
-                        callback: () => {
-                            // Le paste est déjà géré par beforePaste
-                            this.hot.getPlugin('copyPaste').paste();
-                        }
-                    }
-                }
-            },
-            
-            // Raccourcis clavier
-            keyboard: {
-                keys: [
-                    ['Ctrl/Cmd+Enter', () => {
-                        this.addNewEmptyLineAtEnd();
-                    }],
-                    ['Ctrl/Cmd+Shift+Up', () => {
-                        this.moveUp();
-                    }],
-                    ['Ctrl/Cmd+Shift+Down', () => {
-                        this.moveDown();
-                    }],
-                    ['Tab', (e) => {
-                        if (!e.shiftKey) {
-                            this.indente();
-                        } else {
-                            this.desindente();
-                        }
-                        return false; // Empêcher le comportement par défaut
-                    }]
-                ]
-            },
-
-            // Gérer l'ajout manuel de lignes
-            beforeCreateRow: (index, amount, source) => {
-                if (source === 'auto') {
-                    return false; // Empêcher l'ajout automatique
-                }
-                // Gérer l'ajout manuel (via context menu, Ctrl+C, etc.)
-                if (source === 'ContextMenu.row_above' || source === 'ContextMenu.row_below') {
-                    // Ajouter des lignes dans LineManager
-                    this.handleManualRowInsertion(index, amount, source);
-                    return false; // Bloquer l'ajout natif, on gère nous-mêmes
-                }
-                
-                // Pour les autres sources (paste, etc.), on gère aussi nous-mêmes
-                if (amount > 0) {
-                    this.handleManualRowInsertion(index, amount, source);
-                    return false;
-                }
-                return true;
-            },
-            
-            // Gérer la suppression de lignes
-            beforeRemoveRow: (index, amount) => {
-                // Ne pas supprimer la dernière ligne si elle est vide
-                const flatList = this.lineManager.getFlatList();
-                if (flatList.length - amount <= 0) {
-                    return false;
-                }
-                return true;
-            },
-
-            // GESTION DES LIGNES
-            afterRemoveRow: (index, amount) => {
-                this.handleAfterRemoveRow(index, amount);
-                
-                // Ajouter des lignes vides si nécessaire
-                setTimeout(() => {
-                    this.lineManager.ensureEmptyLinesForEditing();
-                    this.refreshTable(true);
-                }, 50);
-            },
-
-            // GESTION DU COLLAGE (SIMPLIFIÉ)
-            beforePaste: (data, coords) => this.handlePaste(data, coords),
-            
-            // GESTION DES CHANGEMENTS
-            beforeChange: (changes, source) => this.handleBeforeChange(changes, source),
-            afterChange: (changes, source) => {
-                if (!changes || source === 'loadData') return;
-                
-                changes.forEach(change => {
-                    const [row, prop, oldValue, newValue] = change;
-                    this.handleCellChange(row, prop, newValue);
-                });
-
-                this.markDataChanged();
-                this.scheduleEmptyLineCheck();
-            },
-
-            afterRender: () => {
-                this.scheduleEmptyLineCheck();
-            },
-
-            // GESTION DE LA SELECTION
-            afterSelection: () => this.displaySelectionSum(),
-
-            // GESTION DU CLIC SUR LES TRIANGLES
-            afterOnCellMouseDown: (event, coords, TD) => {
-                if (event.target.classList.contains('toggle-triangle')) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    
-                    const row = parseInt(event.target.getAttribute('data-row'));
-                    this.toggleExpansion(row);
-                    return false;
-                }
-            },
-        };
-    }
-
     /**
      * Gère l'insertion manuelle de lignes
      */
@@ -1229,7 +1230,7 @@ class BordereauManager {
         if (newLines.length > 0) {
             setTimeout(() => {
                 const firstNewIndex = this.lineManager.getLineIndexById(newLines[0].id);
-                if (firstNewIndex !== -1) this.focusCell(firstNewIndex, 4);
+                if (firstNewIndex !== -1) this.focusCell(firstNewIndex, 1);
             }, 50);
         }
         
@@ -1270,7 +1271,7 @@ class BordereauManager {
         // Sélectionner la ligne suivante
         setTimeout(() => {
             const newIndex = Math.min(index, this.lineManager.nbLines - 1);
-            if (newIndex >= 0) this.focusCell(newIndex, 4);
+            if (newIndex >= 0) this.focusCell(newIndex, 1);
         }, 50);
         
         return true;
@@ -1316,7 +1317,7 @@ class BordereauManager {
 
         setTimeout(() => {
             const row = Math.min(nextIndex, this.lineManager.nbLines - 1);
-            if (row >= 0) this.focusCell(row, 4);
+            if (row >= 0) this.focusCell(row, 1);
         }, 50);
 
         return true;
@@ -1325,36 +1326,6 @@ class BordereauManager {
     // ============================================================================
     // GESTION DU COLLAGE (VERSION SIMPLIFIÉE)
     // ============================================================================
-
-    handlePaste(data, coords, fromNativeClipboard = false) {
-        if (this.plainTextPasteHandled && !fromNativeClipboard) {
-            this.plainTextPasteHandled = false;
-            return false;
-        }
-
-        
-        if (!data || !Array.isArray(data) || data.length === 0) {
-            return true; // Laisser Handsontable gérer
-        }
-
-        console.info('Handsontable beforePaste:', {
-            rowsReceived: data.length,
-            columnsReceived: Math.max(...data.map(row => Array.isArray(row) ? row.length : 0)),
-            startRow: coords?.[0]?.startRow ?? 0,
-            startColumn: coords?.[0]?.startCol ?? 0,
-        });
-        
-        // Déterminer la position de collage
-        let startRow = 0;
-        if (coords && Array.isArray(coords) && coords.length > 0) {
-            startRow = coords[0].startRow;
-        }
-        
-        // Traiter les données Excel
-        this.processPastedData(data, startRow);
-        
-        return false; // Bloquer le traitement natif
-    }
 
     processPastedData(excelData, startRow) {
         // 1. Traiter les données dans le LineManager
@@ -1370,11 +1341,10 @@ class BordereauManager {
         if (!this.tableView) return;
         const viewport = this.tableView.captureViewport?.();
         this.lineManager.ensureEmptyLinesForEditing();
-        this.tableView.setRows(this.lineManager.toTableData());
+        this.tableView.setData(this.lineManager.toTableData());
         
         this.updateHiddenRows();
         this.updateTotal();
-        this.tableView.render();
         this.updateToolbar();
         this.updateExpandAllButton();
         this.tableView.restoreViewport?.(viewport);
@@ -1406,18 +1376,8 @@ class BordereauManager {
                 line.prix_unitaire = parseFloat(value) || 0;
                 line.invalidateCache();
                 break;
-            case '_expanded':
-                line.expanded = value;
-                this.lineManager.invalidateCache();
-                this.updateHiddenRows();
-                break;
         }
         
-        // Mettre à jour le montant affiché
-        if (property === 'quantite' || property === 'prix_unitaire') {
-            this.tableView?.setCellValue(row, 'montant', line.amount);
-            this.tableView?.refreshAmounts?.(this.lineManager.toTableData());
-        }
     }
 
     scheduleEmptyLineCheck() {
@@ -1433,37 +1393,6 @@ class BordereauManager {
         }, 50);
     }
 
-    handleAfterRemoveRow(index, amount, source) {
-        this.lineManager.removeLineByIndex(index, amount);
-        this.updateTotal();
-        this.dataChanged = true;
-    }
-
-    handleBeforeChange(changes, source) {
-        if (!changes) return true;     
-        
-        changes.forEach(change => {
-            const [row, prop, oldValue, newValue] = change;
-            
-            if (prop === 'quantite' || prop === 'prix_unitaire') {
-                if (newValue !== null && parseFloat(newValue) < 0) {
-                    alert("Les valeurs négatives ne sont pas autorisées");
-                    return false;
-                }
-                
-                if (newValue !== null && typeof newValue === 'string') {
-                    const cleanedValue = newValue.replace(/\s/g, '').replace(',', '.');
-                    if (newValue.trim() === '' || isNaN(cleanedValue)) {
-                        change[3] = '';
-                    } else {
-                        change[3] = cleanedValue;
-                    }
-                }
-            }
-        });
-        
-        return true;
-    }
     // ============================================================================
     // GESTION DE L'EXPANSION/HIERARCHIE
     // ============================================================================
@@ -1481,80 +1410,19 @@ class BordereauManager {
     }
 
     // ============================================================================
-    // RENDERERS
-    // ============================================================================
-
-    hierarchyRenderer(instance, td, row, col, prop, value, cellProperties) {
-        Handsontable.renderers.TextRenderer.apply(this, arguments);
-        
-        const line = this.lineManager.getLineByFlatIndex(row);
-        if (!line) return;
-        
-        const niveau = line.level;
-        const isTitle = line.hasChildren;
-
-        if (isTitle) {
-            td.className = (td.className || '') + ` title-row title-row-level-${Math.min(niveau, 4)}`;
-        }
-        
-        if (prop === 'designation') {
-            const indent = niveau * 15;
-            td.style.paddingLeft = `${indent}px`;
-            td.style.verticalAlign = 'middle';
-            
-            if (isTitle) {
-                const triangleClass = line.expanded ? 'triangle-expanded' : 'triangle-collapsed';
-                td.innerHTML = `<span class="toggle-triangle ${triangleClass}" data-row="${row}"></span>${value || ''}`;
-            } else {
-                td.textContent = value || '';
-                td.style.paddingLeft = `${indent + 15}px`;
-            }
-        }
-    }
-
-    numericRenderer(instance, td, row, col, prop, value, cellProperties) {
-        Handsontable.renderers.NumericRenderer.apply(this, arguments);
-        
-        const line = this.lineManager.getLineByFlatIndex(row);
-        if (!line) return;
-        
-        if (line.hasChildren) {
-            td.textContent = '';
-            td.className = (td.className || '') + ` title-row title-row-level-${Math.min(line.level, 4)}`;
-        } else if (value === 0 || value === '' || value === null) {
-            td.textContent = '';
-        }
-    }
-
-    montantRenderer(instance, td, row, col, prop, value, cellProperties) {
-        Handsontable.renderers.NumericRenderer.apply(this, arguments);
-        
-        const line = this.lineManager.getLineByFlatIndex(row);
-        if (!line) return;
-        
-        if (line.hasChildren) {
-            td.textContent = line.amount === 0 ? '' : this.formatNumber(line.amount);
-            td.className = `htRight title-row title-row-level-${Math.min(line.level, 4)}`;
-        } else {
-            td.textContent = line.amount === 0 ? '' : this.formatNumber(line.amount);
-            td.className = 'htRight montant-cell';
-        }
-    }
-
-    // ============================================================================
     // FONCTIONS UTILITAIRES
     // ============================================================================
 
     getSafeSelection() {
         const selection = this.tableView?.getSelection();
         if (!selection?.ranges?.length) return null;
-        const activeRow = selection.activeCell?.row;
+        const activeRow = selection.activeCell?.rowIndex;
         return selection.ranges.find(range => activeRow >= range.startRow && activeRow <= range.endRow)
             || selection.ranges[0];
     }
 
     getSelectedLineIds() {
-        return this.tableView?.getSelection()?.lineIds || [];
+        return this.tableView?.getSelection()?.rowKeys || [];
     }
 
     getRowActions() {
@@ -1563,7 +1431,7 @@ class BordereauManager {
         const line = range ? this.lineManager.getLineByFlatIndex(range.startRow) : null;
         const hasSingleRange = selection?.ranges?.length === 1;
         const canMove = Boolean(line && range?.nbRows === 1 && hasSingleRange);
-        const selectedIds = new Set(selection?.lineIds || []);
+        const selectedIds = new Set(selection?.rowKeys || []);
         const removedLines = new Set();
         this.lineManager.getFlatList().forEach(item => {
             if (!selectedIds.has(item.id)) return;
@@ -1602,7 +1470,7 @@ class BordereauManager {
     }
 
     updateToolbar() {
-        if (this.renderer !== 'native' || !this.tableView) return;
+        if (!this.tableView) return;
 
         this.getRowActions().forEach(action => {
             const button = document.getElementById(action.toolbarId);
@@ -1626,32 +1494,7 @@ class BordereauManager {
         });
     }
 
-    getSelectionState(rawRanges) {
-        if (!Array.isArray(rawRanges) || rawRanges.length === 0) return null;
-
-        const flatList = this.lineManager.getFlatList();
-        const lineIds = new Set();
-        const ranges = rawRanges.map(([startRow, startCol, endRow, endCol]) => {
-            const range = {
-                startRow: Math.min(startRow, endRow),
-                startCol: Math.min(startCol, endCol),
-                endRow: Math.max(startRow, endRow),
-                endCol: Math.max(startCol, endCol),
-                isSingleCell: startRow === endRow && startCol === endCol,
-                nbRows: Math.abs(endRow - startRow) + 1,
-            };
-
-            for (let row = range.startRow; row <= range.endRow; row++) {
-                const line = flatList[row];
-                if (line) lineIds.add(line.id);
-            }
-            return range;
-        });
-
-        return { ranges, lineIds: Array.from(lineIds) };
-    }
-
-    focusCell(row, column = 4) {
+    focusCell(row, column = 1) {
         if (!this.tableView?.selectCell) return false;
         this.tableView.selectCell(row, column);
         this.tableView.scrollToRow?.(row);
@@ -1672,67 +1515,6 @@ class BordereauManager {
         if (totalElement) {
             totalElement.textContent = `${this.formatNumber(total)} MAD`;
         }
-    }
-
-    setupKeyboardShortcuts() {
-        document.addEventListener('keydown', (e) => {
-            // Tab pour indenter/désindenter
-            if (e.key === 'Tab' && !e.ctrlKey && !e.altKey && this.tableView) {
-                e.preventDefault();
-                const selected = this.getSafeSelection();
-                if (!selected) return;
-
-                const startRow = selected.startRow;
-                
-                if (e.shiftKey) {
-                    // Désindenter
-                    if (this.lineManager.desindentLine(startRow)) {
-                        this.refreshTable();
-                    }
-                } else {
-                    // Indenter
-                    if (this.lineManager.indentLine(startRow)) {
-                        this.refreshTable();
-                    }
-                }
-            }
-        });
-    }
-
-    setupPlainTextPaste() {
-        document.addEventListener('paste', (event) => {
-            if (!this.hot || !this.hot.isListening()) return;
-            if (this.hot.getActiveEditor()?.isOpened()) return;
-
-            const plainText = event.clipboardData?.getData('text/plain');
-            if (!plainText || !plainText.includes('\t')) return;
-
-            const selected = this.getSafeSelection();
-            if (!selected) return;
-
-            const rows = plainText
-                .replace(/\r\n?/g, '\n')
-                .split('\n');
-            if (rows.length > 1 && rows[rows.length - 1] === '') rows.pop();
-
-            const data = rows.map(row => row.split('\t'));
-            if (data.length === 0) return;
-
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            this.plainTextPasteHandled = true;
-            console.info('Presse-papiers texte utilisé pour le collage Excel:', {
-                rowsReceived: data.length,
-                columnsReceived: Math.max(...data.map(row => row.length)),
-            });
-            this.handlePaste(data, [{
-                startRow: selected.startRow,
-                startCol: selected.startCol,
-            }], true);
-            setTimeout(() => {
-                this.plainTextPasteHandled = false;
-            }, 0);
-        }, true);
     }
 
     showSumSelectedCells() {
@@ -1816,7 +1598,7 @@ class BordereauManager {
 
     insertChildLine() {
         const selected = this.getSafeSelection();
-        const activeRow = this.tableView?.getSelection()?.activeCell?.row ?? selected?.startRow;
+        const activeRow = this.tableView?.getSelection()?.activeCell?.rowIndex ?? selected?.startRow;
         const currentLine = activeRow === undefined ? null : this.lineManager.getLineByFlatIndex(activeRow);
         const parent = currentLine?.parent || this.lineManager.root;
         const index = currentLine ? parent.children.indexOf(currentLine) : parent.children.length;
@@ -1829,7 +1611,7 @@ class BordereauManager {
         this.lineManager.invalidateCache();
         this.markDataChanged();
         this.refreshTable();
-        this.focusCell(this.lineManager.getLineIndexById(newLine.id), 4);
+        this.focusCell(this.lineManager.getLineIndexById(newLine.id), 1);
         return newLine;
     }
 
@@ -2054,9 +1836,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 lotNom: window.lotNom || 'Bordereau',
                 csrfToken: window.csrfToken || '',
                 saveUrl: window.saveUrl || '',
-                renderer: window.bordereauRenderer
-                    || (new URLSearchParams(window.location.search).get('renderer') === 'native'
-                        ? 'native' : 'handsontable'),
             });
         }, 100);
     }

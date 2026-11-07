@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # ⚠️ Bump cette valeur à chaque release notable
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.2.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,16 @@ APP_VERSION = "2.1.1"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.2.0": {
+        "date": "2026-11-07",
+        "titre": "Bordereau de prix amélioré",
+        "highlights": [
+            "Tableau du bordereau modernisé avec sélection multiple et copier-coller",
+            "Réglage direct des colonnes et de la hauteur des en-têtes",
+            "Personnalisation et sauvegarde de l'apparence par lot",
+        ],
+        "niveau": "info",
+    },
     "2.1.1": {
         "date": "2026-10-24",
         "titre": "Correctifs mineurs",

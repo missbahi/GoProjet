@@ -260,6 +260,11 @@ class NativeBordereauTable {
                 cell.style.height = `${Number(this.appearance.header_height)}px`;
             }
             cell.textContent = label;
+            // Centrer le texte et aligner verticalement au milieu
+            cell.style.textAlign = 'center';
+            cell.style.verticalAlign = 'middle';
+            // Format Gras
+            cell.style.fontWeight = 'bold';
             headerRow.appendChild(cell);
         });
         head.appendChild(headerRow);
@@ -286,8 +291,10 @@ class NativeBordereauTable {
             tr.classList.add('native-bdp-title-row', `title-row-level-${Math.min(row.niveau, 4)}`);
         }
 
+        // numero (N°)
         this.appendInputCell(tr, index, 3, 'numero', row.numero, 'N°', false);
 
+        // designation (Désignation)
         const designation = document.createElement('td');
         designation.dataset.row = String(index);
         designation.dataset.column = '4';
@@ -297,6 +304,8 @@ class NativeBordereauTable {
         const hierarchy = document.createElement('span');
         hierarchy.className = 'native-bdp-hierarchy';
         hierarchy.style.marginInlineStart = `${Math.max(0, row.niveau - 1) * 16}px`;
+
+        // fold button or spacer for hierarchy indentation
         if (row.est_titre) {
             const fold = document.createElement('button');
             fold.type = 'button';
@@ -320,10 +329,14 @@ class NativeBordereauTable {
         designation.appendChild(nameWrap);
         tr.appendChild(designation);
 
+        // unite
         this.appendInputCell(tr, index, 5, 'unite', row.unite, 'Unité', false);
+        // quantite (Quantité)
         this.appendInputCell(tr, index, 6, 'quantite', row.quantite, 'Quantité', true);
+        // prix unitaire (Prix unitaire)
         this.appendInputCell(tr, index, 7, 'prix_unitaire', row.prix_unitaire, 'Prix unitaire', true);
-
+        
+        // montant (Montant)
         const amount = document.createElement('td');
         amount.dataset.row = String(index);
         amount.dataset.column = '8';
@@ -332,7 +345,8 @@ class NativeBordereauTable {
         amount.tabIndex = -1;
         amount.textContent = Number(row.montant) === 0 ? '' : this.formatNumber(row.montant, 2);
         tr.appendChild(amount);
-
+        
+        // actions (Actions)
         const actions = document.createElement('td');
         actions.className = 'native-bdp-actions';
         const remove = document.createElement('button');
@@ -371,6 +385,8 @@ class NativeBordereauTable {
             input.inputMode = 'decimal';
             input.classList.add('native-bdp-number');
         }
+        if (property === 'unite') input.classList.add('native-bdp-unite');
+
         cell.appendChild(input);
     }
 
