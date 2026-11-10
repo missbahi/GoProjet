@@ -1,9 +1,10 @@
 from decimal import Decimal
 import os
-from django.db import models
+from django.db import models, transaction
 from django.db.models import Sum
+from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils.translation import gettext_lazy as _
-from datetime import date
+from datetime import date, timedelta
 from django.contrib.auth.models import User
 from django.utils import timezone
 from django.conf import settings
@@ -20,6 +21,15 @@ class Attachement(models.Model):
     ]
 
     projet = models.ForeignKey('Projet', on_delete=models.CASCADE, related_name='attachements')
+    sequence = models.PositiveIntegerField(verbose_name="Ordre de l'attachement")
+    precedent = models.ForeignKey(
+        'self',
+        on_delete=models.DO_NOTHING,
+        null=True,
+        blank=True,
+        related_name='suivants',
+        verbose_name="Attachement précédent",
+    )
     numero = models.CharField(max_length=20, verbose_name="Numéro d'attachement")
     date_etablissement = models.DateField(verbose_name="Date d'établissement")
     date_debut_periode = models.DateField(verbose_name="Date début période")
@@ -37,7 +47,10 @@ class Attachement(models.Model):
     class Meta: 
         verbose_name = "Attachement"
         verbose_name_plural = "Attachements"
-        ordering = ['-date_etablissement', '-numero']
+        ordering = ['projet', 'sequence']
+        constraints = [
+            models.UniqueConstraint(fields=['projet', 'sequence'], name='unique_attachement_sequence_projet'),
+        ]
 
     def marquer_modification(self, user):
         if user is not None:
@@ -45,6 +58,8 @@ class Attachement(models.Model):
         return self
 
     def initialiser_processus_validation(self, demandeur):
+        if self.projet.dossier_id and self.projet.dossier.activite == 'TRAVAUX':
+            return
         types_validation = [
             ('TECHNIQUE', 1, True, User.objects.filter(is_staff=True).first()),
             ('ADMINISTRATIVE', 2, True, User.objects.filter(is_staff=True).first()),
@@ -115,41 +130,211 @@ class Attachement(models.Model):
 
     @classmethod
     def get_latest_attachement(cls, projet):
-        return cls.objects.filter(projet=projet).order_by(
-            '-date_fin_periode', '-date_etablissement', '-id'
-        ).first()
+        return cls.objects.filter(projet=projet).order_by('-sequence').first()
 
     def get_previous_attachement(self):
-        return Attachement.objects.filter(
-            projet=self.projet,
-            date_fin_periode__lte=self.date_debut_periode,
-        ).exclude(pk=self.pk).order_by(
-            '-date_fin_periode', '-date_etablissement', '-id'
-        ).first()
+        if self.pk:
+            return self.precedent
+        if self.projet_id:
+            return type(self).get_latest_attachement(self.projet)
+        return None
+
+    def _date_debut_attendue(self, precedent):
+        if precedent:
+            return precedent.date_fin_periode + timedelta(days=1)
+
+        osc = self.projet.ordres_service.filter(
+            type_os__code='OSC',
+            statut='NOTIFIE',
+            date_effet__isnull=False,
+        ).order_by('ordre_sequence').first()
+        return osc.date_effet if osc else None
+
+    def verifier_continuite_periode(self):
+        precedent = self.get_previous_attachement()
+        date_attendue = self._date_debut_attendue(precedent) if self.projet_id else None
+        if not date_attendue:
+            raise ValidationError({
+                'date_debut_periode': "Un OS de commencement notifié avec une date d'effet est requis.",
+            })
+        if self.date_debut_periode != date_attendue:
+            raise ValidationError({
+                'date_debut_periode': (
+                    "La date de début doit correspondre au lendemain de l'attachement précédent "
+                    "ou à la date d'effet de l'OS de commencement."
+                ),
+            })
+
+    def verifier_fin_periode_hors_arret(self, date_fin):
+        if not self.projet_id or not date_fin:
+            return
+        evenements = self.projet.ordres_service.filter(
+            type_os__code__in=['OSA', 'OSR'], statut='NOTIFIE',
+            date_effet__isnull=False,
+        ).select_related('type_os').order_by('date_effet', 'ordre_sequence', 'pk')
+        periodes = []
+        debut_arret = None
+        for evenement in evenements:
+            if evenement.type_os.code == 'OSA' and debut_arret is None:
+                debut_arret = evenement.date_effet
+            elif evenement.type_os.code == 'OSR' and debut_arret is not None:
+                periodes.append((debut_arret, evenement.date_effet))
+                debut_arret = None
+        if debut_arret is not None:
+            periodes.append((debut_arret, None))
+        for arret, reprise in periodes:
+            if arret <= date_fin and (reprise is None or date_fin < reprise):
+                veille = arret - timedelta(days=1)
+                choix = f"le {veille:%d/%m/%Y} (veille de l'arrêt)"
+                if reprise:
+                    choix += f" ou le {reprise:%d/%m/%Y} (reprise)"
+                else:
+                    choix += " ; aucun OS de reprise notifié ne permet encore de proposer une date de reprise"
+                raise ValidationError({
+                    'date_fin_periode': (
+                        f"La date de fin se situe dans une période d'arrêt du projet "
+                        f"à compter du {arret:%d/%m/%Y}. Choisissez {choix}."
+                    ),
+                })
+
+    def clean(self):
+        super().clean()
+        errors = {}
+        precedent = self.get_previous_attachement()
+        ancien = type(self).objects.get(pk=self.pk) if self.pk else None
+        if self.statut == 'TRANSMIS' and (not ancien or ancien.statut != 'TRANSMIS'):
+            try:
+                self.verifier_fin_periode_hors_arret(self.date_fin_periode)
+            except ValidationError as error:
+                errors.update(error.message_dict)
+
+        if self.date_debut_periode and self.date_fin_periode:
+            if self.date_fin_periode < self.date_debut_periode:
+                errors['date_fin_periode'] = "La date de fin ne peut précéder la date de début."
+
+            if not ancien or (self.statut == 'TRANSMIS' and ancien.statut != 'TRANSMIS'):
+                try:
+                    self.verifier_continuite_periode()
+                except ValidationError as error:
+                    errors.update(error.message_dict)
+
+        if not self.pk and precedent and precedent.statut not in {'SIGNE', 'VALIDE'}:
+            errors[NON_FIELD_ERRORS] = (
+                "L'attachement précédent doit être signé ou validé avant de créer le suivant."
+            )
+
+        if self.pk and self.suivants.exists():
+            if (
+                self.date_debut_periode != ancien.date_debut_periode
+                or self.date_fin_periode != ancien.date_fin_periode
+            ):
+                errors['date_debut_periode'] = (
+                    "Les dates ne peuvent pas être modifiées lorsqu'un attachement suivant existe."
+                )
+        if errors:
+            raise ValidationError(errors)
     
     @property
     def montant_ht_attachement_precedent(self):
-        try:
-            precedent = self.get_previous_attachement()
-            if precedent:
-                return precedent.total_montant_ht
-            return 0
-        except Exception:
-            return 0
+        precedent = self.get_previous_attachement()
+        return precedent.total_montant_ht if precedent else Decimal('0.00')
     
     @property
     def montant_situation(self):
-        self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
+        return self.total_montant_ht - self.montant_ht_attachement_precedent
+
+    def recalculer_montant_ht(self):
+        self.montant_ht = self.montant_situation
+        if self.pk:
+            type(self).objects.filter(pk=self.pk).update(montant_ht=self.montant_ht)
         return self.montant_ht
         
     def __str__(self):
         return f"Attachement {self.numero} - {self.projet.nom}"
 
     def save(self, *args, **kwargs):
-        if self.pk:
-            self.montant_ht = self.total_montant_ht - self.montant_ht_attachement_precedent
+        if self._state.adding:
+            from projets.models.projet import Projet
+
+            with transaction.atomic():
+                Projet.objects.select_for_update().get(pk=self.projet_id)
+                precedent = type(self).get_latest_attachement(self.projet)
+                date_debut_attendue = self._date_debut_attendue(precedent)
+                if precedent and precedent.statut not in {'SIGNE', 'VALIDE'}:
+                    raise ValidationError(
+                        "L'attachement précédent doit être signé ou validé avant de créer le suivant."
+                    )
+                if not date_debut_attendue:
+                    raise ValidationError(
+                        "Un OS de commencement notifié avec une date d'effet est requis."
+                    )
+                if self.date_debut_periode != date_debut_attendue:
+                    raise ValidationError(
+                        {'date_debut_periode': "La date ne respecte pas la continuité des attachements."}
+                    )
+                if self.date_fin_periode < self.date_debut_periode:
+                    raise ValidationError(
+                        {'date_fin_periode': "La date de fin ne peut précéder la date de début."}
+                    )
+                self.precedent = precedent
+                self.sequence = precedent.sequence + 1 if precedent else 1
+                self.numero = f"DP{self.sequence:02d}"
+                if self.statut == 'TRANSMIS':
+                    self.verifier_fin_periode_hors_arret(self.date_fin_periode)
+                return super().save(*args, **kwargs)
+        elif self.pk:
+            ancien = type(self).objects.get(pk=self.pk)
+            statut_enregistre = kwargs.get('update_fields')
+            if (
+                self.statut == 'TRANSMIS'
+                and ancien.statut != 'TRANSMIS'
+                and (statut_enregistre is None or 'statut' in statut_enregistre)
+            ):
+                self.verifier_continuite_periode()
+                self.verifier_fin_periode_hors_arret(self.date_fin_periode)
+            if (
+                self.projet_id != ancien.projet_id
+                or self.sequence != ancien.sequence
+                or self.precedent_id != ancien.precedent_id
+                or self.numero != ancien.numero
+            ):
+                raise ValidationError(
+                    "Le projet, le numéro et le rang de l'attachement ne peuvent pas être modifiés."
+                )
+
+            dates_modifiees = (
+                self.date_debut_periode != ancien.date_debut_periode
+                or self.date_fin_periode != ancien.date_fin_periode
+            )
+            if dates_modifiees and self.suivants.exists():
+                raise ValidationError(
+                    "Les dates ne peuvent pas être modifiées lorsqu'un attachement suivant existe."
+                )
+            if dates_modifiees:
+                if self.date_fin_periode < self.date_debut_periode:
+                    raise ValidationError(
+                        {'date_fin_periode': "La date de fin ne peut précéder la date de début."}
+                    )
         return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.suivants.exists():
+            raise ValidationError("Un attachement ayant un suivant ne peut pas être supprimé.")
+        return super().delete(*args, **kwargs)
     
+class CorrectionPeriodesAttachement(models.Model):
+    projet = models.ForeignKey('Projet', on_delete=models.CASCADE, related_name='corrections_periodes_attachements')
+    auteur = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    date_correction = models.DateTimeField(auto_now_add=True)
+    motif = models.TextField()
+    modifications = models.JSONField()
+
+    class Meta:
+        ordering = ['-date_correction', '-pk']
+        verbose_name = "Correction des périodes d'attachement"
+        verbose_name_plural = "Corrections des périodes d'attachement"
+
+
 # ------------------------ Ligne Attachement ------------------------
 class LigneAttachement(models.Model):
     attachement = models.ForeignKey('Attachement', on_delete=models.CASCADE, related_name='lignes_attachement')
@@ -180,15 +365,42 @@ class LigneAttachement(models.Model):
         return not self.numero or not self.unite or (self.quantite_initiale is None or self.quantite_initiale == 0)
     
     def save(self, *args, **kwargs):
+        if self.pk and self.attachement.suivants.exists():
+            ancien = type(self).objects.get(pk=self.pk)
+            champs_proteges = (
+                'ligne_lot_id',
+                'numero',
+                'designation',
+                'unite',
+                'quantite_initiale',
+                'prix_unitaire',
+                'quantite_realisee',
+                'quantite_cumulee',
+            )
+            if any(
+                getattr(self, champ) != getattr(ancien, champ)
+                for champ in champs_proteges
+            ):
+                raise ValidationError(
+                    "Les lignes ne peuvent pas être modifiées lorsqu'un attachement suivant existe."
+                )
+        elif self.attachement.suivants.exists():
+            raise ValidationError(
+                "Les lignes ne peuvent pas être modifiées lorsqu'un attachement suivant existe."
+            )
         if self.quantite_realisee is None:
             self.quantite_realisee = 0
-        # Principe métier retenu : l'attachement courant indique la quantité cumulée à
-        # vérifier et à attacher pour la ligne concernée. On ne recalculera pas en fonction
-        # des montants déjà attachés auparavant, car le cumul sert à contrôler la prestation
-        # dans l'attachement courant et parfois il peut être partiellement négatif lors des
-        # corrections / ajustements de métré.
+        if self.quantite_realisee < 0:
+            raise ValidationError({"quantite_realisee": "Le cumul réalisé ne peut pas être négatif."})
         self.quantite_cumulee = self.quantite_realisee
         super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.attachement.suivants.exists():
+            raise ValidationError(
+                "Les lignes ne peuvent pas être supprimées lorsqu'un attachement suivant existe."
+            )
+        return super().delete(*args, **kwargs)
 
 # ------------------------ Processus de validation ------------------------
 class ProcessValidation(models.Model):
@@ -259,6 +471,8 @@ class ProcessValidation(models.Model):
 
     def _update_statut_attachement(self):
         attachement = self.attachement
+        if attachement.projet.dossier_id and attachement.projet.dossier.activite == 'TRAVAUX':
+            return
         validations_obligatoires = attachement.validations.filter(est_obligatoire=True)
         validations_validees = validations_obligatoires.filter(statut_validation='VALIDE')
         validations_rejetees = validations_obligatoires.filter(statut_validation='REJETE')
@@ -527,21 +741,34 @@ class Decompte(models.Model):
     
     @property
     def montant_situation_net_a_payer(self):
-        return self.montant_situation_ttc - self.montant_situation_ras - self.montant_situation_autres_retenues
+        return max(
+            0.0,
+            self.montant_situation_ttc
+            - self.montant_situation_ras
+            - self.montant_situation_autres_retenues,
+        )
     
     class Meta:
         verbose_name = "Décompte"
         verbose_name_plural = "Décomptes"
         ordering = ['-date_emission', '-numero']
 
-    def save(self, *args, **kwargs):
-        self.montant_ht = self.attachement.total_montant_ht + self.montant_revision_prix
-        self.montant_tva = (self.montant_ht * self.taux_tva) / 100
+    def calculer_montants(self, montant_situation):
+        zero = Decimal('0.00')
+        taux_tva = Decimal(str(self.taux_tva or 0))
+        taux_retenue_garantie = Decimal(str(self.taux_retenue_garantie or 0))
+        taux_ras = Decimal(str(self.taux_ras or 0))
+        autres_retenues = Decimal(str(self.autres_retenues or 0))
+        self.montant_ht = montant_situation + Decimal(str(self.montant_revision_prix or 0))
+        self.montant_tva = (self.montant_ht * taux_tva) / Decimal('100')
         self.montant_ttc = self.montant_ht + self.montant_tva
-        self.montant_retenue_garantie = (self.montant_ht * self.taux_retenue_garantie) / 100
-        self.montant_ras = (self.montant_ht * self.taux_ras) / 100
-        total_retenues = self.montant_retenue_garantie + self.montant_ras + self.autres_retenues
-        self.montant_net_a_payer = max(0, self.montant_ttc - total_retenues)
+        self.montant_retenue_garantie = (self.montant_ht * taux_retenue_garantie) / Decimal('100')
+        self.montant_ras = (self.montant_ht * taux_ras) / Decimal('100')
+        total_retenues = self.montant_retenue_garantie + self.montant_ras + autres_retenues
+        self.montant_net_a_payer = max(zero, self.montant_ttc - total_retenues)
+
+    def save(self, *args, **kwargs):
+        self.calculer_montants(self.attachement.montant_situation)
         super().save(*args, **kwargs)
 
     @property

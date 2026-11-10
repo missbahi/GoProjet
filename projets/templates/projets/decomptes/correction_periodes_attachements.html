@@ -1,0 +1,103 @@
+{% extends "projets/home/base_project.html" %}
+{% load static navigation %}
+{% block title %}Correction des périodes historiques — {{ projet.nom }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
+{% endblock %}
+{% block content %}
+{% breadcrumb %}
+<div class="attachment-workflow-page attachment-page--attachement_form"
+     data-family="project" data-page-title="Correction des périodes historiques" data-page-icon="fa-calendar">
+    <h1 class="app-section-title mb-4">Correction des périodes historiques</h1>
+    <h2 class="mb-4">{{ projet.nom }}</h2>
+    {% include "projets/home/_action_messages.html" %}
+    <div class="app-alert app-alert-warning p-4 mb-4">
+        Action réservée au superutilisateur et au chef de projet autorisé.
+        L'ordre est déduit des nouvelles dates : les séquences, les liens vers l'attachement précédent
+        et les numéros DP01, DP02… sont reconstruits après confirmation.
+        Les statuts, validations, quantités et dates d'établissement sont conservés.
+        Les montants des situations et décomptes concernés sont recalculés ; un décompte payé ou
+        partiellement payé bloque la correction qui le concerne.
+        Vérifiez l'incidence éventuelle sur les documents déjà émis et les calculs liés aux périodes.
+        L'ensemble de la chaîne doit être continu à partir de l'OS de commencement.
+        {% if osc %}<p>Date d'effet de l'OS : {{ osc.date_effet|date:"d/m/Y" }}.</p>{% endif %}
+    </div>
+    {% if form.errors %}
+    <div role="alert" class="app-alert app-alert-error p-4 mb-4">
+        {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        {% for field in form %}{% for error in field.errors %}<p>{{ field.label }} : {{ error }}</p>{% endfor %}{% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" class="app-card p-4 mb-6">
+        {% csrf_token %}
+        {{ form.instantane }}
+        <input type="hidden" name="confirmation" value="{{ confirmation_token }}">
+        <div class="overflow-x-auto mb-4">
+            <table class="app-table">
+                <thead><tr><th>Attachement actuel / ID</th><th>Séquence actuelle</th><th>Précédent actuel</th><th>Statut</th><th>Période actuelle</th><th>Nouveau début</th><th>Nouvelle fin</th>{% if apercu %}<th>Nouvelle séquence / numéro</th><th>Nouveau précédent</th>{% endif %}</tr></thead>
+                <tbody>
+                    {% for ligne in lignes %}
+                    <tr>
+                        <td>{{ ligne.attachement.numero }} / ID {{ ligne.attachement.pk }}</td>
+                        <td>{{ ligne.attachement.sequence }}</td>
+                        <td>{{ ligne.precedent }}</td>
+                        <td>{{ ligne.attachement.get_statut_display }}</td>
+                        <td>{{ ligne.attachement.date_debut_periode|date:"d/m/Y" }} — {{ ligne.attachement.date_fin_periode|date:"d/m/Y" }}</td>
+                        <td>{% if apercu %}{{ ligne.debut.as_hidden }}{{ ligne.debut.value }}{% else %}{{ ligne.debut }}{% endif %}</td>
+                        <td>{% if apercu %}{{ ligne.fin.as_hidden }}{{ ligne.fin.value }}{% else %}{{ ligne.fin }}{% endif %}</td>
+                        {% if apercu %}<td>{{ ligne.proposition.sequence }} / {{ ligne.proposition.numero }}</td><td>{{ ligne.proposition.precedent }}</td>{% endif %}
+                    </tr>
+                    {% empty %}<tr><td colspan="9">Aucun attachement.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <label for="{{ form.motif.id_for_label }}">{{ form.motif.label }}</label>
+        {% if apercu %}
+            {{ form.motif.as_hidden }}<p class="mb-4">{{ form.motif.value }}</p>
+            <h3 class="app-section-title mb-4">Impacts financiers</h3>
+            <div class="overflow-x-auto mb-4">
+                <table class="app-table">
+                    <thead><tr><th>Élément</th><th>Champ</th><th>Avant</th><th>Après</th></tr></thead>
+                    <tbody>{% for impact in impacts %}
+                        <tr><td>{{ impact.objet }}</td><td>{{ impact.champ }}</td><td>{{ impact.avant }}</td><td>{{ impact.apres }}</td></tr>
+                    {% endfor %}</tbody>
+                </table>
+            </div>
+            <p class="mb-4">{{ modifications|length }} attachement(s) à corriger. Aucune modification n'est encore enregistrée.</p>
+            <button type="submit" name="action" value="confirmer" class="btn btn-warning">Confirmer la correction</button>
+            <button type="submit" name="action" value="modifier" class="btn btn-secondary">Revenir à la saisie</button>
+        {% else %}
+            {{ form.motif }}
+            <button type="submit" name="action" value="apercu" class="btn btn-primary mt-4">Vérifier et afficher l'aperçu</button>
+        {% endif %}
+        <a href="{% url 'projets:liste_attachements' projet.id %}" class="btn btn-secondary mt-4">Retour aux attachements</a>
+    </form>
+    <section class="app-card p-4">
+        <h2 class="app-section-title mb-4">Historique des corrections</h2>
+        {% for correction in historique %}
+        <div class="mb-4">
+            <p>{{ correction.date_correction|date:"d/m/Y H:i" }} — {{ correction.auteur|default:"Compte supprimé" }}</p>
+            <p>{{ correction.motif }}</p>
+            <ul>
+                {% for modification in correction.modifications %}
+                <li>{{ modification.numero }} :
+                    {{ modification.ancien_debut }} — {{ modification.ancienne_fin }}
+                    → {{ modification.nouveau_debut }} — {{ modification.nouvelle_fin }}
+                    {% if modification.nouveau_numero %}
+                    ; ID {{ modification.id }}, numéro {{ modification.numero }} → {{ modification.nouveau_numero }},
+                    séquence {{ modification.ancienne_sequence }} → {{ modification.nouvelle_sequence }},
+                    précédent ID {{ modification.ancien_precedent_id|default_if_none:"aucun" }} → {{ modification.nouveau_precedent_id|default_if_none:"aucun" }}
+                    ; situation HT {{ modification.ancien_montant_ht }} → {{ modification.nouveau_montant_ht }}
+                    {% if modification.decompte %}
+                    <ul>{% for impact in modification.impacts %}<li>{{ impact.objet }} — {{ impact.champ }} : {{ impact.avant }} → {{ impact.apres }}</li>{% endfor %}</ul>
+                    {% endif %}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% empty %}<p>Aucune correction administrative enregistrée.</p>{% endfor %}
+    </section>
+</div>
+{% endblock %}

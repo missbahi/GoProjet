@@ -18,6 +18,7 @@ from projets.models import (
 )
 from projets.utils.utils import render_page_or_fragment
 from projets.utils.navigation import project_crumbs
+from projets.services.avancement_projet import avancement_ttc
 
 
 @superuser_required
@@ -278,6 +279,7 @@ def dashboard_projet(request, projet_id):
         default=None,
     )
     today = timezone.localdate()
+    avancement_production = avancement_ttc(projet, lots, montant_total, today)
     date_fin_previsionnelle = projet.date_fin_previsionnelle(today)
     jours_ecoules = projet.jours_decoules_depuis_demarrage(today)
     date_fin_contractuelle = projet.ajouter_delai(osc.date_effet) if osc else None
@@ -338,6 +340,7 @@ def dashboard_projet(request, projet_id):
         'breadcrumb_items': project_crumbs(projet),
         'lots': lots,
         'montant_total': montant_total_formate,
+        'avancement_production': avancement_production,
         'total_decomptes': total_decomptes,
         'decomptes_payes': decomptes_payes,
         'decomptes_emis': decomptes_emis,

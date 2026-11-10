@@ -28,9 +28,49 @@
         <!-- Messages -->
         {% include "projets/home/_action_messages.html" %}
 
+        {% if correction_exceptionnelle %}
+        <div class="validation-section" role="status">
+            <strong>Correction exceptionnelle — {{ attachement.get_statut_display }}</strong>
+            <p>Vous pouvez modifier cet attachement sans réouvrir ses validations.
+                Un aperçu et une confirmation sont obligatoires avant l'enregistrement.
+                Les décomptes payés ou partiellement payés ne peuvent pas être affectés financièrement.</p>
+        </div>
+        {% elif peut_corriger_exceptionnellement %}
+        <a href="?correction=1" class="btn btn-warning mb-4">Accès exceptionnel de correction</a>
+        {% endif %}
+
+        {% if form.errors %}
+        <div role="alert" data-persistent-action-message class="app-alert app-alert-error p-3 mb-4 rounded-lg">
+            <p>Veuillez corriger les erreurs ci-dessous :</p>
+            <ul class="list-disc pl-5">
+                {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+                {% for field in form %}
+                    {% for error in field.errors %}
+                    <li>{{ field.label }} : {{ error }}</li>
+                    {% endfor %}
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if not is_edition and not date_debut_periode %}
+        <div class="validation-section">
+            Un OS de commencement notifié avec une date d'effet est requis avant de créer le premier attachement.
+        </div>
+        {% endif %}
+
         <div><!-- Section d'information selon le statut -->
         {% if is_edition %}
-            {% if attachement.est_validable %}
+            {% if validation_directe %}
+            <div class="validation-section">
+                <h3 class="font-bold">Validation simplifiée — Dossier Travaux</h3>
+                <p>Le superutilisateur ou le chef de projet autorisé peut cliquer sur Valider,
+                    ou choisir le statut Validé puis enregistrer, sans étapes intermédiaires.</p>
+            </div>
+            {% elif correction_exceptionnelle %}
+            {% elif attachement.est_validable %}
             <div class="validation-section">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div class="flex items-center gap-3">
@@ -106,7 +146,11 @@
         <div class="content-section glass-effect">
             <div class="nav-buttons sticky top-0 z-50 py-2">
                 <!-- Boutons de validation -->
-                {% if is_edition %}
+                {% if validation_directe %}
+                <div class="nav-buttons-group">
+                    <button type="submit" form="attachement-form" name="action" value="valider" class="btn btn-success">Valider</button>
+                </div>
+                {% elif is_edition and not correction_exceptionnelle %}
                 <div class="nav-buttons-group">
                     {% if attachement.est_validable %}
                         <!-- Attachement en cours de validation -->
@@ -171,13 +215,32 @@
             <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
                 {% csrf_token %}
                 
+                <div class="validation-section">
+                    {% if attachement_precedent %}
+                    Attachement précédent :
+                    <a href="{% url 'projets:detail_attachement' attachement_precedent.id %}" class="underline">
+                        {{ attachement_precedent.numero }}
+                    </a>
+                    — du {{ attachement_precedent.date_debut_periode|date:"d/m/Y" }}
+                    au {{ attachement_precedent.date_fin_periode|date:"d/m/Y" }}.
+                    {% else %}
+                    Aucun attachement précédent : premier attachement du projet.
+                    {% endif %}
+                    {% if is_edition %}
+                    <p>La continuité de la date de début sera contrôlée lors de la transmission pour validation.</p>
+                    {% endif %}
+                    {% if user.is_superuser or peut_corriger_exceptionnellement %}
+                    <a href="{% url 'projets:corriger_periodes_attachements' projet.id %}" class="underline">
+                        Corriger les périodes historiques du projet
+                    </a>
+                    {% endif %}
+                </div>
                 <div class="responsive-grid mb-3"><!-- Informations de base -->
                     <div class="form-group"><!-- Numéro d'attachement -->
                         <label for="numero"><i class="fas fa-hashtag mr-2"></i>Numéro d'attachement *</label>
                         <input type="text" id="numero" name="numero" 
                                value="{% if is_edition %}{{ attachement.numero }}{% else %}{{ numero }}{% endif %}" 
-                               required class="form-control"
-                               {% if is_edition and not attachement.est_validable %}readonly{% endif %}>
+                               required class="form-control" readonly>
                     </div>
                     <div class="form-group"><!-- Date d'établissement -->
                         <label for="date_etablissement"><i class="fas fa-calendar-alt mr-2"></i>Date d'établissement *</label>
@@ -202,17 +265,22 @@
                     </div>
                     <div class="form-group"><!-- Statut -->
                         <label for="statut"><i class="fas fa-tag mr-2"></i>Statut *</label>
+                        {% if correction_exceptionnelle %}
+                        <input id="statut" name="statut" value="{{ attachement.statut }}" readonly class="form-control">
+                        {% else %}
                         <select id="statut" name="statut" required class="form-control"
                                 {% if is_edition and not attachement.est_validable %}disabled{% endif %}>
                             <option value="BROUILLON" {% if is_edition and attachement.statut == 'BROUILLON' %}selected{% endif %}>Brouillon</option>
                             <option value="SIGNE" {% if is_edition and attachement.statut == 'SIGNE' %}selected{% endif %}>Signé</option>
                             <option value="TRANSMIS" {% if is_edition and attachement.statut == 'TRANSMIS' %}selected{% endif %}>Transmis</option>
+                            {% if validation_directe %}<option value="VALIDE" {% if form.statut.value == 'VALIDE' %}selected{% endif %}>Validé</option>{% endif %}
                             {% if is_edition and attachement.statut == 'REFUSE' %}
                             <option value="REFUSE" selected>Refusé</option>
                             {% endif %}
                         </select>
                         {% if is_edition and not attachement.est_validable %}
                         <input type="hidden" name="statut" value="{{ attachement.statut }}">
+                        {% endif %}
                         {% endif %}
                     </div>
                     <div class="form-group"><!-- Fichier joint -->
@@ -255,9 +323,14 @@
                         <i class="fas fa-table"></i>
                         Détail des Lignes d'Attachement
                     </h3>
+                    <p class="mb-3 text-sm" style="color: var(--text-secondary);">
+                        Saisissez le nouveau cumul réalisé à la date de fin de la période, et non la quantité réalisée pendant cette seule période.
+                    </p>
+                    {% block attachement_table %}
                     <div class="table-container">
                         <div id="hot" class="handsontable-custom rounded-xl overflow-hidden"></div>
                     </div>
+                    {% endblock %}
                 </div>               
                 
                 <div class="actions-total"><!-- Actions et Total -->
@@ -299,6 +372,7 @@
         </div>
     </div>
 
+{% block attachement_scripts %}
 <script>
     const container = document.getElementById('hot');
     const hotData = JSON.parse('{{ lignes|escapejs }}');
@@ -472,12 +546,10 @@
         // Préparer les données du tableau
         preparerDonneesLignes();
         
-        // Afficher le loading sur tous les boutons d'action
+        // Afficher le loading sur le bouton de sauvegarde seulement
         const saveBtn = document.getElementById('save-btn');
-        const transmettreBtn = document.getElementById('transmettre-btn');
         
         if (saveBtn) afficherLoading(saveBtn, texteLoading);
-        if (transmettreBtn) afficherLoading(transmettreBtn, texteLoading);
         
         // Soumettre le formulaire
         // console.log(`${action} de l'attachement...`);
@@ -516,8 +588,8 @@
             { data: 'unite', title: 'Unité', readOnly: true, width: 100, className: 'htCenter' },
             { data: 'quantite_prevue', title: 'Quantité<br>marché', readOnly: true, type: 'numeric', numericFormat: { pattern: '0,0.000' }, width: 120 },
             { data: 'prix_unitaire', title: 'PU', readOnly: true, type: 'numeric', numericFormat: { pattern: '0,0.00' }, width: 120 },
-            { data: 'quantite_deja_realisee', 
-                title: 'Quantité<br>attachée', 
+            { data: 'quantite_deja_realisee',
+                title: 'Cumul<br>précédent',
                 readOnly: true, 
                 type: 'numeric', 
                 width: 100,
@@ -529,8 +601,8 @@
                     if (qte_r === 0) td.textContent = '';
                 },
             },
-            { data: 'quantite_realisee', 
-                title: isEdition ? 'Quantité<br>à modifier' : 'Quantité<br>à attacher', 
+            { data: 'quantite_realisee',
+                title: 'Nouveau<br>cumul',
                 type: 'numeric', 
                 className: 'editable-quantity', 
                 width: 140, 
@@ -719,5 +791,6 @@
     });
 
 </script>
+{% endblock %}
 <script src="{% static 'projets/js/auto-mobile-loader.js' %}"></script>
 </div>

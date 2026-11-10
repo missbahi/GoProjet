@@ -40,6 +40,15 @@ def est_chef_projet(user):
     role_normalise = _normaliser_role(role)
     return role_normalise in {'CHEFPROJET', 'CHEFDEPROJET', 'GERANT'}
 
+def peut_valider_directement(user, projet):
+    return bool(
+        user and user.is_authenticated and projet
+        and projet.dossier_id and projet.dossier.activite == 'TRAVAUX'
+        and (user.is_superuser or (
+            est_chef_projet(user) and projets_accessibles(user).filter(pk=projet.pk).exists()
+        ))
+    )
+
 def _normaliser_role(role):
     role_sans_accents = unicodedata.normalize('NFKD', str(role or ''))
     role_sans_accents = ''.join(

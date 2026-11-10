@@ -3,6 +3,7 @@
 from django.urls import path, include
 
 from projets.views import ressource_views, version_views
+from projets.views import ca_views
 from .views.data_views import views as data_views
 from .views.user_views import views as user_views
 from .views.project_views import views as project_views
@@ -41,6 +42,12 @@ commun_urlpatterns = [
 
 # Gestion des documents, du suivi d'exécution et des fichiers de suivi
 suivi_urlpatterns = [
+    path('projet/<int:projet_id>/ca/', ca_views.liste_ca, name='liste_ca'),
+    path('projet/<int:projet_id>/ca/ajouter/', ca_views.formulaire_ca, name='ajouter_ca'),
+    path('projet/<int:projet_id>/ca/<int:ca_id>/', ca_views.formulaire_ca, name='modifier_ca'),
+    path('projet/<int:projet_id>/ca/<int:ca_id>/valider/', ca_views.action_ca, {'action': 'valider'}, name='valider_ca'),
+    path('projet/<int:projet_id>/ca/<int:ca_id>/devalider/', ca_views.action_ca, {'action': 'devalider'}, name='devalider_ca'),
+    path('projet/<int:projet_id>/ca/<int:ca_id>/supprimer/', ca_views.action_ca, {'action': 'supprimer'}, name='supprimer_ca'),
     # Gestion des documents
     path('projet/<int:projet_id>/documents/', os_views.documents_projet, name='documents'), 
     path('projet/<int:projet_id>/documents/supprimer/<int:document_id>/', os_views.supprimer_document, name='supprimer_document'),
@@ -230,6 +237,7 @@ tache_urlpatterns = [
 
 # Attachements au niveau du PROJET (pas du lot) et processus de validation des attachements
 attachement_urlpatterns = [
+    path('projet/<int:projet_id>/attachements/corriger-periodes/', attachement_views.corriger_periodes_attachements, name='corriger_periodes_attachements'),
     path('projet/<int:projet_id>/attachements/', attachement_views.liste_attachements, name='liste_attachements'),
     path('projet/<int:projet_id>/attachements/ajouter/', attachement_views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', attachement_views.modifier_attachement, name='modifier_attachement'),

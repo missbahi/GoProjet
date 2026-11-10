@@ -5,15 +5,14 @@
 {% block extra_css %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
-    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/attachement-tableview-test.css' %}">
 {% endblock %}
 
 {% block extra_head %}
     {{ block.super }}
-    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    <script src="{% static 'projets/js/table-view.js' %}"></script>
 {% endblock %}
 
 {% block content %}
-    {% include "projets/decomptes/_attachement_form_content.html" %}
+        {% include "projets/decomptes/_attachement_form_content_test.html" %}
 {% endblock %}

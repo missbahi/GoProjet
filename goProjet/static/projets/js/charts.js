@@ -61,7 +61,7 @@ class ProjetsChartManager {
             },
             dataLabels: {
                 enabled: true,
-                formatter: (val) => `${Math.round(val)}%`,
+                formatter: (val) => val == null ? 'Non disponible' : `${Math.round(val)}%`,
                 style: {
                     colors: ['#fff'],
                     fontSize: '11px',
@@ -82,9 +82,9 @@ class ProjetsChartManager {
             },
             yaxis: {
                 min: 0,
-                max: 100,
+                max: Math.max(100, ...projets.map(p => p.avancement || 0)),
                 title: {
-                    text: 'Avancement %',
+                    text: 'Production HT / marché HT (%)',
                     style: {
                         color: '#9ca3af',
                         fontSize: '12px'
@@ -100,7 +100,8 @@ class ProjetsChartManager {
             tooltip: {
                 theme: 'dark',
                 y: {
-                    formatter: (val) => `${val}% d'avancement`
+                    formatter: (val, { dataPointIndex }) => val == null ? 'Non disponible'
+                        : `${val}% de production${projets[dataPointIndex]?.provisoire ? ' (provisoire)' : ''}`
                 }
             },
             grid: {

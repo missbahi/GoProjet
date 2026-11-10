@@ -1,0 +1,31 @@
+{% extends "projets/home/base_project.html" %}
+{% load static %}
+{% block title %}{% if is_edition %}Modification attachement{% else %}Nouvel attachement{% endif %} – {{ projet.nom }}{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
+    {% if request.GET.tableview == '1' %}
+    <link rel="stylesheet" href="{% static 'projets/css/attachement-tableview-test.css' %}">
+    {% else %}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.css" />
+    <link rel="stylesheet" href="{% static 'projets/css/handsontable-custom.css' %}">
+    {% endif %}
+{% endblock %}
+
+{% block extra_head %}
+    {{ block.super }}
+    {% if request.GET.tableview == '1' %}
+    <script src="{% static 'projets/js/table-view.js' %}"></script>
+    {% else %}
+    <script src="https://cdn.jsdelivr.net/npm/handsontable@12.4.0/dist/handsontable.full.min.js"></script>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    {% if request.GET.tableview == '1' %}
+        {% include "projets/decomptes/_attachement_form_content_test.html" %}
+    {% else %}
+        {% include "projets/decomptes/_attachement_form_content.html" %}
+    {% endif %}
+{% endblock %}

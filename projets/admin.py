@@ -64,6 +64,11 @@ class AttachementAdmin(admin.ModelAdmin):
     list_display = ['numero', 'projet', 'date_etablissement', 'statut', 'total_montant_ht']
     list_filter = ['statut', 'date_etablissement']
     search_fields = ['numero', 'projet__nom']
+    readonly_fields = ['numero', 'sequence', 'precedent']
+
+    def save_model(self, request, obj, form, change):
+        obj.full_clean(exclude=['numero', 'sequence', 'precedent'])
+        super().save_model(request, obj, form, change)
 
 # ------------------------ Admin Decompte ------------------------
 @admin.register(Decompte)

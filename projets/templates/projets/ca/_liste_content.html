@@ -1,0 +1,48 @@
+{% load navigation static %}
+{% breadcrumb %}
+<div class="max-w-7xl mx-auto" data-family="project" data-page-title="Chiffres d'affaires mensuels" data-page-icon="fa-chart-line">
+    <h1 class="app-section-title mb-4">CA mensuels — {{ projet.nom }}</h1>
+    {% include "projets/home/_action_messages.html" %}
+    {% csrf_token %}
+    <div id="ca-list-error" class="app-alert app-alert-error p-4 mb-4" role="alert" hidden></div>
+    <p class="mb-4">Production mensuelle HT calculée à partir des cumuls du bordereau.
+        Les CA sont indépendants des attachements et des décomptes.</p>
+    <div class="flex gap-3 mb-4">
+        {% if peut_modifier %}<a class="app-btn app-btn-primary" href="{% url 'projets:ajouter_ca' projet.pk %}">Nouveau CA</a>{% endif %}
+        <a class="app-btn app-btn-secondary" href="{% url 'projets:situations_mensuelles' projet.pk %}">Situations mensuelles</a>
+    </div>
+    <div class="app-card overflow-x-auto p-4">
+        <table class="app-table" style="text-align: left;">
+            <thead><tr><th style="text-align: left;">Mois</th><th style="text-align: left;">Période</th><th style="text-align: left;">Statut</th><th style="text-align: right;">CA mensuel HT</th><th style="text-align: left;">Actions</th></tr></thead>
+            <tbody>{% for ca in cas %}
+                <tr>
+                    <td>{{ ca.periode|date:"m/Y" }}</td>
+                    <td>{{ ca.date_debut|date:"d/m/Y" }} — {{ ca.date_fin|date:"d/m/Y" }}</td>
+                    <td><span class="app-badge {% if ca.statut == 'VALIDE' %}app-badge-success{% else %}app-badge-warning{% endif %}">{{ ca.get_statut_display }}</span></td><td class="whitespace-nowrap tabular-nums" style="text-align: right;">{{ ca.montant_mensuel|floatformat:"2g" }}</td>
+                    <td><div class="flex items-center gap-1">
+                        <a class="app-action-btn" href="{% url 'projets:modifier_ca' projet.pk ca.pk %}" title="{% if peut_modifier %}Ouvrir / modifier{% else %}Consulter{% endif %}" aria-label="{% if peut_modifier %}Ouvrir / modifier{% else %}Consulter{% endif %} le CA {{ ca.periode|date:'m/Y' }}">
+                            <i class="fas {% if peut_modifier %}fa-pen{% else %}fa-eye{% endif %}" aria-hidden="true"></i>
+                        </a>
+                        {% if peut_modifier %}
+                            {% if ca.statut == 'BROUILLON' %}
+                            <button type="button" class="app-action-btn ca-list-action" data-url="{% url 'projets:valider_ca' projet.pk ca.pk %}" data-action="valider" data-periode="{{ ca.periode|date:'m/Y' }}" title="Valider le CA" aria-label="Valider le CA {{ ca.periode|date:'m/Y' }}" style="color: var(--accent-success);">
+                                <i class="fas fa-check-circle" aria-hidden="true"></i>
+                            </button>
+                                {% if not ca.a_suivant and not ca.a_situation %}
+                                <button type="button" class="app-action-btn ca-list-action" data-url="{% url 'projets:supprimer_ca' projet.pk ca.pk %}" data-action="supprimer" data-periode="{{ ca.periode|date:'m/Y' }}" title="Supprimer le CA" aria-label="Supprimer le CA {{ ca.periode|date:'m/Y' }}" style="color: var(--accent-danger);">
+                                    <i class="fas fa-trash-alt" aria-hidden="true"></i>
+                                </button>
+                                {% endif %}
+                            {% elif not ca.a_suivant %}
+                            <button type="button" class="app-action-btn ca-list-action" data-url="{% url 'projets:devalider_ca' projet.pk ca.pk %}" data-action="devalider" data-periode="{{ ca.periode|date:'m/Y' }}" title="Remettre le CA en brouillon" aria-label="Remettre le CA {{ ca.periode|date:'m/Y' }} en brouillon" style="color: var(--accent-danger);">
+                                <i class="fas fa-lock-open" aria-hidden="true"></i>
+                            </button>
+                            {% endif %}
+                        {% endif %}
+                    </div></td>
+                </tr>
+            {% empty %}<tr><td colspan="5">Aucun CA. Les recettes historiques des situations sont conservées.</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+    <script src="{% static 'projets/js/ca-liste.js' %}"></script>
+</div>

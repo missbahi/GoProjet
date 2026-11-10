@@ -1304,6 +1304,22 @@
                     this.startEdit(rowIndex, columnIndex);
                 }
                 return;
+            } else if (Array.from(event.key).length === 1
+                && !event.ctrlKey && !event.metaKey && !event.altKey && !event.isComposing
+                && event.target.closest('td[data-row][data-column]')) {
+                const column = this.columns[columnIndex];
+                if (!this.isEditable(column, this.data[rowIndex], rowIndex)) return;
+                event.preventDefault();
+                this.startEdit(rowIndex, columnIndex);
+                const input = this.wrapper.querySelector('[data-table-view-editor]');
+                if (input instanceof HTMLTextAreaElement
+                    || (input instanceof HTMLInputElement
+                        && ['text', 'search', 'tel', 'url', 'password'].includes(input.type))) {
+                    input.value = event.key;
+                    input.setSelectionRange(input.value.length, input.value.length);
+                    input.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                return;
             } else return;
 
             event.preventDefault();

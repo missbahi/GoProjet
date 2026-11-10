@@ -99,7 +99,15 @@
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>Rubrique</th><th class="amount">Montant (DH)</th></tr></thead>
-                    <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}</td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
+                    <tbody>{% for recette in recettes %}<tr><td>{{ recette.get_rubrique_display }}
+                        {% if recette.rubrique == 'TRAVAUX_REALISES' and projet.dossier_id and projet.dossier.activite == 'TRAVAUX' %}
+                            {% if situation.ca_id %}
+                            <a href="{% url 'projets:modifier_ca' projet.pk situation.ca_id %}">Ouvrir le CA {{ situation.ca.periode|date:"m/Y" }}</a>
+                            {% else %}
+                            <a href="{% url 'projets:liste_ca' projet.pk %}">Gérer le CA mensuel</a>
+                            {% endif %}
+                        {% endif %}
+                    </td><td class="amount">{{ recette.montant|floatformat:'2g' }}</td></tr>{% endfor %}</tbody>
                 </table>
             </div>
         </section>

@@ -5,16 +5,34 @@
     <div class="w-full">
         <!-- Titre et description -->
         <div class="mb-4 md:mb-6">
-            <h1 class="text-lg md:text-2xl font-bold truncate" style="color: var(--text-primary);">
-                Bureau d'Études Techniques - Gestion des Projets BTP
+            <h1 class="text-lg md:text-2xl font-bold" style="color: var(--text-primary);">
+                Vos projets, une vision claire.
             </h1>
             <p class="text-sm md:text-base mt-1" style="color: var(--text-secondary);">
-                Suivi complet des projets depuis l'appel d'offres jusqu'à la réception définitive
+                Pilotez vos travaux, suivez votre production et maîtrisez votre performance.
             </p>
+            <p class="text-sm mt-2" style="color: var(--text-secondary);">
+                Données au {{ date_indicateurs|date:"d/m/Y" }}. Avancement de production HT :
+                cumul du dernier CA (brouillons inclus), sinon dernier attachement validé, rapporté au bordereau HT.
+                Les données provisoires sont signalées ; les périodes futures sont exclues.
+                CA et attachements sont présentés séparément et ne s'additionnent pas.
+                Montants en DH, hors taxes.
+            </p>
+            {% if nb_projets_en_retard %}
+            <p class="text-sm mt-2" style="color: var(--accent-warning);">
+                {{ nb_projets_en_retard }} projet{{ nb_projets_en_retard|pluralize }} en cours / arrêt avec échéance dépassée.
+            </p>
+            {% endif %}
+            {% if nb_echeances_a_verifier %}
+            <p class="text-sm mt-2" role="alert" style="color: var(--accent-danger);">
+                {{ nb_echeances_a_verifier }} échéance{{ nb_echeances_a_verifier|pluralize }} à vérifier :
+                des ordres de service invalides empêchent le calcul du retard.
+            </p>
+            {% endif %}
         </div>
 
         <!-- Cartes de résumé -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
             {% for carte in resume_cartes %}
             <div class="dashboard-card mobile-card rounded-lg shadow p-4 md:p-6 transition transform hover:scale-105"
                 style="background-color: var(--bg-surface); color: var(--text-primary);">
@@ -33,10 +51,12 @@
                         <span style="color: var(--text-muted);">{{ carte.sous_titre }}</span>
                         <span style="color: var(--text-secondary);">{{ carte.sous_valeur }}</span>
                     </div>
+                    {% if carte.progress != None %}
                     <div class="progress-bar rounded h-2 overflow-hidden" style="background-color: var(--bg-elevated);">
                         <div class="progress-fill h-full transition-all duration-300"
                             style="width: {{ carte.progress }}%; background-color: var(--accent-primary);"></div>
                     </div>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -62,8 +82,8 @@
                             <th class="px-6 py-3">Localisation</th>
                             <th class="px-6 py-3">Statut</th>
                             <th class="px-6 py-3">
-                                <div>Avancement</div>
-                                <div class="text-xs" style="color: var(--text-muted);">% décomptes validés</div>
+                                <div>Avancement de production</div>
+                                <div class="text-xs" style="color: var(--text-muted);">Cumul HT / bordereau HT</div>
                             </th>
                         </tr>
                     </thead>
@@ -96,26 +116,35 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs font-semibold rounded-full
-                                    {% if projet.statut == 'COURS' %}badge-cours
-                                    {% elif projet.en_retard %}badge-retard
+                                    {% if projet.home_en_retard %}badge-retard
+                                    {% elif projet.statut == 'COURS' %}badge-cours
                                     {% elif projet.statut|upper == 'RECEP' or projet.statut|upper == 'RECEP_DEF' %}badge-recep
                                     {% else %}badge-defaut{% endif %}">
                                     {{ projet.get_statut_display }}
                                 </span>
+                                {% if projet.home_en_retard %}<div class="text-xs" style="color: var(--accent-danger);">Échéance dépassée</div>{% endif %}
+                                {% if projet.home_echeance_erreur %}<div class="text-xs" role="alert" style="color: var(--accent-danger);">Échéance à vérifier : {{ projet.home_echeance_erreur }}</div>{% endif %}
                             </td>
                             <td class="px-4 py-3">
+                                {% if projet.home_avancement != None %}
                                 <div class="flex items-center space-x-3">
                                     <div class="w-full rounded-full h-3 overflow-hidden flex-1" style="background-color: var(--bg-elevated);">
                                         <div class="h-3
-                                            {% if projet.avancement_workflow < 20 %}fill-rouge
-                                            {% elif projet.avancement_workflow < 40 %}fill-orange
-                                            {% elif projet.avancement_workflow < 60 %}fill-jaune
-                                            {% elif projet.avancement_workflow < 80 %}fill-vert-clair
+                                            {% if projet.home_avancement < 20 %}fill-rouge
+                                            {% elif projet.home_avancement < 40 %}fill-orange
+                                            {% elif projet.home_avancement < 60 %}fill-jaune
+                                            {% elif projet.home_avancement < 80 %}fill-vert-clair
                                             {% else %}fill-vert{% endif %}"
-                                            style="width: {{ projet.avancement_workflow }}%">
+                                            style="width: {{ projet.home_progress|floatformat:'2u' }}%">
                                         </div>
                                     </div>
-                                    <span class="text-sm font-medium min-w-[40px]" style="color: var(--text-primary);">{{ projet.avancement_workflow|floatformat:0 }}%</span>
+                                    <span class="text-sm font-medium min-w-[40px]" style="color: var(--text-primary);">{{ projet.home_avancement|floatformat:1 }} %</span>
+                                </div>
+                                {% else %}
+                                <span class="text-sm" style="color: var(--text-muted);">Non disponible{% if projet.home_marche_ht <= 0 %} — bordereau HT absent ou nul{% endif %}</span>
+                                {% endif %}
+                                <div class="text-xs mt-1" style="color: {% if projet.home_provisoire %}var(--accent-warning){% else %}var(--text-secondary){% endif %};">
+                                    {{ projet.home_source }}{% if projet.home_provisoire %} (provisoire){% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -140,7 +169,7 @@
             <div class="lg:col-span-2 rounded-lg shadow" style="background-color: var(--bg-surface);">
                 <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid var(--border-default);">
                     <h2 class="text-lg font-semibold" style="color: var(--accent-green);">
-                        <i class="fas fa-chart-line mr-2"></i> Avancement des projets
+                        <i class="fas fa-chart-line mr-2"></i> Avancement de production des projets
                     </h2>
                     <div class="text-sm" style="color: var(--text-muted);">
                         {{ chart_data.projets|length }} projets récents
@@ -175,7 +204,7 @@
                         <div>
                             <h3 class="font-medium text-sm" style="color: var(--text-primary);">{{ echeance.titre }}</h3>
                             <p class="text-sm" style="color: var(--text-muted);">
-                                {% if echeance.Terminee %}
+                                {% if echeance.terminee %}
                                     Date limite: {{ echeance.date_fin|date:"d/m/Y" }} (Terminée)
                                 {% else %}
                                     Échéance: {{ echeance.date_fin|date:"d/m/Y" }}

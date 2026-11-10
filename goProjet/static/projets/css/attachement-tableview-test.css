@@ -1,0 +1,65 @@
+.attachement-tableview-test .table-view-scroll {
+    width: 100%;
+}
+
+.attachement-tableview-test .table-view-table {
+    /* Theme tokens override TableView's inline appearance defaults. */
+    --tv-row-color: var(--bg-surface) !important;
+    --tv-text-color: var(--text-primary) !important;
+    --tv-header-color: var(--table-header-bg) !important;
+    --tv-header-text-color: var(--accent-primary) !important;
+    --tv-title-color: var(--accent-primary) !important;
+    --tv-border-color: var(--border-default) !important;
+    --tv-active-color: var(--accent-primary) !important;
+    --tv-selection-color: rgba(34, 211, 238, 0.15) !important;
+    width: 100%;
+    min-width: max(1200px, 100%);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+[data-theme="light"] .attachement-tableview-test .table-view-table {
+    --tv-selection-color: rgba(14, 165, 233, 0.12) !important;
+}
+
+.attachement-tableview-test .table-view-table th {
+    white-space: normal;
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.attachement-tableview-test .table-view-table td {
+    line-height: 1.4;
+    font-size: 12px;
+}
+
+.attachement-tableview-test .table-view-table tbody tr:nth-child(even) td:not(.is-selected) {
+    background: var(--bg-elevated);
+}
+
+.attachement-tableview-test .table-view-table .attachment-title td {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--tv-title-color);
+}
+
+.attachement-tableview-test .table-view-table .attachment-quantity {
+    color: var(--success-color, #2b9c62);
+    font-weight: 600;
+}
+
+.attachement-tableview-test .table-view-table .attachment-amount {
+    color: #2b9c62;
+    font-weight: 600;
+}
+
+.attachement-tableview-test .table-view-table .modified-cell {
+    color: #ecad26;
+    font-weight: 600;
+}
+
+.attachement-tableview-test .table-view-table .modified-cell::after {
+    content: '\2713';
+    color: var(--success-color, #2b9c62);
+    margin-left: 0.5rem;
+}

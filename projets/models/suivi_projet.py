@@ -204,6 +204,10 @@ def situation_mensuelle_document_upload_path(instance, filename):
     return f'situations_mensuelles/projet_{situation.projet_id}/{situation.annee}-{situation.mois:02d}/{filename}'
 
 class SituationMensuelle(ActiviteTravauxMixin, models.Model):
+    ca = models.OneToOneField(
+        'ChiffreAffaire', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='situation', verbose_name="CA mensuel lié",
+    )
     projet = models.ForeignKey(
         Projet, on_delete=models.CASCADE, related_name='situations_mensuelles',
         verbose_name=_('Projet')
@@ -250,6 +254,11 @@ class SituationMensuelle(ActiviteTravauxMixin, models.Model):
 
     def clean(self):
         super().clean()
+        if self.ca_id and (
+            self.ca.projet_id != self.projet_id or self.ca.periode.year != self.annee
+            or self.ca.periode.month != self.mois
+        ):
+            raise ValidationError('Le CA doit appartenir au même projet et au même mois.')
         if self.mois is None:
             return
         if self.mois < 1 or self.mois > 12:

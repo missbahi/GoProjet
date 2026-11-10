@@ -1,0 +1,63 @@
+:is(#hot, #ca-table) .table-view-scroll {
+    max-height: 72vh;
+    -webkit-overflow-scrolling: touch;
+}
+
+:is(#hot, #ca-table) .table-view-table {
+    min-width: 860px;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+:is(#hot, #ca-table) .table-view-table th,
+:is(#hot, #ca-table) .table-view-table td {
+    border-width: 0 1px 1px 0;
+}
+
+:is(#hot, #ca-table) .table-view-table tr > :first-child {
+    border-left-width: 1px;
+}
+
+:is(#hot, #ca-table) .table-view-table thead tr:first-child > th {
+    border-top-width: 1px;
+}
+
+:is(#hot, #ca-table) .table-view-table th {
+    font-size: 12px;
+    text-align: center;
+}
+
+:is(#hot, #ca-table) .table-view-table tbody td {
+    color: var(--tv-text-color, #24485a);
+}
+
+:is(#hot, #ca-table) .table-view-table td.is-amount {
+    color: var(--tv-amount-color, #15803d);
+}
+
+:is(#hot, #ca-table) .table-view-table .tv-fold {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-primary);
+    font-size: 0;
+}
+
+:is(#hot, #ca-table) .table-view-table .tv-fold::before {
+    content: "\f054";
+    font-family: "Font Awesome 6 Free";
+    font-size: 12px;
+    font-weight: 900;
+}
+
+:is(#hot, #ca-table) .table-view-table .tv-fold[aria-expanded="true"]::before {
+    content: "\f078";
+}
+
+:is(#hot, #ca-table) .table-view-table .tv-fold-spacer {
+    flex-basis: 20px;
+}
+
+#ca-table .table-view-table td.modified-cell {
+    color: #966300;
+    font-weight: 700;
+}

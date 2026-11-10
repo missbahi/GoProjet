@@ -349,7 +349,7 @@ def notification_data_api(request, projet_id):
         documents = documents_qs.order_by('-date_remise')[:limit_documents]
         ordres_service = ordres_service_qs.order_by('-date_publication')[:limit_os]
 
-        attachements = Attachement.objects.filter(projet=projet).order_by('-date_fin_periode')[:10]
+        attachements = Attachement.objects.filter(projet=projet).order_by('-sequence')[:10]
 
         date_limite = timezone.now() - timedelta(days=7)
         objets_recents = {

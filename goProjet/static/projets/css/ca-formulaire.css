@@ -1,0 +1,199 @@
+.ca-page-heading,
+.ca-help-heading {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    margin-bottom: .5rem;
+}
+
+.ca-page-heading {
+    flex-wrap: wrap;
+}
+
+.ca-page-heading .app-section-title,
+.ca-help-heading .app-section-title {
+    margin: 0;
+}
+
+.ca-page-heading > span {
+    color: var(--text-secondary);
+    font-size: .8125rem;
+}
+
+.ca-help-button {
+    border-radius: 50%;
+}
+
+.ca-compact-form {
+    padding: .5rem;
+}
+
+.ca-help-dialog {
+    width: min(640px, calc(100vw - 2rem));
+    max-height: 80vh;
+    overflow: auto;
+    padding: 1rem;
+    border: 1px solid var(--border-default);
+    border-radius: .75rem;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.ca-help-dialog::backdrop {
+    background: rgba(0, 0, 0, .5);
+}
+
+.ca-help-heading {
+    justify-content: space-between;
+}
+
+.ca-help-dialog p + p {
+    margin-top: .75rem;
+}
+
+.ca-form-header {
+    display: grid;
+    grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.4fr) minmax(220px, 2fr);
+    gap: .5rem;
+    padding: .375rem .5rem;
+    margin-bottom: .375rem;
+    border: 1px solid var(--border-default);
+    border-radius: .75rem;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+.ca-form-header label {
+    display: block;
+    margin-bottom: .125rem;
+    font-size: .875rem;
+    font-weight: 600;
+}
+
+.ca-form-header .form-control {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 32px;
+    padding: .25rem .5rem;
+    border: 1px solid var(--border-default);
+    border-radius: .5rem;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.ca-form-header textarea.form-control {
+    resize: vertical;
+    height: 32px;
+}
+
+.ca-form-header .form-control:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 2px;
+}
+
+.ca-form-header .form-control:disabled {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+[data-theme="dark"] .ca-form-header .form-control {
+    color-scheme: dark;
+}
+
+[data-theme="light"] .ca-form-header .form-control {
+    color-scheme: light;
+}
+
+.ca-selection-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: .25rem .5rem;
+    padding: .25rem .5rem;
+    border: 1px solid var(--border-default);
+    border-radius: .5rem .5rem 0 0;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: .8125rem;
+}
+
+#selectionSumDisplay.ca-selection-sum {
+    display: none;
+    margin-left: auto;
+    max-width: 100%;
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+    white-space: normal;
+    text-align: right;
+}
+
+.ca-toolbar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+}
+
+.ca-form-total {
+    padding-top: .375rem;
+    text-align: right;
+}
+
+#ca-table .table-view-table .native-bdp-title-row td {
+    color: var(--tv-title-color, #24485a);
+    font-weight: 700;
+    border: 0;
+}
+
+#ca-table .table-view-table .native-bdp-title-row.title-row-level-0 td,
+#ca-table .table-view-table .native-bdp-title-row.title-row-level-1 td {
+    color: var(--tv-title-color, #24485a);
+    font-size: 14px;
+}
+
+#ca-table .table-view-table td.ca-designation {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#ca-table .tv-hierarchy-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#ca-table .table-view-table td.is-amount {
+    color: var(--tv-amount-color, #15803d);
+    font-weight: 600;
+}
+
+#ca-table .table-view-table td.ca-regularisation {
+    background: #ffedd5;
+    color: #9a3412;
+    font-weight: 700;
+}
+
+#ca-table .table-view-table td.ca-quantity-error,
+#ca-table .table-view-table [aria-invalid="true"] {
+    background: #fee2e2;
+    color: #991b1b;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 2px #dc2626;
+}
+
+#ca-table .table-view-table td.ca-regularisation.is-amount {
+    color: var(--tv-amount-color, #15803d);
+}
+
+@media (max-width: 767px) {
+    .ca-form-header {
+        grid-template-columns: 1fr;
+    }
+
+}

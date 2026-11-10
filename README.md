@@ -19,6 +19,112 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 La version et les nouveautés affichées à la connexion sont définies dans
 [projets/version.py](projets/version.py).
 
+### CA mensuel de production (Travaux)
+
+Depuis les situations mensuelles, **Chiffres d'affaires** ouvre le suivi du CA.
+Les modèles `ChiffreAffaire` et `LigneChiffreAffaire` sont créés par la migration
+`0084_chiffre_affaire_mensuel` : exécuter `python manage.py migrate`.
+Aucune donnée historique n'est convertie ou modifiée par cette migration.
+
+- Un CA par projet et mois calendaire complet, indépendamment des OSA/OSR.
+  Les mois sont consécutifs ; le précédent doit être validé avant le suivant.
+- TableView autorise seulement les quantités cumulées (trois décimales).
+  Le tableau reprend le style du Bordereau (fond clair, en-têtes, bordures et
+  montants), avec une feuille de styles partagée limitée aux tableaux.
+  Les lignes parentes restent sans fond spécifique ni bordures ; les toggles
+  natifs TableView, identiques à ceux du Bordereau, masquent
+  ou affichent leurs descendants uniquement à l'écran, sans sauvegarde.
+  Le bouton global reprend aussi les icônes développer/réduire du Bordereau.
+  Les désignations restent sur une seule ligne et les montants sont verts.
+  Les quantités invalides ou supérieures au marché sont signalées en rouge
+  (le dépassement seul reste un avertissement), les cumuls diminués en orange.
+  L'en-tête
+  du formulaire utilise les couleurs du thème clair ou sombre.
+  Le formulaire est compact, avec observations sur une ligne et aide dans une
+  modale ouverte par le bouton d'information. Les actions enregistrer/valider/
+  dévalider utilisent des icônes dans la barre du tableau ; seul le total mensuel
+  reste sous le tableau.
+  Valider est désactivé pour un CA déjà validé. Enregistrer est désactivé sur
+  un CA enregistré sans changement ; revenir aux valeurs initiales le désactive
+  à nouveau. Le pliage et la sélection ne modifient pas cet état.
+  L'encadré de somme partage les styles du Bordereau, à droite de cette barre.
+  Il affiche somme, moyenne et nombre de cellules numériques
+  lorsque plus d'une cellule numérique est sélectionnée :
+  Ctrl permet des sélections disjointes, Maj une plage. Les titres et textes
+  sont exclus ; les zéros et régularisations négatives sont inclus.
+  Quantité du mois = cumul N moins cumul N-1 ; le montant HT utilise les prix
+  figés des lignes, avec arrondi du total au centime (demi supérieur).
+  Les lignes d'un CA enregistré sont figées ; les nouvelles lignes du bordereau
+  sont intégrées à la création du mois suivant.
+  Le changement d'année ne remet pas les cumuls à zéro.
+- Le premier CA peut partir de zéro ou d'une **Reprise** : renseigner alors le
+  cumul initial à la fin du mois précédent. Un ancien montant financier ne
+  permet pas de reconstituer automatiquement ces quantités.
+  La colonne Cumul initial est visible uniquement sur le premier CA en mode
+  Reprise, y compris en consultation. Elle suit immédiatement le changement
+  d'origine, sans effacer les quantités saisies.
+- Les régularisations négatives sont permises avec observations.
+  Toute sauvegarde/validation depuis le formulaire impose une vérification serveur
+  puis une confirmation simple, sans rapport en bas de page. La confirmation reste
+  signée et invalidée si les données changent. Les erreurs ramènent le défilement
+  vers le message en haut du formulaire.
+- Le superutilisateur et le chef de projet/gérant autorisé peuvent gérer et
+  valider les CA ; les autres membres consultent en lecture seule.
+- La liste propose les icônes Modifier/Consulter, Valider, Dévalider et
+  Supprimer, avec confirmation simple comme les Situations. La validation
+  depuis la liste utilise les quantités déjà enregistrées et avertit du
+  remplacement des recettes Travaux réalisés ; les protections métier restent
+  appliquées. Seul le dernier CA en brouillon sans situation liée est supprimable.
+  Les modifications de quantités dans le formulaire gardent leur vérification signée.
+- La validation alimente uniquement **Travaux réalisés** de la situation du
+  même mois. Révision des prix et refacturation restent indépendantes.
+  La confirmation avertit de la mise à jour des situations concernées.
+  Une situation créée ensuite reprend automatiquement son CA validé.
+- Corriger un cumul recalcule ce mois et le mois suivant en brouillon.
+  Une situation validée concernée doit d'abord être dévalidée. Un CA suivant
+  validé bloque les corrections de cumuls : dévalider les CA depuis le dernier
+  mois en remontant jusqu'au successeur à corriger, puis revalider dans l'ordre.
+  Seul le dernier CA peut être dévalidé. Une situation liée à un CA dévalidé
+  conserve sa source mais ne peut pas être validée avant celui-ci.
+
+Le CA de production est indépendant des attachements et des décomptes
+contractuels. Les situations historiques sans CA conservent leur saisie manuelle.
+
+### Indicateurs de la page Home
+
+Le tableau de bord individuel affiche le marché TTC, le CA cumulé TTC du dernier
+CA (brouillons signalés), et le ratio cumul TTC / marché TTC. Sans CA, il utilise
+le dernier attachement validé. Les périodes futures sont exclues. Le TTC applique
+le taux de TVA actuel de chaque lot, y compris les lots exonérés ; ce montant de
+pilotage ne remplace pas un décompte fiscal. Sans source ou marché positif, les
+indicateurs correspondants sont indiqués comme non disponibles.
+
+Sous le slogan « Vos projets, une vision claire. », la Home est centrée sur
+l'exécution des travaux : projets en cours, CA annuel, production CA cumulée
+et attachements validés. Les encadrés Appels d'offres et Réceptions validées
+ne sont plus affichés ; les données et fonctionnalités métier restent conservées.
+
+La Home calcule ses indicateurs en lecture seule sur les projets accessibles.
+L'avancement de production est le cumul HT des quantités du dernier CA
+(brouillons inclus et signalés), divisé par le total HT du bordereau actuel.
+En absence de CA, le dernier attachement validé est utilisé. Les autres statuts
+d'attachement ne servent pas de repli. Aucun CA ni attachement futur n'est retenu
+(le mois courant du CA est inclus).
+
+Le CA annuel additionne uniquement les montants mensuels des CA de l'année,
+avec la part en brouillon affichée séparément. La production CA cumulée utilise
+uniquement le dernier cumul de chaque projet, reprise initiale comprise.
+Les attachements validés présentent également le dernier cumul de chaque
+projet : ces deux indicateurs ne doivent pas être additionnés.
+Les recettes manuelles des anciennes situations ne sont pas assimilées à des CA.
+
+Tableau, moyenne des projets en cours et graphique utilisent le même calcul.
+Les projets sans source ou sans bordereau HT positif affichent « Non disponible »
+et ne sont pas inclus dans la moyenne. Les dépassements de 100 % restent visibles
+en chiffres et dans le graphique ; seules les barres de progression sont bornées.
+Les séries fictives ont été supprimées. Les échéances à venir sont limitées
+aux tâches non terminées des projets accessibles.
+
 ### Menu contextuel du bordereau des prix
 
 Le bordereau utilise TableView sur les données du lot. Le gestionnaire ne prend
@@ -26,6 +132,123 @@ plus en charge Handsontable ni le paramètre de choix du renderer.
 L'ancien template `saisie_bordereau_.html` est conservé comme archive, mais n'est
 plus compatible avec le gestionnaire actuel. Handsontable reste utilisé dans
 les formulaires d'attachements ; ses ressources ne sont pas supprimées.
+
+### Essai TableView pour les attachements
+
+Lors de la modification d'un attachement existant, la continuité de sa date
+de début est contrôlée au passage au statut Transmis, et non à chaque sauvegarde.
+Le formulaire affiche l'attachement précédent avec sa période et un lien de
+consultation. Les contrôles à la création, l'ordre début/fin et le verrouillage
+des périodes ayant un successeur restent inchangés.
+
+À la transmission, la date de fin ne peut pas tomber dans un arrêt notifié :
+la date d'effet de l'OSA est incluse, celle de l'OSR est exclue.
+Le message propose la veille de l'OSA ou le jour de la reprise ; sans OSR
+notifié, seule la veille de l'arrêt est proposée. Les OS non notifiés ou sans
+date d'effet sont ignorés. Ce contrôle s'applique aussi aux aperçus et aux
+confirmations des corrections exceptionnelles et des périodes historiques.
+La sauvegarde en brouillon reste possible ; aucune date n'est corrigée
+automatiquement et la continuité avec l'attachement suivant reste inchangée.
+
+Pour régulariser les anciennes périodes déjà validées, un superutilisateur ou
+un gérant/chef de projet ayant accès au projet peut
+ouvrir **Corriger les périodes historiques** depuis la liste des attachements
+ou le formulaire. Cette action dédiée affiche toute la chaîne et impose un
+motif, un aperçu puis une confirmation. Elle vérifie la continuité depuis l'OS
+de commencement et refuse une confirmation si les données ont changé depuis
+l'ouverture (session valable une heure). L'ordre est déduit des nouvelles dates
+saisies, même si les anciennes séquences ou les liens précédents sont erronés.
+L'aperçu présente l'ancien et le nouvel ordre avec les identifiants stables.
+La confirmation reconstruit les séquences de 1 à N, les liens précédents et les
+numéros DP01, DP02… ; les chevauchements et les trous de périodes sont refusés.
+Les cumuls des lignes restent inchangés. Les situations sont recalculées à partir
+du cumul du nouveau prédécesseur et les décomptes concernés sont recalculés avec
+leurs taux et retenues existants. Un décompte payé, partiellement payé ou portant
+une date de paiement bloque une correction qui le concerne.
+Les statuts et validations sont conservés. Les changements de lignes, décomptes
+ou OS depuis l'ouverture invalident également la confirmation.
+Chaque opération est journalisée avec auteur, date, motif, anciennes/nouvelles
+périodes, numéros, séquences, prédécesseurs et impacts financiers ; l'historique
+est visible sur la même page. Les documents déjà émis ne sont pas régénérés automatiquement ;
+l'incidence des nouvelles périodes sur les calculs dérivés doit être examinée.
+Exécuter `python manage.py migrate` pour créer ce journal.
+
+#### Validation simplifiée des dossiers Travaux
+
+Pour les projets rattachés à un dossier d'activité **Travaux**, le superutilisateur
+ou le chef de projet/gérant autorisé sur le projet peut valider les attachements
+et décomptes directement : bouton **Valider**, ou statut **Validé** puis
+enregistrement. La validation d'un attachement sauvegarde également les lignes
+saisies et contrôle la continuité, les dates et les arrêts OSA/OSR.
+Les attachements déjà validés conservent le mode de correction exceptionnelle.
+Les décomptes payés ou partiellement payés ne peuvent pas être reclassés en Validé.
+
+Le workflow multiétapes n'est pas initialisé pour les dossiers Travaux.
+Ses anciennes étapes sont conservées comme historique mais ne pilotent plus
+le statut de l'attachement. Les projets sans dossier, Fournitures et Services
+gardent leur fonctionnement antérieur.
+
+#### Suppression d'un décompte
+
+La suppression d'un décompte ouvre une page de confirmation, puis s'effectue
+uniquement par POST avec protection CSRF et contrôle d'accès au projet.
+Après suppression, l'utilisateur revient à la liste des décomptes.
+Un avertissement spécifique signale les décomptes payés, partiellement payés ou
+portant une date de paiement : supprimer cet enregistrement n'annule aucun
+paiement réel. L'attachement et ses validations sont conservés.
+
+#### Correction exceptionnelle d'un attachement
+
+Le superutilisateur et le gérant/chef de projet autorisé sur le projet peuvent
+ouvrir directement **Modifier** sur un attachement signé ou validé.
+Le formulaire passe automatiquement en **correction exceptionnelle** ;
+le lien **Correction exceptionnelle** (`?correction=1`) permet également
+d'activer ce mode pour les autres statuts.
+
+Dates, observations, fichier joint et cumuls sont modifiables sans rouvrir
+le workflow : statuts et validations sont conservés. Les prix et autres
+instantanés des lignes existantes sont conservés. **Vérifier la correction**
+affiche les changements et l'incidence sur les situations et décomptes.
+Seul **Confirmer la correction** enregistre, dans une transaction.
+L'aperçu expire après 30 minutes et devient caduc si les données changent.
+Une correction du cumul recalcule la situation courante et celle du successeur
+direct, ainsi que leurs décomptes ; les cumuls suivants restent inchangés.
+Les modifications financières ou de période sont bloquées si un décompte
+concerné est payé, partiellement payé ou porte une date de paiement.
+Une correction d'observations ou de fichier seule reste possible.
+Un cumul entièrement nul est accepté dans ce mode.
+
+Les périodes doivent rester continues avec les voisines : pour déplacer une
+frontière entre plusieurs attachements, utiliser l'écran des périodes
+historiques. Aucun motif ni journal supplémentaire n'est imposé pour cette
+édition complète ; le journal de l'écran historique reste distinct.
+Les documents déjà émis ne sont pas régénérés automatiquement.
+
+Pour les essais approfondis, les vues de création et de modification chargent
+directement `attachement_form.html`, qui utilise
+`_attachement_form_content_test.html` sans paramètre d'URL.
+L'enveloppe `attachement_form.html` conserve les deux moteurs, avec TableView
+via `?tableview=1` et Handsontable sinon, mais n'est plus utilisée par ces vues.
+Le mode d'essai charge uniquement TableView ; les champs, les actions et le format envoyé au
+serveur sont partagés avec le formulaire habituel. **Les enregistrements et
+les suppressions sont réels**, il est donc conseillé d'utiliser un projet de test.
+
+Seul le nouveau cumul des lignes de travaux est modifiable. Le tableau conserve
+les montants, le total, la sélection multiple, sa somme et sa moyenne, le
+copier-coller et le repérage des cellules modifiées. Les valeurs négatives,
+non numériques ou dépassant trois décimales sont refusées ; le collage ne peut
+pas créer de lignes. La dernière cellule éditée est validée avant soumission.
+Comme le formulaire habituel, cette variante exige au moins une quantité
+strictement positive pour enregistrer. Les largeurs sont redimensionnables,
+mais ne sont pas persistées ; le redimensionnement individuel des lignes de
+Handsontable n'est pas reproduit.
+
+Sur une cellule TableView sélectionnée, taper un caractère commence directement
+la saisie en remplaçant son contenu. Entrée, F2 et le double-clic conservent
+l'ouverture de l'éditeur avec la valeur actuelle ; les raccourcis Ctrl/Cmd
+restent disponibles. Dans l'essai d'attachement, le marquage compare les quantités
+numériquement à leur valeur au chargement : `0` et `0.000` sont équivalents, et
+revenir à la valeur initiale retire le marquage, y compris après un collage.
 
 Le clic droit ouvre les actions de la sélection ou cible la cellule cliquée :
 insérer une ligne avant, supprimer, monter ou descendre d'un cran parmi les lignes

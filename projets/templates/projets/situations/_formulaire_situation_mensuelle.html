@@ -283,6 +283,24 @@
         color: #24485a;
     }
 
+    #recetteSection .ca-source-info {
+        background: var(--bg-elevated);
+        color: var(--text-secondary);
+        border-bottom: 1px solid var(--border-default);
+    }
+
+    #recetteSection .ca-source-info a {
+        color: var(--accent-primary);
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
+    #recettePanel .ca-source-link {
+        color: #2c667e;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+    }
+
     #recetteSection .recette-total,
     #stockHeaderTotal {
         color: #2c667e;
@@ -556,6 +574,21 @@
     </section>
 
     <section id="recetteSection" class="situation-section"><!-- Recette section -->
+        {% if projet.dossier_id and projet.dossier.activite == 'TRAVAUX' %}
+        <div class="ca-source-info p-4">
+            <a href="{% url 'projets:liste_ca' projet.pk %}">Gérer le CA mensuel détaillé</a>
+            {% if recettes.ca_source %}
+            <p>Travaux réalisés calculés depuis le
+                <a href="{% url 'projets:modifier_ca' projet.pk recettes.ca_source.pk %}">CA {{ recettes.ca_source.periode|date:"m/Y" }}</a>
+                ({{ recettes.ca_source.get_statut_display }}), du
+                {{ recettes.ca_source.date_debut|date:"d/m/Y" }} au {{ recettes.ca_source.date_fin|date:"d/m/Y" }}.
+                Cette recette est protégée contre la saisie manuelle.
+                Le CA couvre le mois entier, même si les dépenses de la situation portent sur une période partielle.</p>
+            {% else %}
+            <p>Sans CA validé pour ce mois, les recettes restent manuelles. Aucun historique n'est converti automatiquement.</p>
+            {% endif %}
+        </div>
+        {% endif %}
         <div class="situation-section-header flex items-center justify-between gap-3">
             <button type="button" class="categoryToggle flex items-center gap-2 text-left" data-target="recettePanel" aria-expanded="false">
                 <i class="fas fa-chevron-right toggleIcon"></i>
@@ -583,6 +616,13 @@
                         {{ recette.id }}{{ recette.rubrique }}
                         <td>
                             {{ recette.rubrique_label }}
+                            {% if recette.rubrique.value == 'TRAVAUX_REALISES' and projet.dossier_id and projet.dossier.activite == 'TRAVAUX' %}
+                                {% if recettes.ca_source %}
+                                <a class="ca-source-link ml-2" href="{% url 'projets:modifier_ca' projet.pk recettes.ca_source.pk %}">Ouvrir le CA {{ recettes.ca_source.periode|date:"m/Y" }}</a>
+                                {% else %}
+                                <a class="ca-source-link ml-2" href="{% url 'projets:liste_ca' projet.pk %}">Gérer le CA mensuel</a>
+                                {% endif %}
+                            {% endif %}
                             {% for error in recette.rubrique.errors %}
                             <p class="situation-field-error">{{ error }}</p>
                             {% endfor %}

@@ -1,0 +1,29 @@
+from django.conf import settings
+from django.db import migrations, models
+import django.db.models.deletion
+
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ('projets', '0082_attachement_sequence_precedent'),
+        migrations.swappable_dependency(settings.AUTH_USER_MODEL),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='CorrectionPeriodesAttachement',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('date_correction', models.DateTimeField(auto_now_add=True)),
+                ('motif', models.TextField()),
+                ('modifications', models.JSONField()),
+                ('auteur', models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to=settings.AUTH_USER_MODEL)),
+                ('projet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='corrections_periodes_attachements', to='projets.projet')),
+            ],
+            options={
+                'ordering': ['-date_correction', '-pk'],
+                'verbose_name': "Correction des périodes d'attachement",
+                'verbose_name_plural': "Corrections des périodes d'attachement",
+            },
+        ),
+    ]

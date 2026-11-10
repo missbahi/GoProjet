@@ -352,7 +352,7 @@ class Projet(models.Model):
     @property
     def avancement_workflow(self):
         montant_total = self.montant_total()
-        dernier_attachement = self.attachements.order_by('-id').first()
+        dernier_attachement = self.attachements.order_by('-sequence').first()
         montant_attachements = dernier_attachement.total_montant_ht if dernier_attachement else 0
         if montant_total > 0:
             return round((montant_attachements / montant_total) * 100)
@@ -647,6 +647,33 @@ class OrdreService(models.Model):
         return f"{self.reference} - {self.titre}"
     
     def save(self, *args, **kwargs):
+        from projets.models.decomptes import Attachement
+
+        ancien = (
+            type(self).objects.select_related('type_os').filter(pk=self.pk).first()
+            if self.pk else None
+        )
+        projets_os_commencement = set()
+        if ancien and ancien.type_os.code == 'OSC':
+            projets_os_commencement.add(ancien.projet_id)
+        if self.type_os_id and self.type_os.code == 'OSC':
+            projets_os_commencement.add(self.projet_id)
+
+        for projet_id in projets_os_commencement:
+            attachement_initial = Attachement.objects.filter(
+                projet_id=projet_id,
+                sequence=1,
+            ).first()
+            if attachement_initial and not (
+                self.projet_id == projet_id
+                and self.type_os_id
+                and self.type_os.code == 'OSC'
+                and self.statut == 'NOTIFIE'
+                and self.date_effet == attachement_initial.date_debut_periode
+            ):
+                raise ValidationError(
+                    "L'OS de commencement ne peut pas être modifié après la création du premier attachement."
+                )
         if not self.ordre_sequence:
             dernier_ordre = OrdreService.objects.filter(
                 projet=self.projet
@@ -656,6 +683,16 @@ class OrdreService(models.Model):
         if self.type_os.code == 'OSVD':
             self.projet.update_status_flags(force_save=False)
             Projet.objects.filter(pk=self.projet_id).update(en_retard=self.projet.en_retard)
+
+    def delete(self, *args, **kwargs):
+        if (
+            self.type_os.code == 'OSC'
+            and self.projet.attachements.filter(sequence=1).exists()
+        ):
+            raise ValidationError(
+                "L'OS de commencement ne peut pas être supprimé après la création du premier attachement."
+            )
+        return super().delete(*args, **kwargs)
     
     def clean(self):
         super().clean()
@@ -663,6 +700,16 @@ class OrdreService(models.Model):
 
         if not self.projet_id or not self.type_os_id:
             return
+
+        if self.type_os.code == 'OSC' and self.projet.attachements.filter(sequence=1).exists():
+            attachement_initial = self.projet.attachements.get(sequence=1)
+            if (
+                self.statut != 'NOTIFIE'
+                or self.date_effet != attachement_initial.date_debut_periode
+            ):
+                errors['date_effet'] = (
+                    "L'OS de commencement ne peut pas être modifié après la création du premier attachement."
+                )
 
         if self.type_os.code == 'OSVD':
             if self.duree_extension is not None and self.duree_extension < 0:
@@ -1206,7 +1253,7 @@ class LigneBordereau(models.Model):
             return Decimal('0')
         
         dernier_att_cette_ligne = self.lignes_attachement.select_related('attachement').order_by(
-            '-attachement__date_etablissement', '-id'
+            '-attachement__sequence'
         ).first()
         
         if dernier_att_cette_ligne:

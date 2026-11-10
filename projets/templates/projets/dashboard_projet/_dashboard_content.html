@@ -56,10 +56,22 @@
             </div>
 
             <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-default);">
-                <div class="font-bold text-base md:text-lg text-center md:text-left"
+                <div class="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 font-bold text-base md:text-lg"
                     style="color: var(--accent-warning);">
-                    <strong>Montant Marché TTC :</strong> {{ montant_total|default:"0.00" }} DH
+                    <span><strong>Montant Marché TTC :</strong> {{ montant_total|default:"0.00" }} DH</span>
+                    <span class="hidden md:inline" aria-hidden="true">|</span>
+                    <span><strong>CA cumulé TTC :</strong>
+                        {% if avancement_production.montant_ttc != None %}{{ avancement_production.montant_ttc|floatformat:"2g" }} DH{% else %}Non disponible{% endif %}
+                    </span>
+                    <span class="hidden md:inline" aria-hidden="true">|</span>
+                    <span><strong>Avancement :</strong>
+                        {% if avancement_production.pourcentage != None %}{{ avancement_production.pourcentage|floatformat:1 }} %{% else %}Non disponible{% endif %}
+                    </span>
                 </div>
+                <p class="text-xs mt-2" style="color: var(--text-secondary);">
+                    Source : {{ avancement_production.source }}{% if avancement_production.provisoire %} (provisoire){% endif %}.
+                    TVA actuelle de chaque lot appliquée au cumul ; avancement = cumul TTC / marché TTC.
+                </p>
             </div>
         </div>
 

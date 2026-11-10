@@ -1,0 +1,82 @@
+{% extends "projets/home/base_project.html" %}
+{% load static navigation %}
+{% block title %}CA mensuel — {{ projet.nom }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'projets/css/bordereau-tableview.css' %}">
+<link rel="stylesheet" href="{% static 'projets/css/bordereau-controls.css' %}">
+<link rel="stylesheet" href="{% static 'projets/css/ca-formulaire.css' %}">
+{% endblock %}
+{% block content %}
+{% breadcrumb %}
+<div class="attachment-workflow-page max-w-full mx-auto" data-family="project" data-page-title="CA mensuel" data-page-icon="fa-chart-line">
+    <div class="ca-page-heading">
+        <h1 class="app-section-title">CA mensuel — {{ projet.nom }}</h1>
+        <span>Statut : {{ ca.get_statut_display }}</span>
+        <button type="button" id="ca-help-open" class="goplan-toolbar-btn ca-help-button"
+                aria-label="Aide à la saisie du CA" title="Aide à la saisie du CA" aria-controls="ca-help-dialog">
+            <i class="fas fa-info" aria-hidden="true"></i>
+        </button>
+    </div>
+    {% include "projets/home/_action_messages.html" %}
+    <div id="ca-error" class="app-alert app-alert-error p-4 mb-4" role="alert" hidden></div>
+    <form id="ca-form" method="post" class="app-card ca-compact-form"
+          data-existant="{{ existant|yesno:'true,false' }}" data-statut="{{ ca.statut }}">
+        {% csrf_token %}
+        <div class="ca-form-header">
+            <div>{{ form.mois.label_tag }}{{ form.mois }}</div>
+            <div>{{ form.origine.label_tag }}{{ form.origine }}</div>
+            <div>{{ form.observations.label_tag }}{{ form.observations }}</div>
+        </div>
+        <div class="ca-selection-toolbar">
+            <div class="ca-toolbar-actions">
+            <button type="button" id="toggle-expanded-all-btn" class="goplan-toolbar-btn"
+                    aria-label="Développer ou réduire toutes les lignes filles"
+                    title="Développer ou réduire toutes les lignes filles" disabled>
+                <i class="fas fa-compress-alt" aria-hidden="true"></i>
+            </button>
+            {% if peut_modifier %}
+            <button type="submit" name="action" value="enregistrer" class="goplan-toolbar-btn"
+                    aria-label="Vérifier et enregistrer" title="Vérifier et enregistrer"{% if existant %} disabled{% endif %}>
+                <i class="fas fa-save" aria-hidden="true"></i>
+            </button>
+            <button type="submit" name="action" value="valider" class="goplan-toolbar-btn"
+                    aria-label="Valider le CA" title="Valider le CA"{% if ca.statut == 'VALIDE' %} disabled{% endif %}>
+                <i class="fas fa-check-circle" aria-hidden="true"></i>
+            </button>
+            {% if ca.statut == 'VALIDE' %}
+            <button type="submit" name="action" value="devalider" class="goplan-toolbar-btn"
+                    aria-label="Dévalider le CA" title="Dévalider le CA">
+                <i class="fas fa-lock-open" aria-hidden="true"></i>
+            </button>
+            {% endif %}
+            {% endif %}
+            </div>
+            <div id="selectionSumDisplay" class="selection-sum-display ca-selection-sum" role="status" aria-live="polite"></div>
+        </div>
+        <div class="overflow-x-auto">
+            <div id="ca-table" data-editable="{{ peut_modifier|yesno:'true,false' }}" data-premier="{{ premier|yesno:'true,false' }}"></div>
+        </div>
+        <div class="ca-form-total"><strong>CA mensuel HT : <span id="ca-total">0,00</span> DH</strong></div>
+    </form>
+    <dialog id="ca-help-dialog" class="ca-help-dialog" aria-labelledby="ca-help-title">
+        <div class="ca-help-heading">
+            <h2 id="ca-help-title" class="app-section-title">Aide à la saisie du CA</h2>
+            <button type="button" id="ca-help-close" class="goplan-toolbar-btn" aria-label="Fermer l'aide" title="Fermer">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </div>
+        <p>Saisissez les cumuls de production ; les quantités partielles et montants mensuels sont calculés.
+            Les périodes couvrent toujours un mois entier, sans découpage OSA/OSR.</p>
+        <p>Une baisse du cumul est une régularisation : indiquez-en le motif dans les observations.
+            Une correction peut modifier le CA du mois suivant. Les situations validées sont protégées.</p>
+        {% if premier %}<p>En reprise, renseignez le cumul initial (fin du mois précédent) en plus du cumul N.</p>{% endif %}
+        <p>Ctrl : sélection multiple · Maj : plage de cellules. La somme s'affiche à partir de deux cellules numériques sélectionnées.</p>
+        <p>Rouge : quantité invalide ou supérieure au marché · Orange : cumul diminué.</p>
+        <p>Le total affiché est une estimation de saisie ; le montant exact est calculé à l'enregistrement.</p>
+    </dialog>
+</div>
+{{ lignes|json_script:"ca-data" }}
+<script src="{% static 'projets/js/table-view.js' %}"></script>
+<script src="{% static 'projets/js/chiffre-affaire.js' %}"></script>
+{% endblock %}

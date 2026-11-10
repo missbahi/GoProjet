@@ -1,6 +1,3 @@
-/**
- * Gestionnaire de bordereau de prix - Version initiale
- */
 
 // ============================================================================
 // CLASSES DE BASE OPTIMISÉES
@@ -737,6 +734,7 @@ class BordereauManager {
         
         return newLine;
     }
+
     expandAllLines() {
         this.lineManager.lines.forEach(line => {
             if (line.hasChildren) {

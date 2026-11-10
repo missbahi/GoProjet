@@ -1,0 +1,37 @@
+{% extends "projets/home/base_project.html" %}
+{% load static navigation %}
+{% block title %}Suppression décompte — {{ projet.nom }}{% endblock %}
+{% block extra_css %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
+{% endblock %}
+{% block content %}
+{% breadcrumb %}
+<div class="attachment-workflow-page attachment-page--supprimer_attachement min-h-full flex items-center justify-center p-4"
+     data-family="project" data-page-title="Suppression décompte" data-page-icon="fa-trash">
+    <div class="attachment-delete-card p-6 rounded-lg shadow-md max-w-md w-full">
+        <h1 class="text-xl font-bold mb-4">Confirmer la suppression</h1>
+        <p class="mb-4">Supprimer définitivement le décompte <strong>{{ decompte.numero }}</strong>
+            de l'attachement <strong>{{ decompte.attachement.numero }}</strong> ?</p>
+        <p class="mb-4">Statut : {{ decompte.get_statut_display }}.
+            Montant net à payer : {{ decompte.montant_net_a_payer|floatformat:2 }} DH.</p>
+        {% if paiement_signale %}
+        <div class="app-alert app-alert-warning p-4 mb-4" role="alert">
+            Ce décompte est payé, partiellement payé ou porte une date de paiement.
+            Sa suppression retire l'enregistrement de ce décompte et son information de paiement de l'application.
+            Elle n'annule aucun paiement réel. Vérifiez cette opération avant de confirmer.
+        </div>
+        {% endif %}
+        <p class="mb-4">Les lignes associées au décompte seront également supprimées.
+            L'attachement, ses quantités et ses validations sont conservés.
+            Cette action est irréversible.</p>
+        <form method="post" action="{% url 'projets:supprimer_decompte' decompte.pk %}">
+            {% csrf_token %}
+            <div class="flex gap-3">
+                <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                <a href="{% url 'projets:liste_decomptes' projet.pk %}" class="btn btn-secondary">Annuler</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.2.0"
+APP_VERSION = "2.3.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,18 @@ APP_VERSION = "2.2.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.3.0": {
+        "date": "2026-11-10",
+        "titre": "CA mensuel et suivi des travaux",
+        "highlights": [
+            "Suivi mensuel du chiffre d'affaires par quantités cumulées et alimentation des situations",
+            "Formulaire CA compact avec tableau hiérarchique, contrôles de saisie et somme de sélection",
+            "Édition des attachements avec TableView et corrections encadrées des périodes et cumuls",
+            "Accueil et tableaux de bord actualisés avec la production et l'avancement des projets",
+            "Validation simplifiée des dossiers travaux et actions de gestion des CA",
+        ],
+        "niveau": "info",
+    },
     "2.2.0": {
         "date": "2026-11-07",
         "titre": "Bordereau de prix amélioré",

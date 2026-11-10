@@ -21,11 +21,14 @@
     </div>
 
     {# ═══════ Actions ═══════ #}
+    {% if projet.dossier_id and projet.dossier.activite == 'TRAVAUX' %}
+    <a href="{% url 'projets:liste_ca' projet.id %}" class="app-btn app-btn-secondary mb-4">CA mensuels détaillés</a>
+    {% endif %}
     <a href="{% url 'projets:ajouter_situation_mensuelle' projet.id %}" class="doc-toggle-btn">
         <span class="doc-toggle-icon-wrap">
             <i class="fas fa-plus doc-toggle-icon"></i>
         </span>
-        <span class="doc-toggle-label">Ajouter un attachement</span>
+        <span class="doc-toggle-label">Ajouter une situation mensuelle</span>
         <i class="fas fa-chevron-right doc-toggle-chevron"></i>
     </a>
     {# ═══════ Liste des situations ═══════ #}

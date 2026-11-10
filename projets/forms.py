@@ -941,6 +941,7 @@ class AttachementForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         # Labels personnalisés
         self.fields['numero'].label = 'Numéro d\'attachement'
@@ -952,10 +953,131 @@ class AttachementForm(forms.ModelForm):
     def clean_statut(self):
         statut = self.cleaned_data['statut']
         if statut == 'VALIDE':
-            raise forms.ValidationError(
-                "Le statut Validé est attribué uniquement par le processus de validation."
-            )
+            from projets.decorators import peut_valider_directement
+            projet = self.instance.projet if self.instance.projet_id else None
+            if not peut_valider_directement(self.user, projet):
+                raise forms.ValidationError(
+                    "Le statut Validé est attribué uniquement par le processus de validation."
+                )
         return statut
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.instance.pk and self.instance.suivants.exists():
+            dates_modifiees = any(
+                cleaned_data.get(field) != getattr(self.instance, field)
+                for field in ('date_debut_periode', 'date_fin_periode')
+                if cleaned_data.get(field) is not None
+            )
+            if dates_modifiees:
+                self.add_error(
+                    'date_debut_periode',
+                    "Les dates ne peuvent pas être modifiées lorsqu'un attachement suivant existe.",
+                )
+        if cleaned_data.get('statut') == 'VALIDE':
+            from copy import copy
+            candidat = copy(self.instance)
+            candidat.date_debut_periode = cleaned_data.get('date_debut_periode')
+            candidat.date_fin_periode = cleaned_data.get('date_fin_periode')
+            try:
+                candidat.verifier_continuite_periode()
+            except ValidationError as error:
+                self.add_error(None, error)
+            try:
+                candidat.verifier_fin_periode_hors_arret(candidat.date_fin_periode)
+            except ValidationError as error:
+                self.add_error(None, error)
+        return cleaned_data
+
+class CorrectionExceptionnelleAttachementForm(forms.Form):
+    def __init__(self, *args, attachement, **kwargs):
+        from copy import deepcopy
+
+        super().__init__(*args, **kwargs)
+        self.fields = deepcopy(AttachementForm.base_fields)
+        self.attachement = attachement
+        self.initial.update({
+            name: getattr(attachement, name) for name in self.fields
+        })
+        self.fields['statut'].disabled = True
+        self.fields['numero'].disabled = True
+        self.fields['fichier'].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        debut = cleaned.get('date_debut_periode')
+        fin = cleaned.get('date_fin_periode')
+        if debut and fin and fin < debut:
+            self.add_error('date_fin_periode', "La date de fin ne peut précéder la date de début.")
+        if fin:
+            try:
+                self.attachement.verifier_fin_periode_hors_arret(fin)
+            except ValidationError as error:
+                self.add_error('date_fin_periode', error.message_dict['date_fin_periode'])
+        return cleaned
+
+
+class CorrectionPeriodesAttachementForm(forms.Form):
+    motif = forms.CharField(label="Motif de la correction", widget=forms.Textarea(attrs={'rows': 3}))
+    instantane = forms.CharField(widget=forms.HiddenInput)
+    confirmation = forms.CharField(required=False, widget=forms.HiddenInput)
+
+    def __init__(self, *args, attachements, date_osc, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.attachements = attachements
+        self.attachements_ordonnes = list(attachements)
+        self.date_osc = date_osc
+        for attachement in attachements:
+            for champ in ('date_debut_periode', 'date_fin_periode'):
+                self.fields[f'{champ}_{attachement.pk}'] = forms.DateField(
+                    label=f"{attachement.numero} - {champ.replace('_', ' ')}",
+                    initial=getattr(attachement, champ),
+                    widget=forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+                )
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+
+    def clean(self):
+        from datetime import timedelta
+
+        cleaned = super().clean()
+        if not self.attachements:
+            raise forms.ValidationError("Aucun attachement à corriger.")
+        if not self.date_osc:
+            raise forms.ValidationError("Un OS de commencement notifié avec une date d'effet est requis.")
+        if any(
+            cleaned.get(f'{champ}_{attachement.pk}') is None
+            for attachement in self.attachements
+            for champ in ('date_debut_periode', 'date_fin_periode')
+        ):
+            return cleaned
+        self.attachements_ordonnes = sorted(
+            self.attachements,
+            key=lambda a: (
+                cleaned[f'date_debut_periode_{a.pk}'],
+                cleaned[f'date_fin_periode_{a.pk}'], a.pk,
+            ),
+        )
+        debut_attendu = self.date_osc
+        for attachement in self.attachements_ordonnes:
+            debut_key = f'date_debut_periode_{attachement.pk}'
+            fin_key = f'date_fin_periode_{attachement.pk}'
+            debut = cleaned.get(debut_key)
+            fin = cleaned.get(fin_key)
+            if debut and debut_attendu and debut != debut_attendu:
+                self.add_error(debut_key, f"La date attendue est le {debut_attendu:%d/%m/%Y}.")
+            if debut and fin and fin < debut:
+                self.add_error(fin_key, "La date de fin ne peut précéder la date de début.")
+            if fin:
+                try:
+                    attachement.verifier_fin_periode_hors_arret(fin)
+                except ValidationError as error:
+                    self.add_error(fin_key, error.message_dict['date_fin_periode'])
+            debut_attendu = fin + timedelta(days=1) if fin and fin < date.max else None
+            if fin == date.max:
+                self.add_error(fin_key, "Cette date est trop éloignée.")
+        return cleaned
+
 
 class DecompteForm(forms.ModelForm):
     montant_revision_prix = forms.DecimalField(
@@ -993,6 +1115,7 @@ class DecompteForm(forms.ModelForm):
         }
     
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
         # Récupérer le paramètre avant d'appeler le parent
         attachements_disponibles_count = kwargs.pop('attachements_disponibles_count', None)
         
@@ -1062,6 +1185,20 @@ class DecompteForm(forms.ModelForm):
                     # Convertir au format HTML5 (yyyy-mm-dd)
                     self.initial[field_name] = field_value.strftime('%Y-%m-%d')
     
+    def clean_statut(self):
+        from projets.decorators import peut_valider_directement
+        statut = self.cleaned_data['statut']
+        attachement = self.cleaned_data.get('attachement')
+        if (
+            statut == 'VALIDE' and attachement and attachement.projet.dossier_id
+            and attachement.projet.dossier.activite == 'TRAVAUX'
+            and not peut_valider_directement(self.user, attachement.projet)
+        ):
+            raise forms.ValidationError("Seuls le superutilisateur et le chef de projet autorisé peuvent valider ce décompte.")
+        if self.instance.pk and (self.instance.statut in {'PAYE', 'PARTIEL'} or self.instance.date_paiement) and statut == 'VALIDE':
+            raise forms.ValidationError("Un décompte payé ou partiellement payé ne peut pas être reclassé en Validé.")
+        return statut
+
     def clean_attachement(self):
         attachement = self.cleaned_data.get('attachement')
         
@@ -1426,6 +1563,11 @@ class SituationMensuelleForm(forms.ModelForm):
                 existantes = existantes.exclude(pk=self.instance.pk)
             if existantes.exists():
                 self.add_error('mois', 'Une situation existe déjà pour cette période.')
+        if self.instance.ca_id:
+            if (annee, mois) != (self.instance.ca.periode.year, self.instance.ca.periode.month):
+                self.add_error('periode', 'Une situation liée à un CA ne peut pas changer de mois.')
+            if self.instance.est_validee:
+                self.add_error(None, 'Dévalidez la situation avant de modifier ses données liées au CA.')
         return cleaned_data
 
 class RecetteSituationMensuelleForm(forms.ModelForm):

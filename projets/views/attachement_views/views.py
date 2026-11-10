@@ -1,23 +1,30 @@
+import hashlib
 import json
 from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.core import signing
 from django.db import transaction
 from django.db.models import Max, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_http_methods
 
-from projets.decorators import modules_projet_required, projets_accessibles
-from projets.forms import AttachementForm, DecompteForm
+from projets.decorators import modules_projet_required, projets_accessibles, superuser_required, est_gerant
+from projets.decorators import peut_valider_directement
+from projets.forms import AttachementForm, DecompteForm, CorrectionPeriodesAttachementForm, CorrectionExceptionnelleAttachementForm
+from projets.services.correction_attachement import (
+    appliquer_correction_chaine, corriger_attachement, preparer_correction_chaine,
+)
 from projets.manager import LigneHierarchique
 from projets.models import (
     Attachement,
+    CorrectionPeriodesAttachement,
     Decompte,
     EtapeValidation,
     LigneAttachement,
@@ -53,16 +60,137 @@ def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
 @modules_projet_required
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    attachements = Attachement.objects.filter(projet=projet).order_by('id')
+    attachements = Attachement.objects.filter(projet=projet).order_by('sequence')
 
     context = {
         'projet': projet,
         'attachements': attachements,
+        'peut_corriger_exceptionnellement': request.user.is_superuser or est_gerant(request.user),
         'breadcrumb_items': project_crumbs(projet, crumb("Attachements")),
     }
     if request.headers.get('HX-Request'):
         return render(request, 'projets/decomptes/_liste_attachements_content.html', context)
     return render(request, 'projets/decomptes/liste_attachements.html', context)
+
+
+@modules_projet_required
+@require_http_methods(['GET', 'POST'])
+@transaction.atomic
+def corriger_periodes_attachements(request, projet_id):
+    if not (request.user.is_superuser or est_gerant(request.user)):
+        raise PermissionDenied("Correction réservée au superutilisateur et au chef de projet autorisé.")
+    projet = get_object_or_404(Projet.objects.select_for_update(), pk=projet_id)
+    attachements = list(
+        Attachement.objects.select_for_update().filter(projet=projet).order_by('sequence')
+    )
+    lignes_financieres = list(LigneAttachement.objects.select_for_update().filter(
+        attachement__projet=projet,
+    ).order_by('pk'))
+    decomptes = list(Decompte.objects.select_for_update().filter(
+        attachement__projet=projet,
+    ).order_by('pk'))
+    osc = projet.ordres_service.select_for_update().filter(
+        type_os__code='OSC', statut='NOTIFIE', date_effet__isnull=False,
+    ).order_by('ordre_sequence').first()
+    etat = {
+        'projet': projet.pk,
+        'auteur': request.user.pk,
+        'osc': [osc.pk, osc.date_effet.isoformat()] if osc else None,
+        'attachements': [
+            [a.pk, a.sequence, a.precedent_id, a.numero, a.statut, str(a.montant_ht),
+             a.date_debut_periode.isoformat(), a.date_fin_periode.isoformat()]
+            for a in attachements
+        ],
+        'empreinte_financiere': hashlib.sha256(json.dumps([
+            [[getattr(ligne, champ.attname) for champ in ligne._meta.concrete_fields]
+             for ligne in lignes_financieres],
+            [[getattr(decompte, champ.attname) for champ in decompte._meta.concrete_fields]
+             for decompte in decomptes],
+        ], default=str).encode()).hexdigest(),
+        'arrets_reprises': [
+            [os.pk, os.type_os_id, str(os.date_effet), os.statut, os.ordre_sequence]
+            for os in projet.ordres_service.select_for_update().filter(
+                type_os__code__in=['OSA', 'OSR'],
+            ).order_by('pk')
+        ],
+    }
+    salt = 'projets.correction-periodes-attachements'
+    form = CorrectionPeriodesAttachementForm(
+        request.POST if request.method == 'POST' else None,
+        attachements=attachements,
+        date_osc=osc.date_effet if osc else None,
+        initial={'instantane': signing.dumps(etat, salt=salt)},
+    )
+    apercu = False
+    confirmation_token = ''
+    modifications = []
+    if request.method == 'POST' and form.is_valid():
+        try:
+            etat_initial = signing.loads(form.cleaned_data['instantane'], salt=salt, max_age=3600)
+        except signing.BadSignature:
+            form.add_error(None, "La session de correction a expiré. Rechargez la page.")
+        else:
+            if etat_initial != etat:
+                form.add_error(None, "Les attachements ont changé depuis l'ouverture. Rechargez la page.")
+            else:
+                try:
+                    modifications = preparer_correction_chaine(form, lignes_financieres, decomptes)
+                except ValidationError as error:
+                    form.add_error(None, ' '.join(error.messages))
+                else:
+                    proposition = {
+                        'instantane': form.cleaned_data['instantane'],
+                        'motif': form.cleaned_data['motif'],
+                        'modifications': modifications,
+                    }
+                    if not modifications:
+                        form.add_error(None, "Aucune période ni aucun élément de la chaîne n'a été modifié.")
+                    elif request.POST.get('action') == 'confirmer':
+                        try:
+                            approuve = signing.loads(
+                                form.cleaned_data['confirmation'], salt=salt + '.confirmation', max_age=3600,
+                            )
+                        except signing.BadSignature:
+                            form.add_error(None, "Affichez l'aperçu avant de confirmer la correction.")
+                        else:
+                            if approuve != proposition:
+                                form.add_error(None, "La correction a changé. Affichez un nouvel aperçu.")
+                            else:
+                                appliquer_correction_chaine(projet, attachements, modifications)
+                                CorrectionPeriodesAttachement.objects.create(
+                                    projet=projet, auteur=request.user,
+                                    motif=form.cleaned_data['motif'], modifications=modifications,
+                                )
+                                messages.success(request, "Périodes et chaîne corrigées, montants recalculés. Statuts et validations conservés.")
+                                return redirect('projets:corriger_periodes_attachements', projet_id=projet.pk)
+                    elif request.POST.get('action') != 'modifier':
+                        apercu = True
+                        confirmation_token = signing.dumps(proposition, salt=salt + '.confirmation')
+    numeros_actuels = {a.pk: a.numero for a in attachements}
+    ordre_affiche = form.attachements_ordonnes if apercu else attachements
+    propositions = {
+        a.pk: {'sequence': rang, 'numero': f'DP{rang:02d}',
+               'precedent': f'DP{rang - 1:02d}' if rang > 1 else '—'}
+        for rang, a in enumerate(form.attachements_ordonnes, 1)
+    }
+    lignes = [
+        {
+            'attachement': a,
+            'precedent': numeros_actuels.get(a.precedent_id, f'ID {a.precedent_id}') if a.precedent_id else '—',
+            'proposition': propositions[a.pk] if apercu else None,
+            'debut': form[f'date_debut_periode_{a.pk}'],
+            'fin': form[f'date_fin_periode_{a.pk}'],
+        }
+        for a in ordre_affiche
+    ]
+    return render(request, 'projets/decomptes/correction_periodes_attachements.html', {
+        'projet': projet, 'form': form, 'lignes': lignes,
+        'apercu': apercu, 'confirmation_token': confirmation_token,
+        'modifications': modifications, 'osc': osc,
+        'impacts': [impact for modification in modifications for impact in modification['impacts']],
+        'historique': projet.corrections_periodes_attachements.select_related('auteur').all(),
+        'breadcrumb_items': _crumbs_attachements(projet, crumb("Correction des périodes historiques")),
+    })
 
 
 @modules_projet_required
@@ -77,7 +205,15 @@ def ajouter_attachement(request, projet_id):
     ) if dernier_attachement else {}
 
     if request.method == 'POST':
-        form = AttachementForm(request.POST, request.FILES)
+        saisie = request.POST.copy()
+        if saisie.get('action') == 'valider':
+            saisie['statut'] = 'VALIDE'
+        form = AttachementForm(
+            saisie,
+            request.FILES,
+            instance=Attachement(projet=projet),
+            user=request.user,
+        )
         if form.is_valid():
             try:
                 with transaction.atomic():
@@ -102,10 +238,8 @@ def ajouter_attachement(request, projet_id):
                 messages.error(request, f"Données d'attachement invalides : {str(e)}")
             except Exception as e:
                 messages.error(request, f"Erreur lors de la création : {str(e)}")
-        else:
-            messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
-        form = AttachementForm(initial={'statut': 'BROUILLON'})
+        form = AttachementForm(initial={'statut': 'BROUILLON'}, instance=Attachement(projet=projet), user=request.user)
 
     lignes_data = []
     for ligne in lignes_bordereau:
@@ -144,19 +278,18 @@ def ajouter_attachement(request, projet_id):
         lignes_data.append(ligne_dict)
 
     lignes_json = json.dumps(lignes_data, default=str)
-    nb_attachements = Attachement.objects.filter(projet=projet).count()
-    next_numero = nb_attachements + 1
-
     if dernier_attachement is None:
-        osc = projet.ordres_service.filter(type_os__code='OSC', statut='NOTIFIE').first()
-        if osc and osc.date_effet:
-            date_debut_periode = osc.date_effet
-        else:
-            date_debut_periode = timezone.now().date()
+        osc = projet.ordres_service.filter(
+            type_os__code='OSC',
+            statut='NOTIFIE',
+            date_effet__isnull=False,
+        ).order_by('ordre_sequence').first()
+        date_debut_periode = osc.date_effet if osc else None
     else:
-        date_debut_periode = dernier_attachement.date_fin_periode
+        date_debut_periode = dernier_attachement.date_fin_periode + timedelta(days=1)
 
-    date_fin_periode = date_debut_periode + timedelta(days=30)
+    date_fin_periode = date_debut_periode + timedelta(days=30) if date_debut_periode else None
+    next_numero = dernier_attachement.sequence + 1 if dernier_attachement else 1
 
     context = {
         'projet': projet,
@@ -164,10 +297,12 @@ def ajouter_attachement(request, projet_id):
         'lignes': lignes_json,
         'total_lignes': len(lignes_bordereau),
         'date_etablissement': date_fin_periode,
-        'numero': 'DP' + str(next_numero).zfill(2),
+        'numero': f"DP{next_numero:02d}",
         'date_debut_periode': date_debut_periode,
         'date_fin_periode': date_fin_periode,
         'is_edition': False,
+        'validation_directe': peut_valider_directement(request.user, projet),
+        'attachement_precedent': dernier_attachement,
         'breadcrumb_items': _crumbs_attachements(projet, crumb("Création attachement")),
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
@@ -176,18 +311,57 @@ def ajouter_attachement(request, projet_id):
 @modules_projet_required
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
-    _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE', 'TRANSMIS', 'REFUSE'})
+    _verifier_acces_attachement(request, attachement)
+    peut_corriger = request.user.is_superuser or est_gerant(request.user)
+    validation_directe = peut_valider_directement(request.user, attachement.projet)
+    correction_exceptionnelle = peut_corriger and (
+        request.GET.get('correction') == '1' or attachement.statut == 'VALIDE'
+        or (attachement.statut == 'SIGNE' and not validation_directe)
+    )
+    if not correction_exceptionnelle:
+        statuts_autorises = {'BROUILLON', 'MODIFIE', 'TRANSMIS', 'REFUSE'}
+        if validation_directe:
+            statuts_autorises.add('SIGNE')
+        _verifier_acces_attachement(request, attachement, statuts_autorises)
     projet = attachement.projet
     lignes_bordereau = list(_iter_lignes_bordereau_hierarchiques(projet))
 
-    if request.method == 'POST':
+    if correction_exceptionnelle and request.method == 'POST':
+        with transaction.atomic():
+            Projet.objects.select_for_update().get(pk=projet.pk)
+            attachement = Attachement.objects.select_for_update().get(pk=attachement.pk)
+            form = CorrectionExceptionnelleAttachementForm(
+                request.POST, request.FILES, attachement=attachement,
+            )
+            if not form.is_valid():
+                return JsonResponse({'erreur': ' '.join(
+                    str(error) for errors in form.errors.values() for error in errors
+                )}, status=400)
+            try:
+                resultat = corriger_attachement(
+                    attachement, form, request.POST.get('lignes_attachement'), request.user,
+                    request.POST.get('confirmation_correction', ''),
+                )
+            except (ValidationError, DonneesAttachementInvalides) as error:
+                erreurs = error.messages if isinstance(error, ValidationError) else [str(error)]
+                return JsonResponse({'erreur': ' '.join(erreurs)}, status=400)
+            if resultat.get('enregistre'):
+                messages.success(request, "Correction exceptionnelle enregistrée. Validations conservées.")
+                resultat['redirect'] = reverse('projets:liste_attachements', args=[projet.pk])
+            return JsonResponse(resultat)
+    elif request.method == 'POST':
         statut_initial = attachement.statut
-        form = AttachementForm(request.POST, request.FILES, instance=attachement)
+        saisie = request.POST.copy()
+        if saisie.get('action') == 'valider':
+            saisie['statut'] = 'VALIDE'
+        form = AttachementForm(saisie, request.FILES, instance=attachement, user=request.user)
         if form.is_valid():
             try:
                 with transaction.atomic():
                     attachement = form.save(commit=False)
-                    if statut_initial in {'TRANSMIS', 'REFUSE'} and attachement.statut != 'BROUILLON':
+                    if statut_initial in {'TRANSMIS', 'REFUSE'} and attachement.statut != 'BROUILLON' and not (
+                        validation_directe and attachement.statut == 'VALIDE'
+                    ):
                         attachement.statut = statut_initial
                     retour_en_brouillon = (
                         statut_initial in {'TRANSMIS', 'REFUSE'}
@@ -216,10 +390,11 @@ def modifier_attachement(request, attachement_id):
                 messages.error(request, f"Données d'attachement invalides : {str(e)}")
             except Exception as e:
                 messages.error(request, f"Erreur lors de la modification : {str(e)}")
-        else:
-            messages.error(request, "Veuillez corriger les erreurs ci-dessous.")
     else:
-        form = AttachementForm(instance=attachement)
+        form = (
+            CorrectionExceptionnelleAttachementForm(attachement=attachement)
+            if correction_exceptionnelle else AttachementForm(instance=attachement, user=request.user)
+        )
 
     lignes_data = []
     attachement_avant = attachement.get_previous_attachement()
@@ -228,29 +403,35 @@ def modifier_attachement(request, attachement_id):
         ligne_att_avant = LigneAttachement.objects.filter(attachement=attachement_avant, ligne_lot=ligne_bordereau).first()
         ligne_cet_att = LigneAttachement.objects.filter(attachement=attachement, ligne_lot=ligne_bordereau).first()
         is_title = _est_ligne_titre_bordereau(ligne)
+        if correction_exceptionnelle and ligne_cet_att:
+            is_title = ligne_cet_att.is_title
 
         if is_title:
             quantite_realisee_attachement_avant = None
             quantite_realisee = None
         else:
-            quantite_realisee = ligne_cet_att.quantite_realisee if ligne_cet_att else None
             quantite_realisee_attachement_avant = ligne_att_avant.quantite_realisee if ligne_att_avant else None
+            quantite_realisee = (
+                ligne_cet_att.quantite_realisee
+                if ligne_cet_att
+                else quantite_realisee_attachement_avant
+            )
 
         ligne_dict = {
             'id': ligne.id,
             'parent_id': ligne.parent.id if getattr(ligne, 'parent', None) else None,
-            'numero': ligne.numero,
+            'numero': ligne_cet_att.numero if correction_exceptionnelle and ligne_cet_att else ligne.numero,
             'niveau': ligne.level() if hasattr(ligne, 'level') else ligne_bordereau.niveau,
-            'designation': ligne.designation,
-            'unite': ligne.unite,
+            'designation': ligne_cet_att.designation if correction_exceptionnelle and ligne_cet_att else ligne.designation,
+            'unite': ligne_cet_att.unite if correction_exceptionnelle and ligne_cet_att else ligne.unite,
             'is_title': is_title,
             'est_titre': hasattr(ligne, 'has_children') and ligne.has_children(),
         }
 
         if not is_title:
             ligne_dict.update({
-                'quantite_prevue': float(ligne_bordereau.quantite) if ligne_bordereau.quantite is not None else 0.0,
-                'prix_unitaire': float(ligne_bordereau.prix_unitaire) if ligne_bordereau.prix_unitaire is not None else 0.0,
+                'quantite_prevue': float(ligne_cet_att.quantite_initiale) if correction_exceptionnelle and ligne_cet_att else float(ligne_bordereau.quantite or 0),
+                'prix_unitaire': float(ligne_cet_att.prix_unitaire) if correction_exceptionnelle and ligne_cet_att else float(ligne_bordereau.prix_unitaire or 0),
                 'quantite_deja_realisee': float(quantite_realisee_attachement_avant) if quantite_realisee_attachement_avant is not None else 0.0,
                 'quantite_realisee': float(quantite_realisee) if quantite_realisee is not None else 0.0,
                 'montant': 0.0,
@@ -272,8 +453,8 @@ def modifier_attachement(request, attachement_id):
     lignes_json = json.dumps(lignes_data, default=str)
 
     attachement.peut_reouvrir = (attachement.statut == 'VALIDE' and (request.user.is_superuser or request.user.is_staff))
-    attachement.peut_supprimer = attachement.statut != 'VALIDE'
-    attachement.est_validable = attachement.statut in ['BROUILLON', 'TRANSMIS', 'REFUSE']
+    attachement.peut_supprimer = not correction_exceptionnelle and attachement.statut != 'VALIDE'
+    attachement.est_validable = correction_exceptionnelle or validation_directe or attachement.statut in ['BROUILLON', 'TRANSMIS', 'REFUSE']
     attachement.ferme = attachement.statut == 'SIGNE'
 
     context = {
@@ -284,6 +465,10 @@ def modifier_attachement(request, attachement_id):
         'total_lignes': len(lignes_bordereau),
         'total_attachement': float(0.0),
         'is_edition': True,
+        'validation_directe': validation_directe and not correction_exceptionnelle,
+        'attachement_precedent': attachement_avant,
+        'correction_exceptionnelle': correction_exceptionnelle,
+        'peut_corriger_exceptionnellement': peut_corriger,
         'breadcrumb_items': _crumbs_attachements(projet, crumb(f"Modification {attachement.numero}")),
     }
     return render(request, 'projets/decomptes/attachement_form.html', context)
@@ -386,6 +571,10 @@ def supprimer_attachement(request, attachement_id):
     _verifier_acces_attachement(request, attachement, {'BROUILLON', 'MODIFIE'})
     projet_id = attachement.projet.id
 
+    if attachement.suivants.exists():
+        messages.error(request, "Cet attachement ne peut pas être supprimé car un attachement suivant existe.")
+        return redirect('projets:liste_attachements', projet_id=projet_id)
+
     if request.method == 'POST':
         try:
             numero = attachement.numero
@@ -415,6 +604,9 @@ def attachements_ajouter_decompte(request, attachement_id):
 def validation_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     _verifier_acces_attachement(request, attachement)
+    if attachement.projet.dossier_id and attachement.projet.dossier.activite == 'TRAVAUX':
+        messages.info(request, "Dossier Travaux : la validation s'effectue directement depuis le formulaire par le superutilisateur ou le chef de projet autorisé.")
+        return redirect('projets:modifier_attachement', attachement_id=attachement.pk)
     if attachement.statut == 'TRANSMIS' and not attachement.validations.exists():
         with transaction.atomic():
             attachement.initialiser_processus_validation(request.user)
@@ -743,6 +935,9 @@ def telecharger_document_validation(request, etape_id):
 @modules_projet_required
 def liste_decomptes(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
+    saisie = request.POST.copy()
+    if saisie.get('action_validation') == 'valider':
+        saisie['statut'] = 'VALIDE'
     decomptes = Decompte.objects.filter(attachement__projet=projet).order_by('-id')
 
     statut_filter = request.GET.get('statut')
@@ -803,9 +998,9 @@ def liste_decomptes(request, projet_id):
     if decompte_id:
         decompte_a_modifier = get_object_or_404(Decompte, id=decompte_id, attachement__projet=projet)
         if request.method == 'POST':
-            form = DecompteForm(request.POST, instance=decompte_a_modifier)
+            form = DecompteForm(saisie, instance=decompte_a_modifier, user=request.user)
         else:
-            form = DecompteForm(instance=decompte_a_modifier)
+            form = DecompteForm(instance=decompte_a_modifier, user=request.user)
 
         attachement_ids = list(attachements_sans_decompte.values_list('id', flat=True))
         attachement_ids.append(decompte_a_modifier.attachement.id)
@@ -816,9 +1011,9 @@ def liste_decomptes(request, projet_id):
 
     elif from_attachement_list and attachement_cible and action_type == 'ajouter':
         if request.method == 'POST':
-            form = DecompteForm(request.POST)
+            form = DecompteForm(saisie, user=request.user)
         else:
-            form = DecompteForm()
+            form = DecompteForm(user=request.user)
 
         form.fields['attachement'].queryset = attachements_sans_decompte.order_by('numero')
 
@@ -841,9 +1036,9 @@ def liste_decomptes(request, projet_id):
 
     else:
         if request.method == 'POST':
-            form = DecompteForm(request.POST)
+            form = DecompteForm(saisie, user=request.user)
         else:
-            form = DecompteForm()
+            form = DecompteForm(user=request.user)
 
         form.fields['attachement'].queryset = attachements_sans_decompte.order_by('numero')
         form.initial['date_emission'] = date.today()
@@ -881,6 +1076,7 @@ def liste_decomptes(request, projet_id):
         'attachements_disponibles_count': attachements_disponibles_count,
         'form': form,
         'decompte_a_modifier': decompte_a_modifier,
+        'validation_directe': peut_valider_directement(request.user, projet),
         'from_attachement_list': from_attachement_list,
         'attachement_id': attachement_id,
         'action_type': action_type,
@@ -902,8 +1098,13 @@ def modifier_decompte(request, decompte_id):
     return redirect(f"{reverse('projets:liste_decomptes', args=[decompte.attachement.projet.id])}?modifier={decompte.id}")
 
 
+@modules_projet_required
+@require_http_methods(['GET', 'POST'])
 def supprimer_decompte(request, decompte_id):
-    decompte = get_object_or_404(Decompte, id=decompte_id)
+    decompte = get_object_or_404(
+        Decompte.objects.select_related('attachement__projet'), id=decompte_id,
+    )
+    _verifier_acces_attachement(request, decompte.attachement)
     projet_id = decompte.attachement.projet.id
 
     if request.method == 'POST':
@@ -915,8 +1116,14 @@ def supprimer_decompte(request, decompte_id):
     context = {
         'decompte': decompte,
         'projet': decompte.attachement.projet,
+        'paiement_signale': decompte.statut in {'PAYE', 'PARTIEL'} or bool(decompte.date_paiement),
+        'breadcrumb_items': project_crumbs(
+            decompte.attachement.projet,
+            crumb("Décomptes", "projets:liste_decomptes", args=[projet_id]),
+            crumb(f"Suppression {decompte.numero}"),
+        ),
     }
-    return render(request, 'projets/supprimer_decompte.html', context)
+    return render(request, 'projets/decomptes/supprimer_decompte.html', context)
 
 
 def detail_decompte(request, decompte_id):
@@ -933,7 +1140,7 @@ def detail_decompte(request, decompte_id):
     rg = montant_t_ttc * float(decompte.taux_retenue_garantie or 0) / 100 if decompte.taux_retenue_garantie else 0.0
     ras = montant_t_ttc * float(decompte.taux_ras or 0) / 100 if decompte.taux_ras else 0.0
     autres = float(decompte.autres_retenues) if decompte.autres_retenues else 0.0
-    net_a_payer = montant_t_ttc - rg - ras - autres
+    net_a_payer = max(0, montant_t_ttc - rg - ras - autres)
     est_revise = revision_prix != 0
 
     context = {
@@ -982,7 +1189,7 @@ def calcul_retard_decompte(request, decompte_id):
 @modules_projet_required
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    attachements = Attachement.objects.filter(projet=projet).order_by('-date_fin_periode')
+    attachements = Attachement.objects.filter(projet=projet).order_by('-sequence')
     attachement_courant = None
     donnees_controle = []
     total_general = {

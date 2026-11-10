@@ -613,6 +613,9 @@
                 
                 <!-- Boutons -->
                 <div class="flex flex-wrap gap-3 pt-4">
+                    {% if validation_directe and decompte_a_modifier.statut != 'PAYE' and decompte_a_modifier.statut != 'PARTIEL' and not decompte_a_modifier.date_paiement %}
+                    <button type="submit" name="action_validation" value="valider" class="app-btn app-btn-primary">Valider</button>
+                    {% endif %}
                     <button type="submit" 
                             class="bg-[#2B9C62] hover:bg-[#107C41] text-white px-4 sm:px-6 py-2 rounded-lg font-medium flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-save"></i>

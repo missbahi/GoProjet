@@ -1,0 +1,31 @@
+{% extends "projets/decomptes/_attachement_form_content.html" %}
+{% load static %}
+
+{% block attachement_table %}
+<div class="table-container attachement-tableview-test">
+    <div id="attachement-tableview-error" class="validation-section" role="alert" hidden></div>
+    <div id="attachement-tableview" class="rounded-xl"
+         data-correction="{% if correction_exceptionnelle %}true{% else %}false{% endif %}"
+         data-editable="{% if not is_edition or attachement.est_validable %}true{% else %}false{% endif %}"
+         data-delete-url="{% if is_edition %}{% url 'projets:supprimer_attachement' attachement.id %}{% endif %}"
+         data-reopen-url="{% if is_edition %}{% url 'projets:reouvrir_attachement' attachement.id %}{% endif %}"></div>
+</div>
+{% if correction_exceptionnelle %}
+<section id="correction-impact-panel" class="validation-section" hidden aria-live="polite">
+    <h3>Aperçu de la correction et des impacts financiers</h3>
+    <p>Les validations existantes seront conservées. Les documents déjà émis ne seront pas régénérés.</p>
+    <div class="overflow-x-auto">
+        <table class="app-table">
+            <thead><tr><th>Élément</th><th>Champ</th><th>Avant</th><th>Après</th></tr></thead>
+            <tbody id="correction-impact-rows"></tbody>
+        </table>
+    </div>
+    <button type="button" id="confirm-correction-btn" class="btn btn-warning">Confirmer la correction et les recalculs</button>
+</section>
+{% endif %}
+{% endblock %}
+
+{% block attachement_scripts %}
+{{ lignes|json_script:"attachement-tableview-data" }}
+<script src="{% static 'projets/js/attachement-tableview.js' %}"></script>
+{% endblock %}

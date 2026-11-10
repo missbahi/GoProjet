@@ -1,10 +1,11 @@
 from decimal import Decimal
+from datetime import date
 import logging
 import os
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
 from django.db.models.functions import Coalesce
@@ -27,6 +28,8 @@ from projets.forms import (
 from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuelle, DepenseSituationMensuelle, 
                             DocumentSituationMensuelle, StockSituationMensuelle, RapportJournalier)
 from projets.models.projet import Dossier
+from projets.models import ChiffreAffaire
+from projets.services.chiffre_affaire import synchroniser_situation_ca
 from projets.models.ressources import Consommable, Fourniture, Location, Materiel, Personnel, SousTraitance
 from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
 from projets.utils.navigation import crumb, project_crumbs
@@ -91,10 +94,25 @@ def _recettes_formset(*args, situation=None, **kwargs):
             )
         ))
         formset_class = RecetteSituationMensuelleFormSet
-    return formset_class(*args, instance=situation, **kwargs)
+    formset = formset_class(*args, instance=situation, **kwargs)
+    ca = None
+    if situation and situation.projet_id and situation.annee and situation.mois:
+        ca = situation.ca if situation.ca_id else ChiffreAffaire.objects.filter(
+            projet_id=situation.projet_id, periode=date(situation.annee, situation.mois, 1),
+            statut=ChiffreAffaire.Statut.VALIDE,
+        ).first()
+    if ca:
+        for recette_form in formset.forms:
+            rubrique = recette_form.initial.get('rubrique') or recette_form.instance.rubrique
+            if rubrique == RecetteSituationMensuelle.Rubrique.TRAVAUX_REALISES:
+                recette_form.fields['montant'].disabled = True
+                recette_form.initial['montant'] = ca.montant_mensuel
+        formset.ca_source = ca
+    return formset
 
 
 def _synchroniser_chiffre_affaires(situation):
+    synchroniser_situation_ca(situation)
     total = situation.recettes.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
     updated_at = timezone.now()
     situation.chiffre_affaires = total
@@ -753,6 +771,7 @@ def ajouter_situation_mensuelle(request, projet_id):
             if depenses.is_valid() and stocks.is_valid() and recettes.is_valid() and documents.is_valid():
                 try:
                     with transaction.atomic():
+                        Projet.objects.select_for_update().get(pk=projet.pk)
                         situation.save()
                         depenses.instance = situation
                         stocks.instance = situation
@@ -762,6 +781,8 @@ def ajouter_situation_mensuelle(request, projet_id):
                         _creer_rubriques_recettes_manquantes(situation)
                         _synchroniser_chiffre_affaires(situation)
                         documents.save()
+                except ValidationError as error:
+                    form.add_error(None, ' '.join(error.messages))
                 except IntegrityError:
                     form.add_error('mois', 'Une situation existe déjà pour cette période.')
                 else:
@@ -816,12 +837,23 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
             situation = form.save(commit=False)
             try:
                 with transaction.atomic():
+                    Projet.objects.select_for_update().get(pk=projet.pk)
+                    actuelle = SituationMensuelle.objects.select_for_update().get(pk=situation.pk)
+                    if actuelle.est_validee and (
+                        actuelle.ca_id or ChiffreAffaire.objects.filter(
+                            projet=projet, periode=date(actuelle.annee, actuelle.mois, 1),
+                        ).exists()
+                    ):
+                        raise ValidationError('Dévalidez la situation avant de modifier ses données liées au CA.')
+                    situation.ca_id = actuelle.ca_id
                     situation.save()
                     depenses.save()
                     stocks.save()
                     recettes.save()
                     _synchroniser_chiffre_affaires(situation)
                     documents.save()
+            except ValidationError as error:
+                form.add_error(None, ' '.join(error.messages))
             except IntegrityError:
                 form.add_error('mois', 'Une situation existe déjà pour cette période.')
             else:
@@ -875,21 +907,23 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
 @require_POST
 def valider_situation_mensuelle(request, projet_id, situation_id):
     """Passe une situation de Brouillon à Validée."""
-    situation = get_object_or_404(
-        SituationMensuelle, id=situation_id, projet_id=projet_id,
-    )
-
-    if situation.est_validee:
-        return JsonResponse(
-            {'success': False, 'message': 'Cette situation est déjà validée.'},
-            status=400,
+    with transaction.atomic():
+        Projet.objects.select_for_update().get(pk=projet_id)
+        situation = get_object_or_404(
+            SituationMensuelle.objects.select_for_update(), id=situation_id, projet_id=projet_id,
         )
-
-    situation.statut = SituationMensuelle.Statut.VALIDEE
-    situation.date_validation = timezone.now()
-    situation.validee_par = request.user
-    situation.save(update_fields=['statut', 'date_validation', 'validee_par'])
-
+        ca = ChiffreAffaire.objects.filter(
+            projet_id=projet_id, periode=date(situation.annee, situation.mois, 1),
+        ).first()
+        if ca and ca.statut != ChiffreAffaire.Statut.VALIDE:
+            return JsonResponse({'success': False, 'message': 'Validez le CA du mois avant de valider la situation.'}, status=400)
+        if situation.est_validee:
+            return JsonResponse({'success': False, 'message': 'Cette situation est déjà validée.'}, status=400)
+        synchroniser_situation_ca(situation)
+        situation.statut = SituationMensuelle.Statut.VALIDEE
+        situation.date_validation = timezone.now()
+        situation.validee_par = request.user
+        situation.save(update_fields=['statut', 'date_validation', 'validee_par'])
     return JsonResponse({
         'success': True,
         'message': f'Situation {situation.mois:02d}/{situation.annee} validée.',
@@ -931,4 +965,3 @@ def supprimer_document_situation_mensuelle(request, projet_id, situation_id):
         document.delete()
         messages.success(request, 'Document mensuel supprimé.')
     return redirect('projets:modifier_situation_mensuelle', projet_id=projet.id, situation_id=situation.id)
-
