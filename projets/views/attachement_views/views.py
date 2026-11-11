@@ -61,16 +61,57 @@ def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     attachements = Attachement.objects.filter(projet=projet).order_by('sequence')
+    for attachement in attachements:
+        attachement.peut_devalider = attachement.peut_etre_reouvert_par(request.user)
 
     context = {
         'projet': projet,
         'attachements': attachements,
+        'validation_directe': peut_valider_directement(request.user, projet),
         'peut_corriger_exceptionnellement': request.user.is_superuser or est_gerant(request.user),
         'breadcrumb_items': project_crumbs(projet, crumb("Attachements")),
     }
     if request.headers.get('HX-Request'):
         return render(request, 'projets/decomptes/_liste_attachements_content.html', context)
     return render(request, 'projets/decomptes/liste_attachements.html', context)
+
+
+@login_required
+@require_POST
+def changer_statut_attachement(request, attachement_id):
+    attachement = get_object_or_404(Attachement, pk=attachement_id)
+    _verifier_acces_attachement(request, attachement)
+    action = request.POST.get('action')
+    try:
+        with transaction.atomic():
+            Projet.objects.select_for_update().get(pk=attachement.projet_id)
+            attachement = Attachement.objects.select_for_update().get(pk=attachement_id)
+            if action == 'valider':
+                if not peut_valider_directement(request.user, attachement.projet):
+                    raise PermissionDenied("Vous n'avez pas la permission de valider cet attachement.")
+                if attachement.statut == 'VALIDE':
+                    messages.info(request, f"L'attachement {attachement.numero} est déjà validé.")
+                else:
+                    attachement.verifier_continuite_periode()
+                    attachement.verifier_debut_periode_hors_arret(attachement.date_debut_periode)
+                    attachement.verifier_fin_periode_hors_arret(attachement.date_fin_periode)
+                    attachement.statut = 'VALIDE'
+                    attachement.full_clean()
+                    attachement.marquer_modification(request.user)
+                    attachement.save(update_fields=['statut', 'modifie_par'])
+                    messages.success(request, f"L'attachement {attachement.numero} a été validé.")
+            elif action == 'devalider':
+                if not attachement.peut_etre_reouvert_par(request.user):
+                    raise PermissionDenied("Vous ne pouvez pas dévalider cet attachement.")
+                attachement.reouvrir(request.user)
+                messages.success(
+                    request, f"L'attachement {attachement.numero} a été dévalidé et remis en brouillon.",
+                )
+            else:
+                messages.error(request, "Action de validation inconnue.")
+    except ValidationError as error:
+        messages.error(request, ' '.join(error.messages))
+    return redirect('projets:liste_attachements', projet_id=attachement.projet_id)
 
 
 @modules_projet_required
@@ -453,7 +494,7 @@ def modifier_attachement(request, attachement_id):
 
     lignes_json = json.dumps(lignes_data, default=str)
 
-    attachement.peut_reouvrir = (attachement.statut == 'VALIDE' and (request.user.is_superuser or request.user.is_staff))
+    attachement.peut_reouvrir = attachement.peut_etre_reouvert_par(request.user)
     attachement.peut_supprimer = not correction_exceptionnelle and attachement.statut != 'VALIDE'
     attachement.est_validable = correction_exceptionnelle or validation_directe or attachement.statut in ['BROUILLON', 'TRANSMIS', 'REFUSE']
     attachement.ferme = attachement.statut == 'SIGNE'

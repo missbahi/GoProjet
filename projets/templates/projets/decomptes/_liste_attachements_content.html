@@ -134,6 +134,29 @@
                         </td>
                         <td class="attachment-actions-cell">
                             <div class="attachment-actions">
+                                {% if attachement.statut == 'VALIDE' %}
+                                    {% if attachement.peut_devalider %}
+                                    <form method="post" action="{% url 'projets:changer_statut_attachement' attachement.id %}"
+                                          data-attachment-confirm="Voulez-vous Dévalider l'attachement N° {{ attachement.numero }} ?">
+                                        {% csrf_token %}
+                                        <button type="submit" name="action" value="devalider"
+                                                class="app-action-btn" style="color: var(--accent-warning);"
+                                                title="Dévalider" aria-label="Dévalider {{ attachement.numero }}">
+                                            <i class="fas fa-unlock" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% elif validation_directe %}
+                                <form method="post" action="{% url 'projets:changer_statut_attachement' attachement.id %}"
+                                      data-attachment-confirm="Voulez-vous Valider l'attachement N° {{ attachement.numero }} ?">
+                                    {% csrf_token %}
+                                    <button type="submit" name="action" value="valider"
+                                            class="app-action-btn" style="color: var(--accent-green);"
+                                            title="Valider" aria-label="Valider {{ attachement.numero }}">
+                                        <i class="fas fa-check" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
                                 <a href="{% url 'projets:detail_attachement' attachement.id %}"
                                    class="app-action-btn" style="color: var(--accent-primary);"
                                    title="Voir le détail" aria-label="Voir le détail de l’attachement">

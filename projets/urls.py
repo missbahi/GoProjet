@@ -243,6 +243,7 @@ attachement_urlpatterns = [
     path('attachements/modifier/<int:attachement_id>/', attachement_views.modifier_attachement, name='modifier_attachement'),
     path('attachements/<int:attachement_id>/', attachement_views.detail_attachement, name='detail_attachement'),
     path('attachements/<int:attachement_id>/tracabilite-validation/', attachement_views.tracabilite_validation_attachement, name='tracabilite_validation_attachement'),
+    path('attachements/<int:attachement_id>/changer-statut/', attachement_views.changer_statut_attachement, name='changer_statut_attachement'),
     path('attachements/supprimer/<int:attachement_id>/', attachement_views.supprimer_attachement, name='supprimer_attachement'),
     path('attachements/<int:attachement_id>/ajouter_decompte/', attachement_views.attachements_ajouter_decompte, name='attachements_ajouter_decompte'),
     # validation processus

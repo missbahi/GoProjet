@@ -193,6 +193,118 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
             'taux_ras': '0', 'autres_retenues': '0', 'montant_revision_prix': '0',
         }
 
+    def test_list_buttons_validate_and_devalidate_without_form(self):
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        liste = reverse('projets:liste_attachements', args=[self.projet.pk])
+        for user in (self.chef, self.admin):
+            with self.subTest(user=user):
+                self.client.force_login(user)
+                self.assertContains(self.client.get(liste), 'value="valider"')
+                avant = Attachement.objects.filter(pk=self.attachement.pk).values().get()
+                response = self.client.post(url, {'action': 'valider'}, follow=True)
+                self.assertRedirects(response, liste)
+                self.assertContains(response, 'a été validé.')
+                self.assertContains(response, 'value="devalider"')
+                self.assertNotContains(response, 'value="valider"')
+                self.attachement.refresh_from_db()
+                self.assertEqual(self.attachement.statut, 'VALIDE')
+                self.assertEqual(self.attachement.modifie_par, user)
+                apres = Attachement.objects.filter(pk=self.attachement.pk).values().get()
+                for champ in avant:
+                    if champ not in {'statut', 'modifie_par_id'}:
+                        self.assertEqual(avant[champ], apres[champ], champ)
+                response = self.client.post(url, {'action': 'devalider'}, follow=True)
+                self.assertRedirects(response, liste)
+                self.assertContains(response, 'a été dévalidé et remis en brouillon.')
+                self.attachement.refresh_from_db()
+                self.assertEqual(self.attachement.statut, 'BROUILLON')
+                self.assertEqual(self.attachement.modifie_par, user)
+
+    def test_list_validation_rejects_stop_dates_and_broken_continuity(self):
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        self.create_os('OSA', date(2025, 1, 20))
+        response = self.client.post(url, {'action': 'valider'}, follow=True)
+        self.assertContains(response, "La date de fin se situe dans une période", html=False)
+        self.attachement.refresh_from_db()
+        self.assertEqual(self.attachement.statut, 'BROUILLON')
+        self.create_os('OSR', date(2025, 1, 25))
+        Attachement.objects.filter(pk=self.attachement.pk).update(
+            date_debut_periode=date(2025, 1, 11),
+        )
+        response = self.client.post(url, {'action': 'valider'}, follow=True)
+        self.assertContains(response, 'La date de début doit correspondre')
+        self.attachement.refresh_from_db()
+        self.assertEqual(self.attachement.statut, 'BROUILLON')
+
+    def test_list_actions_enforce_permissions_and_hide_buttons(self):
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        liste = reverse('projets:liste_attachements', args=[self.projet.pk])
+        autre = User.objects.create_user(username='lecteur-attachement')
+        self.dossier.utilisateurs.add(autre)
+        self.client.force_login(autre)
+        self.assertNotContains(self.client.get(liste), 'value="valider"')
+        self.assertEqual(self.client.post(url, {'action': 'valider'}).status_code, 403)
+        Attachement.objects.filter(pk=self.attachement.pk).update(statut='VALIDE')
+        self.assertNotContains(self.client.get(liste), 'value="devalider"')
+        self.assertEqual(self.client.post(url, {'action': 'devalider'}).status_code, 403)
+        self.dossier.utilisateurs.remove(autre)
+        self.assertEqual(self.client.post(url, {'action': 'devalider'}).status_code, 403)
+        self.attachement.refresh_from_db()
+        self.assertEqual(self.attachement.statut, 'VALIDE')
+
+    def test_list_validation_preserves_other_activities_workflow(self):
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        for activite in ('SERVICES', 'FOURNITURES'):
+            with self.subTest(activite=activite):
+                self.dossier.activite = activite
+                self.dossier.save()
+                self.assertEqual(self.client.post(url, {'action': 'valider'}).status_code, 403)
+                self.attachement.refresh_from_db()
+                self.assertEqual(self.attachement.statut, 'BROUILLON')
+
+    def test_list_actions_require_post_and_csrf(self):
+        from django.test import Client
+
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        self.assertEqual(self.client.get(url).status_code, 405)
+        csrf_client = Client(enforce_csrf_checks=True)
+        csrf_client.force_login(self.chef)
+        self.assertEqual(csrf_client.post(url, {'action': 'valider'}).status_code, 403)
+        self.client.logout()
+        self.assertEqual(self.client.post(url, {'action': 'valider'}).status_code, 302)
+        self.attachement.refresh_from_db()
+        self.assertEqual(self.attachement.statut, 'BROUILLON')
+
+    def test_list_devalidation_resets_existing_validation_steps(self):
+        self.attachement.statut = 'VALIDE'
+        self.attachement.save()
+        validation = ProcessValidation.objects.create(
+            attachement=self.attachement, type_validation='TECHNIQUE',
+            ordre_validation=1, statut_validation='VALIDE', validateur=self.chef,
+            demandeur_validation=self.chef, commentaires='Validé', motifs_rejet='Ancien rejet',
+        )
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        self.client.post(url, {'action': 'devalider'})
+        validation.refresh_from_db()
+        self.assertEqual(validation.statut_validation, 'EN_ATTENTE')
+        self.assertIsNone(validation.validateur)
+        self.assertEqual(validation.commentaires, '')
+        self.assertEqual(validation.motifs_rejet, '')
+
+    def test_list_action_notifies_project_users(self):
+        from projets.models import Notification
+
+        self.projet.users.add(self.chef)
+        url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
+        self.client.post(url, {'action': 'valider'})
+        self.assertTrue(Notification.objects.filter(
+            utilisateur=self.chef, projet=self.projet, type_notification='ATTACHEMENT_VALIDE',
+        ).exists())
+        self.client.post(url, {'action': 'devalider'})
+        self.assertTrue(Notification.objects.filter(
+            utilisateur=self.chef, projet=self.projet, type_notification='ATTACHEMENT_BROUILLON',
+        ).exists())
+
     def test_chef_and_superuser_can_validate_by_status_or_button(self):
         for user, action in [(self.chef, {}), (self.admin, {'statut': 'BROUILLON', 'action': 'valider'})]:
             with self.subTest(user=user):

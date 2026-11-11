@@ -180,6 +180,14 @@ ou le chef de projet/gérant autorisé sur le projet peut valider les attachemen
 et décomptes directement : bouton **Valider**, ou statut **Validé** puis
 enregistrement. La validation d'un attachement sauvegarde également les lignes
 saisies et contrôle la continuité, les dates et les arrêts OSA/OSR.
+La liste des attachements propose également **Valider** sans ouvrir le formulaire,
+avec les mêmes contrôles de période. Les actions **Valider** et **Dévalider**
+demandent confirmation en indiquant le numéro de l'attachement ; annuler ne
+modifie rien. Le bouton **Dévalider** remet l'attachement
+en brouillon et réinitialise ses étapes de validation. Il est accessible aux
+utilisateurs autorisés à rouvrir l'attachement, ainsi qu'aux chefs de projet
+autorisés à le valider directement. Une notification confirme le résultat dans
+la liste ; les notifications habituelles du projet sont conservées.
 Les attachements déjà validés conservent le mode de correction exceptionnelle.
 Les décomptes payés ou partiellement payés ne peuvent pas être reclassés en Validé.
 

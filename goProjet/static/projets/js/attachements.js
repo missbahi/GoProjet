@@ -157,6 +157,14 @@
     }
 
     // ── Délégation ─────────────────────────────────────────────
+    document.addEventListener('submit', event => {
+        const form = event.target;
+        if (form.matches('form[data-attachment-confirm]')
+            && !window.confirm(form.dataset.attachmentConfirm)) {
+            event.preventDefault();
+        }
+    });
+
     document.addEventListener('input', event => {
         if (event.target.id === 'attachment-search-input') filterRows(event.target);
     });
