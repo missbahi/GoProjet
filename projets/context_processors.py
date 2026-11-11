@@ -2,6 +2,16 @@ from django.utils import timezone
 from .version import APP_VERSION, get_versions_between
 
 
+def observer_access(request):
+    from projets.decorators import est_observateur
+    from projets.observer_access import observer_url_patterns
+
+    readonly = est_observateur(request.user)
+    return {
+        'observer_readonly': readonly,
+        'observer_url_patterns': observer_url_patterns() if readonly else [],
+    }
+
 def app_version(request):
     """Injecte la version dans tous les templates."""
     return {"APP_VERSION": APP_VERSION}

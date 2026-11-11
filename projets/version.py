@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.3.2"
+APP_VERSION = "2.4.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,17 @@ APP_VERSION = "2.3.2"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.4.0": {
+        "date": "2026-11-11",
+        "titre": "Observateur et consultation des dossiers",
+        "highlights": [
+            "Nouveau rôle Observateur : consultation des dossiers attribués, sans modification",
+            "Ouverture sur Home après connexion et accès limité aux projets autorisés",
+            "Bordereaux et plannings en lecture seule, avec impressions et exports",
+            "Rattachement des plannings à un projet depuis leur formulaire pour les rendre visibles aux Observateurs du dossier",
+        ],
+        "niveau": "info",
+    },
     "2.3.2": {
         "date": "2026-11-11",
         "titre": "Validation depuis la liste des attachements",

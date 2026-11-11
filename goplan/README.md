@@ -8,6 +8,19 @@ les modifications concurrentes réelles restent refusées avec le statut HTTP 40
 Plannings de travaux : tâches hiérarchiques, calendriers ouvrés, diagramme de
 Gantt, échanges XML MS Project (MSPDI) et impression A4 à A0.
 
+## Rattachement à un projet
+
+Le formulaire de création et de modification, en page complète comme en modale,
+propose **Projet de rattachement**, limité aux projets accessibles au responsable.
+Le champ reste facultatif pour conserver les plannings indépendants.
+Pour rendre un planning existant visible aux Observateurs, le modifier,
+sélectionner un projet de leur dossier et enregistrer. Aucun rattachement
+automatique n'est déduit du titre du planning.
+
+Les Observateurs ne voient que les plannings rattachés aux projets de leurs
+dossiers, jamais les plannings indépendants ou ceux d'un autre dossier.
+Après un nouvel import XML, utiliser également **Modifier** pour choisir le projet.
+
 ## Édition inline des tâches
 
 La barre d'outils agit sur la tâche sélectionnée, y compris les tâches racines

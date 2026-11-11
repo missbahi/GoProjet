@@ -144,10 +144,14 @@
            style="color: var(--text-muted); opacity: 0.4;"></i>
         <h3 class="text-lg font-semibold mb-2"
             style="color: var(--text-primary);">
-            Aucun plan GoPlan
+            {% if observer_readonly %}Aucun planning rattaché à vos projets{% else %}Aucun plan GoPlan{% endif %}
         </h3>
         <p class="text-sm mb-6" style="color: var(--text-secondary);">
-            Créez votre premier plan de planification.
+            {% if observer_readonly %}
+                Un responsable doit rattacher les plannings existants à un projet de vos dossiers.
+            {% else %}
+                Créez votre premier plan de planification.
+            {% endif %}
         </p>
         <a href="{% url 'goplan:creer_plan' %}" class="app-btn-primary inline-flex">
             <i class="fas fa-plus mr-2"></i> Créer un plan

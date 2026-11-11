@@ -31,7 +31,7 @@
             <h2 class="text-lg font-semibold mb-2">{{ calendar.nom }}</h2>
             {% if calendar.is_default %}<span class="app-badge app-badge-success">Par défaut</span>{% endif %}
             <p class="text-sm my-3">{{ calendar.workday_labels|join:", " }} · {{ calendar.heures_par_jour }} h/jour</p>
-            <p class="text-sm mb-4">{{ calendar.exceptions_count }} exception(s) · {{ calendar.plans_count }} planning(s) · {{ calendar.resources_count }} ressource(s)</p>
+            <p class="text-sm mb-4">{{ calendar.exceptions_count }} exception(s) · {{ calendar.plans_count }} planning(s){% if not observer_readonly %} · {{ calendar.resources_count }} ressource(s){% endif %}</p>
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'goplan:modifier_calendrier' calendar.pk %}" class="app-btn-secondary">Modifier</a>
                 <form method="post" action="{% url 'goplan:supprimer_calendrier' calendar.pk %}"

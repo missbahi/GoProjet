@@ -1,0 +1,9 @@
+<div class="md:col-span-2">
+    <label for="{{ form.projet.id_for_label }}" class="block text-sm font-medium mb-1"
+           style="color: var(--text-primary);">{{ form.projet.label }}</label>
+    {{ form.projet }}
+    <p class="mt-1 text-xs" style="color: var(--text-secondary);">{{ form.projet.help_text }}</p>
+    {% for error in form.projet.errors %}
+        <p class="mt-1 text-xs" style="color: var(--accent-danger);">{{ error }}</p>
+    {% endfor %}
+</div>

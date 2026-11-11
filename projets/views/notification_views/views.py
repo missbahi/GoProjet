@@ -11,7 +11,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_http_methods, require_POST
 
-from projets.decorators import can_view_projet, projets_accessibles
+from projets.decorators import can_view_projet, notifications_accessibles, projets_accessibles
 from projets.models import Attachement, DocumentAdministratif, Notification, OrdreService, Projet, Tache
 from django.core.paginator import Paginator
 
@@ -33,9 +33,7 @@ def liste_notifications(request):
     breadcrumb_items = notification_origin_items(notification_origin)
     if not breadcrumb_items:
         breadcrumb_items = [crumb("Tableau de bord", "projets:home")]
-    notifications_qs = Notification.objects.filter(
-        utilisateur=request.user
-    ).order_by('-prioritaire', '-date_creation').select_related(
+    notifications_qs = notifications_accessibles(request.user).order_by('-prioritaire', '-date_creation').select_related(
         'projet', 'tache', 'tache__projet'
     )
     # Filtres
@@ -56,7 +54,7 @@ def liste_notifications(request):
     page_obj = paginator.get_page(page_number)
 
     # Compteurs globaux
-    all_qs = Notification.objects.filter(utilisateur=request.user)
+    all_qs = notifications_accessibles(request.user)
     unread_count = all_qs.filter(lue=False).count()
     read_count = all_qs.filter(lue=True).count()
     
@@ -453,8 +451,7 @@ def notifications_non_lues_api(request):
     API pour récupérer les notifications non lues de l'utilisateur
     """
     try:
-        notifications = Notification.objects.filter(
-            utilisateur=request.user,
+        notifications = notifications_accessibles(request.user).filter(
             lue=False,
         ).select_related('projet', 'tache', 'document', 'ordre_service')
 

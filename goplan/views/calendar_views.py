@@ -4,11 +4,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from projets.utils.navigation import crumb
+from projets.decorators import est_observateur
+from projets.observer_access import plans_observables
 
 from ..calendar_forms import CalendarExceptionFormSet, CalendarForm, WEEKDAYS
 from ..models import GWorkCalendar
@@ -34,6 +36,15 @@ def liste_calendriers(request):
         resources_count=Count("gresource", distinct=True),
         exceptions_count=Count("exceptions", distinct=True),
     ).order_by("-is_default", "nom", "pk")
+    if est_observateur(request.user):
+        calendars = GWorkCalendar.objects.filter(
+            pk__in=plans_observables(request.user).values('calendrier_id'),
+        ).annotate(
+            plans_count=Count('gplan', filter=Q(
+                gplan__in=plans_observables(request.user),
+            ), distinct=True),
+            exceptions_count=Count('exceptions', distinct=True),
+        ).order_by('-is_default', 'nom', 'pk')
 
     for calendar in calendars:
         calendar.workday_labels = [label for day, label in WEEKDAYS if day in calendar.jours_ouvres]

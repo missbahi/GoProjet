@@ -146,6 +146,8 @@
                 {% endfor %}
             </div>
 
+            {% include "goplan/plans/_project_field.html" %}
+
             {# Description #}
             <div>
                 <label for="{{ form.description.id_for_label }}"

@@ -9,12 +9,31 @@ from django.http import JsonResponse
 import unicodedata
 
 
+def est_observateur(user):
+    return bool(
+        user.is_authenticated and not user.is_superuser
+        and getattr(getattr(user, 'profile', None), 'role', None) == 'OBSERVATEUR'
+    )
+
+
+def notifications_accessibles(user):
+    from projets.models import Notification
+
+    notifications = Notification.objects.filter(utilisateur=user)
+    if est_observateur(user):
+        notifications = notifications.filter(projet__in=projets_accessibles(user))
+    return notifications
+
+
 def projets_accessibles(user):
     """Retourne uniquement les projets autorisés pour l'utilisateur."""
     from .models import Projet
 
     if user.is_superuser:
         return Projet.objects.all()
+
+    if est_observateur(user):
+        return Projet.objects.filter(dossier__utilisateurs=user).distinct()
 
     role = getattr(getattr(user, 'profile', None), 'role', None)
     if role in {'POINTEUR', 'CHEF_CHANTIER'}:
@@ -119,6 +138,22 @@ def chef_projet_required(view_func):
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return _wrapped_view
+
+
+def consultation_projet_required(view_func):
+    """Consultation chef de projet ou observateur, sans autoriser d'écriture."""
+    chef_view = chef_projet_required(view_func)
+
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        if not est_observateur(request.user):
+            return chef_view(request, *args, **kwargs)
+        if request.method not in {'GET', 'HEAD', 'OPTIONS'}:
+            raise PermissionDenied("Le rôle Observateur est limité à la consultation.")
+        if not projets_accessibles(request.user).filter(pk=kwargs.get('projet_id')).exists():
+            raise PermissionDenied
+        return view_func(request, *args, **kwargs)
+    return wrapped
 
 def can_view_projet(view_func):
     """Décorateur pour vérifier si l'utilisateur peut voir un projet spécifique"""

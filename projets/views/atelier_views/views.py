@@ -10,7 +10,7 @@ from datetime import date, timedelta
 from collections import defaultdict
 
 
-from projets.decorators import chef_projet_required
+from projets.decorators import chef_projet_required, consultation_projet_required
 from projets.forms import AffectationRessourceForm, AtelierForm, materiels_affectes_projet
 from projets.models import AffectationRessource, Atelier, Projet
 from projets.utils.navigation import crumb, project_crumbs
@@ -272,7 +272,7 @@ def ateliers_projet_(request, projet_id):
     })
 
 # ─── ateliers_projet ──────────────────────────────────────
-@chef_projet_required
+@consultation_projet_required
 def ateliers_projet(request, projet_id):
     if request.method != 'GET':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
@@ -297,7 +297,7 @@ def ateliers_projet(request, projet_id):
     return render(request, 'projets/ateliers/liste_ateliers.html', ctx)
 
 # ─── materiels_atelier ──────────────────────────────────────
-@chef_projet_required
+@consultation_projet_required
 def materiels_atelier(request, projet_id, atelier_id):
     if request.method != 'GET':
         return JsonResponse({'error': 'Méthode non supportée'}, status=405)
@@ -331,7 +331,7 @@ def materiels_atelier(request, projet_id, atelier_id):
     return render(request, 'projets/ateliers/materiels_atelier.html', ctx)
 
 # ─── planning_ateliers ──────────────────────────────────────
-@chef_projet_required
+@consultation_projet_required
 def planning_ateliers(request, projet_id):
     contexte = _preparer_contexte_planning(request, projet_id)
     projet = contexte['projet']
@@ -586,7 +586,7 @@ def _preparer_contexte_planning(request, projet_id):
     }
 
 
-@chef_projet_required
+@consultation_projet_required
 def apercu_impression_planning(request, projet_id):
     """
     Aperçu avant impression du planning des ateliers.

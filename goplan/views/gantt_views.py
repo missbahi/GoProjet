@@ -15,6 +15,7 @@ from django.views.decorators.http import require_GET, require_POST
 import re
 
 from projets.utils.navigation import crumb
+from projets.decorators import est_observateur
 
 from ..forms import GPlanAppearanceForm, GPlanPrintSettingsForm, GTaskGanttForm
 from ..models import PRINT_TEXT_VARIABLES, GPlan, GPlanPrintSettings, GTask, GTaskDependency
@@ -34,6 +35,8 @@ _REVISION_TASK_FIELDS = tuple(
 )
 
 def _repair_dates_on_read(request, plan):
+    if est_observateur(request.user):
+        return
     try:
         corrected = repair_plan_dates(plan)
     except ValidationError as error:

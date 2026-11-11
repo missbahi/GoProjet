@@ -454,6 +454,7 @@
         });
 
         function setEditorVisible(visible) {
+            if (window.OBSERVER_READ_ONLY) visible = false;
             form.hidden = !visible;
             editorToggle.setAttribute('aria-expanded', String(visible));
             const label = visible ? 'Masquer le formulaire de tâche' : 'Afficher le formulaire de tâche';
@@ -839,7 +840,7 @@
                     row.appendChild(toggle);
                 } else row.appendChild(dot);
 
-                const label = document.createElement('button');
+                const label = document.createElement(window.OBSERVER_READ_ONLY ? 'span' : 'button');
                 label.type = 'button';
                 label.className = 'goplan-task-label';
                 label.textContent = task.name;
@@ -847,6 +848,7 @@
 
                 row.appendChild(label);
                 label.addEventListener('click', () => {
+                    if (window.OBSERVER_READ_ONLY) return;
                     if (task.id === activeId) {
                         setEditorVisible(true);
                         field('nom').focus();
@@ -947,7 +949,7 @@
 
         function setBusy(value) {
             busy = value;
-            fieldset.disabled = value || !calendar || data.invalid_hierarchy;
+            fieldset.disabled = !!window.OBSERVER_READ_ONLY || value || !calendar || data.invalid_hierarchy;
             submit.disabled = fieldset.disabled;
             select.disabled = value;
             newButton.disabled = value;
@@ -1139,7 +1141,7 @@
 
         // Remembers the folded state so the inline editor and the print preview use it too.
         function persistFold(ids, folded) {
-            if (!root.dataset.foldUrl) return;
+            if (window.OBSERVER_READ_ONLY || !root.dataset.foldUrl) return;
             ids.forEach(id => {
                 const body = new FormData();
                 body.append('task', id);
@@ -1157,6 +1159,7 @@
         }
 
         function selectTask(id) {
+            if (window.OBSERVER_READ_ONLY) return;
             if (id === editId && id === activeId) {
                 revealTask(id);
                 setEditorVisible(true);

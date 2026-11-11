@@ -1,11 +1,17 @@
 from django.contrib import messages
 from django.shortcuts import render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.contrib.auth import views as auth_views
+from projets.decorators import est_observateur
 
 
 class CustomLoginView(auth_views.LoginView):
     template_name = 'authentification/login.html'
+
+    def get_success_url(self):
+        if est_observateur(self.request.user):
+            return reverse('projets:home')
+        return super().get_success_url()
 
     def form_valid(self, form):
         messages.success(self.request, 'Connexion réussie !')

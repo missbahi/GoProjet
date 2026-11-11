@@ -95,8 +95,10 @@ class Attachement(models.Model):
     def peut_etre_reouvert_par(self, user):
         if not self.peut_etre_reouvert:
             return False
-        from projets.decorators import peut_valider_directement
+        from projets.decorators import est_observateur, peut_valider_directement
 
+        if est_observateur(user):
+            return False
         return (
             user.is_superuser or user.is_staff or user.has_perm('projets.reopen_attachment')
             or peut_valider_directement(user, self.projet)

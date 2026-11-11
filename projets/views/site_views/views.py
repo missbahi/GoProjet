@@ -8,13 +8,15 @@ from django.utils import timezone
 from django.utils.formats import number_format
 from django.views.decorators.http import require_GET
 
-from projets.decorators import projets_accessibles
-from projets.models import Notification, Tache
+from projets.decorators import est_observateur, notifications_accessibles, projets_accessibles
+from projets.models import Tache
 from projets.services.home_indicators import indicateurs_home
 
 
 def landing(request):
     if request.user.is_authenticated:
+        if est_observateur(request.user):
+            return redirect('projets:home')
         return redirect('projets:liste_projets')
     return render(request, 'projets/landing/apropos.html')
 
@@ -32,8 +34,8 @@ def home(request):
     en_cours = [p for p in projets if p.statut == 'COURS']
     avances = [p.home_avancement for p in en_cours if p.home_avancement is not None]
     avancement_moyen = sum(avances, Decimal('0')) / len(avances) if avances else None
-    notifications = Notification.objects.filter(utilisateur=request.user, lue=False).order_by('-date_creation')[:5]
-    nb_notifications = Notification.objects.filter(utilisateur=request.user, lue=False).count()
+    notifications = notifications_accessibles(request.user).filter(lue=False).order_by('-date_creation')[:5]
+    nb_notifications = notifications_accessibles(request.user).filter(lue=False).count()
 
     resume_cartes = [
         {'titre': 'Projets en cours', 'valeur': len(en_cours), 'couleur': 'blue', 'icône': 'fa-hard-hat',

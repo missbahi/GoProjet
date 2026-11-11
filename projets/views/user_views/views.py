@@ -87,6 +87,8 @@ def liste_utilisateurs(request):
             utilisateurs = utilisateurs.filter(profile__role='CHEF_CHANTIER')
         elif role_filter == 'POINTEUR':
             utilisateurs = utilisateurs.filter(profile__role='POINTEUR')
+        elif role_filter == 'OBSERVATEUR':
+            utilisateurs = utilisateurs.filter(profile__role='OBSERVATEUR')
         elif role_filter == 'STAFF':
             utilisateurs = utilisateurs.filter(profile__role='STAFF')
         elif role_filter == 'UTILISATEUR':
@@ -213,6 +215,7 @@ def _modifier_utilisateur_context(
             ('GERANT', 'Chef de projet (historique)'),
             ('CHEF_CHANTIER', 'Chef de chantier'),
             ('POINTEUR', 'Pointeur'),
+            ('OBSERVATEUR', 'Observateur'),
             ('STAFF', 'Staff'),
             ('UTILISATEUR', 'Utilisateur'),
         ]
@@ -221,6 +224,7 @@ def _modifier_utilisateur_context(
         role_choices = [
             ('CHEF_CHANTIER', 'Chef de chantier'),
             ('POINTEUR', 'Pointeur'),
+            ('OBSERVATEUR', 'Observateur'),
             ('STAFF', 'Staff'),
             ('UTILISATEUR', 'Utilisateur'),
         ]
@@ -335,13 +339,15 @@ def modifier_utilisateur(request, user_id):
         if can_manage_roles:
             role = request.POST.get('role')
             roles_autorises = (
-                {'CHEF_PROJET', 'GERANT', 'CHEF_CHANTIER', 'POINTEUR', 'STAFF', 'UTILISATEUR'}
+                {'CHEF_PROJET', 'GERANT', 'CHEF_CHANTIER', 'POINTEUR', 'OBSERVATEUR', 'STAFF', 'UTILISATEUR'}
                 if request.user.is_superuser
-                else {'CHEF_CHANTIER', 'POINTEUR', 'STAFF', 'UTILISATEUR'}
+                else {'CHEF_CHANTIER', 'POINTEUR', 'OBSERVATEUR', 'STAFF', 'UTILISATEUR'}
             )
             if role not in roles_autorises:
                 raise PermissionDenied
             target_user.profile.role = role
+            if role == 'OBSERVATEUR':
+                target_user.is_staff = False
 
         # ⚡ Statut actif (seulement si autorisé)
         if can_manage_account_status:

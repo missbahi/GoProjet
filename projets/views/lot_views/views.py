@@ -8,7 +8,7 @@ from django.db import DatabaseError, transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 
-from projets.decorators import chef_projet_required
+from projets.decorators import chef_projet_required, consultation_projet_required
 from projets.exporters import ExcelExporter
 from projets.forms import BORDEREAU_APPEARANCE_DEFAULTS, BordereauAppearanceForm
 from projets.manager import LigneHierarchique
@@ -46,7 +46,7 @@ def _bordereau_rows(lot_root):
     ]
 
 
-@chef_projet_required
+@consultation_projet_required
 def saisie_bordereau(request, projet_id, lot_id):
     lot = get_object_or_404(LotProjet, id=lot_id, projet_id=projet_id)
     lot_root = lot.to_line_tree()
@@ -254,7 +254,7 @@ def _preparer_contexte_bordereau(projet):
     }
 
 
-@chef_projet_required
+@consultation_projet_required
 def lots_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     lots = LotProjet.objects.filter(projet=projet).order_by('id')
@@ -362,7 +362,7 @@ def supprimer_lot(request, projet_id, lot_id):
 
 
 @login_required
-@chef_projet_required
+@consultation_projet_required
 def apercu_impression_bordereau(request, projet_id):
     """
     Aperçu avant impression du bordereau des prix.
@@ -379,7 +379,7 @@ from django.http import HttpResponse
 
 
 @login_required
-@chef_projet_required
+@consultation_projet_required
 def export_bordereau_excel(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     contexte = _preparer_contexte_bordereau(projet)   # même contexte que l'aperçu

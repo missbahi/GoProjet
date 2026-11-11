@@ -3,7 +3,7 @@ from django.urls import reverse
 from urllib.parse import urlencode
 
 from projets.utils.navigation import notification_origin_token
-from projets.models import Notification
+from projets.decorators import notifications_accessibles
 
 register = template.Library()
 
@@ -11,8 +11,8 @@ register = template.Library()
 @register.inclusion_tag('includes/_notification_panel.html', takes_context=True)
 def notification_panel(context):
     request = context['request']
-    notifications = Notification.objects.filter(
-        utilisateur=request.user, lue=False,
+    notifications = notifications_accessibles(request.user).filter(
+        lue=False,
     ).select_related('projet').order_by('-date_creation')
     return {
         'notifications': notifications[:5],

@@ -804,6 +804,7 @@ class BordereauManager {
         this.appearance = { ...this.appearanceData.values };
 
         this.tableView = new window.TableView(container, {
+            editable: !window.OBSERVER_READ_ONLY,
             label: 'Détail des prix unitaires',
             data: this.lineManager.toTableData(),
             rowKey: 'id',
@@ -816,13 +817,14 @@ class BordereauManager {
             onHeaderResize: ({ height }) => {
                 this.appearance.header_height = height;
             },
-            clipboard: { copy: true, paste: true, parseTsv: true, includeHiddenRows: true },
+            clipboard: { copy: true, paste: !window.OBSERVER_READ_ONLY, parseTsv: true, includeHiddenRows: true },
             createRow: () => ({
                 id: new Line().id, numero: '', designation: '', unite: '',
                 quantite: 0, prix_unitaire: 0, niveau: 1, est_titre: false,
                 _expanded: true, montant: 0,
             }),
             onSort: ({ rows }) => {
+                if (window.OBSERVER_READ_ONLY) return;
                 const children = new Map();
                 rows.forEach(row => {
                     const line = this.lineManager.lines.get(row.id);
@@ -853,7 +855,7 @@ class BordereauManager {
                 onToggle: rowIndex => this.toggleExpansion(rowIndex),
             },
             rowActions: {
-                contextMenu: true,
+                contextMenu: !window.OBSERVER_READ_ONLY,
                 items: () => this.getRowActions().map(action => ({
                     id: action.id,
                     label: action.label,
@@ -911,7 +913,7 @@ class BordereauManager {
             },
         });
         this.updateHiddenRows();
-        this.setupAppearanceDialog();
+        if (!window.OBSERVER_READ_ONLY) this.setupAppearanceDialog();
         this.refreshTable();
     }
 

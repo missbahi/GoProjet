@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Aperçu Gantt — {{ plan.nom }}</title>
+    {% include "includes/_observer_assets.html" %}
     <link rel="stylesheet"
           href="https://cdn.jsdelivr.net/npm/frappe-gantt@0.6.1/dist/frappe-gantt.css">
     <link rel="stylesheet" href="{% static 'goplan/css/goplan.css' %}">
@@ -21,7 +22,7 @@
     {% for message in messages %}<p role="status">{{ message }}</p>{% endfor %}
     <a href="{% url 'goplan:gantt_plan' plan.pk %}" class="print-btn print-btn-secondary">Retour au Gantt</a>
     <a href="{% url 'goplan:apercu_plan' plan.pk %}?mode=tasks" class="print-btn print-btn-secondary">Tableau des tâches</a>
-    <button type="button" id="print-open-settings" class="print-btn print-btn-primary"
+    <button type="button" id="print-open-settings" class="print-btn print-btn-primary" {% if observer_readonly %}hidden{% endif %}
             aria-haspopup="dialog" aria-controls="print-settings-dialog">Paramètres d'impression</button>
     <button type="button" id="print-main-button" class="print-btn print-btn-primary" disabled>Imprimer / PDF</button>
     <div class="print-zoom-controls" role="group" aria-label="Zoom de consultation">

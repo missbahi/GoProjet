@@ -22,7 +22,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views import View
 
-from projets.decorators import can_view_projet, modules_projet_required
+from projets.decorators import can_view_projet, est_observateur, modules_projet_required, projets_accessibles
 from projets.forms import DocumentAdministratifForm, OrdreServiceForm
 from projets.models import DocumentAdministratif, OrdreService, Projet, TypeOrdreService
 from projets.utils.navigation import crumb, project_crumbs
@@ -97,7 +97,9 @@ def secure_download(request, model_name, object_id):
 
     if not projet:
         return HttpResponseForbidden("Projet non trouvé pour cet objet")
-    if user not in projet.users.all():
+    if user not in projet.users.all() and not (
+        est_observateur(user) and projets_accessibles(user).filter(pk=projet.pk).exists()
+    ):
         return HttpResponseForbidden("Accès refusé au projet associé")
 
     file_field = get_file_field(obj)
@@ -132,7 +134,9 @@ def download_document(request, model_name, object_id):
 
     if not projet:
         return HttpResponseForbidden("Projet non trouvé pour cet objet")
-    if user not in projet.users.all():
+    if user not in projet.users.all() and not (
+        est_observateur(user) and projets_accessibles(user).filter(pk=projet.pk).exists()
+    ):
         return HttpResponseForbidden("Accès refusé au projet associé")
 
     file_field = get_file_field(obj)

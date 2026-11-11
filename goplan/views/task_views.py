@@ -5,8 +5,10 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from projets.decorators import est_observateur
 from projets.utils.navigation import crumb
 
 from ..forms import GTaskInlineFormSet
@@ -72,6 +74,8 @@ def _inline_context(plan, formset):
 
 @login_required
 def taches_inline(request, plan_id):
+    if est_observateur(request.user):
+        return redirect(reverse('goplan:apercu_plan', args=[plan_id]) + '?mode=tasks')
     plan = get_object_or_404(
         GPlan.objects.select_related("calendrier").prefetch_related("calendrier__exceptions"),
         pk=plan_id,

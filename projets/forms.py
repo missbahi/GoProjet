@@ -333,6 +333,7 @@ class UtilisateurCreationForm(UserCreationForm):
         ('CHEF_PROJET', 'Chef de projet'),
         ('CHEF_CHANTIER', 'Chef de chantier'),
         ('POINTEUR', 'Pointeur'),
+        ('OBSERVATEUR', 'Observateur'),
         ('STAFF', 'Staff'),
         ('UTILISATEUR', 'Utilisateur'),
     )
@@ -353,6 +354,7 @@ class UtilisateurCreationForm(UserCreationForm):
         elif user:
             self.fields['role'].choices = (
                 ('CHEF_CHANTIER', 'Chef de chantier'), ('POINTEUR', 'Pointeur'),
+                ('OBSERVATEUR', 'Observateur'),
                 ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
             )
             self.fields['dossiers'].queryset = Dossier.objects.filter(gerant=user)

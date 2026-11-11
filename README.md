@@ -19,6 +19,33 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 La version et les nouveautés affichées à la connexion sont définies dans
 [projets/version.py](projets/version.py).
 
+### Rôle Observateur
+
+- Le superutilisateur ou le chef de projet/gérant peut créer un **Observateur**
+  et l'affecter aux dossiers qu'il est autorisé à gérer, depuis **Utilisateurs**.
+  Le rôle est également disponible lors de la modification d'un utilisateur.
+- Après connexion, l'Observateur arrive sur **Home**, même si une autre page
+  était demandée. Il consulte uniquement les projets des dossiers auxquels il
+  est affecté ; une affectation directe à un projet ne suffit pas.
+- Les données, documents, attachements, décomptes, CA, OS, suivis et plannings
+  rattachés à ces projets sont consultables. Téléchargements, exports et
+  impressions restent disponibles. Les tâches GoPlan sont présentées dans
+  leur aperçu tabulaire ; le Gantt et le bordereau sont en lecture seule.
+- Les créations, modifications, suppressions, validations, paiements et accès
+  à l'administration sont refusés côté serveur, y compris par URL directe.
+  Les nouvelles routes sont refusées par défaut et doivent être explicitement
+  ajoutées à la politique de consultation dans `projets/observer_access.py`.
+  Les plannings sans projet rattaché et les référentiels globaux ne sont pas
+  accessibles.
+- Le thème, les préférences d'affichage, le mot de passe, la session et la lecture
+  des notifications restent personnels : leur modification ne change aucune donnée du dossier.
+  Les notifications affichées sont limitées aux projets autorisés.
+- Un superutilisateur conserve ses privilèges, quel que soit son rôle de profil.
+  Pour un compte Observateur ordinaire, même un ancien indicateur staff ne
+  contourne pas la lecture seule.
+- Déploiement : exécuter `python manage.py migrate` pour la migration
+  `0085_profile_observateur`, puis la collecte des fichiers statiques habituelle.
+
 ### CA mensuel de production (Travaux)
 
 Depuis les situations mensuelles, **Chiffres d'affaires** ouvre le suivi du CA.

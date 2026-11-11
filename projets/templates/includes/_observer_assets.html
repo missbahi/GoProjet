@@ -1,0 +1,9 @@
+{% load static %}
+{% if observer_readonly %}
+{{ observer_url_patterns|json_script:"observer-route-policy" }}
+<script src="{% static 'projets/js/observer-readonly.js' %}"></script>
+<style>
+    [data-observer-hidden] { display: none !important; }
+    [data-observer-banner] { padding: .5rem 1rem; color: var(--text-secondary); font-size: .875rem; }
+</style>
+{% endif %}

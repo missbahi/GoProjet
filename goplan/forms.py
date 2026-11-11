@@ -1,13 +1,22 @@
 from django import forms
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.forms.models import BaseInlineFormSet, inlineformset_factory
 from .models import GPlan, GPlanPrintSettings, GTask
 from .services.calendar import get_calendar_for_plan
 from .services.dependencies import recalculate_group_rollups
+from projets.decorators import projets_accessibles
+from projets.models import Projet
 
 
 class GPlanForm(forms.ModelForm):
+    projet = forms.ModelChoiceField(
+        label="Projet de rattachement", queryset=Projet.objects.none(), required=False,
+        empty_label="Aucun projet",
+        help_text="Rend ce planning visible aux Observateurs du dossier du projet.",
+    )
+
     class Meta:
         model = GPlan
         fields = ['nom', 'description', 'date_debut', 'date_fin_cible', 'date_etat', 'calendrier']
@@ -26,8 +35,18 @@ class GPlanForm(forms.ModelForm):
             'date_etat': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if user is not None:
+            self.fields['projet'].queryset = projets_accessibles(user).order_by('nom')
+        if (self.instance.content_type_id
+                and self.instance.content_type == ContentType.objects.get_for_model(Projet)):
+            self.initial['projet'] = self.instance.object_id
+            if not self.fields['projet'].queryset.filter(pk=self.instance.object_id).exists():
+                self.fields['projet'].disabled = True
+                self.fields['projet'].queryset = Projet.objects.filter(pk=self.instance.object_id)
+        if self.instance.content_type_id and self.instance.content_type.model_class() != Projet:
+            self.fields['projet'].disabled = True
 
         # Forcer les input_formats pour accepter les dates ISO
         self.fields['date_debut'].input_formats = ['%Y-%m-%d']
@@ -39,6 +58,17 @@ class GPlanForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'app-modal-input')
 
         self.fields['calendrier'].empty_label = "— Sélectionner un calendrier —"
+
+    def save(self, commit=True):
+        plan = super().save(commit=False)
+        field = self.fields['projet']
+        if not field.disabled and (not self.is_bound or 'projet' in self.data):
+            projet = self.cleaned_data['projet']
+            plan.source_object = projet
+        if commit:
+            plan.save()
+            self.save_m2m()
+        return plan
 
 
 class GPlanAppearanceForm(forms.ModelForm):

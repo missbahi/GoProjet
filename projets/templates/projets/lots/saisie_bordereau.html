@@ -8,6 +8,7 @@
     
     {% load static %}
     {% load formatters %}
+    {% include "includes/_observer_assets.html" %}
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <link rel="stylesheet" href="{% static 'projets/css/themes.css' %}">
@@ -50,15 +51,15 @@
         <div class="navigation-buttons flex flex-col sm:flex-row sm:items-center gap-2 mb-3 md:mb-4">
 
             <!-- Groupe des boutons de navigation -->
-            <button onclick="window.location.href='{% url 'projets:lots_projet' lot.projet.id %}'" 
+            <button data-observer-safe onclick="window.location.href='{% url 'projets:lots_projet' lot.projet.id %}'"
                     class="btn btn-success">
                 <i class="fas fa-cubes"></i> Retour aux lots
             </button>
-            <button onclick="window.location.href='{% url 'projets:dashboard' lot.projet.id %}'" 
+            <button data-observer-safe onclick="window.location.href='{% url 'projets:dashboard' lot.projet.id %}'"
                     class="btn btn-info">
                 <i class="fa-solid fa-diagram-project"></i> Retour au projet
             </button>
-            <button onclick="window.location.href='{% url 'home' %}'" 
+            <button data-observer-safe onclick="window.location.href='{% url 'home' %}'"
                     class="btn btn-warning">
                 <i class="fa-solid fa-house"></i> Accueil
             </button>
@@ -157,14 +158,14 @@
                     </button>
                     <!-- Boutons Export -->
                     <span class="goplan-toolbar-sep" aria-hidden="true"></span>
-                    <button onclick="exportExcel()" 
+                    <button data-observer-safe onclick="exportExcel()"
                             class="goplan-toolbar-btn"
                             aria-label="Exporter en Excel"
                             title="Exporter en Excel">
                         <i class="fas fa-file-excel"></i>
                     </button>
                     
-                    <button onclick="exportPDF()" 
+                    <button data-observer-safe onclick="exportPDF()"
                             class="goplan-toolbar-btn"
                             aria-label="Exporter en PDF"
                             title="Exporter en PDF">

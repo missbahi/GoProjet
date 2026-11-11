@@ -21,6 +21,7 @@ class Profile(models.Model):
         ('GERANT', 'Chef de projet (historique)'),
         ('CHEF_CHANTIER', 'Chef de chantier'),
         ('POINTEUR', 'Pointeur'),
+        ('OBSERVATEUR', 'Observateur'),
         ('STAFF', 'Staff'),
         ('UTILISATEUR', 'Utilisateur'),
     ]

@@ -133,7 +133,7 @@
                 </button>
             </div>
 
-            <form id="lotEditForm" data-lot-edit-form>
+            <form id="lotEditForm" data-lot-edit-form data-observer-write>
                 {% csrf_token %}
                 <input type="hidden" name="lot_id" id="edit_lot_id">
 

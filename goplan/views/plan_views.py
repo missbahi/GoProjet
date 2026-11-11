@@ -8,6 +8,8 @@ from django.views.decorators.http import require_http_methods, require_POST
 from django.http import HttpResponse
 
 from projets.utils.navigation import crumb
+from projets.decorators import est_observateur
+from projets.observer_access import plans_observables
 
 from ..models import GPlan
 from ..forms import GPlanForm
@@ -16,6 +18,8 @@ from ..forms import GPlanForm
 @login_required
 def liste_plans(request):
     plans = GPlan.objects.select_related('calendrier').order_by('-created_at')
+    if est_observateur(request.user):
+        plans = plans.filter(pk__in=plans_observables(request.user).values('pk'))
 
     ctx = {
         'plans': plans,
@@ -36,7 +40,7 @@ def liste_plans(request):
 def creer_plan(request):
     """Créer un plan, en page complète ou en modale HTMX."""
     if request.method == 'POST':
-        form = GPlanForm(request.POST)
+        form = GPlanForm(request.POST, user=request.user)
         if form.is_valid():
             plan = form.save()
             messages.success(request, f"Plan « {plan.nom} » créé.")
@@ -51,7 +55,7 @@ def creer_plan(request):
 
     else:
         # GET : formulaire vide
-        form = GPlanForm(initial={'date_debut': timezone.now().date()})
+        form = GPlanForm(initial={'date_debut': timezone.now().date()}, user=request.user)
 
     template = 'goplan/plans/_modal_plan.html' if request.headers.get('HX-Request') else 'goplan/plans/creer_plan.html'
     return render(request, template, {
@@ -67,7 +71,7 @@ def modifier_plan(request, plan_id):
     plan = get_object_or_404(GPlan.objects.select_related('calendrier'), pk=plan_id)
 
     if request.method == 'POST':
-        form = GPlanForm(request.POST, instance=plan)
+        form = GPlanForm(request.POST, instance=plan, user=request.user)
         if form.is_valid():
             plan = form.save()
             messages.success(request, f"Plan « {plan.nom} » modifié.")
@@ -80,7 +84,7 @@ def modifier_plan(request, plan_id):
             return redirect('goplan:taches_inline', plan_id=plan.pk)
 
     else:
-        form = GPlanForm(instance=plan)
+        form = GPlanForm(instance=plan, user=request.user)
 
     template = 'goplan/plans/_modal_plan.html' if request.headers.get('HX-Request') else 'goplan/plans/modifier_plan.html'
     return render(request, template, {

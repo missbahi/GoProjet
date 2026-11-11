@@ -15,7 +15,7 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
-from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required
+from projets.decorators import can_edit_projet, can_view_projet, chef_projet_required, consultation_projet_required
 from projets.decorators import can_devalidate_situation_mensuelle, can_validate_situation_mensuelle
 
 from projets.forms import (
@@ -594,7 +594,7 @@ def _situation_brouillon_or_403(situation):
         )
 
 @login_required
-@chef_projet_required 
+@consultation_projet_required
 def situations_mensuelles(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
     situations = list(
@@ -641,7 +641,7 @@ def supprimer_situation_mensuelle(request, projet_id, situation_id):
     return redirect('projets:situations_mensuelles', projet_id=projet_id)
 
 @login_required
-@chef_projet_required
+@consultation_projet_required
 def apercu_situation_mensuelle(request, projet_id, situation_id):
     projet = _projet_travaux_or_403(projet_id)
     situation = get_object_or_404(
