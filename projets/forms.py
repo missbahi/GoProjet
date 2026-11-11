@@ -984,6 +984,10 @@ class AttachementForm(forms.ModelForm):
             except ValidationError as error:
                 self.add_error(None, error)
             try:
+                candidat.verifier_debut_periode_hors_arret(candidat.date_debut_periode)
+            except ValidationError as error:
+                self.add_error(None, error)
+            try:
                 candidat.verifier_fin_periode_hors_arret(candidat.date_fin_periode)
             except ValidationError as error:
                 self.add_error(None, error)
@@ -1009,6 +1013,11 @@ class CorrectionExceptionnelleAttachementForm(forms.Form):
         fin = cleaned.get('date_fin_periode')
         if debut and fin and fin < debut:
             self.add_error('date_fin_periode', "La date de fin ne peut précéder la date de début.")
+        if debut:
+            try:
+                self.attachement.verifier_debut_periode_hors_arret(debut)
+            except ValidationError as error:
+                self.add_error('date_debut_periode', error.message_dict['date_debut_periode'])
         if fin:
             try:
                 self.attachement.verifier_fin_periode_hors_arret(fin)
@@ -1058,22 +1067,35 @@ class CorrectionPeriodesAttachementForm(forms.Form):
                 cleaned[f'date_fin_periode_{a.pk}'], a.pk,
             ),
         )
-        debut_attendu = self.date_osc
+        debut_attendu = self.attachements_ordonnes[0].date_debut_apres_arret(self.date_osc)
         for attachement in self.attachements_ordonnes:
             debut_key = f'date_debut_periode_{attachement.pk}'
             fin_key = f'date_fin_periode_{attachement.pk}'
             debut = cleaned.get(debut_key)
             fin = cleaned.get(fin_key)
-            if debut and debut_attendu and debut != debut_attendu:
+            if debut and debut_attendu is None:
+                self.add_error(
+                    debut_key,
+                    "Un OS de reprise notifié est requis pour commencer après un arrêt en cours.",
+                )
+            elif debut and debut != debut_attendu:
                 self.add_error(debut_key, f"La date attendue est le {debut_attendu:%d/%m/%Y}.")
             if debut and fin and fin < debut:
                 self.add_error(fin_key, "La date de fin ne peut précéder la date de début.")
+            if debut:
+                try:
+                    attachement.verifier_debut_periode_hors_arret(debut)
+                except ValidationError as error:
+                    self.add_error(debut_key, error.message_dict['date_debut_periode'])
             if fin:
                 try:
                     attachement.verifier_fin_periode_hors_arret(fin)
                 except ValidationError as error:
                     self.add_error(fin_key, error.message_dict['date_fin_periode'])
-            debut_attendu = fin + timedelta(days=1) if fin and fin < date.max else None
+            debut_attendu = (
+                attachement.date_debut_apres_arret(fin + timedelta(days=1))
+                if fin and fin < date.max else None
+            )
             if fin == date.max:
                 self.add_error(fin_key, "Cette date est trop éloignée.")
         return cleaned

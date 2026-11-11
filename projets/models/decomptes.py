@@ -139,10 +139,9 @@ class Attachement(models.Model):
             return type(self).get_latest_attachement(self.projet)
         return None
 
-    def _date_debut_attendue(self, precedent):
+    def _date_debut_initiale(self, precedent):
         if precedent:
             return precedent.date_fin_periode + timedelta(days=1)
-
         osc = self.projet.ordres_service.filter(
             type_os__code='OSC',
             statut='NOTIFIE',
@@ -150,24 +149,10 @@ class Attachement(models.Model):
         ).order_by('ordre_sequence').first()
         return osc.date_effet if osc else None
 
-    def verifier_continuite_periode(self):
-        precedent = self.get_previous_attachement()
-        date_attendue = self._date_debut_attendue(precedent) if self.projet_id else None
-        if not date_attendue:
-            raise ValidationError({
-                'date_debut_periode': "Un OS de commencement notifié avec une date d'effet est requis.",
-            })
-        if self.date_debut_periode != date_attendue:
-            raise ValidationError({
-                'date_debut_periode': (
-                    "La date de début doit correspondre au lendemain de l'attachement précédent "
-                    "ou à la date d'effet de l'OS de commencement."
-                ),
-            })
+    def _date_debut_attendue(self, precedent):
+        return self.date_debut_apres_arret(self._date_debut_initiale(precedent))
 
-    def verifier_fin_periode_hors_arret(self, date_fin):
-        if not self.projet_id or not date_fin:
-            return
+    def _periodes_arret_notifiees(self):
         evenements = self.projet.ordres_service.filter(
             type_os__code__in=['OSA', 'OSR'], statut='NOTIFIE',
             date_effet__isnull=False,
@@ -182,20 +167,75 @@ class Attachement(models.Model):
                 debut_arret = None
         if debut_arret is not None:
             periodes.append((debut_arret, None))
-        for arret, reprise in periodes:
-            if arret <= date_fin and (reprise is None or date_fin < reprise):
+        return periodes
+
+    def date_debut_apres_arret(self, date_debut):
+        if not self.projet_id or not date_debut:
+            return date_debut
+        for arret, reprise in self._periodes_arret_notifiees():
+            if arret <= date_debut and (reprise is None or date_debut < reprise):
+                date_debut = reprise
+                if date_debut is None:
+                    return None
+        return date_debut
+
+    def verifier_continuite_periode(self):
+        precedent = self.get_previous_attachement()
+        date_initiale = self._date_debut_initiale(precedent) if self.projet_id else None
+        date_attendue = self._date_debut_attendue(precedent) if self.projet_id else None
+        if not date_attendue:
+            raise ValidationError({
+                'date_debut_periode': (
+                    "Un OS de reprise notifié est requis pour commencer après un arrêt en cours."
+                    if date_initiale else
+                    "Un OS de commencement notifié avec une date d'effet est requis."
+                ),
+            })
+        if self.date_debut_periode != date_attendue:
+            raise ValidationError({
+                'date_debut_periode': (
+                    "La date de début doit correspondre au lendemain de l'attachement précédent "
+                    "ou à la date d'effet de l'OS de commencement, sauf si un arrêt impose "
+                    "la date d'effet de l'OS de reprise."
+                ),
+            })
+
+    def verifier_date_periode_hors_arret(self, date_periode, champ):
+        if not self.projet_id or not date_periode:
+            return
+        for arret, reprise in self._periodes_arret_notifiees():
+            if arret <= date_periode and (reprise is None or date_periode < reprise):
                 veille = arret - timedelta(days=1)
-                choix = f"le {veille:%d/%m/%Y} (veille de l'arrêt)"
-                if reprise:
-                    choix += f" ou le {reprise:%d/%m/%Y} (reprise)"
-                else:
-                    choix += " ; aucun OS de reprise notifié ne permet encore de proposer une date de reprise"
-                raise ValidationError({
-                    'date_fin_periode': (
+                if champ == 'date_fin_periode':
+                    choix = f"le {veille:%d/%m/%Y} (veille de l'arrêt)"
+                    if reprise:
+                        choix += f" ou le {reprise:%d/%m/%Y} (reprise)"
+                    else:
+                        choix += " ; aucun OS de reprise notifié ne permet encore de proposer une date de reprise"
+                    message = (
                         f"La date de fin se situe dans une période d'arrêt du projet "
                         f"à compter du {arret:%d/%m/%Y}. Choisissez {choix}."
-                    ),
+                    )
+                elif reprise:
+                    message = (
+                        f"La date de début se situe dans une période d'arrêt du projet "
+                        f"à compter du {arret:%d/%m/%Y}. Elle doit être fixée à la reprise "
+                        f"du {reprise:%d/%m/%Y}."
+                    )
+                else:
+                    message = (
+                        f"La date de début se situe dans une période d'arrêt du projet "
+                        f"à compter du {arret:%d/%m/%Y}. Un OS de reprise notifié est requis."
+                    )
+                raise ValidationError({
+                    champ: message,
                 })
+
+    def verifier_debut_periode_hors_arret(self, date_debut):
+        self.verifier_date_periode_hors_arret(date_debut, 'date_debut_periode')
+
+    def verifier_fin_periode_hors_arret(self, date_fin):
+        self.verifier_date_periode_hors_arret(date_fin, 'date_fin_periode')
 
     def clean(self):
         super().clean()
@@ -203,10 +243,15 @@ class Attachement(models.Model):
         precedent = self.get_previous_attachement()
         ancien = type(self).objects.get(pk=self.pk) if self.pk else None
         if self.statut == 'TRANSMIS' and (not ancien or ancien.statut != 'TRANSMIS'):
-            try:
-                self.verifier_fin_periode_hors_arret(self.date_fin_periode)
-            except ValidationError as error:
-                errors.update(error.message_dict)
+            for verifier, date_periode in (
+                (self.verifier_debut_periode_hors_arret, self.date_debut_periode),
+                (self.verifier_fin_periode_hors_arret, self.date_fin_periode),
+            ):
+                try:
+                    verifier(date_periode)
+                except ValidationError as error:
+                    for champ, messages in error.message_dict.items():
+                        errors.setdefault(champ, []).extend(messages)
 
         if self.date_debut_periode and self.date_fin_periode:
             if self.date_fin_periode < self.date_debut_periode:
@@ -216,7 +261,8 @@ class Attachement(models.Model):
                 try:
                     self.verifier_continuite_periode()
                 except ValidationError as error:
-                    errors.update(error.message_dict)
+                    for champ, messages in error.message_dict.items():
+                        errors.setdefault(champ, []).extend(messages)
 
         if not self.pk and precedent and precedent.statut not in {'SIGNE', 'VALIDE'}:
             errors[NON_FIELD_ERRORS] = (
@@ -259,6 +305,7 @@ class Attachement(models.Model):
             with transaction.atomic():
                 Projet.objects.select_for_update().get(pk=self.projet_id)
                 precedent = type(self).get_latest_attachement(self.projet)
+                date_debut_initiale = self._date_debut_initiale(precedent)
                 date_debut_attendue = self._date_debut_attendue(precedent)
                 if precedent and precedent.statut not in {'SIGNE', 'VALIDE'}:
                     raise ValidationError(
@@ -266,7 +313,13 @@ class Attachement(models.Model):
                     )
                 if not date_debut_attendue:
                     raise ValidationError(
-                        "Un OS de commencement notifié avec une date d'effet est requis."
+                        {
+                            'date_debut_periode': (
+                                "Un OS de reprise notifié est requis pour commencer après un arrêt en cours."
+                                if date_debut_initiale else
+                                "Un OS de commencement notifié avec une date d'effet est requis."
+                            ),
+                        }
                     )
                 if self.date_debut_periode != date_debut_attendue:
                     raise ValidationError(
@@ -280,6 +333,7 @@ class Attachement(models.Model):
                 self.sequence = precedent.sequence + 1 if precedent else 1
                 self.numero = f"DP{self.sequence:02d}"
                 if self.statut == 'TRANSMIS':
+                    self.verifier_debut_periode_hors_arret(self.date_debut_periode)
                     self.verifier_fin_periode_hors_arret(self.date_fin_periode)
                 return super().save(*args, **kwargs)
         elif self.pk:
@@ -291,6 +345,7 @@ class Attachement(models.Model):
                 and (statut_enregistre is None or 'statut' in statut_enregistre)
             ):
                 self.verifier_continuite_periode()
+                self.verifier_debut_periode_hors_arret(self.date_debut_periode)
                 self.verifier_fin_periode_hors_arret(self.date_fin_periode)
             if (
                 self.projet_id != ancien.projet_id

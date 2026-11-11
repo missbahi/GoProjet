@@ -288,6 +288,7 @@ def ajouter_attachement(request, projet_id):
     else:
         date_debut_periode = dernier_attachement.date_fin_periode + timedelta(days=1)
 
+    date_debut_periode = Attachement(projet=projet).date_debut_apres_arret(date_debut_periode)
     date_fin_periode = date_debut_periode + timedelta(days=30) if date_debut_periode else None
     next_numero = dernier_attachement.sequence + 1 if dernier_attachement else 1
 

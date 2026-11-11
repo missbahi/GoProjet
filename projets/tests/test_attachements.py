@@ -342,6 +342,27 @@ class AttachementArretTests(AttachementTestData, TestCase):
                 else:
                     self.attachement.verifier_fin_periode_hors_arret(date(2025, 1, jour))
 
+    def test_begin_date_uses_same_stop_boundaries(self):
+        for jour in (19, 20, 24, 25, 26):
+            with self.subTest(jour=jour):
+                if 20 <= jour < 25:
+                    with self.assertRaises(ValidationError) as caught:
+                        self.attachement.verifier_debut_periode_hors_arret(date(2025, 1, jour))
+                    self.assertIn('date_debut_periode', caught.exception.message_dict)
+                else:
+                    self.attachement.verifier_debut_periode_hors_arret(date(2025, 1, jour))
+
+    def test_following_attachment_starts_on_resume_when_continuity_falls_in_stop(self):
+        self.attachement.date_fin_periode = date(2025, 1, 19)
+        self.attachement.statut = 'SIGNE'
+        self.attachement.save()
+
+        suivant = self.create_attachement(
+            2, date(2025, 1, 25), date(2025, 2, 1),
+        )
+
+        self.assertEqual(suivant.date_debut_periode, date(2025, 1, 25))
+
     def test_open_stop_and_multiple_periods(self):
         self.create_os('OSA', date(2025, 2, 10))
         with self.assertRaises(ValidationError) as caught:
@@ -371,6 +392,16 @@ class AttachementArretTests(AttachementTestData, TestCase):
                 1, date(2025, 1, 10), date(2025, 1, 22), 'TRANSMIS',
             )
 
+    def test_transmission_rejects_begin_date_during_stop(self):
+        self.attachement.date_debut_periode = date(2025, 1, 22)
+        self.attachement.statut = 'TRANSMIS'
+
+        with self.assertRaises(ValidationError) as caught:
+            self.attachement.full_clean()
+
+        self.assertIn('date_debut_periode', caught.exception.message_dict)
+        self.assertIn("période d'arrêt", caught.exception.message_dict['date_debut_periode'][0])
+
     def test_transmission_at_resume_is_allowed(self):
         self.attachement.date_fin_periode = date(2025, 1, 25)
         self.attachement.statut = 'TRANSMIS'
@@ -378,6 +409,33 @@ class AttachementArretTests(AttachementTestData, TestCase):
         self.attachement.save()
         self.attachement.refresh_from_db()
         self.assertEqual(self.attachement.statut, 'TRANSMIS')
+
+
+class AttachementContinuiteArretTests(AttachementTestData, TestCase):
+    def test_first_attachment_starts_on_resume_if_project_start_falls_in_stop(self):
+        self.create_os('OSA', date(2025, 1, 10))
+        self.create_os('OSR', date(2025, 1, 25))
+
+        attachement = self.create_attachement(
+            1, date(2025, 1, 25), date(2025, 2, 1),
+        )
+
+        self.assertEqual(attachement.date_debut_periode, date(2025, 1, 25))
+
+    def test_first_attachment_waits_for_notified_resume_during_open_stop(self):
+        self.create_os('OSA', date(2025, 1, 10))
+        attachement = Attachement(
+            projet=self.projet,
+            numero='custom-1',
+            date_etablissement=date(2025, 1, 31),
+            date_debut_periode=date(2025, 1, 10),
+            date_fin_periode=date(2025, 1, 31),
+        )
+
+        with self.assertRaises(ValidationError) as caught:
+            attachement.save()
+
+        self.assertIn('date_debut_periode', caught.exception.message_dict)
 
 @override_settings(STORAGES={
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
@@ -392,6 +450,19 @@ class AttachementTableViewTemplateTests(AttachementTestData, TestCase):
             1, date(2025, 1, 10), date(2025, 1, 31),
         )
         self.url = reverse('projets:modifier_attachement', args=[self.attachement.pk])
+
+    def test_creation_prefills_resume_date_when_next_day_falls_into_stop(self):
+        self.attachement.date_fin_periode = date(2025, 1, 19)
+        self.attachement.statut = 'SIGNE'
+        self.attachement.save()
+        self.create_os('OSA', date(2025, 1, 20))
+        self.create_os('OSR', date(2025, 1, 25))
+
+        response = self.client.get(
+            reverse('projets:ajouter_attachement', args=[self.projet.pk]),
+        )
+
+        self.assertEqual(response.context['date_debut_periode'], date(2025, 1, 25))
 
     def test_default_form_uses_direct_tableview_template(self):
         response = self.client.get(self.url)
@@ -583,7 +654,7 @@ class CorrectionPeriodesTests(AttachementTestData, TestCase):
     def test_historical_preview_accepts_day_before_stop_and_resume(self):
         self.create_os('OSA', date(2025, 1, 20))
         self.create_os('OSR', date(2025, 2, 5))
-        for fin, debut_suivant in [('2025-01-19', '2025-01-20'), ('2025-02-05', '2025-02-06')]:
+        for fin, debut_suivant in [('2025-01-19', '2025-02-05'), ('2025-02-05', '2025-02-06')]:
             with self.subTest(fin=fin):
                 payload = self.payload()
                 payload.update({

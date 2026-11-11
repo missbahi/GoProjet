@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.3.0"
+APP_VERSION = "2.3.1"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,16 @@ APP_VERSION = "2.3.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.3.1": {
+        "date": "2026-11-11",
+        "titre": "Continuité des attachements après arrêt",
+        "highlights": [
+            "La date de début d'un attachement tient compte des arrêts et reprises notifiés",
+            "Le début attendu est reporté à la reprise lorsqu'il tombe dans une période d'arrêt",
+            "Les corrections de périodes et la date proposée à la création suivent la même règle",
+        ],
+        "niveau": "info",
+    },
     "2.3.0": {
         "date": "2026-11-10",
         "titre": "CA mensuel et suivi des travaux",

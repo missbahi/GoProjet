@@ -120,6 +120,7 @@ def appliquer_correction_chaine(projet, attachements, modifications):
 
 def corriger_attachement(attachement, form, lignes_json, user, confirmation=''):
     """Appelé sous transaction et verrou de projet ; aucun changement avant confirmation."""
+    attachement.verifier_debut_periode_hors_arret(form.cleaned_data['date_debut_periode'])
     attachement.verifier_fin_periode_hors_arret(form.cleaned_data['date_fin_periode'])
     chaine = list(Attachement.objects.select_for_update().filter(
         projet_id=attachement.projet_id,
@@ -158,9 +159,12 @@ def corriger_attachement(attachement, form, lignes_json, user, confirmation=''):
         for suivant in chaine:
             if suivant.precedent_id == attachement.pk:
                 fin = form.cleaned_data['date_fin_periode']
-                if (suivant.date_debut_periode - fin) != timedelta(days=1):
+                debut_suivant_attendu = attachement.date_debut_apres_arret(
+                    fin + timedelta(days=1),
+                )
+                if suivant.date_debut_periode != debut_suivant_attendu:
                     raise ValidationError(
-                        "La fin corrigée doit précéder d'un jour le début du suivant. "
+                        "La date de début du suivant doit respecter la continuité après arrêt. "
                         "Utilisez la correction des périodes historiques pour modifier plusieurs périodes."
                     )
     for courant in chaine:
