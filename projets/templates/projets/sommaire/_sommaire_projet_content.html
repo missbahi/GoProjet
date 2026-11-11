@@ -1,0 +1,78 @@
+{# Détail d'un projet (Sommaire) : en-tête, alerte, KPI puis onglets chargés à la demande #}
+{% load navigation %}
+{% breadcrumb %}
+
+<div data-family="project"
+     data-page-title="Sommaire du projet"
+     data-page-icon="fa-list-check">
+    <div class="max-w-6xl mx-auto">
+        <div class="mb-4 md:mb-6">
+            <h1 class="text-xl md:text-3xl font-bold flex items-center gap-2" style="color: var(--accent-primary);">
+                <i class="fas fa-list-check"></i> {{ projet.nom }}
+            </h1>
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                {% if projet.dossier %}<i class="fas fa-folder mr-1"></i>{{ projet.dossier.nom }} · {% endif %}
+                {{ projet.get_statut_display }} · données au {{ date_indicateurs|date:"d/m/Y" }}
+            </p>
+        </div>
+
+        {% if projet.home_echeance_erreur %}
+        <div class="rounded-lg p-3 mb-4 text-sm" role="alert"
+             style="background-color: var(--bg-surface); border-left: 4px solid var(--accent-danger); color: var(--text-primary);">
+            <i class="fas fa-circle-exclamation mr-2" style="color: var(--accent-danger);"></i>
+            Échéance à vérifier : {{ projet.home_echeance_erreur }}
+        </div>
+        {% elif projet.home_en_retard %}
+        <div class="rounded-lg p-3 mb-4 text-sm" role="alert"
+             style="background-color: var(--bg-surface); border-left: 4px solid var(--accent-warning); color: var(--text-primary);">
+            <i class="fas fa-triangle-exclamation mr-2" style="color: var(--accent-warning);"></i>
+            Échéance dépassée depuis le {{ projet.home_echeance|date:"d/m/Y" }}.
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
+            <div class="dashboard-card rounded-lg shadow p-4" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                <p class="text-sm" style="color: var(--text-secondary);">Avancement</p>
+                <p class="text-2xl font-bold mt-1" style="color: var(--accent-primary);">
+                    {% if projet.home_avancement != None %}{{ projet.home_avancement|floatformat:1 }} %{% else %}Non disponible{% endif %}
+                </p>
+                <div class="rounded h-2 overflow-hidden mt-2" style="background-color: var(--bg-elevated);">
+                    <div class="h-full" style="width: {{ projet.home_progress|floatformat:0 }}%; background-color: var(--accent-primary);"></div>
+                </div>
+                <p class="text-xs mt-2" style="color: var(--text-muted);">{{ projet.home_source }}{% if projet.home_provisoire %} (provisoire){% endif %}</p>
+            </div>
+            <div class="dashboard-card rounded-lg shadow p-4" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                <p class="text-sm" style="color: var(--text-secondary);">Marché HT</p>
+                <p class="text-2xl font-bold mt-1" style="color: var(--accent-primary);">{{ projet.home_marche_ht|floatformat:"2g" }}</p>
+                <p class="text-xs mt-2" style="color: var(--text-muted);">Total du bordereau, en DH</p>
+            </div>
+            <div class="dashboard-card rounded-lg shadow p-4" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                <p class="text-sm" style="color: var(--text-secondary);">Production cumulée HT</p>
+                <p class="text-2xl font-bold mt-1" style="color: var(--accent-primary);">
+                    {% if projet.home_cumul_ht != None %}{{ projet.home_cumul_ht|floatformat:"2g" }}{% else %}Non disponible{% endif %}
+                </p>
+                <p class="text-xs mt-2" style="color: var(--text-muted);">
+                    {% if projet.home_source_date %}Au {{ projet.home_source_date|date:"m/Y" }}{% else %}Aucune période{% endif %}
+                </p>
+            </div>
+            <div class="dashboard-card rounded-lg shadow p-4" style="background-color: var(--bg-surface); color: var(--text-primary);">
+                <p class="text-sm" style="color: var(--text-secondary);">Échéance prévisionnelle</p>
+                <p class="text-2xl font-bold mt-1" {% if projet.home_en_retard %}style="color: var(--accent-danger);"{% else %}style="color: var(--accent-primary);"{% endif %}>
+                    {% if projet.home_echeance %}{{ projet.home_echeance|date:"d/m/Y" }}{% else %}—{% endif %}
+                </p>
+                <p class="text-xs mt-2" style="color: var(--text-muted);">
+                    {% if projet.home_en_retard %}Dépassée{% elif projet.home_echeance %}Selon l'OS de commencement et les avenants{% else %}Non calculable{% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% include "projets/sommaire/_graphiques.html" %}
+
+        <div id="sommaire-onglets"
+             hx-get="{% url 'projets:sommaire_onglet' projet.id 'dashboard' %}"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <p class="text-sm" style="color: var(--text-muted);"><i class="fas fa-spinner fa-spin mr-2"></i>Chargement…</p>
+        </div>
+    </div>
+</div>

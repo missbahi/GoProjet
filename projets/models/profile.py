@@ -54,6 +54,11 @@ class Profile(models.Model):
         null=True,
         blank=True,
     )
+    guide_observateur_masque = models.BooleanField(
+        _("Guide Observateur masqué"),
+        default=False,
+        help_text=_("Si coché, la fenêtre de bienvenue de l'Observateur ne s'ouvre plus automatiquement."),
+    )
 
     def __str__(self):
         return f"{self.user.username} Profile"

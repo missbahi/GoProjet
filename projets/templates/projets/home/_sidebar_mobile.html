@@ -44,6 +44,26 @@
                         <span>Tableau de bord</span>
                     </a>
                 </li>
+                {% if observer_readonly %}
+                <li>
+                    <a href="{% url 'projets:sommaire' %}"
+                        hx-get="{% url 'projets:sommaire' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'sommaire' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-list-check"></i>
+                        <span>Sommaire</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" role="button" data-observer-guide-open class="sidebar-item">
+                        <i class="fas fa-circle-question"></i>
+                        <span>Guide</span>
+                    </a>
+                </li>
+                {% endif %}
                 <li>
                     <a href="{% url 'projets:liste_projets' %}"
                         hx-get="{% url 'projets:liste_projets' %}"

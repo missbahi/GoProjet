@@ -1,0 +1,77 @@
+{# Liste des projets consultables (Sommaire) #}
+<div data-family="app"
+     data-page-title="Sommaire"
+     data-page-icon="fa-list-check">
+    <div class="w-full">
+        <div class="mb-4 md:mb-6">
+            <h1 class="text-lg md:text-2xl font-bold" style="color: var(--text-primary);">Sommaire</h1>
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                Vue de synthèse de vos projets au {{ date_indicateurs|date:"d/m/Y" }}. Montants en DH, hors taxes.
+            </p>
+            {% if nb_en_retard %}
+            <p class="text-sm mt-2" style="color: var(--accent-warning);">
+                {{ nb_en_retard }} projet{{ nb_en_retard|pluralize }} avec échéance dépassée.
+            </p>
+            {% endif %}
+        </div>
+
+        {% include "projets/sommaire/_graphiques.html" %}
+
+        {% if projets %}
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-6">
+            {% for projet in projets %}
+            <a href="{% url 'projets:sommaire_projet' projet.id %}"
+               hx-get="{% url 'projets:sommaire_projet' projet.id %}"
+               hx-target="#main-content"
+               hx-swap="innerHTML swap:150ms settle:150ms show:top"
+               hx-push-url="true"
+               hx-indicator="#htmx-progress"
+               class="dashboard-card rounded-lg shadow p-4 md:p-6 block transition transform hover:scale-[1.02]"
+               style="background-color: var(--bg-surface); color: var(--text-primary);">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="min-w-0">
+                        <p class="font-semibold truncate" style="color: var(--accent-primary);">{{ projet.nom }}</p>
+                        <p class="text-xs truncate" style="color: var(--text-muted);">
+                            {% if projet.dossier %}{{ projet.dossier.nom }}{% endif %}
+                            {% if projet.numero %} · {{ projet.numero }}{% endif %}
+                        </p>
+                    </div>
+                    <span class="text-xs px-2 py-1 rounded-full flex-shrink-0"
+                          style="background-color: var(--bg-elevated); color: var(--text-secondary);">
+                        {{ projet.get_statut_display }}
+                    </span>
+                </div>
+
+                <div class="mt-4">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span style="color: var(--text-muted);">Avancement{% if projet.home_provisoire %} (provisoire){% endif %}</span>
+                        <span style="color: var(--text-secondary);">
+                            {% if projet.home_avancement != None %}{{ projet.home_avancement|floatformat:1 }} %{% else %}Non disponible{% endif %}
+                        </span>
+                    </div>
+                    <div class="rounded h-2 overflow-hidden" style="background-color: var(--bg-elevated);">
+                        <div class="h-full" style="width: {{ projet.home_progress|floatformat:0 }}%; background-color: var(--accent-primary);"></div>
+                    </div>
+                </div>
+
+                <dl class="mt-4 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <dt style="color: var(--text-muted);">Marché HT</dt>
+                        <dd class="font-semibold">{{ projet.home_marche_ht|floatformat:"2g" }}</dd>
+                    </div>
+                    <div>
+                        <dt style="color: var(--text-muted);">Échéance</dt>
+                        <dd class="font-semibold" {% if projet.home_en_retard %}style="color: var(--accent-danger);"{% endif %}>
+                            {% if projet.home_echeance %}{{ projet.home_echeance|date:"d/m/Y" }}{% else %}—{% endif %}
+                            {% if projet.home_en_retard %}<i class="fas fa-triangle-exclamation ml-1" title="Échéance dépassée"></i>{% endif %}
+                        </dd>
+                    </div>
+                </dl>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm" style="color: var(--text-secondary);">Aucun projet n'est rattaché à vos dossiers.</p>
+        {% endif %}
+    </div>
+</div>

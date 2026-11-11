@@ -8,6 +8,7 @@ from .views.data_views import views as data_views
 from .views.user_views import views as user_views
 from .views.project_views import views as project_views
 from .views.site_views import views as site_views
+from .views.site_views import sommaire as sommaire_views
 from .views.reporting_views import views as reporting_views
 from .views.task_views import views as task_views
 from .views.notification_views import views as notification_views
@@ -26,6 +27,10 @@ commun_urlpatterns = [
     # Home
     path("api/version/mark-seen/", version_views.mark_version_seen, name="mark_version_seen"),
     path('home/', site_views.home, name='home'),
+    path('api/observateur/guide/', site_views.marquer_guide_observateur, name='marquer_guide_observateur'),
+    path('sommaire/', sommaire_views.sommaire_liste, name='sommaire'),
+    path('projet/<int:projet_id>/sommaire/', sommaire_views.sommaire_projet, name='sommaire_projet'),
+    path('projet/<int:projet_id>/sommaire/<slug:onglet>/', sommaire_views.sommaire_onglet, name='sommaire_onglet'),
     path('dossiers/gerer/', project_views.gerer_dossiers, name='gerer_dossiers'),
     path('dossiers/<int:dossier_id>/modifier/', project_views.modifier_dossier, name='modifier_dossier'),
     path('', site_views.landing, name='landing'),

@@ -25,7 +25,7 @@ READ_VIEWS = {
         'ordres_service', 'details_ordre_service', 'api_jours_decoules', 'download_document',
         'liste_notifications', 'notification_panel', 'notifications_non_lues_api',
         'notification_data_api', 'profile_modal', 'password_modal', 'serve_avatar',
-        'manifest', 'serviceworker',
+        'manifest', 'serviceworker', 'sommaire', 'sommaire_projet', 'sommaire_onglet',
     },
     'goplan': {'liste_plans', 'gantt_plan', 'taches_inline', 'apercu_plan', 'export_mspdi',
                'liste_calendriers'},
@@ -39,7 +39,7 @@ PERSONAL_VIEWS = {
     'projets': {'password_change', 'set_theme', 'mark_version_seen',
                 'mark_notification_as_read', 'mark_notification_as_unread',
                 'mark_selected_as_read', 'mark_all_notifications_as_read',
-                'marquer_notification_lue'},
+                'marquer_notification_lue', 'marquer_guide_observateur'},
     '': {'login', 'logout', 'password_reset', 'password_reset_confirm'},
 }
 

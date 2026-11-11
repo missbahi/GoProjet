@@ -7,10 +7,15 @@ def observer_access(request):
     from projets.observer_access import observer_url_patterns
 
     readonly = est_observateur(request.user)
-    return {
+    context = {
         'observer_readonly': readonly,
         'observer_url_patterns': observer_url_patterns() if readonly else [],
     }
+    if readonly:
+        masque = request.user.profile.guide_observateur_masque
+        context['observer_guide_masque'] = masque
+        context['observer_guide_auto'] = not masque and not request.session.get('observer_guide_ferme')
+    return context
 
 def app_version(request):
     """Injecte la version dans tous les templates."""

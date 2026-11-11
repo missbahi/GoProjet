@@ -1,0 +1,199 @@
+{# Barre d'onglets + contenu de l'onglet actif (fragment HTMX) #}
+<div role="tablist" class="flex flex-wrap gap-2 mb-4" aria-label="Sections du sommaire">
+    {% for code, libelle, icone in onglets %}
+    <button type="button" role="tab"
+            hx-get="{% url 'projets:sommaire_onglet' projet.id code %}"
+            hx-target="#sommaire-onglets"
+            hx-swap="innerHTML"
+            aria-selected="{% if code == onglet %}true{% else %}false{% endif %}"
+            class="px-4 py-2 rounded-full text-sm font-medium transition"
+            style="{% if code == onglet %}background-color: var(--accent-primary); color: var(--bg-surface);{% else %}background-color: var(--bg-elevated); color: var(--text-secondary);{% endif %}">
+        <i class="fas {{ icone }} mr-1"></i>{{ libelle }}
+    </button>
+    {% endfor %}
+</div>
+
+<div role="tabpanel">
+{% if onglet == 'dashboard' %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <section class="rounded-lg shadow p-4 md:p-6" style="background-color: var(--bg-surface); color: var(--text-primary);">
+            <h3 class="font-semibold mb-3"><i class="fas fa-folder-open mr-2" style="color: var(--accent-primary);"></i>Suivi administratif</h3>
+            <div class="flex flex-wrap gap-2 text-sm mb-3">
+                <a href="{% url 'projets:ordres_service' projet.id %}" class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated);">
+                    OS notifiés <strong>{{ administratif.nb_ordres_notifies }}</strong>
+                </a>
+                {% if administratif.nb_ordres_brouillons %}
+                <span class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated); color: var(--accent-warning);">
+                    OS en brouillon <strong>{{ administratif.nb_ordres_brouillons }}</strong>
+                </span>
+                {% endif %}
+                <a href="{% url 'projets:documents' projet.id %}" class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated);">
+                    Documents <strong>{{ administratif.nb_documents }}</strong>
+                </a>
+            </div>
+            {% if administratif.ordres %}
+            <ul class="text-sm space-y-1">
+                {% for ordre in administratif.ordres %}
+                <li class="flex justify-between gap-2" style="border-bottom: 1px solid var(--border-default);">
+                    <span class="truncate">{{ ordre.reference }} – {{ ordre.titre }}</span>
+                    <span class="flex-shrink-0" style="color: var(--text-muted);">{{ ordre.get_statut_display }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-sm" style="color: var(--text-muted);">Aucun ordre de service.</p>
+            {% endif %}
+        </section>
+
+        <section class="rounded-lg shadow p-4 md:p-6" style="background-color: var(--bg-surface); color: var(--text-primary);">
+            <h3 class="font-semibold mb-3"><i class="fas fa-calendar-week mr-2" style="color: var(--accent-primary);"></i>Prochaines tâches</h3>
+            {% if taches.nb_en_retard %}
+            <p class="text-sm mb-2" style="color: var(--accent-warning);">{{ taches.nb_en_retard }} tâche{{ taches.nb_en_retard|pluralize }} en retard.</p>
+            {% endif %}
+            {% if taches.a_venir %}
+            <ul class="text-sm space-y-1">
+                {% for tache in taches.a_venir %}
+                <li class="flex justify-between gap-2" style="border-bottom: 1px solid var(--border-default);">
+                    <span class="truncate">{{ tache.titre }}</span>
+                    <span class="flex-shrink-0" style="color: var(--text-muted);">{{ tache.date_fin|date:"d/m/Y" }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-sm" style="color: var(--text-muted);">Aucune tâche à venir.</p>
+            {% endif %}
+            <a href="{% url 'projets:liste_taches_projet' projet.id %}" class="text-sm mt-3 inline-block" style="color: var(--accent-primary);">Toutes les tâches</a>
+        </section>
+    </div>
+
+    <section class="rounded-lg shadow p-4 md:p-6" style="background-color: var(--bg-surface); color: var(--text-primary);">
+        <h3 class="font-semibold mb-3"><i class="fas fa-file-invoice-dollar mr-2" style="color: var(--accent-primary);"></i>Synthèse financière</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+            <div><span class="text-xs" style="color: var(--text-muted);">Marché HT</span><br><strong>{{ lots.ht|floatformat:"2g" }} DH</strong></div>
+            <div><span class="text-xs" style="color: var(--text-muted);">TVA</span><br><strong>{{ lots.tva|floatformat:"2g" }} DH</strong></div>
+            <div><span class="text-xs" style="color: var(--text-muted);">Marché TTC</span><br><strong>{{ lots.ttc|floatformat:"2g" }} DH</strong></div>
+            <div><span class="text-xs" style="color: var(--text-muted);">Net à payer (décomptes)</span><br><strong>{{ decomptes.net_a_payer|default:0|floatformat:"2g" }} DH</strong></div>
+        </div>
+        <div class="flex flex-wrap gap-2 text-sm mt-4">
+            <span class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated);">Décomptes <strong>{{ decomptes.total }}</strong></span>
+            <span class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated);">Émis <strong>{{ decomptes.emis }}</strong></span>
+            <span class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated);">Payés <strong>{{ decomptes.payes }}</strong></span>
+            {% if decomptes.en_retard %}
+            <span class="px-3 py-1 rounded-full" style="background-color: var(--bg-elevated); color: var(--accent-danger);">En retard <strong>{{ decomptes.en_retard }}</strong></span>
+            {% endif %}
+            <a href="{% url 'projets:liste_decomptes' projet.id %}" class="px-3 py-1" style="color: var(--accent-primary);">Voir les décomptes</a>
+        </div>
+    </section>
+
+{% elif onglet == 'bordereau' %}
+    <section class="rounded-lg shadow p-4 md:p-6" style="background-color: var(--bg-surface); color: var(--text-primary);">
+        <div class="flex justify-between items-center flex-wrap gap-2 mb-3">
+            <h3 class="font-semibold"><i class="fas fa-list-ul mr-2" style="color: var(--accent-primary);"></i>Bordereau des prix – lots</h3>
+            <div class="flex gap-3 text-sm">
+                <a href="{% url 'projets:lots_projet' projet.id %}" style="color: var(--accent-primary);">Ouvrir les lots</a>
+                <a href="{% url 'projets:export_bordereau_excel' projet.id %}" style="color: var(--accent-primary);">Exporter Excel</a>
+            </div>
+        </div>
+        {% if lots.lots %}
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-left" style="color: var(--text-muted);">
+                        <th class="py-2 pr-3">Lot</th>
+                        <th class="py-2 px-3 text-right">HT (DH)</th>
+                        <th class="py-2 px-3 text-right">TVA</th>
+                        <th class="py-2 pl-3 text-right">TTC (DH)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lots.lots %}
+                    <tr style="border-top: 1px solid var(--border-default);">
+                        <td class="py-2 pr-3">
+                            <a href="{% url 'projets:saisie_bordereau' projet.id ligne.lot.id %}" style="color: var(--accent-primary);">{{ ligne.lot.nom }}</a>
+                        </td>
+                        <td class="py-2 px-3 text-right">{{ ligne.ht|floatformat:"2g" }}</td>
+                        <td class="py-2 px-3 text-right">{{ ligne.taux|floatformat:"-2" }} %</td>
+                        <td class="py-2 pl-3 text-right">{{ ligne.ttc|floatformat:"2g" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="font-semibold" style="border-top: 2px solid var(--border-default);">
+                        <td class="py-2 pr-3">Total</td>
+                        <td class="py-2 px-3 text-right">{{ lots.ht|floatformat:"2g" }}</td>
+                        <td class="py-2 px-3 text-right">{{ lots.tva|floatformat:"2g" }}</td>
+                        <td class="py-2 pl-3 text-right">{{ lots.ttc|floatformat:"2g" }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        {% for ligne in lots.lots %}
+        <div class="mt-6">
+            <h4 class="font-semibold text-sm mb-2" style="color: var(--accent-primary);">
+                {{ ligne.lot.nom }}{% if ligne.titres %}, {{ ligne.titres }}{% endif %}
+            </h4>
+            {% if ligne.grandes_lignes %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left" style="color: var(--text-muted);">
+                            <th class="py-2 pr-3">N°</th>
+                            <th class="py-2 px-3">Désignation</th>
+                            <th class="py-2 px-3 text-right">Sous-lignes</th>
+                            <th class="py-2 px-3 text-right">HT (DH)</th>
+                            <th class="py-2 pl-3 text-right">% du lot</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for grande in ligne.grandes_lignes %}
+                        <tr style="border-top: 1px solid var(--border-default);">
+                            <td class="py-2 pr-3">{{ grande.numero|default:"" }}</td>
+                            <td class="py-2 px-3">{{ grande.designation }}</td>
+                            <td class="py-2 px-3 text-right">{{ grande.nb_sous_lignes }}</td>
+                            <td class="py-2 px-3 text-right">{{ grande.ht|floatformat:"2g" }}</td>
+                            <td class="py-2 pl-3 text-right">{% if grande.part != None %}{{ grande.part|floatformat:1 }} %{% else %}—{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-sm" style="color: var(--text-muted);">Ce lot n'a pas de lignes regroupées en parents.</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-sm" style="color: var(--text-muted);">Aucun lot n'est défini pour ce projet.</p>
+        {% endif %}
+    </section>
+
+{% else %}
+    <section class="rounded-lg shadow p-4 md:p-6" style="background-color: var(--bg-surface); color: var(--text-primary);">
+        <div class="flex justify-between items-center flex-wrap gap-2 mb-3">
+            <h3 class="font-semibold"><i class="fas fa-calendar-check mr-2" style="color: var(--accent-primary);"></i>Situations mensuelles</h3>
+            <a href="{% url 'projets:situations_mensuelles' projet.id %}" class="text-sm" style="color: var(--accent-primary);">Ouvrir le module</a>
+        </div>
+        <p class="text-sm mb-3" style="color: var(--text-secondary);">
+            CA cumulé des situations validées : <strong>{{ situations.cumul_validees|floatformat:"2g" }} DH</strong>
+            {% if situations.nb_brouillons %}· {{ situations.nb_brouillons }} brouillon{{ situations.nb_brouillons|pluralize }}{% endif %}
+        </p>
+        {% if situations.situations %}
+        <ul class="text-sm">
+            {% for situation in situations.situations %}
+            <li style="border-top: 1px solid var(--border-default);">
+                <a href="{% url 'projets:apercu_situation_mensuelle' projet.id situation.id %}"
+                   class="flex justify-between gap-2 py-2">
+                    <span><strong>{{ situation.mois|stringformat:"02d" }}/{{ situation.annee }}</strong> – {{ situation.chiffre_affaires|floatformat:"2g" }} DH</span>
+                    <span style="color: {% if situation.est_validee %}var(--accent-success){% else %}var(--accent-warning){% endif %};">
+                        {{ situation.get_statut_display }}
+                    </span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm" style="color: var(--text-muted);">Aucune situation mensuelle.</p>
+        {% endif %}
+    </section>
+{% endif %}
+</div>

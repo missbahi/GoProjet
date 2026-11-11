@@ -1,0 +1,88 @@
+{# Fenêtre de bienvenue et guide du rôle Observateur #}
+{% if observer_readonly %}
+<div class="observer-guide-backdrop" id="observerGuideBackdrop" hidden></div>
+<div class="observer-guide" id="observerGuide" role="dialog" aria-modal="true"
+     aria-labelledby="observerGuideTitle" hidden
+     data-auto-open="{% if observer_guide_auto %}true{% else %}false{% endif %}"
+     data-mark-url="{% url 'projets:marquer_guide_observateur' %}">
+    <div class="observer-guide-card">
+        <div class="observer-guide-header">
+            <div class="observer-guide-icon"><i class="fas fa-eye" aria-hidden="true"></i></div>
+            <div>
+                <h2 id="observerGuideTitle" class="observer-guide-title">
+                    Bienvenue{% if user.first_name %} {{ user.first_name }}{% endif %} sur GoProjet
+                </h2>
+                <p class="observer-guide-subtitle">Guide de l'Observateur : consultation de vos projets</p>
+            </div>
+            <button type="button" class="observer-guide-x" data-observer-guide-close aria-label="Fermer le guide">
+                <i class="fas fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="observer-guide-body">
+            <p class="observer-guide-intro">
+                Votre profil est en <strong>lecture seule</strong> : vous consultez l'avancement, les chiffres et les
+                documents des projets de vos dossiers.
+            </p>
+
+            <div class="observer-guide-grid">
+                <section>
+                    <h3><i class="fas fa-list-check" aria-hidden="true"></i> Sommaire</h3>
+                    <p>Vue d'ensemble de tous vos projets, puis par projet : avancement, graphique du CA, des
+                       attachements et du résultat, grandes lignes du bordereau, situations mensuelles.</p>
+                    <a href="{% url 'projets:sommaire' %}">Ouvrir le Sommaire</a>
+                </section>
+                <section>
+                    <h3><i class="fas fa-project-diagram" aria-hidden="true"></i> Projets</h3>
+                    <p>Liste de vos projets et tableau de bord de chacun : délais, ordres de service, décomptes,
+                       documents administratifs.</p>
+                    <a href="{% url 'projets:liste_projets' %}">Voir les projets</a>
+                </section>
+                <section>
+                    <h3><i class="fas fa-file-invoice" aria-hidden="true"></i> Bordereau et CA</h3>
+                    <p>Lots et lignes de prix du marché, aperçu avant impression, export Excel, et chiffre
+                       d'affaires mensuel du projet.</p>
+                </section>
+                <section>
+                    <h3><i class="fas fa-file-signature" aria-hidden="true"></i> Attachements et décomptes</h3>
+                    <p>Quantités réalisées par période, circuit de validation avec sa traçabilité, et décomptes
+                       associés.</p>
+                </section>
+                <section>
+                    <h3><i class="fas fa-coins" aria-hidden="true"></i> Situations mensuelles</h3>
+                    <p>Recettes, dépenses, stocks et résultat de chaque mois, avec l'aperçu imprimable.</p>
+                </section>
+                <section>
+                    <h3><i class="fas fa-clipboard-list" aria-hidden="true"></i> Rapports et suivi</h3>
+                    <p>Rapports journaliers du chantier, fichiers de suivi d'exécution, ateliers, planning
+                       des ateliers et ressources affectées.</p>
+                </section>
+                <section>
+                    <h3><i class="fas fa-calendar-alt" aria-hidden="true"></i> Plannings et tâches</h3>
+                    <p>Plannings (Gantt, calendriers) et tâches de vos projets.</p>
+                    <a href="{% url 'goplan:liste_plans' %}">Voir les plannings</a>
+                </section>
+                <section>
+                    <h3><i class="fas fa-bell" aria-hidden="true"></i> Notifications</h3>
+                    <p>Alertes liées à vos projets. Vous pouvez les marquer comme lues.</p>
+                </section>
+            </div>
+
+            <p class="observer-guide-note">
+                Vous ne voyez que les projets des dossiers qui vous sont attribués. Le guide reste accessible à tout
+                moment depuis le lien « Guide » du menu.
+            </p>
+        </div>
+
+        <div class="observer-guide-footer">
+            <label class="observer-guide-check">
+                <input type="checkbox" id="observerGuideHide" {% if observer_guide_masque %}checked{% endif %}>
+                <span>Ne plus afficher cette fenêtre au démarrage</span>
+            </label>
+            <button type="button" class="app-btn-primary" data-observer-guide-close>
+                <i class="fas fa-check" aria-hidden="true"></i> Commencer
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}

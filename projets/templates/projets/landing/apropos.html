@@ -6,45 +6,112 @@
 {% block content %}
 <div class="container mx-auto px-4 py-6">
 
-    <section class="text-center mt-4 mb-6">
-        <h1 class="text-2xl md:text-3xl font-bold" style="color: var(--accent-green);">
-            GoProjet, votre espace de gestion de projets
+    {# ───────── Présentation ───────── #}
+    <section class="text-center mt-4 mb-8">
+        <h1 class="text-2xl md:text-4xl font-bold" style="color: var(--accent-green);">
+            GoProjet, le pilotage de vos chantiers de travaux
         </h1>
+        <p class="mt-3 max-w-3xl mx-auto leading-relaxed" style="color: var(--text-secondary);">
+            Du bordereau des prix au décompte, suivez l'avancement, la production et le résultat de chaque marché
+            de travaux dans un seul espace, avec des chiffres fiables et partagés par toute l'équipe.
+        </p>
+        <div class="mt-5 flex flex-wrap justify-center gap-3">
+            {% if user.is_authenticated %}
+            <a href="{% url 'projets:home' %}" class="app-btn-primary">
+                <i class="fas fa-gauge-high mr-2"></i> Accéder à mon espace
+            </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="app-btn-primary">
+                <i class="fas fa-right-to-bracket mr-2"></i> Se connecter
+            </a>
+            {% endif %}
+            <a href="#contact" class="px-4 py-2 rounded-lg" style="border: 1px solid var(--border-default); color: var(--text-primary);">
+                <i class="fas fa-envelope mr-2"></i> Nous contacter
+            </a>
+        </div>
     </section>
 
+    {# ───────── Ce que GoProjet apporte ───────── #}
     <section class="app-card p-6 md:p-8 mb-8">
         <h2 class="text-xl md:text-2xl font-semibold mb-4 flex items-center" style="color: var(--accent-warning);">
-            <i class="fas fa-lightbulb mr-2"></i> Notre Expertise
+            <i class="fas fa-lightbulb mr-2"></i> Pensé pour les travaux
         </h2>
-        <p class="mb-6 leading-relaxed" style="color: var(--text-primary);">
-            <strong style="color: var(--accent-green);">GoProjet</strong> centralise la planification, le suivi et la gestion documentaire de vos projets.
-            Chaque entreprise dispose d'un espace séparé et chaque utilisateur accède uniquement aux projets qui lui sont autorisés.
-        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="color: var(--text-primary);">
+            <div>
+                <h3 class="font-semibold mb-1"><i class="fas fa-link mr-2" style="color: var(--accent-green);"></i>Une chaîne de données unique</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
+                    Le bordereau alimente les attachements, les attachements nourrissent les décomptes, et la production
+                    mensuelle se retrouve dans le chiffre d'affaires et les situations : plus de ressaisie.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold mb-1"><i class="fas fa-chart-line mr-2" style="color: var(--accent-green);"></i>Une vision claire</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
+                    Avancement, délais, production, dépenses et résultat sont consolidés par projet et pour l'ensemble de vos
+                    dossiers, avec des graphiques d'évolution mensuelle.
+                </p>
+            </div>
+            <div>
+                <h3 class="font-semibold mb-1"><i class="fas fa-shield-halved mr-2" style="color: var(--accent-green);"></i>Des accès maîtrisés</h3>
+                <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">
+                    Chacun ne voit que les projets de ses dossiers, avec des droits adaptés à son rôle, et les validations
+                    importantes restent tracées.
+                </p>
+            </div>
+        </div>
+    </section>
 
+    {# ───────── Modules ───────── #}
+    <section class="app-card p-6 md:p-8 mb-8">
         <h2 class="text-xl md:text-2xl font-semibold mb-4 flex items-center" style="color: var(--accent-green);">
-            <i class="fas fa-screwdriver-wrench mr-2"></i> Nos Services
+            <i class="fas fa-screwdriver-wrench mr-2"></i> Les modules
         </h2>
-        <ul class="list-disc pl-6 space-y-2" style="color: var(--text-primary);">
-            <li>Études techniques approfondies</li>
-            <li>Suivi et contrôle des chantiers</li>
-            <li>Assistance à la maîtrise d'ouvrage</li>
-            <li>Gestion documentaire complète</li>
-            <li>Élaboration de rapports et reporting personnalisé</li>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for icone, titre, texte in modules %}
+            <div class="rounded-lg p-4" style="background-color: var(--bg-elevated); border: 1px solid var(--border-default);">
+                <h3 class="font-semibold mb-1" style="color: var(--text-primary);">
+                    <i class="fas {{ icone }} mr-2" style="color: var(--accent-primary);"></i>{{ titre }}
+                </h3>
+                <p class="text-sm leading-relaxed" style="color: var(--text-secondary);">{{ texte }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    {# ───────── Rôles ───────── #}
+    <section class="app-card p-6 md:p-8 mb-8">
+        <h2 class="text-xl md:text-2xl font-semibold mb-4 flex items-center" style="color: var(--accent-info);">
+            <i class="fas fa-users mr-2"></i> Chaque métier son espace
+        </h2>
+        <ul class="space-y-3" style="color: var(--text-primary);">
+            <li><strong>Chef de projet</strong> : prépare le bordereau, gère les ordres de service, valide les attachements,
+                suit le chiffre d'affaires, les situations et les décomptes.</li>
+            <li><strong>Chef de chantier</strong> : renseigne le suivi d'exécution et les rapports journaliers, et organise ateliers et ressources.</li>
+            <li><strong>Pointeur</strong> : saisit les rapports journaliers du chantier, rien d'autre.</li>
+            <li><strong>Observateur</strong> (maîtrise d'ouvrage, direction, partenaires) : consulte l'ensemble des données de ses
+                projets en lecture seule, depuis un Sommaire de synthèse.</li>
         </ul>
     </section>
 
-    <section class="app-card p-6 md:p-8 mb-8">
+    {# ───────── Contact ───────── #}
+    <section id="contact" class="app-card p-6 md:p-8 mb-8">
         <h2 class="text-xl md:text-2xl font-semibold mb-4 flex items-center" style="color: var(--accent-info);">
             <i class="fas fa-envelope mr-2"></i> Contact
         </h2>
+        <p class="mb-3 leading-relaxed" style="color: var(--text-primary);">
+            Une question, une demande d'accès, une suggestion ou un souci rencontré dans l'application ? Écrivez-nous,
+            en précisant si possible le projet concerné.
+        </p>
         <p class="mb-2" style="color: var(--text-primary);">
             <i class="fas fa-paper-plane mr-2" style="color: var(--accent-info);"></i>
-            Une plateforme conçue pour organiser vos équipes, vos dossiers et vos projets.
+            <a href="mailto:missbahi@gmail.com?subject=GoProjet" class="underline" style="color: var(--accent-primary);">missbahi@gmail.com</a>
         </p>
-        <p class="mb-4" style="color: var(--text-primary);">
-            <i class="fas fa-phone mr-2" style="color: var(--accent-green);"></i>
-            Connectez-vous pour accéder à votre espace de travail.
+        {% if not user.is_authenticated %}
+        <p class="text-sm" style="color: var(--text-secondary);">
+            <i class="fas fa-lock mr-2" style="color: var(--accent-green);"></i>
+            Déjà utilisateur ? <a href="{% url 'login' %}" class="underline" style="color: var(--accent-primary);">Connectez-vous</a> pour accéder à votre espace de travail.
         </p>
+        {% endif %}
     </section>
 </div>
 {% endblock %}

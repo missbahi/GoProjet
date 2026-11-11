@@ -1,5 +1,6 @@
 import re
 from datetime import date
+from decimal import Decimal
 from unittest.mock import patch
 
 from django.apps import apps
@@ -13,7 +14,12 @@ from goplan.forms import GPlanForm
 from goplan.models import GPlan, GTask, GWorkCalendar
 from projets.decorators import projets_accessibles
 from projets.forms import UtilisateurCreationForm
-from projets.models import DocumentAdministratif, Dossier, Notification, Projet, ProcessValidation
+from projets.models import (
+    Attachement, ChiffreAffaire, DepenseSituationMensuelle, DocumentAdministratif, Dossier,
+    LigneAttachement, LigneBordereau, LotProjet, Notification, Projet, ProcessValidation,
+    SituationMensuelle,
+    StockSituationMensuelle,
+)
 from projets.observer_access import (
     DOWNLOAD_SCOPES, OBJECT_SCOPES, observer_route_allowed, observer_url_patterns,
 )
@@ -287,6 +293,235 @@ class ObservateurTests(AttachementTestData, TestCase):
             ui_allowed = any(method in rule['methods'] and re.fullmatch(rule['pattern'], url)
                              for rule in observer_url_patterns())
             self.assertEqual(ui_allowed, observer_route_allowed(match.namespace, match.url_name, method))
+
+    def test_sommaire_list_and_project_are_scoped_and_tabs_load_on_demand(self):
+        response = self.client.get(reverse('projets:sommaire'))
+        self.assertContains(response, self.projet.nom)
+        self.assertNotContains(response, self.autre.nom)
+
+        response = self.client.get(reverse('projets:sommaire_projet', args=[self.projet.pk]))
+        self.assertContains(response, reverse('projets:sommaire_onglet', args=[self.projet.pk, 'dashboard']))
+
+        for onglet in ['dashboard', 'bordereau', 'situations']:
+            with self.subTest(onglet=onglet):
+                url = reverse('projets:sommaire_onglet', args=[self.projet.pk, onglet])
+                self.assertEqual(self.client.get(url, HTTP_HX_REQUEST='true').status_code, 200)
+                self.assertRedirects(self.client.get(url),
+                                     reverse('projets:sommaire_projet', args=[self.projet.pk]),
+                                     fetch_redirect_response=False)
+        inconnu = reverse('projets:sommaire_onglet', args=[self.projet.pk, 'inconnu'])
+        self.assertEqual(self.client.get(inconnu, HTTP_HX_REQUEST='true').status_code, 404)
+
+    def test_sommaire_denies_foreign_project_and_writes(self):
+        for name, args in [('sommaire_projet', [self.autre.pk]),
+                           ('sommaire_onglet', [self.autre.pk, 'dashboard'])]:
+            with self.subTest(name=name):
+                self.assertEqual(self.client.get(reverse('projets:' + name, args=args),
+                                                 HTTP_HX_REQUEST='true').status_code, 403)
+        self.assertEqual(self.client.post(reverse('projets:sommaire')).status_code, 403)
+
+    def test_sommaire_evolution_is_scoped_and_uses_attachment_period_amounts(self):
+        premier = self.attachement
+        Attachement.objects.filter(pk=premier.pk).update(statut='VALIDE')
+        LigneAttachement.objects.create(
+            attachement=premier, ligne_lot=self.ligne_bordereau, designation='Travaux',
+            quantite_initiale=Decimal('100'), prix_unitaire=Decimal('10'),
+            quantite_realisee=Decimal('10'),
+        )
+        second = Attachement.objects.bulk_create([Attachement(
+            projet=self.projet, sequence=2, precedent=premier, numero='DP02', statut='VALIDE',
+            date_etablissement=date(2025, 2, 28), date_debut_periode=date(2025, 2, 1),
+            date_fin_periode=date(2025, 2, 28),
+        )])[0]
+        LigneAttachement.objects.create(
+            attachement=second, ligne_lot=self.ligne_bordereau, designation='Travaux',
+            quantite_initiale=Decimal('100'), prix_unitaire=Decimal('10'),
+            quantite_realisee=Decimal('25'),
+        )
+        ChiffreAffaire.objects.create(projet=self.projet, periode=date(2025, 1, 1), montant_mensuel=Decimal('500'))
+        ChiffreAffaire.objects.create(projet=self.autre, periode=date(2025, 1, 1), montant_mensuel=Decimal('999'))
+
+        for url in [reverse('projets:sommaire'), reverse('projets:sommaire_projet', args=[self.projet.pk])]:
+            with self.subTest(url=url):
+                evolution = self.client.get(url).context['evolution']
+                self.assertEqual(evolution['mois'][:2], ['2025-01', '2025-02'])
+                self.assertEqual(evolution['ca'][:2], [500.0, 0.0])
+                self.assertEqual(evolution['attachements'][:2], [100.0, 150.0])
+                self.assertEqual(evolution['attachements_cumul'][1], 250.0)
+                self.assertContains(self.client.get(url), 'sommaire-evolution-data')
+
+    def test_sommaire_resultat_is_scoped_and_combines_revenue_expenses_and_stock(self):
+        situation = SituationMensuelle.objects.create(
+            projet=self.projet, annee=2025, mois=1, chiffre_affaires=Decimal('1000'),
+        )
+        DepenseSituationMensuelle.objects.create(
+            situation=situation, categorie='MATERIEL', designation='Engin', montant_base=Decimal('300'),
+        )
+        StockSituationMensuelle.objects.create(
+            situation=situation, designation='Ciment', qte_entree=Decimal('10'), pu_entree=Decimal('20'),
+            qte_sortie=Decimal('5'), pu_sortie=Decimal('20'),
+        )
+        SituationMensuelle.objects.create(
+            projet=self.projet, annee=2025, mois=2, chiffre_affaires=Decimal('500'),
+        )
+        SituationMensuelle.objects.create(
+            projet=self.autre, annee=2025, mois=1, chiffre_affaires=Decimal('5000'),
+        )
+
+        for url in [reverse('projets:sommaire'), reverse('projets:sommaire_projet', args=[self.projet.pk])]:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertNotContains(response, 'sommaire-resultat-data')
+                evolution = response.context['evolution']
+                self.assertEqual(evolution['mois'][:2], ['2025-01', '2025-02'])
+                self.assertEqual(evolution['resultat'][:2], [800.0, 500.0])
+                self.assertEqual(evolution['resultat_cumul'][-1], 1300.0)
+                self.assertEqual(evolution['pct'][:2], [80.0, 100.0])
+                self.assertAlmostEqual(evolution['pct_cumul'][-1], 1300 / 1500 * 100)
+                self.assertEqual(len(evolution['ca']), len(evolution['mois']))
+
+    def test_sommaire_bordereau_shows_first_level_parents_with_children_totals(self):
+        parent = LigneBordereau.objects.create(
+            lot=self.lot, numero='A', designation='Gros oeuvre', quantite=Decimal('0'),
+            prix_unitaire=Decimal('0'), est_titre=True,
+        )
+        for numero, quantite, prix in [('A.1', '10', '10'), ('A.2', '5', '20')]:
+            LigneBordereau.objects.create(
+                lot=self.lot, parent=parent, numero=numero, designation='Poste', unite='m',
+                quantite=Decimal(quantite), prix_unitaire=Decimal(prix),
+            )
+        response = self.client.get(
+            reverse('projets:sommaire_onglet', args=[self.projet.pk, 'bordereau']), HTTP_HX_REQUEST='true',
+        )
+        lot = response.context['lots']['lots'][0]
+        self.assertEqual(lot['ht'], Decimal('1200'))
+        self.assertEqual(len(lot['grandes_lignes']), 1)
+        grande = lot['grandes_lignes'][0]
+        self.assertEqual((grande['numero'], grande['ht'], grande['nb_sous_lignes']), ('A', Decimal('200'), 2))
+        self.assertAlmostEqual(float(grande['part']), 200 / 1200 * 100)
+        self.assertContains(response, 'Gros oeuvre')
+
+    def test_sommaire_bordereau_descends_through_single_parent_levels(self):
+        lot = LotProjet.objects.create(projet=self.projet, nom='Lot B')
+        section = LigneBordereau.objects.create(
+            lot=lot, numero='1', designation='Travaux section 1', quantite=Decimal('0'),
+            prix_unitaire=Decimal('0'), est_titre=True,
+        )
+        for numero, designation, prix in [('1.1', 'Terrassements', '2000'), ('1.2', 'Assainissement', '1000')]:
+            groupe = LigneBordereau.objects.create(
+                lot=lot, parent=section, numero=numero, designation=designation,
+                quantite=Decimal('0'), prix_unitaire=Decimal('0'), est_titre=True,
+            )
+            LigneBordereau.objects.create(
+                lot=lot, parent=groupe, numero=numero + '.1', designation='Poste', unite='u',
+                quantite=Decimal('1'), prix_unitaire=Decimal(prix),
+            )
+        response = self.client.get(
+            reverse('projets:sommaire_onglet', args=[self.projet.pk, 'bordereau']), HTTP_HX_REQUEST='true',
+        )
+        ligne = next(item for item in response.context['lots']['lots'] if item['lot'] == lot)
+        self.assertEqual(ligne['titres'], 'Travaux section 1')
+        self.assertEqual([(g['designation'], g['ht']) for g in ligne['grandes_lignes']],
+                         [('Terrassements', Decimal('2000')), ('Assainissement', Decimal('1000'))])
+        self.assertContains(response, 'Lot B, Travaux section 1')
+
+    def test_sommaire_bordereau_descends_several_single_parent_levels(self):
+        lot = LotProjet.objects.create(projet=self.projet, nom='Lot C')
+        parent = None
+        for numero, designation in [('1', 'Travaux'), ('1.1', 'Section 1')]:
+            parent = LigneBordereau.objects.create(
+                lot=lot, parent=parent, numero=numero, designation=designation,
+                quantite=Decimal('0'), prix_unitaire=Decimal('0'), est_titre=True,
+            )
+        for numero, designation, prix in [('1.1.1', 'Terrassements', '300'), ('1.1.2', 'Voirie', '700')]:
+            groupe = LigneBordereau.objects.create(
+                lot=lot, parent=parent, numero=numero, designation=designation,
+                quantite=Decimal('0'), prix_unitaire=Decimal('0'), est_titre=True,
+            )
+            LigneBordereau.objects.create(
+                lot=lot, parent=groupe, numero=numero + '.1', designation='Poste', unite='u',
+                quantite=Decimal('1'), prix_unitaire=Decimal(prix),
+            )
+        response = self.client.get(
+            reverse('projets:sommaire_onglet', args=[self.projet.pk, 'bordereau']), HTTP_HX_REQUEST='true',
+        )
+        ligne = next(item for item in response.context['lots']['lots'] if item['lot'] == lot)
+        self.assertEqual(ligne['titres'], 'Travaux › Section 1')
+        self.assertEqual([g['designation'] for g in ligne['grandes_lignes']], ['Terrassements', 'Voirie'])
+
+    def test_sommaire_bordereau_ignores_zero_amount_lines_when_descending(self):
+        lot = LotProjet.objects.create(projet=self.projet, nom='Lot D')
+        section = LigneBordereau.objects.create(
+            lot=lot, numero='1', designation='Travaux', quantite=Decimal('0'),
+            prix_unitaire=Decimal('0'), est_titre=True,
+        )
+        # Ligne simple vide au même niveau que la section : elle ne doit pas bloquer la descente.
+        LigneBordereau.objects.create(
+            lot=lot, numero='2', designation='Ligne vide', unite='u',
+            quantite=Decimal('0'), prix_unitaire=Decimal('10'),
+        )
+        for numero, designation, prix in [('1.1', 'Terrassements', '300'), ('1.2', 'Voirie', '700')]:
+            groupe = LigneBordereau.objects.create(
+                lot=lot, parent=section, numero=numero, designation=designation,
+                quantite=Decimal('0'), prix_unitaire=Decimal('0'), est_titre=True,
+            )
+            LigneBordereau.objects.create(
+                lot=lot, parent=groupe, numero=numero + '.1', designation='Poste', unite='u',
+                quantite=Decimal('1'), prix_unitaire=Decimal(prix),
+            )
+        LigneBordereau.objects.create(
+            lot=lot, parent=section, numero='1.3', designation='Vide', quantite=Decimal('0'),
+            prix_unitaire=Decimal('0'), est_titre=True,
+        )
+        response = self.client.get(
+            reverse('projets:sommaire_onglet', args=[self.projet.pk, 'bordereau']), HTTP_HX_REQUEST='true',
+        )
+        ligne = next(item for item in response.context['lots']['lots'] if item['lot'] == lot)
+        self.assertEqual(ligne['titres'], 'Travaux')
+        self.assertEqual([g['designation'] for g in ligne['grandes_lignes']], ['Terrassements', 'Voirie'])
+
+    def test_welcome_guide_opens_until_dismissed_and_preference_is_persisted(self):
+        home = reverse('projets:home')
+        response = self.client.get(home)
+        self.assertContains(response, 'id="observerGuide"')
+        self.assertContains(response, 'data-auto-open="true"')
+        self.assertNotContains(response, 'id="observerGuideHide" checked')
+
+        url = reverse('projets:marquer_guide_observateur')
+        self.assertEqual(self.client.post(url, {'ne_plus_afficher': '0'}).status_code, 200)
+        self.user.profile.refresh_from_db()
+        self.assertFalse(self.user.profile.guide_observateur_masque)
+        # Fermé sans cocher : plus d'ouverture automatique pendant la session, mais encore proposé à la prochaine.
+        self.assertContains(self.client.get(home), 'data-auto-open="false"')
+        self.assertContains(self.client.get(home), 'id="observerGuide"')
+
+        self.assertEqual(self.client.post(url, {'ne_plus_afficher': '1'}).status_code, 200)
+        self.user.profile.refresh_from_db()
+        self.assertTrue(self.user.profile.guide_observateur_masque)
+        session = self.client.session
+        del session['observer_guide_ferme']
+        session.save()
+        response = self.client.get(home)
+        self.assertContains(response, 'data-auto-open="false"')
+        self.assertContains(response, 'id="observerGuideHide" checked')
+
+    def test_welcome_guide_is_observer_only(self):
+        autre = User.objects.create_user('chef', password='ChefPassword432!')
+        autre.profile.role = 'CHEF_PROJET'
+        autre.profile.save()
+        self.client.force_login(autre)
+        self.assertNotContains(self.client.get(reverse('projets:home')), 'observerGuide')
+        self.assertEqual(self.client.post(reverse('projets:marquer_guide_observateur')).status_code, 403)
+
+    def test_apropos_is_public_and_shows_contact_and_modules(self):
+        self.client.logout()
+        for name in ['projets:apropos', 'projets:landing']:
+            with self.subTest(name=name):
+                response = self.client.get(reverse(name))
+                self.assertContains(response, 'mailto:missbahi@gmail.com')
+                self.assertContains(response, 'Bordereau des prix')
+        self.client.force_login(self.user)
+        self.assertContains(self.client.get(reverse('projets:apropos')), 'Accéder à mon espace')
 
     def test_existing_unlinked_plan_becomes_visible_after_manager_assigns_project(self):
         orphan = GPlan.objects.create(nom='Planning existant non rattache', date_debut=date(2025, 1, 1))
