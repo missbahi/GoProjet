@@ -320,6 +320,14 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
                 self.assertEqual(self.attachement.modifie_par_id, user.pk)
                 self.assertFalse(self.attachement.validations.exists())
 
+    def test_validate_button_is_only_displayed_for_saved_attachments(self):
+        create_url = reverse('projets:ajouter_attachement', args=[self.projet.pk])
+        for user in [self.chef, self.admin]:
+            with self.subTest(user=user):
+                self.client.force_login(user)
+                self.assertNotContains(self.client.get(create_url), 'name="action" value="valider"')
+                self.assertContains(self.client.get(self.url), 'name="action" value="valider"')
+
     def test_signed_transmitted_refused_and_modified_can_be_validated(self):
         for statut in ['SIGNE', 'TRANSMIS', 'REFUSE', 'MODIFIE']:
             with self.subTest(statut=statut):
@@ -575,6 +583,36 @@ class AttachementTableViewTemplateTests(AttachementTestData, TestCase):
         )
 
         self.assertEqual(response.context['date_debut_periode'], date(2025, 1, 25))
+        self.assertEqual(response.context['date_fin_periode'], date(2025, 2, 24))
+
+    def test_creation_starting_on_first_day_prefills_month_end(self):
+        for previous_end, start, end in [
+            (date(2025, 1, 31), date(2025, 2, 1), date(2025, 2, 28)),
+            (date(2025, 3, 31), date(2025, 4, 1), date(2025, 4, 30)),
+            (date(2025, 11, 30), date(2025, 12, 1), date(2025, 12, 31)),
+            (date(2028, 1, 31), date(2028, 2, 1), date(2028, 2, 29)),
+        ]:
+            with self.subTest(start=start):
+                self.attachement.date_fin_periode = previous_end
+                self.attachement.save()
+                response = self.client.get(
+                    reverse('projets:ajouter_attachement', args=[self.projet.pk]),
+                )
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.context['date_debut_periode'], start)
+                self.assertEqual(response.context['date_fin_periode'], end)
+                self.assertEqual(response.context['date_etablissement'], end)
+
+    def test_first_creation_starting_on_first_day_prefills_month_end(self):
+        self.attachement.delete()
+        self.projet.ordres_service.filter(type_os__code='OSC').update(date_effet=date(2025, 4, 1))
+        response = self.client.get(
+            reverse('projets:ajouter_attachement', args=[self.projet.pk]),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['date_debut_periode'], date(2025, 4, 1))
+        self.assertEqual(response.context['date_fin_periode'], date(2025, 4, 30))
+        self.assertEqual(response.context['date_etablissement'], date(2025, 4, 30))
 
     def test_default_form_uses_direct_tableview_template(self):
         response = self.client.get(self.url)

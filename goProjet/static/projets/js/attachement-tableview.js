@@ -30,6 +30,22 @@
             const data = JSON.parse(JSON.parse(
                 document.getElementById('attachement-tableview-data').textContent
             ));
+            const parentIds = new Set(data.map(row => row.parent_id));
+            const parentRows = data.map((row, rowIndex) => ({ row, rowIndex }))
+                .filter(({ row }) => row.is_title && parentIds.has(row.id));
+            let totalsById;
+            const updateParentTotals = () => {
+                totalsById = new Map(data.map(row => [
+                    row.id, row.is_title ? 0 : row.quantite_realisee * row.prix_unitaire,
+                ]));
+                for (let index = data.length - 1; index >= 0; index -= 1) {
+                    const row = data[index];
+                    if (totalsById.has(row.parent_id)) {
+                        totalsById.set(row.parent_id, totalsById.get(row.parent_id) + totalsById.get(row.id));
+                    }
+                }
+            };
+            updateParentTotals();
             const initialQuantities = new Map(data.map(row => [row.id, Number(row.quantite_realisee)]));
             const updateModified = row => {
                 if (Number(row.quantite_realisee) === initialQuantities.get(row.id)) {
@@ -49,17 +65,21 @@
                 rowKey: 'id',
                 locale: 'fr-FR',
                 editable,
+                liveEdit: true,
                 selectionMode: 'multi',
                 rowHeaders: false,
+                freezeColumns: 1,
                 clipboard: { copy: true, paste: editable, parseTsv: true },
-                appearance: { rowHeight: 40, headerHeight: 48, fontSize: 13 },
+                appearance: { rowHeight: 40, headerHeight: 48, fontSize: 13, selectionColor: '#e7ece9' },
                 columns: [
                     { key: 'numero', label: 'N°', width: 80, editable: false },
                     {
                         key: 'designation', label: 'Désignation', width: 400, editable: false,
+                        className: 'attachment-designation',
                         render: (value, row) => {
                             const text = document.createElement('span');
-                            text.textContent = value;
+                            text.textContent = String(value ?? '').replace(/\s+/g, ' ');
+                            text.title = value ?? '';
                             text.style.paddingLeft = `${(row.niveau || 0) * 8}px`;
                             return text;
                         },
@@ -82,7 +102,7 @@
                     },
                     {
                         ...numberColumn('montant', 'Montant attaché (HT)', 2, 140),
-                        getValue: row => row.is_title ? null
+                        getValue: row => row.is_title ? (parentIds.has(row.id) ? totalsById.get(row.id) : null)
                             : row.quantite_realisee * row.prix_unitaire,
                         className: 'attachment-amount',
                     },
@@ -94,13 +114,11 @@
                         ? 'modified-cell' : ''
                 ),
                 onDataChange: event => {
-                    if (event.phase === 'paste') {
-                        event.changes.forEach(({ row }) => updateModified(row));
-                        event.changes.forEach(({ rowIndex }) => table.refreshRow(rowIndex));
-                    } else if (event.phase === 'commit') {
-                        updateModified(event.row);
-                        table.refreshRow(event.rowIndex);
-                    }
+                    const changes = event.phase === 'paste' ? event.changes : [event];
+                    changes.forEach(({ row }) => updateModified(row));
+                    updateParentTotals();
+                    changes.forEach(({ rowIndex }) => table.refreshRow(rowIndex));
+                    parentRows.forEach(({ rowIndex }) => table.refreshRow(rowIndex));
                     updateTotal();
                     displaySelection();
                     errorBox.hidden = true;

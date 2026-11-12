@@ -146,7 +146,7 @@
         <div class="content-section glass-effect">
             <div class="nav-buttons sticky top-0 z-50 py-2">
                 <!-- Boutons de validation -->
-                {% if validation_directe %}
+                {% if is_edition and validation_directe %}
                 <div class="nav-buttons-group">
                     <button type="submit" form="attachement-form" name="action" value="valider" class="btn btn-success">Valider</button>
                 </div>
