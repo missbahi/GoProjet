@@ -300,6 +300,29 @@ class ChiffreAffaireTests(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('CA', response.json()['message'])
 
+    def test_chef_can_validate_and_devalidate_situations_only_in_accessible_dossiers(self):
+        situation = self.situation()
+        self.client.force_login(self.chef)
+        validate_url = reverse('projets:valider_situation_mensuelle', args=[self.projet.pk, situation.pk])
+        devalidate_url = reverse('projets:devalider_situation_mensuelle', args=[self.projet.pk, situation.pk])
+
+        response = self.client.post(validate_url)
+        self.assertEqual(response.status_code, 200, response.content)
+        situation.refresh_from_db()
+        self.assertEqual(situation.statut, SituationMensuelle.Statut.VALIDEE)
+
+        response = self.client.post(devalidate_url)
+        self.assertEqual(response.status_code, 200, response.content)
+        situation.refresh_from_db()
+        self.assertEqual(situation.statut, SituationMensuelle.Statut.BROUILLON)
+
+        outside_chef = User.objects.create_user(username='outside-situation-chef')
+        outside_chef.profile.role = 'CHEF_PROJET'
+        outside_chef.profile.save()
+        self.client.force_login(outside_chef)
+        self.assertEqual(self.client.post(validate_url).status_code, 403)
+        self.assertEqual(self.client.post(devalidate_url).status_code, 403)
+
     def test_legacy_situation_unchanged_without_ca(self):
         situation = self.situation()
         synchroniser_situation_ca(situation)
@@ -400,12 +423,11 @@ class ChiffreAffaireTests(TestCase):
         first = self.save_ca()
         self.assertEqual(self.ca_action(first, 'supprimer').status_code, 400)
         second = self.save_ca(self.candidate(month=2), quantity='20', action='enregistrer')
-        self.assertEqual(self.ca_action(first, 'devalider').status_code, 400)
+        self.assertEqual(self.ca_action(first, 'devalider').status_code, 200)
         self.assertEqual(self.ca_action(second, 'supprimer').status_code, 200)
         self.assertFalse(ChiffreAffaire.objects.filter(pk=second.pk).exists())
         self.assertFalse(second.lignes.exists())
         self.assertTrue(ChiffreAffaire.objects.filter(pk=first.pk).exists())
-        self.save_ca(first, action='devalider')
         self.assertEqual(self.ca_action(first, 'supprimer').status_code, 200)
 
     def test_list_actions_preserve_validated_situation(self):
@@ -442,7 +464,7 @@ class ChiffreAffaireTests(TestCase):
         response = self.client.get(url, HTTP_HX_REQUEST='true')
         self.assertContains(response, reverse('projets:supprimer_ca', args=[self.projet.pk, second.pk]))
         self.assertContains(response, reverse('projets:valider_ca', args=[self.projet.pk, second.pk]))
-        self.assertNotContains(response, reverse('projets:devalider_ca', args=[self.projet.pk, first.pk]))
+        self.assertContains(response, reverse('projets:devalider_ca', args=[self.projet.pk, first.pk]))
         self.situation(month=2)
         self.ca_action(second, 'valider')
         response = self.client.get(url, HTTP_HX_REQUEST='true')

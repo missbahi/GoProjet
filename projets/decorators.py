@@ -300,7 +300,7 @@ def _situation_action_required(check_func, message):
                         status=401,
                     )
                 return login_required(view_func)(request, *args, **kwargs)
-            if not check_func(request.user):
+            if not check_func(request.user, kwargs.get('projet_id')):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse(
                         {'success': False, 'message': message},
@@ -311,13 +311,23 @@ def _situation_action_required(check_func, message):
         return _wrapped_view
     return decorator
 
+
+def _peut_agir_sur_situation(user, projet_id):
+    return bool(
+        user.is_superuser or (
+            est_chef_projet(user) and projet_id is not None
+            and projets_accessibles(user).filter(pk=projet_id).exists()
+        )
+    )
+
+
 can_validate_situation_mensuelle = _situation_action_required(
-    lambda user: user.is_superuser or est_chef_projet(user),
+    _peut_agir_sur_situation,
     "Vous n'êtes pas autorisé à valider les situations mensuelles."
 )
 
 can_devalidate_situation_mensuelle = _situation_action_required(
-    lambda user: user.is_superuser,
+    _peut_agir_sur_situation,
     "Vous n'êtes pas autorisé à dévalider les situations mensuelles."
 )
 

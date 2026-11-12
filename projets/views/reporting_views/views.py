@@ -934,7 +934,7 @@ def valider_situation_mensuelle(request, projet_id, situation_id):
 @can_devalidate_situation_mensuelle
 @require_POST
 def devalider_situation_mensuelle(request, projet_id, situation_id):
-    """Remet une situation Validée en Brouillon. Superuser uniquement."""
+    """Remet une situation Validée en Brouillon."""
     situation = get_object_or_404(
         SituationMensuelle, id=situation_id, projet_id=projet_id,
     )
