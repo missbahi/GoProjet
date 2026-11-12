@@ -31,6 +31,9 @@ def liste_ca(request, projet_id):
     context = {
         'projet': projet, 'cas': projet.chiffres_affaires.annotate(
             a_suivant=Exists(ChiffreAffaire.objects.filter(projet=projet, periode__gt=OuterRef('periode'))),
+            a_suivant_valide=Exists(ChiffreAffaire.objects.filter(
+                projet=projet, periode__gt=OuterRef('periode'), statut=ChiffreAffaire.Statut.VALIDE,
+            )),
             a_situation=Exists(SituationMensuelle.objects.filter(ca_id=OuterRef('pk'))),
         ).order_by('-periode'),
         'peut_modifier': peut_valider_directement(request.user, projet),

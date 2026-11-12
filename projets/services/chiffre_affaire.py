@@ -140,8 +140,8 @@ def enregistrer_ca(ca, donnees_lignes, user, *, action='enregistrer', confirmati
         else ChiffreAffaire.Statut.VALIDE if action == 'valider' or ancien and ancien.statut == 'VALIDE'
         else ChiffreAffaire.Statut.BROUILLON
     )
-    if action == 'devalider' and suivant:
-        raise ValidationError('Un CA ayant un mois suivant ne peut pas être dévalidé.')
+    if action == 'devalider' and suivant and suivant.statut == ChiffreAffaire.Statut.VALIDE:
+        raise ValidationError('Dévalidez le CA du mois suivant avant de dévalider ce CA.')
     ca.modifie_par = user
     if not ca.pk:
         ca.cree_par = user

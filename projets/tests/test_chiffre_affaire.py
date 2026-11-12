@@ -247,7 +247,9 @@ class ChiffreAffaireTests(TestCase):
         with self.assertRaisesMessage(ValidationError, 'mois suivant'):
             self.save_ca(first, action='devalider')
         self.save_ca(second, quantity='20', action='devalider')
-        self.assertEqual(self.save_ca(first, quantity='12').montant_mensuel, Decimal('120'))
+        first = self.save_ca(first, quantity='12', action='devalider')
+        self.assertEqual(first.montant_mensuel, Decimal('120'))
+        self.assertEqual(first.statut, ChiffreAffaire.Statut.BROUILLON)
 
     def test_manual_revenue_replaced_only_after_confirm_preserving_other_recipes(self):
         situation = self.situation()
@@ -443,9 +445,13 @@ class ChiffreAffaireTests(TestCase):
         self.assertNotContains(response, reverse('projets:devalider_ca', args=[self.projet.pk, first.pk]))
         self.situation(month=2)
         self.ca_action(second, 'valider')
+        response = self.client.get(url, HTTP_HX_REQUEST='true')
+        self.assertNotContains(response, reverse('projets:devalider_ca', args=[self.projet.pk, first.pk]))
         self.ca_action(second, 'devalider')
         response = self.client.get(url, HTTP_HX_REQUEST='true')
+        self.assertContains(response, reverse('projets:devalider_ca', args=[self.projet.pk, first.pk]))
         self.assertNotContains(response, reverse('projets:supprimer_ca', args=[self.projet.pk, second.pk]))
+        self.assertEqual(self.ca_action(first, 'devalider').status_code, 200)
 
     def test_service_permissions_and_non_travaux(self):
         outsider = User.objects.create_user(username='denied-ca')
