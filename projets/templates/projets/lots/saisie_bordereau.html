@@ -18,6 +18,7 @@
     <script src="{% static 'projets/js/table-view.js' %}"></script>
     <script src="{% static 'projets/js/bdp-manager-v00.js' %}"></script>
     <script src="{% static 'projets/js/theme-switcher.js' %}" defer></script>
+    <script src="{% static 'goplan/js/planning-fullscreen.js' %}" defer></script>
     
     <script src="https://cdn.tailwindcss.com"></script>
     
@@ -25,7 +26,7 @@
 </head>
 <body>
 
-    <div class="main-container">
+    <div class="main-container" data-bordereau-editor data-fullscreen-document>
         <!-- En-tête -->
         <header class="header-section">          
             <div class="text-center">
@@ -75,10 +76,16 @@
         </div>
 
         <!-- Barre d'outils -->
+        <p data-planning-fullscreen-error role="alert" class="text-red-500 mb-2" hidden></p>
         <div class="menu menu-fixed flex justify-between items-center p-2 md:p-3 rounded-lg border border-gray-600 shadow-lg mb-3 md:mb-4">
             <!-- Partie gauche : Boutons -->
             <div class="flex items-center no-print">
                 <div class="flex flex-wrap gap-1 md:gap-2">
+                    <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
+                            title="Passer en plein écran (Échap pour quitter)"
+                            aria-label="Passer en plein écran" aria-pressed="false">
+                        <i class="fas fa-expand" aria-hidden="true"></i>
+                    </button>
                     <span class="goplan-toolbar-label" aria-hidden="true"><i class="fas fa-sitemap"></i></span>
                     <!-- Bouton Sauvegarde -->
                     <button onclick="saveData()" 
@@ -195,7 +202,7 @@
 
         <!-- Contenu principal -->
         <div class="content-section">
-            <div class="mb-3 md:mb-4">
+            <div class="bordereau-table-section mb-3 md:mb-4">
                 <h3 class="text-lg md:text-xl font-bold text-cyan-400 mb-3 md:mb-4 flex items-center justify-center gap-2">
                     <i class="fas fa-table"></i>
                     Détail des Prix Unitaires

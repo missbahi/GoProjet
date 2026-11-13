@@ -10,11 +10,22 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 
 - Projets, lots, documents administratifs et ordres de service
 - Bordereaux de prix hiérarchiques, décomptes et attachements
+  En édition du bordereau, le bouton plein écran agrandit la page entière et masque
+  l'en-tête et la navigation. La barre d'outils et le total restent visibles pendant
+  le défilement du tableau. Échap rétablit l'affichage normal.
+  Le formulaire d'attachement reprend les boutons à icônes du bordereau, la somme
+  sélectionnée à droite et le total séparé du formulaire. Son mode plein écran
+  garde les actions et le total visibles pendant le défilement.
+  Les champs d'identification, dates et observations ainsi que le titre du tableau
+  sont masqués en plein écran ; ils réapparaissent à la sortie, sans perdre la saisie.
 - Suivi d'exécution, situations mensuelles, planning des ateliers, ressources
 - Workflow de validation, utilisateurs, notifications
 - Export Excel et PDF
 - **GoPlan** : plannings, diagramme de Gantt, import/export XML MS Project et
   impression A4 à A0 — voir [goplan/README.md](goplan/README.md)
+  Le bouton « Plein écran » des vues inline et Gantt agrandit l'espace de travail
+  en gardant la barre d'outils accessible. Cliquez à nouveau ou appuyez sur Échap
+  pour revenir à l'affichage normal, sans perdre la saisie en cours.
 
 La version et les nouveautés affichées à la connexion sont définies dans
 [projets/version.py](projets/version.py).

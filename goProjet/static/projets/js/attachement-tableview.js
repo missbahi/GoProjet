@@ -153,7 +153,6 @@
             ), 0);
             const totalElement = document.getElementById('total_attachement');
             totalElement.textContent = `${format(total)} DH`;
-            totalElement.style.color = '#22d3ee';
         }
 
         function displaySelection() {
@@ -198,7 +197,21 @@
             button.replaceChildren();
             const icon = document.createElement('i');
             icon.className = 'fa-solid fa-spinner fa-spin';
-            button.append(icon, document.createTextNode(` ${text}`));
+            icon.setAttribute('aria-hidden', 'true');
+            button.appendChild(icon);
+            button.title = text;
+            button.setAttribute('aria-label', text);
+        }
+
+        function restoreCorrectionButton() {
+            if (!saveButton) return;
+            saveButton.disabled = false;
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-save';
+            icon.setAttribute('aria-hidden', 'true');
+            saveButton.replaceChildren(icon);
+            saveButton.title = 'Vérifier la correction';
+            saveButton.setAttribute('aria-label', 'Vérifier la correction');
         }
 
         function clearConfirmation() {
@@ -252,13 +265,28 @@
                 showError(error.message);
             } finally {
                 correctionPending = false;
-                if (saveButton) {
-                    saveButton.disabled = false;
-                    saveButton.textContent = "Vérifier la correction";
-                }
+                restoreCorrectionButton();
                 confirmButton.disabled = false;
             }
         }
+
+        let revealingFields = false;
+        form.addEventListener('invalid', event => {
+            const root = form.closest('[data-attachement-editor][data-workspace-fullscreen]');
+            if (!root || !event.target.closest('.attachment-editor-fields')) return;
+            event.preventDefault();
+            if (revealingFields) return;
+            revealingFields = true;
+            document.exitFullscreen().then(() => {
+                event.target.focus();
+                event.target.reportValidity();
+            }).catch(error => {
+                console.error('Impossible de réafficher les champs invalides.', error);
+                showError(`Impossible de réafficher les champs. ${error.message}`);
+            }).finally(() => {
+                revealingFields = false;
+            });
+        }, true);
 
         form.addEventListener('submit', event => {
             if (event.submitter?.name === 'action' && event.submitter.value === 'valider') {
@@ -293,7 +321,7 @@
                     confirming = false;
                 }
             });
-            if (saveButton) saveButton.textContent = "Vérifier la correction";
+            restoreCorrectionButton();
         }
         if (saveButton) saveButton.addEventListener('click', () => {
             if (correction) clearConfirmation();

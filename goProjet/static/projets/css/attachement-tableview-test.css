@@ -4,6 +4,12 @@
     -webkit-overflow-scrolling: touch;
 }
 
+[data-attachement-editor][data-workspace-fullscreen] .table-view-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}
+
 .attachement-tableview-test .table-view-table {
     width: 100%;
     min-width: max(1200px, 100%);

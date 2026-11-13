@@ -44,7 +44,14 @@
     </div>
 
     {# ═══════ Barre d'outils hiérarchique — PLEINE LARGEUR ═══════ #}
+    <p data-planning-fullscreen-error role="alert" hidden></p>
     <div class="goplan-toolbar goplan-sticky-controls mb-3 w-full">
+        <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
+                title="Passer en plein écran (Échap pour quitter)"
+                aria-label="Passer en plein écran" aria-pressed="false">
+            <i class="fas fa-expand" aria-hidden="true"></i>
+        </button>
+        <span class="goplan-toolbar-sep" aria-hidden="true"></span>
         <span class="goplan-toolbar-label">
             <i class="fas fa-sitemap mr-1"></i>
         </span>

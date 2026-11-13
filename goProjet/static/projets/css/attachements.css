@@ -584,6 +584,115 @@
             margin: 0 auto;
         }
 
+        .attachment-workflow-page.attachment-page--attachement_form .attachment-editor-body{
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .attachment-editor-toolbar{
+            order: -1;
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: .5rem;
+            padding: .5rem;
+            margin-bottom: 1rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 12px;
+            box-shadow: 0 3px 8px rgba(36, 72, 90, .12);
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .attachment-editor-actions{
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .attachment-editor-action-group{
+            display: flex;
+            align-items: center;
+            gap: .25rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .attachment-editor-action-group + .attachment-editor-action-group{
+            border-left: 1px solid var(--border-default);
+            padding-left: .5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form .content-section{
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            border-radius: 16px;
+            padding: 1rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form [data-attachement-editor][data-workspace-fullscreen]{
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100dvh;
+            max-width: none;
+            margin: 0;
+            padding: .5rem;
+            overflow: hidden;
+            background: var(--bg-page);
+        }
+
+        [data-attachement-editor][data-workspace-fullscreen] .attachment-editor-header,
+        [data-attachement-editor][data-workspace-fullscreen] .attachment-editor-context,
+        [data-attachement-editor][data-workspace-fullscreen] .attachment-editor-fields,
+        [data-attachement-editor][data-workspace-fullscreen] .attachment-editor-table-title{
+            display: none;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .attachment-editor-toolbar,
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .total-section{
+            flex-shrink: 0;
+            margin: 0;
+            padding: .5rem;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .attachment-editor-body{
+            flex: 1;
+            min-height: 0;
+            margin: .5rem 0;
+            overflow: hidden;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .content-section,
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] #attachement-form,
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .attachment-editor-table,
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .table-container,
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] #attachement-tableview{
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+            margin-bottom: 0;
+        }
+
+        .attachment-workflow-page.attachment-page--attachement_form [data-workspace-fullscreen] .content-section{
+            margin-top: .5rem;
+            padding: .5rem;
+        }
+
+        [data-attachement-editor][data-workspace-fullscreen] #correction-impact-panel:not([hidden]){
+            flex-shrink: 0;
+            max-height: 40vh;
+            overflow: auto;
+        }
+
         /* Composants réutilisables */
         .attachment-workflow-page.attachment-page--attachement_form .glass-effect{
             background: var(--background-card);
@@ -694,32 +803,32 @@
         .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
             display: grid;
             grid-template-columns: 1fr;
-            gap: 1rem;
+            gap: .75rem 1rem;
         }
 
         @media (min-width: 768px) {
             .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
                 grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
+                gap: .75rem 1rem;
             }
         }
 
         @media (min-width: 1024px) {
             .attachment-workflow-page.attachment-page--attachement_form .responsive-grid{
-                gap: 1rem;
+                gap: .75rem 1rem;
             }
         }
 
         /* Formulaires */
         .attachment-workflow-page.attachment-page--attachement_form .form-group{
-            margin-bottom: 1rem;
+            margin-bottom: .5rem;
             margin-left: 1rem;
             margin-right: 1rem;
         }
 
         .attachment-workflow-page.attachment-page--attachement_form label{
             display: block;
-            margin-bottom: 0.5rem;
+            margin-bottom: .375rem;
             font-weight: 600;
             color: var(--primary-color);
             font-size: 0.875rem;
@@ -732,7 +841,7 @@
             border: 1px solid var(--border-default); 
             color: var(--text-primary); 
             border-radius: var(--border-radius);
-            padding: 0.75rem 1rem;
+            padding: .625rem 1rem;
             width: 100%;
             transition: var(--transition);
             font-size: 1rem;
@@ -751,17 +860,8 @@
 
         /* Tableau Handsontable responsive */
         .attachment-workflow-page.attachment-page--attachement_form .table-container{
-            overflow-x: auto;
-            margin-bottom: 1.5rem;
-            border-radius: var(--border-radius);
-            background: var(--background-card);
-            padding: 1rem;
-        }
-
-        @media (min-width: 768px) {
-            .attachment-workflow-page.attachment-page--attachement_form .table-container{
-                padding: 1.5rem;
-            }
+            min-width: 0;
+            border-radius: 12px;
         }
 
         .attachment-workflow-page.attachment-page--attachement_form #hot{
@@ -771,8 +871,8 @@
         /* Sections spéciales */
         .attachment-workflow-page.attachment-page--attachement_form .total-section{
             background: var(--bg-elevated);
-            border: 1px solid var(--success-color);
-            border-radius: var(--border-radius);
+            border: 1px solid var(--accent-success);
+            border-radius: 12px;
             padding: 1rem;
             margin: 1rem 0;
         }
@@ -834,27 +934,11 @@
 
         /* Somme des sélections */
         .attachment-workflow-page.attachment-page--attachement_form .selection-sum-display{
-            position: fixed;
-            bottom: 1rem;
-            right: 1rem;
-            left: 1rem;
-            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-            color: white;
-            padding: 0.75rem 1rem;
-            border-radius: var(--border-radius);
-            font-weight: 600;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            z-index: 1000;
             display: none;
-            text-align: center;
-        }
-
-        @media (min-width: 640px) {
-            .attachment-workflow-page.attachment-page--attachement_form .selection-sum-display{
-                left: auto;
-                right: 1rem;
-                width: auto;
-            }
+            margin-left: auto;
+            max-width: 100%;
+            white-space: normal;
+            text-align: right;
         }
 
         /* Actions footer */
