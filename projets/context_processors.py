@@ -3,14 +3,49 @@ from .version import APP_VERSION, get_versions_between
 
 
 def observer_access(request):
-    from projets.decorators import est_observateur
+    from projets.decorators import (
+        dossiers_accessibles, est_admin_dossier, est_directeur_projet, est_observateur,
+        peut_creer_projet, peut_gerer_projet, peut_supprimer_projet,
+    )
     from projets.observer_access import observer_url_patterns
 
     readonly = est_observateur(request.user)
     context = {
         'observer_readonly': readonly,
         'observer_url_patterns': observer_url_patterns() if readonly else [],
+        'can_manage_users': request.user.is_authenticated and (
+            request.user.is_superuser or est_admin_dossier(request.user)
+            or est_directeur_projet(request.user)
+        ),
+        'can_configure_dossier': request.user.is_authenticated and (
+            request.user.is_superuser or est_admin_dossier(request.user)
+        ),
+        'can_create_project': peut_creer_projet(request.user),
+        'can_delete_project': peut_supprimer_projet(request.user),
+        'can_manage_project': peut_gerer_projet(request.user),
+        'role_refonte_en_attente': (
+            request.user.is_authenticated
+            and getattr(getattr(request.user, 'profile', None), 'role', None) == 'A_RECLASSER'
+        ),
+        'dossier_affectation_invalide': False,
     }
+    dossier = getattr(request, 'dossier', None)
+    if dossier is None and request.user.is_authenticated:
+        dossiers = dossiers_accessibles(request.user)
+        if request.user.is_superuser:
+            selection = request.session.get('dossier_id')
+            dossier = dossiers.filter(pk=selection).first() if selection else None
+        else:
+            choices = list(dossiers[:2])
+            dossier = choices[0] if len(choices) == 1 else None
+            context['dossier_affectation_invalide'] = (
+                not readonly and len(choices) != 1
+                and getattr(request.user.profile, 'role', None) in {
+                    'ADMIN_DOSSIER', 'DIRECTEUR_PROJET', 'CHEF_PROJET',
+                    'CHEF_CHANTIER', 'POINTEUR',
+                }
+            )
+    context['dossier_actif'] = dossier
     if readonly:
         masque = request.user.profile.guide_observateur_masque
         context['observer_guide_masque'] = masque

@@ -6,6 +6,7 @@ from unittest.mock import patch
 from django.apps import apps
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import PermissionDenied
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import get_resolver, resolve, reverse, URLResolver
@@ -15,9 +16,9 @@ from goplan.models import GPlan, GTask, GWorkCalendar
 from projets.decorators import projets_accessibles
 from projets.forms import UtilisateurCreationForm
 from projets.models import (
-    Attachement, ChiffreAffaire, DepenseSituationMensuelle, DocumentAdministratif, Dossier,
+    Attachement, CategorieCharge, ChiffreAffaire, DepenseSituationMensuelle, DocumentAdministratif, Dossier,
     LigneAttachement, LigneBordereau, LotProjet, Notification, Projet, ProcessValidation,
-    SituationMensuelle,
+    RessourceAffectee, SituationMensuelle,
     StockSituationMensuelle,
 )
 from projets.observer_access import (
@@ -116,6 +117,83 @@ class ObservateurTests(AttachementTestData, TestCase):
         for model, rows in snapshot.items():
             with self.subTest(unchanged_model=model.__name__):
                 self.assertEqual(list(model.objects.order_by('pk').values()), rows)
+
+    def test_resource_categories_are_consultable_including_inactive_assigned_categories(self):
+        active = CategorieCharge.objects.create(dossier=self.dossier, code='ACTIVE_TEST', nom='Active test')
+        inactive = CategorieCharge.objects.create(
+            dossier=self.dossier, code='INACTIVE_TEST', nom='Inactive test', actif=False,
+        )
+        foreign = CategorieCharge.objects.create(
+            dossier=Dossier.objects.create(nom='Dossier étranger ressources'),
+            code='FOREIGN_TEST', nom='Foreign test', actif=True,
+        )
+        empty = CategorieCharge.objects.create(
+            dossier=self.dossier, code='EMPTY_TEST', nom='Empty test', actif=False,
+        )
+        assigned = [
+            RessourceAffectee.objects.create(
+                projet=self.projet, categorie_charge=category, objet_id=index,
+                designation=f'Resource {index}', date_debut=date(2025, 1, 1),
+                date_fin=date(2025, 1, 31),
+            )
+            for index, category in enumerate([active, active, inactive], start=1)
+        ]
+        for category in [foreign]:
+            RessourceAffectee.objects.create(
+                projet=self.autre, categorie_charge=category, objet_id=10,
+                designation='Foreign resource', date_debut=date(2025, 1, 1),
+            )
+        expected_categories = set(CategorieCharge.objects.filter(dossier=self.dossier, actif=True).values_list('pk', flat=True))
+        expected_categories.add(inactive.pk)
+        url = reverse('projets:ressources_projet', args=[self.projet.pk])
+        for headers in [{}, {'HTTP_HX_REQUEST': 'true'}]:
+            with self.subTest(headers=headers):
+                response = self.client.get(url, {'type': inactive.code}, **headers)
+                self.assertEqual(response.status_code, 200)
+                data = response.context['categories_data']
+                category_ids = [item['categorie'].pk for item in data]
+                self.assertCountEqual(category_ids, expected_categories)
+                self.assertNotIn(foreign.pk, category_ids)
+                self.assertNotIn(empty.pk, category_ids)
+                self.assertEqual(response.context['active_type'], inactive.code)
+                self.assertEqual(response.context['total_ressources'], len(assigned))
+                self.assertCountEqual(
+                    [resource.pk for item in data for resource in item['ressources']],
+                    [resource.pk for resource in assigned],
+                )
+                buttons = re.findall(r'<button\b[^>]*>', response.content.decode())
+                tabs = [button for button in buttons if 'data-tab-target=' in button]
+                self.assertEqual(len(tabs), len(expected_categories))
+                self.assertTrue(all('data-observer-safe' in tab for tab in tabs))
+                actions = [button for button in buttons
+                           if 'data-open-ressource-modal' in button
+                           or 'data-delete-ressource-button' in button]
+                self.assertTrue(actions)
+                self.assertTrue(all('data-observer-safe' not in button for button in actions))
+        self.assertEqual(self.client.get(
+            reverse('projets:ressources_projet', args=[self.autre.pk]),
+        ).status_code, 403)
+
+    def test_resource_writes_remain_denied(self):
+        category = CategorieCharge.objects.create(dossier=self.dossier, code='WRITE_TEST', nom='Write test')
+        resource = RessourceAffectee.objects.create(
+            projet=self.projet, categorie_charge=category, objet_id=1,
+            designation='Read only resource', date_debut=date(2025, 1, 1),
+        )
+        before = list(RessourceAffectee.objects.order_by('pk').values())
+        routes = [
+            ('ajouter_ressource', self.projet.pk),
+            ('modifier_ressource', resource.pk),
+            ('supprimer_ressource', resource.pk),
+        ]
+        for name, object_id in routes:
+            with self.subTest(route=name):
+                response = self.client.post(
+                    reverse('projets:' + name, args=[object_id]),
+                    {'designation': 'Changed resource'},
+                )
+                self.assertEqual(response.status_code, 403)
+        self.assertEqual(list(RessourceAffectee.objects.order_by('pk').values()), before)
 
     def test_every_registered_nonpersonal_route_rejects_all_write_methods(self):
         def visit(resolver, namespace=''):
@@ -235,15 +313,13 @@ class ObservateurTests(AttachementTestData, TestCase):
 
     def test_creation_form_allows_observer_only_in_creators_dossiers(self):
         chief = User.objects.create_user('chef-observateur')
-        chief.profile.role = 'CHEF_PROJET'
+        chief.profile.role = 'ADMIN_DOSSIER'
         chief.profile.save()
-        self.dossier.gerant = chief
-        self.dossier.save()
+        self.dossier.utilisateurs.add(chief)
         forbidden = Dossier.objects.create(nom='Dossier autre responsable')
         data = {
             'username': 'nouvel-observateur', 'role': 'OBSERVATEUR',
             'password1': 'ObserverPassword432!', 'password2': 'ObserverPassword432!',
-            'dossiers': [self.dossier.pk],
         }
         form = UtilisateurCreationForm(data=data, user=chief)
         self.assertTrue(form.is_valid(), form.errors)
@@ -279,6 +355,57 @@ class ObservateurTests(AttachementTestData, TestCase):
         response = self.client.get(reverse('projets:liste_utilisateurs'), {'role': 'OBSERVATEUR'})
         self.assertContains(response, self.user.username)
         self.assertContains(response, 'Observateur')
+
+    def test_retired_roles_cannot_be_assigned_by_admin_or_project_manager(self):
+        admin = User.objects.create_superuser('admin-retired-roles')
+        chief = User.objects.create_user('chief-retired-roles')
+        chief.profile.role = 'ADMIN_DOSSIER'
+        chief.profile.save()
+        self.dossier.utilisateurs.add(chief)
+        for creator in [admin, chief]:
+            self.client.force_login(creator)
+            for role in ['STAFF', 'UTILISATEUR']:
+                with self.subTest(creator=creator.username, role=role):
+                    form = UtilisateurCreationForm(data={
+                        'username': 'retired-role-account', 'role': role,
+                        'password1': 'ObserverPassword432!',
+                        'password2': 'ObserverPassword432!',
+                        'dossiers': [self.dossier.pk],
+                    }, user=creator)
+                    self.assertFalse(form.is_valid())
+                    self.assertIn('role', form.errors)
+                    url = reverse('projets:modifier_utilisateur', args=[self.user.pk])
+                    response = self.client.get(url)
+                    self.assertNotContains(response, f'<option value="{role}"')
+                    response = self.client.post(url, {
+                        'role': role, 'dossiers': [self.dossier.pk],
+                    })
+                    self.assertEqual(response.status_code, 403)
+                    self.user.profile.refresh_from_db()
+                    self.assertEqual(self.user.profile.role, 'OBSERVATEUR')
+            response = self.client.get(reverse('projets:liste_utilisateurs'))
+            for role in ['STAFF', 'UTILISATEUR']:
+                self.assertNotContains(response, f'<option value="{role}"')
+
+    def test_editing_existing_retired_role_preserves_it_without_reassignment(self):
+        admin = User.objects.create_superuser('admin-legacy-roles')
+        self.client.force_login(admin)
+        url = reverse('projets:modifier_utilisateur', args=[self.user.pk])
+        for role in ['STAFF', 'UTILISATEUR']:
+            with self.subTest(role=role):
+                self.user.profile.role = role
+                self.user.profile.save()
+                response = self.client.get(url)
+                self.assertContains(response, '<option value="" selected>')
+                self.assertNotContains(response, f'<option value="{role}"')
+                response = self.client.post(url, {
+                    'role': '', 'first_name': 'Updated name',
+                    'is_active': 'on', 'dossiers': [self.dossier.pk],
+                })
+                self.assertEqual(response.status_code, 302)
+                self.user.refresh_from_db()
+                self.assertEqual(self.user.first_name, 'Updated name')
+                self.assertEqual(self.user.profile.role, role)
 
     def test_ui_url_policy_matches_server_for_representative_routes(self):
         for name, args, method in [
@@ -528,15 +655,21 @@ class ObservateurTests(AttachementTestData, TestCase):
         url = reverse('goplan:liste_plans')
         self.assertNotContains(self.client.get(url), orphan.nom)
         chief = User.objects.create_user('responsable-planning')
+        chief.profile.role = 'ADMIN_DOSSIER'
+        chief.profile.save()
+        self.dossier.utilisateurs.add(chief)
         self.dossier.gerant = chief
         self.dossier.save()
         self.client.force_login(chief)
         edit_url = reverse('goplan:modifier_plan', args=[orphan.pk])
+        self.assertEqual(self.client.get(edit_url).status_code, 403)
+        admin = User.objects.create_superuser('admin-planning-orphelin')
+        self.client.force_login(admin)
         for headers in [{}, {'HTTP_HX_REQUEST': 'true'}]:
             response = self.client.get(edit_url, **headers)
             self.assertContains(response, 'name="projet"')
             self.assertContains(response, self.projet.nom)
-            self.assertNotContains(response, self.autre.nom)
+            self.assertContains(response, self.autre.nom)
         response = self.client.post(edit_url, {
             'nom': orphan.nom, 'date_debut': '2025-01-01', 'projet': self.projet.pk,
         })
@@ -550,7 +683,10 @@ class ObservateurTests(AttachementTestData, TestCase):
 
     def test_project_assignment_is_scoped_and_can_be_cleared_explicitly(self):
         chief = User.objects.create_user('responsable-rattachement')
+        chief.profile.role = 'CHEF_PROJET'
+        chief.profile.save()
         self.dossier.utilisateurs.add(chief)
+        self.projet.users.add(chief)
         data = {'nom': 'Planning formulaire', 'date_debut': '2025-01-01', 'projet': self.autre.pk}
         form = GPlanForm(data=data, user=chief)
         self.assertFalse(form.is_valid())
@@ -567,6 +703,10 @@ class ObservateurTests(AttachementTestData, TestCase):
         self.assertEqual(form.save().source_object, self.projet)
         data['projet'] = ''
         form = GPlanForm(data=data, instance=plan, user=chief)
+        self.assertFalse(form.is_valid())
+        self.assertIn('projet', form.errors)
+        admin = User.objects.create_superuser('admin-detachement-planning')
+        form = GPlanForm(data=data, instance=plan, user=admin)
         self.assertTrue(form.is_valid(), form.errors)
         plan = form.save()
         plan.refresh_from_db()
@@ -575,9 +715,10 @@ class ObservateurTests(AttachementTestData, TestCase):
 
     def test_existing_foreign_project_link_cannot_be_changed_by_unassigned_user(self):
         outsider = User.objects.create_user('sans-dossier-planning')
-        form = GPlanForm(
-            data={'nom': self.plan.nom, 'date_debut': '2025-01-10', 'projet': ''},
-            instance=self.plan, user=outsider,
-        )
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.save().source_object, self.projet)
+        with self.assertRaises(PermissionDenied):
+            GPlanForm(
+                data={'nom': self.plan.nom, 'date_debut': '2025-01-10', 'projet': ''},
+                instance=self.plan, user=outsider,
+            )
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.source_object, self.projet)

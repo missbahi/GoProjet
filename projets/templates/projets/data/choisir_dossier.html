@@ -1,0 +1,26 @@
+{% extends "projets/base_data.html" %}
+{% block title %}Configuration des dossiers{% endblock %}
+{% block content %}
+<section class="p-6 space-y-6">
+    <h1 class="app-section-title">Configuration : choisir un dossier</h1>
+    <form method="get" action="{% url 'projets:data_view' %}">
+        <label for="catalogue-dossier">Dossier</label>
+        <select id="catalogue-dossier" name="dossier" required class="app-modal-input">
+            <option value="">— Sélectionner —</option>
+            {% for item in dossiers %}<option value="{{ item.pk }}">{{ item.nom }}</option>{% endfor %}
+        </select>
+        <button class="app-btn-primary" type="submit">Configurer</button>
+    </form>
+    <a href="{% url 'projets:partial_types_materiel' %}">Types de matériel — référentiel global</a>
+    <h2 class="app-section-title">Données historiques sans dossier</h2>
+    <p>Conservées pour l'Admin. Aucun dossier n'en hérite sans classement explicite.</p>
+    {% for groupe in orphelins %}
+    {% if groupe.nombre %}
+    <details>
+        <summary>{{ groupe.modele }} : {{ groupe.nombre }} à classer</summary>
+        <ul>{% for ligne in groupe.lignes %}<li>#{{ ligne.pk }} — {{ ligne }}</li>{% endfor %}</ul>
+    </details>
+    {% endif %}
+    {% endfor %}
+</section>
+{% endblock %}

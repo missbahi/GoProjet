@@ -2,12 +2,34 @@
     'use strict';
     if (window.GoPlanFullscreen) return;
     window.GoPlanFullscreen = true;
-    const workspaceSelector = '[data-goplan-inline], [data-goplan-gantt], [data-bordereau-editor], [data-attachement-editor]';
+    const workspaceSelector = '[data-goplan-inline], [data-goplan-gantt], [data-bordereau-editor], [data-attachement-editor], [data-ca-editor]';
     let pending = false;
+    let revealingFields = false;
 
     function fullscreenTarget(root) {
         return root.hasAttribute('data-fullscreen-document') ? document.documentElement : root;
     }
+
+    document.addEventListener('invalid', async event => {
+        const root = event.target.closest(workspaceSelector);
+        if (!root?.hasAttribute('data-workspace-fullscreen')
+            || !event.target.closest('[data-fullscreen-fields]')) return;
+        event.preventDefault();
+        if (revealingFields) return;
+        revealingFields = true;
+        try {
+            await document.exitFullscreen();
+            event.target.focus();
+            event.target.reportValidity();
+        } catch (error) {
+            console.error('Impossible de réafficher les champs invalides.', error);
+            const errorBox = root.querySelector('[data-planning-fullscreen-error]');
+            errorBox.textContent = `Impossible de réafficher les champs. ${error.message}`;
+            errorBox.hidden = false;
+        } finally {
+            revealingFields = false;
+        }
+    }, true);
 
     document.addEventListener('fullscreenchange', () => {
         document.querySelectorAll('[data-planning-fullscreen]').forEach(button => {

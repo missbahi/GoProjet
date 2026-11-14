@@ -3,6 +3,7 @@ import logging
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import User
+from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -12,9 +13,29 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 from projets.decorators import projets_accessibles
 from projets.forms import TacheForm
 from projets.models import Projet, Tache
+from projets.task_policy import (
+    libelle_responsable, peut_actualiser_tache, peut_gerer_taches,
+    responsables_affectables, responsables_eligibles,
+)
 from projets.utils.navigation import crumb
 
 logger = logging.getLogger(__name__)
+
+
+def _preparer_tache(tache, user):
+    tache.can_manage = peut_gerer_taches(user, tache.projet)
+    tache.responsable_eligible = bool(
+        tache.responsable_id
+        and responsables_eligibles(tache.projet).filter(pk=tache.responsable_id).exists()
+    )
+    tache.can_update = tache.can_manage or (
+        tache.responsable_eligible and tache.responsable_id == user.pk
+    )
+    tache.responsable_label = libelle_responsable(tache.responsable) if tache.responsable_id else 'Non affecté'
+    tache.assignment_warning = (
+        "Responsable à réaffecter : compte absent, inactif ou non autorisé sur ce projet."
+        if not tache.terminee and not tache.responsable_eligible else ''
+    )
 
 
 # ============================================================
@@ -28,7 +49,7 @@ class ListeTachesView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Tache.objects.select_related('projet', 'responsable')
+        queryset = Tache.objects.select_related('projet__dossier', 'responsable__profile')
 
         if not user.is_superuser:
             queryset = queryset.filter(projet__in=projets_accessibles(user))
@@ -59,13 +80,18 @@ class ListeTachesView(LoginRequiredMixin, ListView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
 
-        # Responsables filtrés
-        if user.is_superuser:
-            context['responsables'] = User.objects.filter(tache__isnull=False).distinct()
-        else:
-            context['responsables'] = User.objects.filter(
-                projets__in=projets_accessibles(user)
-            ).distinct()
+        historiques = Tache.accessibles(user)
+        if self.projet:
+            historiques = historiques.filter(projet=self.projet)
+        responsables = User.objects.filter(
+            pk__in=historiques.values('responsable_id'),
+        ).select_related('profile').order_by('first_name', 'last_name', 'username')
+        for responsable in responsables:
+            responsable.task_label = libelle_responsable(responsable)
+        context['responsables'] = responsables
+        context['can_manage_tasks'] = peut_gerer_taches(user, self.projet)
+        for tache in context['taches']:
+            _preparer_tache(tache, user)
 
         # ⚡ Projets accessibles (pour le select de la modal)
         context['projets_disponibles'] = projets_accessibles(user).order_by('nom')
@@ -105,15 +131,18 @@ class ListeTachesView(LoginRequiredMixin, ListView):
 @login_required
 def get_form_data(request):
     user = request.user
-    if user.is_superuser:
-        projets = Projet.objects.all().values('id', 'nom')
-        responsables = User.objects.all().values('id', 'username')
-    else:
-        accessibles = projets_accessibles(user)
-        projets = accessibles.values('id', 'nom')
-        responsables = User.objects.filter(
-            projets__in=accessibles
-        ).distinct().values('id', 'username')
+    accessibles = projets_accessibles(user)
+    projets = list(accessibles.order_by('nom', 'pk').values('id', 'nom'))
+    projet_unique = len(projets) == 1
+    selection = request.GET.get('projet_id')
+    projet = None
+    if selection is not None:
+        if not selection.isdigit():
+            return JsonResponse({'message': "Projet invalide."}, status=400)
+        projet = get_object_or_404(accessibles, pk=selection)
+    elif projets:
+        projet = accessibles.get(pk=projets[0]['id'])
+    responsables = responsables_affectables(user, projet)
 
     priorites = [
         {'value': value, 'label': label}
@@ -121,9 +150,15 @@ def get_form_data(request):
     ]
 
     return JsonResponse({
-        'projets': list(projets),
-        'responsables': list(responsables),
+        'projets': projets,
+        'projet_id': projet.pk if projet else None,
+        'projet_unique': projet_unique,
+        'responsables': [
+            {'id': user.pk, 'username': user.username, 'label': libelle_responsable(user)}
+            for user in responsables
+        ],
         'priorites': priorites,
+        'can_manage': peut_gerer_taches(user, projet),
     })
 
 
@@ -135,17 +170,22 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
     form_class = TacheForm
 
     def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
         # Vérifier l'accès au projet AVANT tout
         self.projet = get_object_or_404(
             projets_accessibles(request.user),
             pk=kwargs['projet_id'],
         )
+        if not peut_gerer_taches(request.user, self.projet):
+            raise PermissionDenied("La création des tâches est réservée aux responsables du projet.")
         return super().dispatch(request, *args, **kwargs)
 
     # ESSENTIEL : passer user au formulaire pour filtrer les querysets
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs['user'] = self.request.user
+        kwargs['projet'] = self.projet
         return kwargs
 
     def form_valid(self, form):
@@ -217,6 +257,12 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
     form_class = TacheForm
     template_name = 'projets/taches/modifier_tache.html'
 
+    def get_object(self, queryset=None):
+        tache = super().get_object(queryset)
+        if not peut_actualiser_tache(self.request.user, tache):
+            raise PermissionDenied("Vous ne pouvez pas modifier cette tâche.")
+        return tache
+
     def get_queryset(self):
         # ⚡ Double filtre : tâches accessibles ET appartenant au projet de l'URL
         return Tache.objects.select_related('projet', 'responsable').filter(
@@ -248,6 +294,8 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
 
             return super().form_valid(form)
 
+        except PermissionDenied:
+            raise
         except Exception as e:
             logger.error(f"Erreur modification tâche: {e}")
             if self.request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -297,6 +345,7 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context['now'] = timezone.now()
         tache = self.object
+        _preparer_tache(tache, self.request.user)
         context['priorite_display'] = tache.get_priorite_display()
         context['est_en_retard'] = (
             tache.date_fin and tache.date_fin < timezone.now().date() and not tache.terminee
@@ -306,6 +355,7 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
 
     def render_to_json_response(self):
         tache = self.object
+        _preparer_tache(tache, self.request.user)
         return JsonResponse({
             'success': True,
             'data': {
@@ -315,6 +365,10 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
                 'terminee': tache.terminee,
                 'avancement': tache.avancement,
                 'description': tache.description,
+                'can_manage': tache.can_manage,
+                'can_update': tache.can_update,
+                'assignment_warning': tache.assignment_warning,
+                'responsable_eligible': tache.responsable_eligible,
                 'date_debut': tache.date_debut.isoformat() if tache.date_debut else None,
                 'date_fin': tache.date_fin.isoformat() if tache.date_fin else None,
                 'projet': {
@@ -325,6 +379,7 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
                     'id': tache.responsable.id if tache.responsable else None,
                     'nom_complet': tache.responsable.get_full_name() if tache.responsable else None,
                     'username': tache.responsable.username if tache.responsable else None,
+                    'label': tache.responsable_label,
                 },
             },
         })
@@ -352,6 +407,8 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
     model = Tache
 
     def get_queryset(self):
+        if not peut_gerer_taches(self.request.user):
+            raise PermissionDenied("La suppression est réservée aux responsables du projet.")
         return Tache.objects.filter(
             projet__in=projets_accessibles(self.request.user),
             projet_id=self.kwargs['projet_id'],

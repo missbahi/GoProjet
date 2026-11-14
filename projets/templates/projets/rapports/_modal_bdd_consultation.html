@@ -28,7 +28,7 @@
                 <input type="text" id="modalBDDSearch" onkeyup="filtrerModalBDD()"
                        placeholder="Rechercher une désignation, unité…">
             </div>
-            {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
+            {% if can_configure_dossier %}
             <a href="{% url 'projets:data_view' %}" target="_blank" rel="noopener"
                class="app-btn-secondary text-xs shrink-0">
                 <i class="fas fa-external-link-alt"></i>

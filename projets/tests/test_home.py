@@ -159,6 +159,8 @@ class HomeIndicatorsTests(AttachementTestData, TestCase):
         Tache.objects.create(projet=self.projet, titre='Finished task', date_debut=self.today, date_fin=self.today, terminee=True)
         Tache.objects.create(projet=self.projet, titre='Visible task', date_debut=self.today, date_fin=self.today)
         viewer = User.objects.create_user(username='home-viewer')
+        viewer.profile.role = 'OBSERVATEUR'
+        viewer.profile.save()
         self.dossier.utilisateurs.add(viewer)
         self.client.force_login(viewer)
         response = self.home()

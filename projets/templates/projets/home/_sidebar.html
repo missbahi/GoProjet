@@ -106,8 +106,16 @@
                         <span>Dossiers</span>
                     </a>
                 </li>
+                {% elif user.profile.role == 'ADMIN_DOSSIER' and dossier_actif %}
+                <li>
+                    <a href="{% url 'projets:modifier_dossier' dossier_actif.pk %}"
+                       class="sidebar-item">
+                        <i class="fas fa-folder-tree"></i>
+                        <span>Mon dossier</span>
+                    </a>
+                </li>
                 {% endif %}
-                {% if user.is_superuser or user.profile.role == 'GERANT' or user.profile.role == 'CHEF_PROJET' %}
+                {% if can_manage_users %}
                 <li>
                     <a href="{% url 'projets:liste_utilisateurs' %}"
                         hx-get="{% url 'projets:liste_utilisateurs' %}"
@@ -117,7 +125,7 @@
                         hx-indicator="#htmx-progress"
                         class="sidebar-item {% if 'utilisateur' in request.resolver_match.url_name %}active{% endif %}">
                         <i class="fas fa-users"></i>
-                        <span>Administration</span>
+                        <span>Utilisateurs</span>
                     </a>
                 </li>
                 {% endif %}
@@ -137,7 +145,7 @@
         </a>
 
         <!-- Configuration (tout en bas) -->
-        {% if user.is_superuser or user.profile.role == 'GERANT' or user.profile.role == 'CHEF_PROJET' %}
+        {% if can_configure_dossier %}
         <a href="{% url 'projets:data_view' %}"
            class="sidebar-item mt-2 {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
             <i class="fas fa-database"></i>

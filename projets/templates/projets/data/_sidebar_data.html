@@ -42,6 +42,7 @@
                         <span>Entreprises</span>
                     </button>
                 </li>
+                {% if request.user.is_superuser %}
                 <li>
                     <button type="button"
                             data-config-menu
@@ -52,6 +53,7 @@
                         <span>Types de matériel</span>
                     </button>
                 </li>
+                {% endif %}
                  <li>
                     <button type="button"
                             data-config-menu

@@ -35,28 +35,6 @@
     color: var(--tv-amount-color, #15803d);
 }
 
-:is(#hot, #ca-table) .table-view-table .tv-fold {
-    width: 20px;
-    height: 20px;
-    color: var(--accent-primary);
-    font-size: 0;
-}
-
-:is(#hot, #ca-table) .table-view-table .tv-fold::before {
-    content: "\f054";
-    font-family: "Font Awesome 6 Free";
-    font-size: 12px;
-    font-weight: 900;
-}
-
-:is(#hot, #ca-table) .table-view-table .tv-fold[aria-expanded="true"]::before {
-    content: "\f078";
-}
-
-:is(#hot, #ca-table) .table-view-table .tv-fold-spacer {
-    flex-basis: 20px;
-}
-
 #ca-table .table-view-table td.modified-cell {
     color: #966300;
     font-weight: 700;

@@ -86,8 +86,8 @@
             document.getElementById('ca-total').textContent = format(table.getData().reduce((s, row) =>
                 s + (row.est_titre ? 0 : (Number(row.quantite_cumulee) - previous(row)) * Number(row.prix_unitaire)), 0));
         };
-        const numeric = (key, label, decimals = 3) => ({
-            key, label, type: 'number', decimals, editable: false, hideZero: true, width: 140,
+        const numeric = (key, label, decimals = 3, width = 140) => ({
+            key, label, type: 'number', decimals, editable: false, hideZero: true, width,
             getValue: row => row.est_titre ? null : Number(row[key]),
         });
         const quantity = (key, label) => ({
@@ -105,7 +105,7 @@
             });
             table = new window.TableView(host, {
                 label: 'Production mensuelle cumulée', data, rowKey: 'id', editable, locale: 'fr-FR',
-                rowHeaders: false, selectionMode: 'multi', clipboard: { copy: true, paste: editable, parseTsv: true },
+                rowHeaders: false, freezeColumns: 1, selectionMode: 'multi', clipboard: { copy: true, paste: editable, parseTsv: true },
                 appearance: { selectionColor: '#e7ece9' },
                 hierarchy: {
                     columnKey: 'designation',
@@ -123,17 +123,18 @@
                 isCellEditable: ({ column }) => column.key !== 'cumul_initial' || reprise(),
                 columns: [
                     { key: 'numero', label: 'N°', editable: false, width: 80 },
-                    { key: 'designation', label: 'Désignation', editable: false, width: 350, className: 'ca-designation',
+                    { key: 'designation', label: 'Désignation', editable: false, width: 400, className: 'ca-designation',
                         render: (value, row) => {
                             const span = document.createElement('span');
                             span.append(document.createTextNode(String(value ?? '').replace(/\s+/g, ' ')));
+                            span.title = value ?? '';
                             return span;
                         } },
-                    { key: 'unite', label: 'Unité', editable: false, width: 80, align: 'center' },
-                    numeric('quantite_marche', 'Quantité marché'),
-                    numeric('prix_unitaire', 'PU HT', 2),
+                    { key: 'unite', label: 'Unité', editable: false, width: 100, align: 'center' },
+                    numeric('quantite_marche', 'Quantité marché', 3, 120),
+                    numeric('prix_unitaire', 'PU HT', 2, 120),
                     ...(reprise() ? [initialColumn] : []),
-                    { ...numeric('cumul_precedent', 'Cumul N−1'), getValue: row => row.est_titre ? null : previous(row) },
+                    { ...numeric('cumul_precedent', 'Cumul N−1', 3, 100), getValue: row => row.est_titre ? null : previous(row) },
                     quantity('quantite_cumulee', 'Cumul N'),
                     { ...numeric('partielle', 'Quantité du mois'), getValue: row => row.est_titre ? null : Number(row.quantite_cumulee) - previous(row) },
                     { ...numeric('montant', 'Montant du mois HT', 2), className: 'is-amount', getValue: row => row.est_titre ? null : (Number(row.quantite_cumulee) - previous(row)) * Number(row.prix_unitaire) },

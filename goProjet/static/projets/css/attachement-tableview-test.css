@@ -49,6 +49,11 @@
     text-overflow: ellipsis;
 }
 
+.attachement-tableview-test .tv-hierarchy-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .attachement-tableview-test .table-view-table .attachment-title td {
     font-weight: 700;
     font-size: 15px;

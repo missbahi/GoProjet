@@ -6,11 +6,14 @@ from django.core.mail import send_mail
 from django.template.loader import render_to_string
 
 from ..models import Tache, Notification
+from projets.decorators import projets_accessibles
 
 
 def create_notification(user, titre, message, type_notif='AUTRE', action_url=None, projet=None, niveau_urgence='MOYEN'):
     """Helper pour créer une notification (adapté au modèle Notification)."""
-    if not user:
+    if not user or not user.is_active:
+        return False
+    if projet and not projets_accessibles(user).filter(pk=projet.pk).exists():
         return False
 
     Notification.objects.create(
@@ -74,7 +77,7 @@ def check_echeances_taches_quotidien():
         titre_projet = "Échéance de tâche aujourd'hui"
         message = f"La tâche « {tache.titre} » expire aujourd'hui."
 
-        if tache.responsable:
+        if tache.responsable and not tache.responsable_a_reaffecter:
             create_notification(
                 tache.responsable,
                 titre_resp, message,
@@ -114,7 +117,7 @@ def check_echeances_taches_quotidien():
 
     for tache in taches_demain:
         action_url = f"/projet/{tache.projet_id}/taches/{tache.id}/"
-        if tache.responsable:
+        if tache.responsable and not tache.responsable_a_reaffecter:
             create_notification(
                 tache.responsable,
                 "Échéance demain",
@@ -137,7 +140,7 @@ def check_echeances_taches_quotidien():
         action_url = f"/projet/{tache.projet_id}/taches/{tache.id}/"
         message = f"La tâche « {tache.titre} » est en retard de {jours_retard} jour(s)."
 
-        if tache.responsable:
+        if tache.responsable and not tache.responsable_a_reaffecter:
             create_notification(
                 tache.responsable,
                 "Tâche en retard",
@@ -168,7 +171,7 @@ def check_echeances_taches_quotidien():
 
     for tache in taches_urgentes:
         action_url = f"/projet/{tache.projet_id}/taches/{tache.id}/"
-        if tache.responsable:
+        if tache.responsable and not tache.responsable_a_reaffecter:
             create_notification(
                 tache.responsable,
                 "Rappel tâche urgente",

@@ -15,9 +15,11 @@
         </h1>
         <div class="flex flex-wrap gap-2">
             <a href="{% url 'goplan:liste_plans' %}" class="app-btn-secondary">Plannings</a>
+            {% if can_manage_project %}
             <a href="{% url 'goplan:creer_calendrier' %}" class="app-btn-primary">
                 <i class="fas fa-plus mr-2"></i> Nouveau calendrier
             </a>
+            {% endif %}
         </div>
     </div>
     <p class="mb-4 text-sm" style="color: var(--text-secondary);">
@@ -31,7 +33,8 @@
             <h2 class="text-lg font-semibold mb-2">{{ calendar.nom }}</h2>
             {% if calendar.is_default %}<span class="app-badge app-badge-success">Par défaut</span>{% endif %}
             <p class="text-sm my-3">{{ calendar.workday_labels|join:", " }} · {{ calendar.heures_par_jour }} h/jour</p>
-            <p class="text-sm mb-4">{{ calendar.exceptions_count }} exception(s) · {{ calendar.plans_count }} planning(s){% if not observer_readonly %} · {{ calendar.resources_count }} ressource(s){% endif %}</p>
+            <p class="text-sm mb-4">{{ calendar.exceptions_count }} exception(s) · {{ calendar.plans_count }} planning(s){% if user.is_superuser %} · {{ calendar.resources_count }} ressource(s){% endif %}</p>
+            {% if calendar.can_edit %}
             <div class="flex flex-wrap gap-2">
                 <a href="{% url 'goplan:modifier_calendrier' calendar.pk %}" class="app-btn-secondary">Modifier</a>
                 <form method="post" action="{% url 'goplan:supprimer_calendrier' calendar.pk %}"
@@ -43,6 +46,7 @@
                     </button>
                 </form>
             </div>
+            {% endif %}
         </section>
         {% empty %}
         <div class="app-card p-6">Aucun calendrier. Créez votre premier calendrier de travail.</div>

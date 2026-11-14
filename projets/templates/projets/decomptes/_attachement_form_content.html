@@ -142,6 +142,10 @@
                             aria-label="Passer en plein écran" aria-pressed="false">
                         <i class="fas fa-expand" aria-hidden="true"></i>
                     </button>
+                    <button type="button" id="toggle-expanded-all-btn" class="goplan-toolbar-btn" data-observer-safe
+                            aria-label="Réduire toutes les lignes filles" title="Réduire toutes les lignes filles" disabled>
+                        <i class="fas fa-compress-alt" aria-hidden="true"></i>
+                    </button>
                     </div>
                     {% if not is_edition or attachement.est_validable %}
                     <div class="attachment-editor-action-group" role="group" aria-label="Enregistrement">
@@ -227,7 +231,7 @@
             <form method="POST" enctype="multipart/form-data" novalidate id="attachement-form">
                 {% csrf_token %}
                 
-                <div class="attachment-editor-fields">
+                <div class="attachment-editor-fields" data-fullscreen-fields>
                 <div class="validation-section">
                     {% if attachement_precedent %}
                     Attachement précédent :

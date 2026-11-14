@@ -6,10 +6,11 @@ import re
 from django import forms
 from django.forms.models import BaseInlineFormSet
 from django.db.models import Q
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.validators import RegexValidator
 
 from projets.utils.icones import choix_icones
+from projets.catalogues import CatalogueDossierFormMixin
 
 # from projets.models.revision import RevisionPrix
 
@@ -157,7 +158,20 @@ class SuiviExecutionAjoutForm(SuiviExecutionForm):
         widget=SuiviFilesInput(attrs={'data-suivi-files': '', 'aria-describedby': 'suivi-files-help'}),
     )
 
-class CategorieChargeForm(forms.ModelForm):
+class CategorieChargeForm(CatalogueDossierFormMixin, forms.ModelForm):
+    def clean_code(self):
+        code = self.cleaned_data['code']
+        if self.instance.pk:
+            ancien_code = CategorieCharge.objects.get(pk=self.instance.pk).code
+            if code != ancien_code and any(
+                getattr(self.instance, relation.get_accessor_name()).exists()
+                for relation in self.instance._meta.related_objects
+            ):
+                raise forms.ValidationError("Le code d'une catégorie utilisée ne peut pas être modifié.")
+        if CategorieCharge.objects.filter(dossier=self.dossier, code=code).exclude(pk=self.instance.pk).exists():
+            raise forms.ValidationError("Ce code existe déjà dans ce dossier.")
+        return code
+
     class Meta:
         model = CategorieCharge
         fields = ['code', 'nom', 'ordre', 'actif']
@@ -238,20 +252,53 @@ class ProjetForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
+        self.user = user
         super().__init__(*args, **kwargs)
+        from projets.decorators import dossier_utilisateur, peut_creer_projet, peut_gerer_projet
         if user and user.is_superuser:
             self.fields['dossier'].queryset = Dossier.objects.all()
         elif user:
-            self.fields['dossier'].queryset = Dossier.objects.filter(gerant=user)
+            dossier = dossier_utilisateur(user)
+            self.fields['dossier'].queryset = Dossier.objects.filter(pk=dossier.pk)
+            self.fields['dossier'].initial = dossier
+            self.initial['dossier'] = dossier.pk
+            self.fields['dossier'].required = True
+            self.fields['dossier'].disabled = True
+            self.fields['dossier'].widget = forms.HiddenInput()
         else:
             self.fields['dossier'].queryset = Dossier.objects.none()
+        if user and not user.is_superuser:
+            self.fields['entreprise'].queryset = Entreprise.objects.filter(dossier=dossier)
+        elif self.is_bound:
+            selection = self.data.get('dossier', '')
+            self.fields['entreprise'].queryset = Entreprise.objects.filter(
+                dossier_id=selection if str(selection).isdigit() else None,
+            )
+        self._role_allowed = bool(user and (
+            peut_gerer_projet(user) if self.instance.pk else peut_creer_projet(user)
+        ))
         self.fields['revisable'].label = "Projet révisable"
         self.fields['revisable'].help_text = "Les prix seront ajustés selon les indices officiels"
         if not self.instance.pk:
             self.fields['taux_tva'].initial = 20.0
         if self.instance and self.instance.date_debut:
             self.initial['date_debut'] = self.instance.date_debut.strftime('%Y-%m-%d')
-                
+
+    def clean(self):
+        cleaned = super().clean()
+        from projets.decorators import projets_accessibles
+        if not self._role_allowed:
+            raise forms.ValidationError("Vous ne pouvez pas créer ou modifier ce projet.")
+        if not self.user.is_superuser and 'dossier' in self.data:
+            submitted = self.data.getlist('dossier') if hasattr(self.data, 'getlist') else [self.data['dossier']]
+            if [str(value) for value in submitted] != [str(cleaned['dossier'].pk)]:
+                self.add_error('dossier', "L'appartenance au dossier est imposée par votre compte.")
+        if self.instance.pk and not self.user.is_superuser:
+            if not projets_accessibles(self.user).filter(pk=self.instance.pk).exists():
+                raise forms.ValidationError("Ce projet n'est pas dans votre périmètre.")
+            if cleaned.get('dossier') and cleaned['dossier'].pk != self.instance.dossier_id:
+                self.add_error('dossier', "Vous ne pouvez pas déplacer ce projet vers un autre dossier.")
+        return cleaned
 
     def clean_montant(self):
         montant_val = self.cleaned_data.get('montant')
@@ -283,17 +330,19 @@ class DossierForm(forms.ModelForm):
         widgets = {
             'nom': forms.TextInput(attrs={'placeholder': 'Nom du dossier *'}),
             'description': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Description du dossier'}),
-            'gerant': forms.Select(attrs={'placeholder': 'Chef de projet du dossier'}),
+            'gerant': forms.Select(attrs={'placeholder': 'Administrateur de dossier (historique)'}),
         }
 
-    def __init__(self, *args, projet=None, **kwargs):
+    def __init__(self, *args, projet=None, user=None, **kwargs):
         kwargs.pop('projet', None)
         super().__init__(*args, **kwargs)
+        self.actor = user
         self.projet = projet or getattr(self.instance, 'projet', None)
         self.fields['gerant'].queryset = User.objects.filter(
             is_superuser=False,
-            profile__role__in=['GERANT', 'CHEF_PROJET'],
+            profile__role='ADMIN_DOSSIER',
         ).order_by('username')
+        self.fields['gerant'].label = _("Administrateur de dossier (lien historique)")
         projets_disponibles = Projet.objects.filter(dossier__isnull=True)
         if self.instance.pk:
             projets_disponibles = Projet.objects.filter(
@@ -301,10 +350,39 @@ class DossierForm(forms.ModelForm):
             )
             self.initial['projets'] = self.instance.projets.values_list('id', flat=True)
         self.fields['projets'].queryset = projets_disponibles.order_by('nom')
+        if user and not user.is_superuser:
+            from projets.decorators import dossier_utilisateur, est_admin_dossier
+            self._can_edit = bool(
+                est_admin_dossier(user) and self.instance.pk
+                and dossier_utilisateur(user).pk == self.instance.pk
+            )
+            self.fields.pop('gerant')
+            self.fields.pop('projets')
+        else:
+            self._can_edit = bool(user and user.is_superuser)
+
+    def clean(self):
+        cleaned = super().clean()
+        if not self._can_edit:
+            raise forms.ValidationError("Seul l'Admin peut créer un dossier ; vous ne pouvez modifier que votre dossier.")
+        if not self.actor.is_superuser and any(field in self.data for field in ('gerant', 'projets', 'utilisateurs')):
+            raise forms.ValidationError("Seul l'Admin peut changer les rattachements au dossier.")
+        gerant = cleaned.get('gerant')
+        if gerant:
+            autres = Dossier.objects.filter(
+                Q(utilisateurs=gerant) | Q(gerant=gerant)
+            )
+            if self.instance.pk:
+                autres = autres.exclude(pk=self.instance.pk)
+            if autres.exists():
+                self.add_error('gerant', "Cet administrateur est déjà rattaché à un autre dossier.")
+        return cleaned
 
     def save(self, commit=True):
         dossier = super().save(commit=commit)
         if commit:
+            if self.actor and not self.actor.is_superuser:
+                return dossier
             projets_selectionnes = self.cleaned_data['projets']
             Projet.objects.filter(dossier=dossier).exclude(
                 id__in=projets_selectionnes.values_list('id', flat=True)
@@ -314,7 +392,7 @@ class DossierForm(forms.ModelForm):
             ).update(dossier=dossier)
         return dossier
 
-class PersonnelForm(forms.ModelForm):
+class PersonnelForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Personnel
         fields = ['nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif']
@@ -330,12 +408,12 @@ class PersonnelForm(forms.ModelForm):
 
 class UtilisateurCreationForm(UserCreationForm):
     ROLE_CHOICES = (
+        ('ADMIN_DOSSIER', 'Administrateur de dossier'),
+        ('DIRECTEUR_PROJET', 'Directeur de projet'),
         ('CHEF_PROJET', 'Chef de projet'),
         ('CHEF_CHANTIER', 'Chef de chantier'),
         ('POINTEUR', 'Pointeur'),
         ('OBSERVATEUR', 'Observateur'),
-        ('STAFF', 'Staff'),
-        ('UTILISATEUR', 'Utilisateur'),
     )
     email = forms.EmailField(required=False)
     first_name = forms.CharField(required=False)
@@ -345,19 +423,44 @@ class UtilisateurCreationForm(UserCreationForm):
         queryset=Dossier.objects.none(), required=False,
         widget=forms.CheckboxSelectMultiple,
     )
+    projets = forms.ModelMultipleChoiceField(
+        queryset=Projet.objects.none(), required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from projets.user_policy import dossiers_affectables, roles_assignables
+        from projets.decorators import projets_accessibles
         self.creator = user
-        if user and user.is_superuser:
-            self.fields['dossiers'].queryset = Dossier.objects.all()
-        elif user:
-            self.fields['role'].choices = (
-                ('CHEF_CHANTIER', 'Chef de chantier'), ('POINTEUR', 'Pointeur'),
-                ('OBSERVATEUR', 'Observateur'),
-                ('STAFF', 'Staff'), ('UTILISATEUR', 'Utilisateur'),
-            )
-            self.fields['dossiers'].queryset = Dossier.objects.filter(gerant=user)
+        self.fields['role'].choices = roles_assignables(user)
+        if user and self.fields['role'].choices:
+            self.fields['dossiers'].queryset = dossiers_affectables(user)
+            self.fields['projets'].queryset = projets_accessibles(user)
+            if not user.is_superuser:
+                self.fields.pop('dossiers')
+
+    def clean(self):
+        cleaned = super().clean()
+        from projets.user_policy import valider_dossiers_utilisateur
+        from projets.decorators import dossier_utilisateur
+        role = cleaned.get('role')
+        dossiers = cleaned.get('dossiers')
+        if self.creator and not self.creator.is_superuser:
+            if 'dossiers' in self.data:
+                raise forms.ValidationError("Le dossier du nouvel utilisateur est imposé par votre compte.")
+            dossier = dossier_utilisateur(self.creator)
+            dossiers = Dossier.objects.filter(pk=dossier.pk)
+            cleaned['dossiers'] = dossiers
+        if role and dossiers is not None:
+            try:
+                valider_dossiers_utilisateur(self.instance, role, dossiers)
+            except ValidationError as exc:
+                self.add_error('dossiers' if 'dossiers' in self.fields else None, exc)
+            projets = cleaned.get('projets')
+            if projets is not None and projets.exclude(dossier__in=dossiers).exists():
+                self.add_error('projets', "Les projets doivent appartenir aux dossiers sélectionnés.")
+        return cleaned
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -367,24 +470,28 @@ class UtilisateurCreationForm(UserCreationForm):
         user.is_staff = False
         user.is_superuser = False
         if commit:
-            user.save()
-            user.profile.role = self.cleaned_data['role']
-            user.profile.save()
-            user.dossiers.set(self.cleaned_data['dossiers'])
+            from django.db import transaction
+            with transaction.atomic():
+                user.save()
+                user.profile.role = self.cleaned_data['role']
+                user.profile.created_by = self.creator
+                user.profile.save()
+                user.dossiers.set(self.cleaned_data['dossiers'])
+                user.projets.set(self.cleaned_data['projets'])
         return user
         
-class ClientForm(forms.ModelForm):
+class ClientForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Client
         fields = ['nom', 'contact', 'email', 'telephone', 'adresse']
 
-class IngenieurForm(forms.ModelForm):
+class IngenieurForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Ingenieur
         fields = ['nom']
         labels = {'name': 'Nom'}
 
-class EntrepriseForm(forms.ModelForm):
+class EntrepriseForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Entreprise
         fields = ['nom', 'contact', 'email', 'telephone', 'adresse']
@@ -393,7 +500,7 @@ def materiels_affectes_projet(projet):
     ressources = RessourceAffectee.objects.filter(
         projet=projet, categorie_charge__code='MATERIEL', actif=True,
     ).values('objet_id')
-    return Materiel.objects.filter(pk__in=ressources).select_related('type_materiel').order_by('designation')
+    return Materiel.objects.filter(dossier=projet.dossier, pk__in=ressources).select_related('type_materiel').order_by('designation')
 
 
 class AffectationRessourceForm(forms.ModelForm):
@@ -428,7 +535,7 @@ class AffectationRessourceForm(forms.ModelForm):
         atelier = self.atelier
 
         # --- Champ atelier ---
-        qs_ateliers = Atelier.objects.filter(actif=True)
+        qs_ateliers = Atelier.objects.none()
         if atelier:
             # Figer l'atelier fourni, même s'il est inactif.
             qs_ateliers = Atelier.objects.filter(pk=atelier.pk)
@@ -583,7 +690,7 @@ class TypeMaterielForm(forms.ModelForm):
             choix.append((courant, f"{courant} (fichier introuvable)"))
         self.fields["icone"].choices = choix
 
-class MaterielForm(forms.ModelForm):
+class MaterielForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Materiel
         fields = ["designation", "type_materiel", "immatriculation",
@@ -603,7 +710,7 @@ class MaterielForm(forms.ModelForm):
         if not no_parc:
             return no_parc  # autoriser vide
         
-        qs = Materiel.objects.filter(immatriculation=no_parc)
+        qs = Materiel.objects.filter(dossier=self.dossier, immatriculation=no_parc)
         
         # Exclure l'instance en cours de modification
         if self.instance and self.instance.pk:
@@ -664,27 +771,27 @@ class AtelierForm(forms.ModelForm):
             atelier.save()
         return atelier
 
-class TransportForm(forms.ModelForm):
+class TransportForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Transport
         fields = ['designation', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif']
 
-class LocationForm(forms.ModelForm):
+class LocationForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Location
         fields = ['designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif']
 
-class SousTraitanceForm(forms.ModelForm):
+class SousTraitanceForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = SousTraitance
         fields = ['designation', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif']
 
-class ConsommableForm(forms.ModelForm):
+class ConsommableForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Consommable
         fields = ['designation', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
 
-class FournitureForm(forms.ModelForm):
+class FournitureForm(CatalogueDossierFormMixin, forms.ModelForm):
     class Meta:
         model = Fourniture
         fields = ['designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif']
@@ -733,7 +840,10 @@ class RessourceAffecteeForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.projet = projet or getattr(self.instance, 'projet', None)
         self.fields['categorie_charge'].queryset = (
-            CategorieCharge.objects.filter(actif=True).order_by('ordre', 'nom')
+            CategorieCharge.objects.filter(
+                dossier_id=self.projet.dossier_id if self.projet else None,
+            ).filter(Q(actif=True) | Q(pk=self.instance.categorie_charge_id)).order_by('ordre', 'nom')
+            if self.projet and self.projet.dossier_id else CategorieCharge.objects.none()
         )
         if self.projet:
             self.fields['atelier'].queryset = (
@@ -759,7 +869,10 @@ class RessourceAffecteeForm(forms.ModelForm):
     def _code_categorie_courant(self):
         """Détermine le code de catégorie courant (initial, instance ou POST)."""
         if self.data and self.data.get('categorie_charge'):
-            cat = CategorieCharge.objects.filter(pk=self.data['categorie_charge']).first()
+            try:
+                cat = self.fields['categorie_charge'].queryset.filter(pk=self.data['categorie_charge']).first()
+            except (ValueError, TypeError):
+                return ''
             return cat.code if cat else ''
         if self.instance and self.instance.categorie_charge_id:
             return self.instance.categorie_charge.code
@@ -774,7 +887,11 @@ class RessourceAffecteeForm(forms.ModelForm):
         if not entry:
             return [('', '— Sélectionnez d\'abord un type —')]
         Model, champ_designation, _, _ = entry
-        qs = Model.objects.filter(actif=True).order_by(champ_designation)
+        if not self.projet or not self.projet.dossier_id:
+            return [('', '— Sélectionnez un dossier —')]
+        qs = Model.objects.filter(dossier_id=self.projet.dossier_id).filter(
+            Q(actif=True) | Q(pk=self.instance.objet_id)
+        ).order_by(champ_designation)
         options = [('', '— Sélectionner —')]
         for obj in qs:
             label = getattr(obj, champ_designation)
@@ -797,9 +914,9 @@ class RessourceAffecteeForm(forms.ModelForm):
             self.add_error('objet_id', _("Sélectionnez une ressource."))
             return cleaned
 
-        Model, champ_designation, champ_prix, _ = entry
+        Model, champ_designation, champ_prix, label = entry
         try:
-            source = Model.objects.get(pk=int(objet_id))
+            source = Model.objects.get(pk=int(objet_id), dossier_id=self.projet.dossier_id)
         except (Model.DoesNotExist, ValueError, TypeError):
             self.add_error('objet_id', _("Ressource introuvable."))
             return cleaned
@@ -841,6 +958,12 @@ class RessourceAffecteeForm(forms.ModelForm):
             instance.save()
         return instance
 
+class ResponsableTacheChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        from projets.task_policy import libelle_responsable
+        return libelle_responsable(obj)
+
+
 class TacheForm(forms.ModelForm):
     class Meta:
         model = Tache
@@ -856,25 +979,70 @@ class TacheForm(forms.ModelForm):
             'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-input'}),
             'priorite': forms.Select(attrs={'class': 'form-input'}),
         }
+        field_classes = {'responsable': ResponsableTacheChoiceField}
 
-    def __init__(self, *args, user=None, **kwargs):
+    def __init__(self, *args, user=None, projet=None, **kwargs):
         super().__init__(*args, **kwargs)
+        from projets.decorators import projets_accessibles
+        from projets.task_policy import (
+            peut_actualiser_tache, peut_gerer_taches,
+            responsables_affectables, responsables_eligibles,
+        )
         self.user = user
-
-        if user is not None:
-            from projets.decorators import projets_accessibles
-            accessibles = projets_accessibles(user)
-
-            # ⚡ Filtrer les projets accessibles
-            self.fields['projet'].queryset = accessibles.order_by('nom')
-
-            # ⚡ Filtrer les responsables aux users des projets accessibles
+        accessibles = (
+            projets_accessibles(user) if user is not None else Projet.objects.none()
+        ).order_by('nom', 'pk')
+        self.fields['projet'].queryset = accessibles
+        self.projet = self.instance.projet if self.instance.pk else projet
+        choix_projets = list(accessibles[:2]) if self.projet is None else []
+        if len(choix_projets) == 1:
+            self.projet = choix_projets[0]
+        self._projet_verrouille = self.projet is not None
+        if self.projet is None and self.is_bound:
+            selection = self.data.get('projet', '')
+            if str(selection).isdigit():
+                self.projet = accessibles.filter(pk=selection).first()
+        elif self.projet is None and choix_projets:
+            self.projet = choix_projets[0]
+            self.initial['projet'] = self.projet.pk
+        if self._projet_verrouille:
+            self.initial['projet'] = self.projet.pk
+            self.fields['projet'].disabled = True
+        self.can_manage = peut_gerer_taches(user, self.projet)
+        eligibles = (
+            responsables_affectables(user, self.projet) if self.can_manage
+            else responsables_eligibles(self.projet)
+        )
+        self.fields['responsable'].queryset = eligibles
+        self.fields['responsable'].label = "Responsable de la tâche"
+        if self.instance.pk and (
+            self.instance.terminee or (
+                self.can_manage and responsables_eligibles(self.projet).filter(
+                    pk=self.instance.responsable_id,
+                ).exists()
+            )
+        ):
             self.fields['responsable'].queryset = User.objects.filter(
-                projets__in=accessibles
-            ).distinct().order_by('username')
-        else:
-            self.fields['projet'].queryset = Projet.objects.none()
-            self.fields['responsable'].queryset = User.objects.none()
+                Q(pk__in=eligibles.values('pk')) | Q(pk=self.instance.responsable_id),
+            ).select_related('profile')
+        if self.instance.pk and self.instance.terminee:
+            self.fields['responsable'].required = self.instance.responsable_id is not None
+        self._responsable_verrouille = None
+        if not self.instance.pk and self.can_manage:
+            choix_responsables = list(eligibles.values_list('pk', flat=True)[:2])
+            if len(choix_responsables) == 1:
+                self._responsable_verrouille = choix_responsables[0]
+                self.initial['responsable'] = self._responsable_verrouille
+                self.fields['responsable'].disabled = True
+        self.can_update = self.can_manage or bool(
+            self.instance.pk and peut_actualiser_tache(user, self.instance)
+        )
+        self._protected = {
+            name for name in self.fields if name not in {'terminee', 'avancement'}
+        }
+        if not self.can_manage:
+            for name in self._protected:
+                self.fields[name].disabled = True
 
         for field in self.fields:
             if field not in ['terminee', 'description']:
@@ -886,6 +1054,29 @@ class TacheForm(forms.ModelForm):
         fin = cleaned.get('date_fin')
         avancement = cleaned.get('avancement')
         projet = cleaned.get('projet')
+        if not self.can_update:
+            raise forms.ValidationError("Vous ne pouvez pas modifier cette tâche.")
+        if self._projet_verrouille and 'projet' in self.data:
+            if str(self.data['projet']) != str(self.projet.pk):
+                self.add_error('projet', "Le projet de la tâche ne peut pas être changé.")
+        if self._responsable_verrouille is not None and 'responsable' in self.data:
+            if str(self.data['responsable']) != str(self._responsable_verrouille):
+                self.add_error('responsable', "Le responsable est imposé car il est le seul choix disponible.")
+        if not self.can_manage:
+            for name in self._protected:
+                if name not in self.data:
+                    continue
+                field = self.fields[name]
+                try:
+                    supplied = field.to_python(self.data[name])
+                    initial = field.to_python(self.get_initial_for_field(field, name))
+                except ValidationError:
+                    self.add_error(name, "Seuls les responsables du projet peuvent modifier ce champ.")
+                    continue
+                if supplied != initial:
+                    self.add_error(name, "Vous pouvez uniquement actualiser l'avancement et la fin de votre tâche.")
+        if cleaned.get('terminee'):
+            cleaned['avancement'] = 100
 
         if debut and fin and fin < debut:
             self.add_error('date_fin', 'La date de fin ne peut précéder la date de début.')
@@ -899,6 +1090,23 @@ class TacheForm(forms.ModelForm):
                 self.add_error('projet', "Vous n'avez pas accès à ce projet.")
 
         return cleaned
+
+    def save(self, commit=True):
+        if self.can_manage or not commit:
+            return super().save(commit=commit)
+        from django.db import transaction
+        from projets.task_policy import peut_actualiser_tache
+
+        pending = super().save(commit=False)
+        with transaction.atomic():
+            current = Tache.objects.select_for_update().get(pk=pending.pk)
+            if not peut_actualiser_tache(self.user, current):
+                raise PermissionDenied("Vous n'êtes plus responsable de cette tâche.")
+            current.avancement = pending.avancement
+            current.terminee = pending.terminee
+            current.save(update_fields=['avancement', 'terminee', 'updated_at'])
+        self.instance = current
+        return current
     
 class AttachementForm(forms.ModelForm):
     original_filename = forms.CharField(widget=forms.HiddenInput(), required=False)
@@ -1472,13 +1680,14 @@ class DepenseRapportJournalierForm(forms.ModelForm):
         model = DepenseRapportJournalier
         fields = ['categorie', 'categorie_charge', 'designation', 'quantite', 'unite', 'prix_unitaire', 'observations']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, projet=None, **kwargs):
         super().__init__(*args, **kwargs)
-        categories = CategorieCharge.objects.filter(actif=True)
-        if self.instance.categorie_charge_id:
-            categories = CategorieCharge.objects.filter(
-                Q(actif=True) | Q(pk=self.instance.categorie_charge_id)
-            )
+        if projet is None and self.instance.rapport_id:
+            projet = self.instance.rapport.projet
+        categories = CategorieCharge.objects.none()
+        if projet and projet.dossier_id:
+            categories = CategorieCharge.objects.filter(dossier_id=projet.dossier_id).filter(
+                Q(actif=True) | Q(pk=self.instance.categorie_charge_id))
         self.fields['categorie_charge'].queryset = categories
         for name, field in self.fields.items():
             if name not in {'categorie', 'categorie_charge'}:
@@ -1491,7 +1700,9 @@ class DepenseRapportJournalierForm(forms.ModelForm):
         if categorie_charge:
             cleaned_data['categorie'] = categorie_charge.code[:30]
         elif categorie:
-            cleaned_data['categorie_charge'] = CategorieCharge.objects.filter(code=categorie).first()
+            cleaned_data['categorie_charge'] = self.fields['categorie_charge'].queryset.filter(code=categorie).first()
+            if cleaned_data['categorie_charge'] is None:
+                self.add_error('categorie', 'Catégorie inconnue dans ce dossier.')
         return cleaned_data
 
 class StockRapportJournalierForm(forms.ModelForm):
@@ -1670,15 +1881,18 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
         model = DepenseSituationMensuelle
         fields = ['categorie', 'categorie_charge', 'designation', 'montant_base', 'cession_entrante', 'cession_sortante']
 
-    def __init__(self, *args, categories_charge=None, **kwargs):
+    def __init__(self, *args, categories_charge=None, projet=None, **kwargs):
         super().__init__(*args, **kwargs)
+        if projet is None and self.instance.situation_id:
+            projet = self.instance.situation.projet
         if categories_charge is None:
             categories_charge = CategorieCharge.objects.filter(
-                Q(actif=True) | Q(pk=self.instance.categorie_charge_id)
-            )
+                dossier_id=projet.dossier_id,
+            ).filter(Q(actif=True) | Q(pk=self.instance.categorie_charge_id)) if projet and projet.dossier_id else []
         self.categories_charge = {
             categorie.pk: categorie
             for categorie in categories_charge
+            if projet and projet.dossier_id and categorie.dossier_id == projet.dossier_id
         }
         montant_base_key = f'{self.prefix}-montant_base'
         montant_legacy_key = f'{self.prefix}-montant'
@@ -1717,6 +1931,8 @@ class DepenseSituationMensuelleForm(forms.ModelForm):
                 ),
                 None,
             )
+            if cleaned_data['categorie_charge'] is None:
+                self.add_error('categorie', 'Catégorie inconnue dans ce dossier.')
         return cleaned_data
 
     def clean_montant_base(self):
@@ -1777,24 +1993,29 @@ class StockSituationMensuelleForm(forms.ModelForm):
 
 class DepenseSituationMensuelleBaseFormSet(BaseInlineFormSet):
     def __init__(self, *args, **kwargs):
-        categories_charge = list(CategorieCharge.objects.filter(actif=True))
-        existing_category_ids = set(
-            kwargs.get('queryset', DepenseSituationMensuelle.objects.none())
-            .exclude(categorie_charge_id=None)
-            .values_list('categorie_charge_id', flat=True)
-        )
-        missing_ids = existing_category_ids.difference(
-            categorie.pk for categorie in categories_charge
-        )
-        if missing_ids:
-            categories_charge.extend(CategorieCharge.objects.filter(pk__in=missing_ids))
+        situation = kwargs.get('instance')
+        projet = situation.projet if situation and situation.projet_id else None
+        categories = CategorieCharge.objects.none()
+        if projet and projet.dossier_id:
+            existing_ids = situation.depenses.values_list('categorie_charge_id', flat=True) if situation.pk else []
+            categories = CategorieCharge.objects.filter(dossier_id=projet.dossier_id).filter(
+                Q(actif=True) | Q(pk__in=existing_ids))
         form_kwargs = kwargs.setdefault('form_kwargs', {})
-        form_kwargs['categories_charge'] = categories_charge
+        form_kwargs['categories_charge'] = list(categories)
+        form_kwargs['projet'] = projet
         super().__init__(*args, **kwargs)
+
+class DepenseRapportJournalierBaseFormSet(BaseInlineFormSet):
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs['projet'] = self.instance.projet if self.instance.projet_id else None
+        return kwargs
+
 
 DepenseRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier, DepenseRapportJournalier,
-    form=DepenseRapportJournalierForm, extra=0, can_delete=True,
+    form=DepenseRapportJournalierForm, formset=DepenseRapportJournalierBaseFormSet,
+    extra=0, can_delete=True,
 )
 
 StockRapportJournalierFormSet = forms.inlineformset_factory(

@@ -11,6 +11,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.files.storage import default_storage
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import transaction
 from django.http import (
     FileResponse,
     HttpResponse,
@@ -32,6 +33,11 @@ from projets.forms import AvatarUpdateForm, UtilisateurCreationForm
 from projets.models import Dossier, Profile
 from projets.views.os_views.views import clean_url
 from projets.utils.navigation import crumb
+from projets.user_policy import (
+    RETIRED_ROLES, dossiers_affectables, exiger_action_utilisateur,
+    peut_agir_utilisateur, roles_assignables, utilisateurs_gerables,
+)
+from .forms import UtilisateurModificationForm
 
 
 logger = logging.getLogger(__name__)
@@ -64,12 +70,7 @@ def liste_utilisateurs(request):
     user = request.user
 
     # ⚡ Queryset : superuser voit tout, gérant voit ses dossiers
-    if user.is_superuser:
-        utilisateurs = User.objects.all()
-    else:
-        utilisateurs = User.objects.filter(
-            Q(dossiers__gerant=user) | Q(dossiers__utilisateurs=user)
-        ).distinct()
+    utilisateurs = utilisateurs_gerables(user)
 
     # ⚡ Optimization : précharger le profil
     utilisateurs = utilisateurs.select_related('profile').prefetch_related('dossiers').order_by('username')
@@ -79,22 +80,10 @@ def liste_utilisateurs(request):
     if role_filter:
         if role_filter == 'SUPERUSER':
             utilisateurs = utilisateurs.filter(is_superuser=True)
-        elif role_filter == 'GERANT':
-            utilisateurs = utilisateurs.filter(
-                profile__role__in=['GERANT', 'CHEF_PROJET']
-            )
-        elif role_filter == 'CHEF_CHANTIER':
-            utilisateurs = utilisateurs.filter(profile__role='CHEF_CHANTIER')
-        elif role_filter == 'POINTEUR':
-            utilisateurs = utilisateurs.filter(profile__role='POINTEUR')
-        elif role_filter == 'OBSERVATEUR':
-            utilisateurs = utilisateurs.filter(profile__role='OBSERVATEUR')
-        elif role_filter == 'STAFF':
-            utilisateurs = utilisateurs.filter(profile__role='STAFF')
-        elif role_filter == 'UTILISATEUR':
-            utilisateurs = utilisateurs.filter(profile__role='UTILISATEUR')
         elif role_filter == 'INACTIF':
             utilisateurs = utilisateurs.filter(is_active=False)
+        elif role_filter in {role for role, _ in Profile.ROLE_CHOICES} | {'A_RECLASSER'}:
+            utilisateurs = utilisateurs.filter(profile__role=role_filter)
 
     # ⚡ Recherche
     search = request.GET.get('search', '').strip()
@@ -109,6 +98,10 @@ def liste_utilisateurs(request):
     # ⚡ Pagination
     paginator = Paginator(utilisateurs, 30)
     page_obj = paginator.get_page(request.GET.get('page', 1))
+    for target in page_obj:
+        target.can_edit_account = peut_agir_utilisateur(user, target, 'edit')
+        target.can_assign_projects = peut_agir_utilisateur(user, target, 'projects')
+        target.can_delete_account = peut_agir_utilisateur(user, target, 'delete')
 
     context = {
         'utilisateurs': page_obj,
@@ -208,35 +201,18 @@ def _modifier_utilisateur_context(
     can_manage_user_dossiers,
 ):
     """Construit le contexte du formulaire de modification."""
-    if request.user.is_superuser:
-        dossiers_disponibles = Dossier.objects.all()
-        role_choices = [
-            ('CHEF_PROJET', 'Chef de projet'),
-            ('GERANT', 'Chef de projet (historique)'),
-            ('CHEF_CHANTIER', 'Chef de chantier'),
-            ('POINTEUR', 'Pointeur'),
-            ('OBSERVATEUR', 'Observateur'),
-            ('STAFF', 'Staff'),
-            ('UTILISATEUR', 'Utilisateur'),
-        ]
-    else:
-        dossiers_disponibles = Dossier.objects.filter(gerant=request.user)
-        role_choices = [
-            ('CHEF_CHANTIER', 'Chef de chantier'),
-            ('POINTEUR', 'Pointeur'),
-            ('OBSERVATEUR', 'Observateur'),
-            ('STAFF', 'Staff'),
-            ('UTILISATEUR', 'Utilisateur'),
-        ]
+    dossiers_disponibles = dossiers_affectables(request.user)
+    role_choices = roles_assignables(request.user)
 
     return {
-        'user': target_user,
         'target_user': target_user,
         'dossiers': dossiers_disponibles,
         'role_choices': role_choices,
         'can_manage_account_status': can_manage_account_status,
         'can_manage_roles': can_manage_roles,
+        'can_keep_current_role': target_user.profile.role in RETIRED_ROLES,
         'can_manage_user_dossiers': can_manage_user_dossiers,
+        'can_manage_password': peut_agir_utilisateur(request.user, target_user, 'password'),
     }
 
 
@@ -245,152 +221,40 @@ def modifier_utilisateur(request, user_id):
     """Modification d'un utilisateur existant."""
     target_user = get_object_or_404(User, id=user_id)
 
-    # ⚠️ Sécurité : ne pas modifier un superuser si on ne l'est pas
-    if target_user.is_superuser and not request.user.is_superuser:
-        raise PermissionDenied
-
-    # ⚠️ Sécurité : un gérant ne peut modifier que les users de ses dossiers
-    if not request.user.is_superuser:
-        user_accessible = (
-            target_user.dossiers.filter(
-                Q(gerant=request.user) | Q(utilisateurs=request.user)
-            ).exists()
-            or target_user == request.user
-        )
-        if not user_accessible:
-            raise PermissionDenied
+    exiger_action_utilisateur(request.user, target_user, 'edit')
 
     # ⚡ Qui peut gérer quoi
     can_manage_account_status = (
-        request.user.is_superuser
-        and target_user.pk != request.user.pk
-        and not target_user.is_superuser
+        peut_agir_utilisateur(request.user, target_user, 'status')
     )
     can_manage_roles = (
-        (request.user.is_superuser or est_gerant(request.user))
-        and target_user.pk != request.user.pk
-        and not target_user.is_superuser
+        peut_agir_utilisateur(request.user, target_user, 'role')
     )
     can_manage_user_dossiers = (
-        target_user.pk != request.user.pk
-        and not target_user.is_superuser
+        peut_agir_utilisateur(request.user, target_user, 'dossiers')
     )
 
     # ============================================================
     # ⚡ BLOC POST : traitement du formulaire
     # ============================================================
     if request.method == 'POST':
-        # Champs de base
-        target_user.email = request.POST.get('email', target_user.email).strip()
-        target_user.first_name = request.POST.get(
-            'first_name', target_user.first_name
-        ).strip()
-        target_user.last_name = request.POST.get(
-            'last_name', target_user.last_name
-        ).strip()
-
-        # ⚡ Mot de passe (seulement si fourni et valide)
-        password = request.POST.get('password', '').strip()
-        confirm_password = request.POST.get('confirm_password', '').strip()
-        if password or confirm_password:
+        form = UtilisateurModificationForm(
+            request.POST, request.FILES, actor=request.user, target=target_user,
+        )
+        if not form.is_valid():
             context = _modifier_utilisateur_context(
-                request,
-                target_user,
-                can_manage_account_status,
-                can_manage_roles,
-                can_manage_user_dossiers,
+                request, target_user, can_manage_account_status,
+                can_manage_roles, can_manage_user_dossiers,
             )
-
-            if password != confirm_password:
-                messages.error(request, "Les mots de passe ne correspondent pas.")
-                if request.headers.get('HX-Request'):
-                    return _user_form_response(
-                        request,
-                        'projets/utilisateurs/_modifier_utilisateur_content.html',
-                        context,
-                        status=400,
-                    )
-                return render(
-                    request,
-                    'projets/utilisateurs/modifier_utilisateur.html',
-                    context,
-                )
-
-            if len(password) < 8:
-                messages.error(
-                    request, "Le mot de passe doit contenir au moins 8 caractères."
-                )
-                if request.headers.get('HX-Request'):
-                    return _user_form_response(
-                        request,
-                        'projets/utilisateurs/_modifier_utilisateur_content.html',
-                        context,
-                        status=400,
-                    )
-                return render(
-                    request,
-                    'projets/utilisateurs/modifier_utilisateur.html',
-                    context,
-                )
-
-            target_user.set_password(password)
-
-        # ⚡ Rôle (seulement si autorisé)
-        if can_manage_roles:
-            role = request.POST.get('role')
-            roles_autorises = (
-                {'CHEF_PROJET', 'GERANT', 'CHEF_CHANTIER', 'POINTEUR', 'OBSERVATEUR', 'STAFF', 'UTILISATEUR'}
-                if request.user.is_superuser
-                else {'CHEF_CHANTIER', 'POINTEUR', 'OBSERVATEUR', 'STAFF', 'UTILISATEUR'}
+            context['form_errors'] = form.errors
+            template = (
+                'projets/utilisateurs/_modifier_utilisateur_content.html'
+                if request.headers.get('HX-Request')
+                else 'projets/utilisateurs/modifier_utilisateur.html'
             )
-            if role not in roles_autorises:
-                raise PermissionDenied
-            target_user.profile.role = role
-            if role == 'OBSERVATEUR':
-                target_user.is_staff = False
-
-        # ⚡ Statut actif (seulement si autorisé)
-        if can_manage_account_status:
-            target_user.is_active = request.POST.get('is_active') == 'on'
-
-        # ⚡ Avatar
-        if 'avatar' in request.FILES:
-            if request.FILES['avatar'].size > MAX_UPLOAD_SIZE:
-                messages.error(request, "L'avatar ne doit pas dépasser 5 Mo.")
-                if request.headers.get('HX-Request'):
-                    return _user_form_response(
-                        request, 'projets/utilisateurs/_modifier_utilisateur_content.html',
-                        _modifier_utilisateur_context(
-                            request, target_user, can_manage_account_status,
-                            can_manage_roles, can_manage_user_dossiers,
-                        ),
-                        status=400,
-                    )
-                return redirect('projets:modifier_utilisateur', user_id=target_user.pk)
-            target_user.profile.avatar = request.FILES['avatar']
-            target_user.profile.save()
-
-        # ⚡ Sauvegarde
-        target_user.save()
-        target_user.profile.save()
-
-        # ⚡ Dossiers (seulement si autorisé)
-        if can_manage_user_dossiers:
-            if request.user.is_superuser:
-                dossiers_autorises = Dossier.objects.all()
-            else:
-                dossiers_autorises = Dossier.objects.filter(gerant=request.user)
-
-            dossiers_hors_perimetre = target_user.dossiers.exclude(
-                id__in=dossiers_autorises.values('id')
-            )
-            target_user.dossiers.set([
-                *dossiers_hors_perimetre,
-                *dossiers_autorises.filter(id__in=request.POST.getlist('dossiers')),
-            ])
-
-
-        if target_user.pk == request.user.pk and password:
+            return _user_form_response(request, template, context, status=400)
+        form.save()
+        if target_user.pk == request.user.pk and form.cleaned_data.get('password'):
             update_session_auth_hash(request, target_user)
 
         modal_response = _user_modal_success(
@@ -440,26 +304,12 @@ def modifier_utilisateur(request, user_id):
 
 
 @gestion_utilisateurs_required
+@require_POST
 def supprimer_utilisateur(request, user_id):
     """Suppression d'un utilisateur."""
     target_user = get_object_or_404(User, id=user_id)
 
-    # ⚠️ Sécurité : ne pas supprimer un superuser si on ne l'est pas
-    if target_user.is_superuser and not request.user.is_superuser:
-        raise PermissionDenied
-
-    # ⚠️ Sécurité : ne pas se supprimer soi-même
-    if target_user == request.user:
-        messages.error(request, "Vous ne pouvez pas supprimer votre propre compte.")
-        return redirect('projets:liste_utilisateurs')
-
-    # ⚠️ Sécurité : gérant ne peut supprimer que les users de ses dossiers
-    if not request.user.is_superuser:
-        user_accessible = target_user.dossiers.filter(
-            Q(gerant=request.user) | Q(utilisateurs=request.user)
-        ).exists()
-        if not user_accessible:
-            raise PermissionDenied
+    exiger_action_utilisateur(request.user, target_user, 'delete')
 
     username = target_user.username
     target_user.delete()
@@ -486,32 +336,15 @@ def gerer_projets_utilisateur(request, user_id):
     """Gestion des projets affectés à un utilisateur."""
     utilisateur = get_object_or_404(User, id=user_id)
 
-    # ⚠️ Sécurité : ne pas gérer les projets d'un superuser si on ne l'est pas
-    if utilisateur.is_superuser and not request.user.is_superuser:
-        raise PermissionDenied
-
-    # ⚡ Vérification : gérant ne peut gérer que ses users
-    if not request.user.is_superuser:
-        user_accessible = (
-            utilisateur.dossiers.filter(
-                Q(gerant=request.user) | Q(utilisateurs=request.user)
-            ).exists()
-            or utilisateur == request.user
-        )
-        if not user_accessible:
-            raise PermissionDenied
+    exiger_action_utilisateur(request.user, utilisateur, 'projects')
 
     # ⚡ Projets accessibles au user connecté
     projets_autorises = projets_accessibles(request.user)
 
     # ⚡ Projets affectables
-    if request.user.is_superuser:
-        tous_les_projets = projets_autorises.select_related('dossier').order_by('nom')
-    else:
-        dossiers_geres = Dossier.objects.filter(gerant=request.user)
-        tous_les_projets = projets_autorises.filter(
-            dossier__in=dossiers_geres
-        ).select_related('dossier').order_by('nom')
+    tous_les_projets = projets_autorises.filter(
+        dossier__in=utilisateur.dossiers.all()
+    ).select_related('dossier').order_by('nom')
 
     # ⚡ Projets actuellement assignés
     projets_utilisateur = utilisateur.projets.filter(
@@ -524,6 +357,12 @@ def gerer_projets_utilisateur(request, user_id):
     # ============================================================
     if request.method == 'POST':
         projets_selectionnes = request.POST.getlist('projets')
+        if (
+            any(not str(pk).isdigit() for pk in projets_selectionnes)
+            or tous_les_projets.filter(pk__in=projets_selectionnes).count()
+            != len(set(projets_selectionnes))
+        ):
+            raise PermissionDenied("Vous ne pouvez affecter que des projets de votre périmètre.")
         projets_hors_perimetre = utilisateur.projets.exclude(
             id__in=tous_les_projets.values('id')
         )

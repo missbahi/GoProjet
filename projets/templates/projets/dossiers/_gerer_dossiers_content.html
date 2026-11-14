@@ -171,6 +171,14 @@
                                         title="Modifier le dossier">
                                             <i class="fas fa-pen"></i>
                                         </a>
+                                        <form method="post" action="{% url 'projets:supprimer_dossier' dossier.pk %}"
+                                              onsubmit="return confirm('Supprimer ce dossier vide ?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="app-action-btn"
+                                                    title="Supprimer le dossier vide">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                                 {% if dossier.description %}

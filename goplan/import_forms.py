@@ -1,4 +1,8 @@
 from django import forms
+from django.contrib.contenttypes.models import ContentType
+
+from projets.decorators import projets_accessibles
+from projets.models import Projet
 
 
 MAX_XML_BYTES = 5 * 1024 * 1024
@@ -12,7 +16,7 @@ class XmlImportForm(forms.Form):
     accepter_remplacement = forms.BooleanField(
         required=True,
         label="J'accepte de remplacer définitivement tout le contenu de ce planning, "
-              "y compris son titre, sa description et son rattachement projet.",
+              "y compris son titre et sa description.",
     )
 
     def __init__(self, *args, replacing=False, **kwargs):
@@ -36,11 +40,14 @@ class ImportedPlanForm(forms.Form):
     date_fin_cible = forms.DateField(label="Date de fin importée", required=False, disabled=True)
     date_etat = forms.DateField(label="Date d'état importée", required=False, disabled=True)
     calendrier = forms.CharField(label="Calendrier importé", required=False, disabled=True)
+    projet = forms.ModelChoiceField(
+        label="Projet de rattachement", queryset=Projet.objects.none(), required=False,
+    )
     accepter_remplacement = forms.BooleanField(
         label="Je confirme le remplacement définitif de ce planning.", required=True,
     )
 
-    def __init__(self, *args, imported, replacing=False, **kwargs):
+    def __init__(self, *args, imported, replacing=False, user=None, target=None, **kwargs):
         initial = {
             "nom": imported.nom, "description": imported.description,
             "date_debut": imported.date_debut, "date_fin_cible": imported.date_fin_cible,
@@ -48,6 +55,11 @@ class ImportedPlanForm(forms.Form):
             "calendrier": str(imported.calendrier) if imported.calendrier_id else "Standard lundi-vendredi",
         }
         super().__init__(*args, initial=initial, **kwargs)
+        if user is not None:
+            self.fields['projet'].queryset = projets_accessibles(user).order_by('nom')
+            self.fields['projet'].required = not user.is_superuser
+        if target and target.content_type_id == ContentType.objects.get_for_model(Projet).pk:
+            self.initial['projet'] = target.object_id
         if not replacing:
             del self.fields["accepter_remplacement"]
         for field in self.fields.values():

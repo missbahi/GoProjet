@@ -1,0 +1,11 @@
+{% if role_refonte_en_attente %}
+<div class="app-alert app-alert-warning mb-4" role="alert">
+    Votre ancien rôle Chef de projet doit être réaffecté par l'Admin.
+    Aucun projet n'est accessible avant cette réaffectation.
+</div>
+{% elif dossier_affectation_invalide %}
+<div class="app-alert app-alert-warning mb-4" role="alert">
+    Votre compte doit être rattaché à un seul dossier. Contactez l'Admin
+    pour corriger son affectation avant d'accéder aux projets.
+</div>
+{% endif %}

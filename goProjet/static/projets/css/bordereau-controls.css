@@ -68,3 +68,25 @@
     white-space: nowrap;
     transition: all 0.2s ease;
 }
+
+:is(#hot, #ca-table, #attachement-tableview) .table-view-table .tv-fold {
+    width: 20px;
+    height: 20px;
+    color: var(--accent-primary);
+    font-size: 0;
+}
+
+:is(#hot, #ca-table, #attachement-tableview) .table-view-table .tv-fold::before {
+    content: "\f054";
+    font-family: "Font Awesome 6 Free";
+    font-size: 12px;
+    font-weight: 900;
+}
+
+:is(#hot, #ca-table, #attachement-tableview) .table-view-table .tv-fold[aria-expanded="true"]::before {
+    content: "\f078";
+}
+
+:is(#hot, #ca-table, #attachement-tableview) .table-view-table .tv-fold-spacer {
+    flex-basis: 20px;
+}

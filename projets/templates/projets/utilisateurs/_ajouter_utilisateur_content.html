@@ -93,6 +93,7 @@
             </div>
         </div>
 
+        {% if form.dossiers %}
         <div>
             <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
                 Dossiers autorisés
@@ -109,7 +110,9 @@
                     <span class="text-sm" style="color: var(--text-muted);">Aucun dossier disponible</span>
                 {% endfor %}
             </div>
+            {{ form.dossiers.errors }}
         </div>
+        {% endif %}
 
         <div class="flex flex-col sm:flex-row gap-3 pt-4"
              style="border-top: 1px solid var(--border-default);">

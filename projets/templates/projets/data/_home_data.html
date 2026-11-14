@@ -1,9 +1,13 @@
 {% load static %}
 
 <div class="w-full h-full flex flex-col"
-     data-page-title="Configuration"
+     data-page-title="Configuration de {{ dossier.nom }}"
      data-page-icon="fa-home">
 
+    <h1 class="app-section-title p-4">Configuration de {{ dossier.nom }}</h1>
+    {% if request.user.is_superuser %}
+    <a class="px-4" href="{% url 'projets:data_view' %}?choisir_dossier=1">Changer de dossier / données à classer</a>
+    {% endif %}
     <!-- Zone de contenu dynamique (cible HTMX) -->
         <div id="content-area" class="data-content-area">
             {% include "projets/data/_home_data_empty.html" %}

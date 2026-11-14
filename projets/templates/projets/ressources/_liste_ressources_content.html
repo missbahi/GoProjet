@@ -27,6 +27,7 @@
         {% for item in categories_data %}
         <button type="button"
                 class="ressource-tab{% if item.categorie.code == active_type %} active{% endif %}"
+                data-observer-safe
                 data-tab-target="tab-{{ item.categorie.code }}"
                 data-code="{{ item.categorie.code }}">
             {{ item.categorie.nom }}

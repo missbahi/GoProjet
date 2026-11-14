@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from projets.decorators import chef_projet_required, can_view_projet
+from projets.decorators import chef_projet_required, can_view_projet, projets_accessibles
 from projets.forms import RessourceAffecteeForm
 from projets.models import (Projet, Atelier, CategorieCharge, RessourceAffectee, Materiel,
                             )
@@ -37,7 +37,13 @@ def api_ateliers_projet(request, projet_id):
 @can_view_projet
 def ressources_projet(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    categories = CategorieCharge.objects.filter(actif=True).order_by('ordre', 'nom')
+    categories = (
+        CategorieCharge.objects
+        .filter(dossier=projet.dossier)
+        .filter(Q(actif=True) | Q(ressources_affectees__projet=projet))
+        .distinct()
+        .order_by('ordre', 'nom')
+    )
 
     # ⭐ Type actif : ?type=MATERIEL ou premier par défaut
     type_demande = (request.GET.get('type') or '').upper()
@@ -59,7 +65,7 @@ def ressources_projet(request, projet_id):
             ids = [r.objet_id for r in liste]
             parc_map = dict(
                 Materiel.objects
-                .filter(id__in=ids)
+                .filter(id__in=ids, dossier=projet.dossier)
                 .values_list('id', 'immatriculation')
             )
             for r in liste:
@@ -116,7 +122,8 @@ def ajouter_ressource(request, projet_id):
 @require_POST
 def modifier_ressource(request, ressource_id):
     ressource = get_object_or_404(
-        RessourceAffectee.objects.select_related('projet'),
+        RessourceAffectee.objects.select_related('projet').filter(
+            projet__in=projets_accessibles(request.user)),
         id=ressource_id,
     )
     form = RessourceAffecteeForm(request.POST, instance=ressource, projet=ressource.projet)
@@ -137,7 +144,8 @@ def modifier_ressource(request, ressource_id):
 @chef_projet_required
 @require_POST
 def supprimer_ressource(request, ressource_id):
-    ressource = get_object_or_404(RessourceAffectee, id=ressource_id)
+    ressource = get_object_or_404(
+        RessourceAffectee, projet__in=projets_accessibles(request.user), id=ressource_id)
     designation = ressource.designation
     ressource.delete()
     return ajax_response(
@@ -153,13 +161,18 @@ def supprimer_ressource(request, ressource_id):
 @can_view_projet
 def api_options_ressource(request, projet_id):
     """Retourne les options d'un type de ressource (JSON) pour alimenter le <select>."""
+    projet = get_object_or_404(Projet, pk=projet_id)
     code = request.GET.get('code', '').upper()
     entry = RessourceAffecteeForm.RESSOURCE_MAP.get(code)
     if not entry:
         return ajax_response(success=False, message="Type non supporté.", status=400)
 
     Model, champ_designation, champ_prix, _ = entry
-    qs = Model.objects.filter(actif=True).order_by(champ_designation)
+    if not projet.dossier_id:
+        return ajax_response(success=False, message="Projet sans dossier : classement requis.", status=409)
+    if not CategorieCharge.objects.filter(dossier=projet.dossier, code=code, actif=True).exists():
+        return ajax_response(success=False, message="Catégorie indisponible dans ce dossier.", status=400)
+    qs = Model.objects.filter(dossier=projet.dossier, actif=True).order_by(champ_designation)
 
     options = []
     for obj in qs:

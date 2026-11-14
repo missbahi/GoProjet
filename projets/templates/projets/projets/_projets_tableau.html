@@ -100,6 +100,8 @@
                             title="Voir/modifier le projet">
                             <i class="fas fa-eye text-lg"></i>
                         </button>
+                        {% endif %}
+                        {% if can_delete_project %}
                         <a href="{% url 'projets:supprimer_projet' projet.id %}"
                            onclick="supprimerProjet(event, this)"
                            class="p-2 rounded-lg transition-colors inline-flex"

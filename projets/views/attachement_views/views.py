@@ -16,7 +16,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_http_methods
 
-from projets.decorators import modules_projet_required, projets_accessibles, superuser_required, est_gerant
+from projets.decorators import modules_projet_required, projets_accessibles, superuser_required, peut_gerer_projet
 from projets.decorators import peut_valider_directement
 from projets.forms import AttachementForm, DecompteForm, CorrectionPeriodesAttachementForm, CorrectionExceptionnelleAttachementForm
 from projets.services.correction_attachement import (
@@ -69,7 +69,7 @@ def liste_attachements(request, projet_id):
         'projet': projet,
         'attachements': attachements,
         'validation_directe': peut_valider_directement(request.user, projet),
-        'peut_corriger_exceptionnellement': request.user.is_superuser or est_gerant(request.user),
+        'peut_corriger_exceptionnellement': peut_gerer_projet(request.user),
         'breadcrumb_items': project_crumbs(projet, crumb("Attachements")),
     }
     if request.headers.get('HX-Request'):
@@ -119,8 +119,8 @@ def changer_statut_attachement(request, attachement_id):
 @require_http_methods(['GET', 'POST'])
 @transaction.atomic
 def corriger_periodes_attachements(request, projet_id):
-    if not (request.user.is_superuser or est_gerant(request.user)):
-        raise PermissionDenied("Correction réservée au superutilisateur et au chef de projet autorisé.")
+    if not peut_gerer_projet(request.user):
+        raise PermissionDenied("Correction réservée aux responsables autorisés du projet.")
     projet = get_object_or_404(Projet.objects.select_for_update(), pk=projet_id)
     attachements = list(
         Attachement.objects.select_for_update().filter(projet=projet).order_by('sequence')
@@ -359,7 +359,7 @@ def ajouter_attachement(request, projet_id):
 def modifier_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
     _verifier_acces_attachement(request, attachement)
-    peut_corriger = request.user.is_superuser or est_gerant(request.user)
+    peut_corriger = peut_gerer_projet(request.user)
     validation_directe = peut_valider_directement(request.user, attachement.projet)
     correction_exceptionnelle = peut_corriger and (
         request.GET.get('correction') == '1' or attachement.statut == 'VALIDE'

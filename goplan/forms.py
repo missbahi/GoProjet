@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.forms.models import BaseInlineFormSet, inlineformset_factory
 from .models import GPlan, GPlanPrintSettings, GTask
@@ -8,6 +8,7 @@ from .services.calendar import get_calendar_for_plan
 from .services.dependencies import recalculate_group_rollups
 from projets.decorators import projets_accessibles
 from projets.models import Projet
+from .access import calendriers_accessibles, plans_accessibles
 
 
 class GPlanForm(forms.ModelForm):
@@ -37,8 +38,14 @@ class GPlanForm(forms.ModelForm):
 
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.user = user
         if user is not None:
+            if self.instance.pk and not plans_accessibles(user).filter(pk=self.instance.pk).exists():
+                raise PermissionDenied("Ce planning n'appartient pas à vos projets.")
             self.fields['projet'].queryset = projets_accessibles(user).order_by('nom')
+            if not user.is_superuser:
+                self.fields['projet'].required = not self.instance.pk
+                self.fields['calendrier'].queryset = calendriers_accessibles(user)
         if (self.instance.content_type_id
                 and self.instance.content_type == ContentType.objects.get_for_model(Projet)):
             self.initial['projet'] = self.instance.object_id
@@ -58,6 +65,14 @@ class GPlanForm(forms.ModelForm):
             field.widget.attrs.setdefault('class', 'app-modal-input')
 
         self.fields['calendrier'].empty_label = "— Sélectionner un calendrier —"
+
+    def clean_projet(self):
+        project = self.cleaned_data.get('projet')
+        if self.user and not self.user.is_superuser and project is None:
+            if self.instance.pk and 'projet' not in self.data:
+                return self.instance.source_object
+            raise ValidationError("Le planning doit rester rattaché à un projet autorisé.")
+        return project
 
     def save(self, commit=True):
         plan = super().save(commit=False)

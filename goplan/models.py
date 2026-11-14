@@ -14,6 +14,10 @@ PRINT_TEXT_VARIABLES = (
 class GWorkCalendar(models.Model):
     """Calendrier de travail (jours ouvrés, exceptions)."""
 
+    dossier = models.ForeignKey(
+        'projets.Dossier', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='calendriers',
+    )
     nom = models.CharField(_("Nom"), max_length=100)
     jours_ouvres = models.JSONField(
         _("Jours ouvrés"),

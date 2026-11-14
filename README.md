@@ -18,6 +18,12 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
   garde les actions et le total visibles pendant le défilement.
   Les champs d'identification, dates et observations ainsi que le titre du tableau
   sont masqués en plein écran ; ils réapparaissent à la sortie, sans perdre la saisie.
+  Les lignes de l'attachement se développent ou se réduisent par groupe, ou avec
+  le bouton global, sans modifier les sous-totaux ni les quantités enregistrées.
+  Les chevrons des groupes sont identiques dans le bordereau, le CA et l'attachement.
+  L'éditeur de CA mensuel reprend ce mode plein écran et conserve son total visible.
+  La colonne N° reste fixe et les colonnes sont redimensionnables, y compris pour
+  l'Observateur en consultation seule.
 - Suivi d'exécution, situations mensuelles, planning des ateliers, ressources
 - Workflow de validation, utilisateurs, notifications
 - Export Excel et PDF
@@ -30,9 +36,86 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
 La version et les nouveautés affichées à la connexion sont définies dans
 [projets/version.py](projets/version.py).
 
+### Rôles et périmètres
+
+| Profil | Périmètre et droits |
+| --- | --- |
+| Admin (`is_superuser`) | Tous les dossiers, projets, utilisateurs et référentiels ; création et suppression des dossiers. |
+| Administrateur de dossier | Un seul dossier ; tous ses projets, utilisateurs, ressources et sa configuration ; création et suppression des projets. |
+| Directeur de projet | Un seul dossier, uniquement ses projets affectés ; création et modification des projets, tous leurs modules ; gestion des chefs de projet, chefs de chantier et pointeurs de son périmètre. |
+| Chef de projet | Un seul dossier, uniquement ses projets affectés ; modification des projets et tous leurs modules, sans création ni suppression de projet ni gestion des utilisateurs. |
+| Observateur | Un ou plusieurs dossiers, consultation seule de leurs projets. |
+
+Un directeur est automatiquement affecté au projet qu'il crée. Les autres projets
+de son dossier ne deviennent pas visibles pour autant. Les chefs de chantier et
+pointeurs conservent leurs fonctions existantes, dans leur dossier et leurs
+projets affectés.
+
+L'appartenance au dossier n'est modifiable par **aucun compte local**, y compris
+l'administrateur du dossier, pour lui-même comme pour les autres utilisateurs.
+Les nouveaux utilisateurs et projets héritent automatiquement du dossier du
+créateur ; aucun choix de dossier n'est proposé. Seul l'Admin global gère les
+rattachements, notamment les dossiers multiples d'un Observateur.
+Les affectations aux **projets** restent distinctes et suivent les droits ci-dessus.
+L'administrateur du dossier peut toujours modifier ses métadonnées, dont son nom.
+
+Un administrateur de dossier peut créer d'autres administrateurs **du même dossier**.
+La gestion sensible des comptes administrateurs de dossier (rôle, activation,
+suppression, réinitialisation du mot de passe) est réservée à l'Admin.
+Chacun conserve l'accès à ses informations personnelles et à son propre mot de passe.
+Un directeur ne peut ni supprimer/désactiver un compte ni réinitialiser son mot de passe.
+
+Les clients, entreprises, ingénieurs, catégories de charges et catalogues de
+ressources sont privés au dossier. Leurs pages portent le suffixe **de Nom du dossier**.
+L'Admin choisit explicitement le dossier à configurer ; les administrateurs locaux
+ne peuvent pas changer ce périmètre. Les types de matériel restent globaux et
+modifiables uniquement par l'Admin.
+Les directeurs et chefs choisissent des ressources existantes et gèrent leurs
+affectations au projet, sans créer ni supprimer les entrées du catalogue du dossier.
+L'Observateur consulte toutes les catégories affectées sans pouvoir les modifier.
+
+Les plannings sont rattachés aux projets autorisés, y compris lors d'un import ou
+d'un remplacement XML. Les calendriers personnalisés sont privés au dossier ;
+le calendrier standard global reste utilisable mais non modifiable localement.
+Les contrôles côté serveur s'appliquent aussi aux URL directes et aux identifiants
+d'objets soumis, indépendamment de l'affichage des boutons.
+
+- Les rôles historiques `STAFF` et `UTILISATEUR` ne sont plus proposés à la
+  création, à la modification ni dans les filtres des utilisateurs. Les comptes
+  existants conservent leur rôle tant qu'aucune réaffectation explicite n'est
+  effectuée ; ils ne bénéficient d'aucune promotion implicite.
+
+### Responsable des tâches
+
+- Une tâche a un responsable utilisateur, distinct des ressources du catalogue Personnel.
+  Les choix affichent le nom complet et le rôle, avec l'identifiant en secours.
+- Les candidats sont les administrateurs du dossier et les directeurs, chefs de
+  projet et chefs de chantier actifs affectés au projet concerné. Observateurs,
+  pointeurs, comptes inactifs et rôles à reclasser sont exclus.
+  Le créateur choisit parmi lui-même (y compris l'Admin global pour un
+  auto-rappel) et les responsables de rang inférieur affectés au projet.
+  Les affectations existantes autorisées restent conservables en modification.
+- À la création, un projet accessible unique est sélectionné et verrouillé.
+  Un responsable disponible unique est également sélectionné et verrouillé.
+  Ces valeurs sont imposées côté serveur même si les champs ne sont pas soumis.
+  S'il existe plusieurs projets accessibles, le premier par nom est préchargé
+  avec ses responsables, mais le projet reste modifiable avant la création.
+- Seuls l'Admin et les administrateurs, directeurs et chefs de projet autorisés
+  créent, réaffectent ou suppriment une tâche. Un responsable opérationnel ne
+  peut actualiser que l'avancement et la fin de sa propre tâche.
+- Le choix des responsables est recalculé au changement de projet et contrôlé
+  côté serveur. Le projet d'une tâche enregistrée ne peut pas être changé.
+  Aucune affectation de tâche ne donne de droits supplémentaires sur un dossier
+  ou un projet.
+- Un responsable devenu inactif ou non autorisé reste enregistré : les tâches
+  ouvertes affichent une alerte et nécessitent une réaffectation manuelle.
+  Les tâches terminées conservent leur affectation historique ; leur réouverture
+  nécessite un responsable éligible. Les rappels ne sont plus envoyés à l'ancien
+  responsable inéligible.
+
 ### Rôle Observateur
 
-- Le superutilisateur ou le chef de projet/gérant peut créer un **Observateur**
+- L'Admin ou l'administrateur de dossier peut créer un **Observateur**
   et l'affecter aux dossiers qu'il est autorisé à gérer, depuis **Utilisateurs**.
   Le rôle est également disponible lors de la modification d'un utilisateur.
 - Après connexion, l'Observateur arrive sur **Home**, même si une autre page
@@ -42,6 +125,8 @@ La version et les nouveautés affichées à la connexion sont définies dans
   rattachés à ces projets sont consultables. Téléchargements, exports et
   impressions restent disponibles. Les tâches GoPlan sont présentées dans
   leur aperçu tabulaire ; le Gantt et le bordereau sont en lecture seule.
+- Dans Ressources, les onglets restent accessibles en lecture seule, y compris
+  les catégories désactivées ayant encore des ressources affectées au projet.
 - Les créations, modifications, suppressions, validations, paiements et accès
   à l'administration sont refusés côté serveur, y compris par URL directe.
   Les nouvelles routes sont refusées par défaut et doivent être explicitement
@@ -54,8 +139,6 @@ La version et les nouveautés affichées à la connexion sont définies dans
 - Un superutilisateur conserve ses privilèges, quel que soit son rôle de profil.
   Pour un compte Observateur ordinaire, même un ancien indicateur staff ne
   contourne pas la lecture seule.
-- Déploiement : exécuter `python manage.py migrate` pour la migration
-  `0085_profile_observateur`, puis la collecte des fichiers statiques habituelle.
 
 ### CA mensuel de production (Travaux)
 
@@ -106,7 +189,7 @@ Aucune donnée historique n'est convertie ou modifiée par cette migration.
   puis une confirmation simple, sans rapport en bas de page. La confirmation reste
   signée et invalidée si les données changent. Les erreurs ramènent le défilement
   vers le message en haut du formulaire.
-- Le superutilisateur et le chef de projet/gérant autorisé peuvent gérer et
+- L'Admin et les administrateurs de dossier, directeurs et chefs de projet autorisés peuvent gérer et
   valider les CA ; les autres membres consultent en lecture seule.
 - La liste propose les icônes Modifier/Consulter, Valider, Dévalider et
   Supprimer, avec confirmation simple comme les Situations. La validation
@@ -188,8 +271,8 @@ confirmations des corrections exceptionnelles et des périodes historiques.
 La sauvegarde en brouillon reste possible ; aucune date n'est corrigée
 automatiquement et la continuité avec l'attachement suivant reste inchangée.
 
-Pour régulariser les anciennes périodes déjà validées, un superutilisateur ou
-un gérant/chef de projet ayant accès au projet peut
+Pour régulariser les anciennes périodes déjà validées, l'Admin ou
+un administrateur de dossier, directeur ou chef de projet ayant accès au projet peut
 ouvrir **Corriger les périodes historiques** depuis la liste des attachements
 ou le formulaire. Cette action dédiée affiche toute la chaîne et impose un
 motif, un aperçu puis une confirmation. Elle vérifie la continuité depuis l'OS
@@ -577,6 +660,24 @@ python manage.py runserver
 ```
 
 Accédez à http://localhost:8000
+
+### Mise à jour vers 2.5.0
+
+Sauvegarder la base et vérifier les migrations sur une copie de la production
+avant le déploiement. Cette version inclut les migrations `projets 0087` à `0089`
+et `goplan 0012`. Le script de démarrage applique automatiquement les migrations.
+
+- Les anciens comptes `GERANT` deviennent `ADMIN_DOSSIER`.
+- Les anciens comptes `CHEF_PROJET` passent à `A_RECLASSER` : l'Admin doit définir
+  explicitement leur nouveau rôle et vérifier leurs dossiers et projets affectés.
+- Les catalogues partagés sont répartis selon les projets qui les utilisent.
+  Les éléments sans propriétaire déterminable sont conservés sans dossier et
+  restent réservés à l'Admin. Les références non classables bloquent la migration ;
+  les corriger sur une copie avant de relancer le déploiement.
+- Après migration, `python manage.py inventorier_catalogues_dossier` permet
+  d'identifier les éléments restant à classer, sans modifier les données.
+- Les migrations de répartition des catalogues et calendriers sont irréversibles :
+  un retour arrière nécessite une restauration de sauvegarde.
 
 ## Structure
 

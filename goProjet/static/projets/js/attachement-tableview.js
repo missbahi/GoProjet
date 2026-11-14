@@ -8,6 +8,7 @@
         const errorBox = document.getElementById('attachement-tableview-error');
         const saveButton = document.getElementById('save-btn');
         const transmitButton = document.getElementById('transmettre-btn');
+        const expandAllButton = document.getElementById('toggle-expanded-all-btn');
         const editable = container.dataset.editable === 'true';
         const correction = container.dataset.correction === 'true';
         let confirmation = '';
@@ -33,6 +34,30 @@
             const parentIds = new Set(data.map(row => row.parent_id));
             const parentRows = data.map((row, rowIndex) => ({ row, rowIndex }))
                 .filter(({ row }) => row.is_title && parentIds.has(row.id));
+            const groupIds = new Set(parentRows.map(({ row }) => row.id));
+            const collapsed = new Set();
+            const levels = new Map();
+            data.forEach(row => levels.set(row.id, (levels.get(row.parent_id) ?? -1) + 1));
+            const updateHierarchy = () => {
+                const hiddenIds = new Set();
+                const hiddenRows = [];
+                data.forEach((row, index) => {
+                    if (collapsed.has(row.parent_id) || hiddenIds.has(row.parent_id)) {
+                        hiddenIds.add(row.id);
+                        hiddenRows.push(index);
+                    }
+                });
+                table.setHiddenRows(hiddenRows);
+                if (expandAllButton) {
+                    const expand = collapsed.size > 0;
+                    const label = expand ? 'Développer toutes les lignes filles' : 'Réduire toutes les lignes filles';
+                    expandAllButton.disabled = groupIds.size === 0;
+                    expandAllButton.title = label;
+                    expandAllButton.setAttribute('aria-label', label);
+                    expandAllButton.querySelector('i').className = expand ? 'fas fa-expand-alt' : 'fas fa-compress-alt';
+                }
+                displaySelection();
+            };
             let totalsById;
             const updateParentTotals = () => {
                 totalsById = new Map(data.map(row => [
@@ -71,6 +96,19 @@
                 freezeColumns: 1,
                 clipboard: { copy: true, paste: editable, parseTsv: true },
                 appearance: { rowHeight: 40, headerHeight: 48, fontSize: 13, selectionColor: '#e7ece9' },
+                hierarchy: {
+                    columnKey: 'designation',
+                    isGroup: row => groupIds.has(row.id),
+                    getLevel: row => levels.get(row.id),
+                    isExpanded: row => !collapsed.has(row.id),
+                    onToggle: (rowIndex, row) => {
+                        if (!table.finishEdit()) return;
+                        if (collapsed.has(row.id)) collapsed.delete(row.id);
+                        else collapsed.add(row.id);
+                        table.refreshRow(rowIndex);
+                        updateHierarchy();
+                    },
+                },
                 columns: [
                     { key: 'numero', label: 'N°', width: 80, editable: false },
                     {
@@ -80,7 +118,6 @@
                             const text = document.createElement('span');
                             text.textContent = String(value ?? '').replace(/\s+/g, ' ');
                             text.title = value ?? '';
-                            text.style.paddingLeft = `${(row.niveau || 0) * 8}px`;
                             return text;
                         },
                     },
@@ -138,11 +175,21 @@
             });
             container.dataset.initialized = 'true';
             updateTotal();
+            updateHierarchy();
+            expandAllButton?.addEventListener('click', () => {
+                if (!table.finishEdit()) return;
+                const expand = collapsed.size > 0;
+                collapsed.clear();
+                if (!expand) groupIds.forEach(id => collapsed.add(id));
+                parentRows.forEach(({ rowIndex }) => table.refreshRow(rowIndex));
+                updateHierarchy();
+            });
         } catch (error) {
             console.error('Initialisation du formulaire TableView impossible.', error);
             showError(`Impossible de charger le tableau : ${error.message}`);
             if (saveButton) saveButton.disabled = true;
             if (transmitButton) transmitButton.disabled = true;
+            if (expandAllButton) expandAllButton.disabled = true;
             form.addEventListener('submit', event => event.preventDefault());
             return;
         }
@@ -269,24 +316,6 @@
                 confirmButton.disabled = false;
             }
         }
-
-        let revealingFields = false;
-        form.addEventListener('invalid', event => {
-            const root = form.closest('[data-attachement-editor][data-workspace-fullscreen]');
-            if (!root || !event.target.closest('.attachment-editor-fields')) return;
-            event.preventDefault();
-            if (revealingFields) return;
-            revealingFields = true;
-            document.exitFullscreen().then(() => {
-                event.target.focus();
-                event.target.reportValidity();
-            }).catch(error => {
-                console.error('Impossible de réafficher les champs invalides.', error);
-                showError(`Impossible de réafficher les champs. ${error.message}`);
-            }).finally(() => {
-                revealingFields = false;
-            });
-        }, true);
 
         form.addEventListener('submit', event => {
             if (event.submitter?.name === 'action' && event.submitter.value === 'valider') {

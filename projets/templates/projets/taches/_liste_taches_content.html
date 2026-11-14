@@ -21,7 +21,7 @@
         </div>
 
         <!-- Boutons -->
-        {% if projets_disponibles %}
+        {% if projets_disponibles and can_manage_tasks %}
         <div class="flex justify-between items-center my-3">
             <button type="button"
                     onclick="openTaskModal(null, {% if projet %}{{ projet.id }}{% else %}null{% endif %})"

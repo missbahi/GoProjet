@@ -20,8 +20,10 @@ def notifications_accessibles(user):
     from projets.models import Notification
 
     notifications = Notification.objects.filter(utilisateur=user)
-    if est_observateur(user):
-        notifications = notifications.filter(projet__in=projets_accessibles(user))
+    if not user.is_superuser:
+        notifications = notifications.filter(
+            Q(projet__isnull=True) | Q(projet__in=projets_accessibles(user))
+        )
     return notifications
 
 
@@ -29,6 +31,8 @@ def projets_accessibles(user):
     """Retourne uniquement les projets autorisés pour l'utilisateur."""
     from .models import Projet
 
+    if not user.is_authenticated:
+        return Projet.objects.none()
     if user.is_superuser:
         return Projet.objects.all()
 
@@ -36,35 +40,116 @@ def projets_accessibles(user):
         return Projet.objects.filter(dossier__utilisateurs=user).distinct()
 
     role = getattr(getattr(user, 'profile', None), 'role', None)
-    if role in {'POINTEUR', 'CHEF_CHANTIER'}:
-        # Restreint aux seuls projets explicitement affectés (pas tout le dossier).
-        return Projet.objects.filter(users=user).distinct()
+    if role == 'A_RECLASSER':
+        return Projet.objects.none()
+    dossiers = list(dossiers_accessibles(user).values_list('pk', flat=True)[:2])
+    if len(dossiers) != 1:
+        return Projet.objects.none()
+    projets = Projet.objects.filter(dossier_id=dossiers[0])
+    if est_admin_dossier(user):
+        return projets
+    return projets.filter(users=user).distinct()
 
-    return Projet.objects.filter(
-        Q(dossier__gerant=user) | Q(dossier__utilisateurs=user) |
-        Q(users=user, dossier__isnull=True)
-    ).distinct()
+
+def est_admin_dossier(user):
+    return bool(
+        user.is_authenticated and not user.is_superuser
+        and getattr(getattr(user, 'profile', None), 'role', None) == 'ADMIN_DOSSIER'
+    )
+
+
+def est_directeur_projet(user):
+    return bool(
+        user.is_authenticated and not user.is_superuser
+        and getattr(getattr(user, 'profile', None), 'role', None) == 'DIRECTEUR_PROJET'
+    )
+
+
+def peut_gerer_projet(user):
+    return bool(user.is_authenticated and (
+        user.is_superuser or est_admin_dossier(user)
+        or est_directeur_projet(user) or est_chef_projet(user)
+    ))
+
+
+def peut_creer_projet(user):
+    return bool(user.is_authenticated and (
+        user.is_superuser or est_admin_dossier(user) or est_directeur_projet(user)
+    ))
+
+
+def peut_supprimer_projet(user):
+    return bool(user.is_authenticated and (user.is_superuser or est_admin_dossier(user)))
+
+
+def dossiers_accessibles(user):
+    from .models import Dossier
+
+    if not user.is_authenticated:
+        return Dossier.objects.none()
+    if user.is_superuser:
+        return Dossier.objects.all()
+    if est_admin_dossier(user):
+        return Dossier.objects.filter(Q(utilisateurs=user) | Q(gerant=user)).distinct()
+    return Dossier.objects.filter(utilisateurs=user).distinct()
+
+
+def dossier_utilisateur(user):
+    dossiers = list(dossiers_accessibles(user)[:2])
+    if len(dossiers) != 1:
+        raise PermissionDenied(
+            "Votre compte doit être rattaché à un seul dossier. Contactez l'Admin."
+        )
+    return dossiers[0]
+
+
+def dossier_courant(request):
+    from .models import Dossier
+
+    selection = request.POST.get('dossier') or request.GET.get('dossier')
+    if not request.user.is_superuser:
+        dossier = dossier_utilisateur(request.user)
+        if selection and str(dossier.pk) != str(selection):
+            raise PermissionDenied("Vous ne pouvez pas accéder à un autre dossier.")
+        return dossier
+    selection = selection or request.session.get('dossier_id')
+    if not selection:
+        raise PermissionDenied("Sélectionnez un dossier pour accéder à sa configuration.")
+    if not str(selection).isdigit():
+        raise PermissionDenied("Le dossier sélectionné est invalide.")
+    dossier = Dossier.objects.filter(pk=selection).first()
+    if dossier is None:
+        raise PermissionDenied("Le dossier sélectionné n'existe pas.")
+    request.session['dossier_id'] = dossier.pk
+    return dossier
+
+
+def configuration_dossier_required(view_func):
+    @wraps(view_func)
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return login_required(view_func)(request, *args, **kwargs)
+        if not (request.user.is_superuser or est_admin_dossier(request.user)):
+            raise PermissionDenied("La configuration est réservée aux administrateurs du dossier.")
+        request.dossier = dossier_courant(request)
+        return view_func(request, *args, **kwargs)
+    return wrapped
 
 def est_gerant(user):
-    if not user.is_authenticated or user.is_superuser:
-        return False
-    role = getattr(getattr(user, 'profile', None), 'role', None)
-    role_normalise = _normaliser_role(role)
-    return role_normalise in {'GERANT', 'CHEFPROJET', 'CHEFDEPROJET'}
+    return est_admin_dossier(user)
 
 def est_chef_projet(user):
-    if not user.is_authenticated or user.is_superuser:
-        return False
-    role = getattr(getattr(user, 'profile', None), 'role', None)
-    role_normalise = _normaliser_role(role)
-    return role_normalise in {'CHEFPROJET', 'CHEFDEPROJET', 'GERANT'}
+    return bool(
+        user.is_authenticated and not user.is_superuser
+        and getattr(getattr(user, 'profile', None), 'role', None) == 'CHEF_PROJET'
+    )
 
 def peut_valider_directement(user, projet):
     return bool(
         user and user.is_authenticated and projet
         and projet.dossier_id and projet.dossier.activite == 'TRAVAUX'
         and (user.is_superuser or (
-            est_chef_projet(user) and projets_accessibles(user).filter(pk=projet.pk).exists()
+            peut_gerer_projet(user) and projets_accessibles(user).filter(pk=projet.pk).exists()
         ))
     )
 
@@ -97,7 +182,8 @@ def gestion_utilisateurs_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return login_required(view_func)(request, *args, **kwargs)
-        if not (request.user.is_superuser or est_gerant(request.user)):
+        if not (request.user.is_superuser or est_admin_dossier(request.user)
+                or est_directeur_projet(request.user)):
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return _wrapped_view
@@ -130,8 +216,7 @@ def chef_projet_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return login_required(view_func)(request, *args, **kwargs)
-        is_chef = est_chef_projet(request.user)
-        if not (request.user.is_superuser or is_chef):
+        if not peut_gerer_projet(request.user):
             raise PermissionDenied
         projet_id = kwargs.get('projet_id') or kwargs.get('pk')
         if projet_id and not projets_accessibles(request.user).filter(id=projet_id).exists():
@@ -315,7 +400,7 @@ def _situation_action_required(check_func, message):
 def _peut_agir_sur_situation(user, projet_id):
     return bool(
         user.is_superuser or (
-            est_chef_projet(user) and projet_id is not None
+            peut_gerer_projet(user) and projet_id is not None
             and projets_accessibles(user).filter(pk=projet_id).exists()
         )
     )
@@ -332,22 +417,4 @@ can_devalidate_situation_mensuelle = _situation_action_required(
 )
 
 def categorie_charge_required(view_func):
-    """Autorise la gestion des catégories aux superusers et chefs de projet."""
-    @wraps(view_func)
-    def _wrapped_view(request, *args, **kwargs):
-        if not request.user.is_authenticated:
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse(
-                    {'success': False, 'message': 'Votre session a expiré. Veuillez vous reconnecter.'},
-                    status=401,
-                )
-            return login_required(view_func)(request, *args, **kwargs)
-        if not (request.user.is_superuser or est_chef_projet(request.user)):
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-                return JsonResponse(
-                    {'success': False, 'message': 'Vous n\'êtes pas autorisé à modifier les catégories.'},
-                    status=403,
-                )
-            raise PermissionDenied
-        return view_func(request, *args, **kwargs)
-    return _wrapped_view
+    return configuration_dossier_required(view_func)

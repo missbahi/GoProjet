@@ -143,6 +143,9 @@
                 {% else %}
                     <p style="color: var(--text-muted); font-style: italic;">Aucun responsable assigné</p>
                 {% endif %}
+                {% if tache.assignment_warning %}
+                    <p class="app-alert app-alert-warning mt-3" role="alert">{{ tache.assignment_warning }}</p>
+                {% endif %}
             </div>
 
             {# Métadonnées #}

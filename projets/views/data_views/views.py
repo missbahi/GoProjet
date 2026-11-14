@@ -3,10 +3,13 @@ from decimal import Decimal
 from django.contrib import messages
 from django.db.models import ProtectedError
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import get_object_or_404, redirect, render as django_render
 from django.urls import reverse
 
-from projets.decorators import categorie_charge_required, chef_projet_required
+from projets.decorators import configuration_dossier_required, dossier_courant, est_admin_dossier
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from functools import wraps
 
 from projets.models import (
     Client, Consommable, Entreprise, Fourniture, Ingenieur, Location, Materiel, TypeMateriel,
@@ -25,35 +28,62 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
 
+
+chef_projet_required = configuration_dossier_required
+categorie_charge_required = configuration_dossier_required
+
+
+def render(request, template, context=None, **kwargs):
+    context = dict(context or {})
+    context['dossier'] = getattr(request, 'dossier', None)
+    return django_render(request, template, context, **kwargs)
+
+
+_render = render
+
+
+def _objet(request, model, **kwargs):
+    return get_object_or_404(model, dossier=request.dossier, **kwargs)
+
+
+def _global_admin(view):
+    @wraps(view)
+    @login_required
+    def wrapped(request, *args, **kwargs):
+        if not request.user.is_superuser:
+            raise PermissionDenied("Référentiel global réservé à l'administrateur.")
+        return view(request, *args, **kwargs)
+    return wrapped
+
 @chef_projet_required
 def partial_ingenieurs(request):
-    ingenieurs = Ingenieur.objects.all()
-    return render(request, 'projets/data/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
+    ingenieurs = Ingenieur.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
 
 
 @chef_projet_required
 def partial_entreprises(request):
-    entreprises = Entreprise.objects.all()
-    return render(request, 'projets/data/partials/entreprises.html', {'entreprises': entreprises})
+    entreprises = Entreprise.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/entreprises.html', {'entreprises': entreprises})
 
 
 @chef_projet_required
 def partial_clients(request):
-    clients = Client.objects.all()
-    return render(request, 'projets/data/partials/clients.html', {'clients': clients})
+    clients = Client.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/clients.html', {'clients': clients})
 
 
 @chef_projet_required
 def partial_personnel(request):
-    personnel = Personnel.objects.all()
-    return render(request, 'projets/data/partials/personnel.html', {'personnel': personnel})
+    personnel = Personnel.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/personnel.html', {'personnel': personnel})
 
 
 @chef_projet_required
 def partial_materiel(request):
-    materiel = Materiel.objects.select_related('type_materiel').all()
+    materiel = Materiel.objects.filter(dossier=request.dossier).select_related('type_materiel')
     types_materiel_actifs = TypeMateriel.objects.filter(actif=True).order_by('nom')
-    return render(request, 'projets/data/partials/materiel.html', {
+    return _render(request, 'projets/data/partials/materiel.html', {
         'materiel': materiel,
         'types_materiel_actifs': types_materiel_actifs,
     })
@@ -61,36 +91,52 @@ def partial_materiel(request):
 
 @chef_projet_required
 def partial_transports(request):
-    transports = Transport.objects.all()
-    return render(request, 'projets/data/partials/transport.html', {'transports': transports})
+    transports = Transport.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/transport.html', {'transports': transports})
 
 
 @chef_projet_required
 def partial_locations(request):
-    locations = Location.objects.all()
-    return render(request, 'projets/data/partials/locations.html', {'locations': locations})
+    locations = Location.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/locations.html', {'locations': locations})
 
 
 @chef_projet_required
 def partial_sous_traitances(request):
-    sous_traitances = SousTraitance.objects.all()
-    return render(request, 'projets/data/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
+    sous_traitances = SousTraitance.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
 
 
 @chef_projet_required
 def partial_consommables(request):
-    consommables = Consommable.objects.all()
-    return render(request, 'projets/data/partials/consommables.html', {'consommables': consommables})
+    consommables = Consommable.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/consommables.html', {'consommables': consommables})
 
 
 @chef_projet_required
 def partial_fournitures(request):
-    fournitures = Fourniture.objects.all()
-    return render(request, 'projets/data/partials/fournitures.html', {'fournitures': fournitures})
+    fournitures = Fourniture.objects.filter(dossier=request.dossier)
+    return _render(request, 'projets/data/partials/fournitures.html', {'fournitures': fournitures})
 
 
-@chef_projet_required
+@login_required
 def data_view(request):
+    from projets.models import Dossier
+    if not (request.user.is_superuser or est_admin_dossier(request.user)):
+        raise PermissionDenied("Configuration réservée à l'administration du dossier.")
+    if request.user.is_superuser and (request.GET.get('choisir_dossier') or not (
+        request.GET.get('dossier') or request.POST.get('dossier') or request.session.get('dossier_id')
+    )):
+        modeles = (Client, Entreprise, Ingenieur, CategorieCharge, Personnel, Materiel,
+                   Location, Transport, SousTraitance, Consommable, Fourniture)
+        return render(request, 'projets/data/choisir_dossier.html', {
+            'dossiers': Dossier.objects.all(),
+            'orphelins': [{'modele': model._meta.verbose_name_plural,
+                          'nombre': model.objects.filter(dossier__isnull=True).count(),
+                          'lignes': model.objects.filter(dossier__isnull=True)}
+                         for model in modeles],
+        })
+    request.dossier = dossier_courant(request)
     context = {
         'choix_icones': choix_icones(),
         'types_materiel_actifs': TypeMateriel.objects.filter(actif=True).order_by('nom'),
@@ -98,15 +144,15 @@ def data_view(request):
 
     # ⚡ Rendu conditionnel HTMX
     if request.headers.get('HX-Request'):
-        return render(request, 'projets/data/_home_data.html', context)
+        return _render(request, 'projets/data/_home_data.html', context)
 
-    return render(request, 'projets/data/data_view.html', context)
+    return _render(request, 'projets/data/data_view.html', context)
 
 # ============================================================
 # Gestion des types de matériel (référentiel)
 # ============================================================
 
-@chef_projet_required
+@_global_admin
 def partial_types_materiel(request):
     types_materiel = TypeMateriel.objects.all()
     return render(
@@ -116,7 +162,7 @@ def partial_types_materiel(request):
     )
 
 
-@chef_projet_required
+@_global_admin
 def ajouter_type_materiel(request):
     if request.method != 'POST':
         form = TypeMaterielForm()
@@ -148,7 +194,7 @@ def ajouter_type_materiel(request):
     )
 
 
-@chef_projet_required
+@_global_admin
 def modifier_type_materiel(request, type_materiel_id):
     type_materiel = get_object_or_404(TypeMateriel, id=type_materiel_id)
 
@@ -181,7 +227,7 @@ def modifier_type_materiel(request, type_materiel_id):
 
 
 @require_POST
-@chef_projet_required
+@_global_admin
 def supprimer_type_materiel(request, type_materiel_id):
     type_materiel = get_object_or_404(TypeMateriel, id=type_materiel_id)
     nom = type_materiel.nom
@@ -208,7 +254,7 @@ def supprimer_type_materiel(request, type_materiel_id):
 
 @categorie_charge_required
 def partial_categories_charges(request):
-    categories = CategorieCharge.objects.all()
+    categories = CategorieCharge.objects.filter(dossier=request.dossier)
     resource_modules = {
         'PERSONNEL': ('Personnel', 'partial_personnel', 'fa-users-gear'),
         'MATERIEL': ('Matériel', 'partial_materiel', 'fa-truck-monster'),
@@ -228,10 +274,10 @@ def partial_categories_charges(request):
         }
         for category in categories
     ]
-    return render(request, 'projets/data/partials/categories_charges.html', {
+    return _render(request, 'projets/data/partials/categories_charges.html', {
         'categories': categories,
         'category_rows': category_rows,
-        'form': CategorieChargeForm(),
+        'form': CategorieChargeForm(dossier=request.dossier),
     })
 
 
@@ -239,7 +285,7 @@ def partial_categories_charges(request):
 def ajouter_categorie_charge(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
-    form = CategorieChargeForm(request.POST)
+    form = CategorieChargeForm(request.POST, dossier=request.dossier)
     if form.is_valid():
         categorie = form.save()
         return JsonResponse({'success': True, 'message': f'Catégorie « {categorie.nom} » ajoutée.'})
@@ -249,8 +295,8 @@ def ajouter_categorie_charge(request):
 @require_POST
 @categorie_charge_required
 def modifier_categorie_charge(request, categorie_id):
-    categorie = get_object_or_404(CategorieCharge, id=categorie_id)
-    form = CategorieChargeForm(request.POST, instance=categorie)
+    categorie = _objet(request, CategorieCharge, id=categorie_id)
+    form = CategorieChargeForm(request.POST, instance=categorie, dossier=request.dossier)
 
     if not form.is_valid():
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
@@ -277,7 +323,7 @@ def modifier_categorie_charge(request, categorie_id):
 @require_POST
 @categorie_charge_required
 def supprimer_categorie_charge(request, categorie_id):
-    categorie = get_object_or_404(CategorieCharge, id=categorie_id)
+    categorie = _objet(request, CategorieCharge, id=categorie_id)
     nom = categorie.nom
 
     try:
@@ -302,7 +348,7 @@ def supprimer_categorie_charge(request, categorie_id):
 @chef_projet_required
 def ajouter_ingenieur(request):
     if request.method == 'POST':
-        form = IngenieurForm(request.POST)
+        form = IngenieurForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             ingenieur = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -311,15 +357,15 @@ def ajouter_ingenieur(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = IngenieurForm()
+        form = IngenieurForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/ingenieurs.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_ingenieur(request, ingenieur_id):
-    ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
+    ingenieur = _objet(request, Ingenieur, id=ingenieur_id)
     if request.method == 'POST':
-        form = IngenieurForm(request.POST, instance=ingenieur)
+        form = IngenieurForm(request.POST, instance=ingenieur, dossier=request.dossier)
         if form.is_valid():
             ingenieur = form.save()
             if request.GET.get('modal') == 'true':
@@ -332,7 +378,7 @@ def modifier_ingenieur(request, ingenieur_id):
 @require_POST
 @chef_projet_required
 def supprimer_ingenieur(request, ingenieur_id):
-    ingenieur = get_object_or_404(Ingenieur, id=ingenieur_id)
+    ingenieur = _objet(request, Ingenieur, id=ingenieur_id)
 
     # Sauvegarder le nom AVANT suppression
     nom = ingenieur.nom
@@ -364,7 +410,7 @@ def supprimer_ingenieur(request, ingenieur_id):
 @chef_projet_required
 def ajouter_client(request):
     if request.method == 'POST':
-        form = ClientForm(request.POST)
+        form = ClientForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             client = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -373,15 +419,15 @@ def ajouter_client(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = ClientForm()
+        form = ClientForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_client(request, client_id):
-    client = Client.objects.get(id=client_id)
+    client = _objet(request, Client, id=client_id)
     if request.method == 'POST':
-        form = ClientForm(request.POST, instance=client)
+        form = ClientForm(request.POST, instance=client, dossier=request.dossier)
         if form.is_valid():
             client = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -390,13 +436,14 @@ def modifier_client(request, client_id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = ClientForm(instance=client)
+        form = ClientForm(instance=client, dossier=request.dossier)
     return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
 @chef_projet_required
+@require_POST
 def supprimer_client(request, client_id):
-    client = get_object_or_404(Client, id=client_id)
+    client = _objet(request, Client, id=client_id)
     client.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Client ' + client.nom + ' supprimé avec succès.'})
@@ -407,7 +454,7 @@ def supprimer_client(request, client_id):
 @chef_projet_required
 def ajouter_entreprise(request):
     if request.method == 'POST':
-        form = EntrepriseForm(request.POST)
+        form = EntrepriseForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             entreprise = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -416,15 +463,15 @@ def ajouter_entreprise(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = EntrepriseForm()
+        form = EntrepriseForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
 @chef_projet_required
 def modifier_entreprise(request, entreprise_id):
-    entreprise = get_object_or_404(Entreprise, id=entreprise_id)
+    entreprise = _objet(request, Entreprise, id=entreprise_id)
     if request.method == 'POST':
-        form = EntrepriseForm(request.POST, instance=entreprise)
+        form = EntrepriseForm(request.POST, instance=entreprise, dossier=request.dossier)
         if form.is_valid():
             entreprise = form.save()
             if request.GET.get('modal') == 'true':
@@ -435,13 +482,14 @@ def modifier_entreprise(request, entreprise_id):
             errors = {field: [str(error) for error in error_list] for field, error_list in form.errors.items()}
             return JsonResponse({'success': False, 'errors': errors}, status=400)
     else:
-        form = EntrepriseForm(instance=entreprise)
+        form = EntrepriseForm(instance=entreprise, dossier=request.dossier)
     return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
 @chef_projet_required
+@require_POST
 def supprimer_entreprise(request, entreprise_id):
-    entreprise = get_object_or_404(Entreprise, id=entreprise_id)
+    entreprise = _objet(request, Entreprise, id=entreprise_id)
     entreprise.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Entreprise' + entreprise.nom + ' supprimée avec succès.'})
@@ -452,7 +500,7 @@ def supprimer_entreprise(request, entreprise_id):
 @chef_projet_required
 def ajouter_personnel(request):
     if request.method == 'POST':
-        form = PersonnelForm(request.POST)
+        form = PersonnelForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             personnel = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -461,15 +509,15 @@ def ajouter_personnel(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = PersonnelForm()
+        form = PersonnelForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/personnel.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_personnel(request, personnel_id):
-    personnel = get_object_or_404(Personnel, id=personnel_id)
+    personnel = _objet(request, Personnel, id=personnel_id)
     if request.method == 'POST':
-        form = PersonnelForm(request.POST, instance=personnel)
+        form = PersonnelForm(request.POST, instance=personnel, dossier=request.dossier)
         if form.is_valid():
             personnel = form.save()
             if request.GET.get('modal') == 'true':
@@ -480,8 +528,9 @@ def modifier_personnel(request, personnel_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_personnel(request, personnel_id):
-    personnel = get_object_or_404(Personnel, id=personnel_id)
+    personnel = _objet(request, Personnel, id=personnel_id)
     personnel.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Personnel ' + personnel.nom + ' supprimé avec succès.'})
@@ -492,7 +541,7 @@ def supprimer_personnel(request, personnel_id):
 @chef_projet_required
 def ajouter_materiel(request):
     if request.method == 'POST':
-        form = MaterielForm(request.POST)
+        form = MaterielForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             materiel = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -501,15 +550,15 @@ def ajouter_materiel(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = MaterielForm()
+        form = MaterielForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/materiel.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_materiel(request, materiel_id):
-    materiel = get_object_or_404(Materiel, id=materiel_id)
+    materiel = _objet(request, Materiel, id=materiel_id)
     if request.method == 'POST':
-        form = MaterielForm(request.POST, instance=materiel)
+        form = MaterielForm(request.POST, instance=materiel, dossier=request.dossier)
         if form.is_valid():
             materiel = form.save()
             if request.GET.get('modal') == 'true':
@@ -546,7 +595,9 @@ def supprimer_materiel_masse(request):
 
     try:
         with transaction.atomic():
-            qs = Materiel.objects.filter(id__in=ids)
+            qs = Materiel.objects.filter(dossier=request.dossier, id__in=ids)
+            if qs.count() != len(set(ids)):
+                raise PermissionDenied("Sélection de matériels hors dossier.")
             n = qs.count()
             # Protéger contre les PROTECT : supprimer un par un
             deleted = 0
@@ -570,10 +621,11 @@ def supprimer_materiel_masse(request):
     })
 
 @chef_projet_required
+@require_POST
 def supprimer_materiel(request, materiel_id):
     from django.db.models import ProtectedError
 
-    materiel = get_object_or_404(Materiel, id=materiel_id)
+    materiel = _objet(request, Materiel, id=materiel_id)
     designation = materiel.designation
 
     # Vérifier les références avant de tenter la suppression
@@ -648,6 +700,8 @@ def importer_materiels(request):
     texte = request.POST.get('texte', '')
     has_header_str = request.POST.get('has_header', 'auto')
     create_types = request.POST.get('create_types', 'false').lower() == 'true'
+    if create_types and not request.user.is_superuser:
+        raise PermissionDenied("La création de types globaux est réservée à l'administrateur.")
     update_existing = request.POST.get('update_existing', 'false').lower() == 'true'
     dry_run = request.GET.get('dry_run', '1') == '1'
 
@@ -733,7 +787,7 @@ def importer_materiels(request):
 
         existant = None
         if no_parc:
-            existant = Materiel.objects.filter(immatriculation=no_parc).first()
+            existant = Materiel.objects.filter(dossier=request.dossier, immatriculation=no_parc).first()
 
         if existant:
             if update_existing and not dry_run:
@@ -772,6 +826,7 @@ def importer_materiels(request):
             })
         else:
             Materiel.objects.create(
+                dossier=request.dossier,
                 designation=designation,
                 type_materiel=type_materiel,
                 immatriculation=no_parc,
@@ -800,7 +855,7 @@ def importer_materiels(request):
 @chef_projet_required
 def ajouter_transport(request):
     if request.method == 'POST':
-        form = TransportForm(request.POST)
+        form = TransportForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             transport = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -809,15 +864,15 @@ def ajouter_transport(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = TransportForm()
+        form = TransportForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/transport.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_transport(request, transport_id):
-    transport = get_object_or_404(Transport, id=transport_id)
+    transport = _objet(request, Transport, id=transport_id)
     if request.method == 'POST':
-        form = TransportForm(request.POST, instance=transport)
+        form = TransportForm(request.POST, instance=transport, dossier=request.dossier)
         if form.is_valid():
             transport = form.save()
             if request.GET.get('modal') == 'true':
@@ -828,8 +883,9 @@ def modifier_transport(request, transport_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_transport(request, transport_id):
-    transport = get_object_or_404(Transport, id=transport_id)
+    transport = _objet(request, Transport, id=transport_id)
     transport.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Transport ' + transport.designation + ' supprimé avec succès.'})
@@ -840,7 +896,7 @@ def supprimer_transport(request, transport_id):
 @chef_projet_required
 def ajouter_location(request):
     if request.method == 'POST':
-        form = LocationForm(request.POST)
+        form = LocationForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             location = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -849,15 +905,15 @@ def ajouter_location(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = LocationForm()
+        form = LocationForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/locations.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_location(request, location_id):
-    location = get_object_or_404(Location, id=location_id)
+    location = _objet(request, Location, id=location_id)
     if request.method == 'POST':
-        form = LocationForm(request.POST, instance=location)
+        form = LocationForm(request.POST, instance=location, dossier=request.dossier)
         if form.is_valid():
             location = form.save()
             if request.GET.get('modal') == 'true':
@@ -868,8 +924,9 @@ def modifier_location(request, location_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_location(request, location_id):
-    location = get_object_or_404(Location, id=location_id)
+    location = _objet(request, Location, id=location_id)
     location.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Location ' + location.designation + ' supprimée avec succès.'})
@@ -880,7 +937,7 @@ def supprimer_location(request, location_id):
 @chef_projet_required
 def ajouter_sous_traitance(request):
     if request.method == 'POST':
-        form = SousTraitanceForm(request.POST)
+        form = SousTraitanceForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             sous_traitance = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -889,15 +946,15 @@ def ajouter_sous_traitance(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = SousTraitanceForm()
+        form = SousTraitanceForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/sous_traitances.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_sous_traitance(request, sous_traitance_id):
-    sous_traitance = get_object_or_404(SousTraitance, id=sous_traitance_id)
+    sous_traitance = _objet(request, SousTraitance, id=sous_traitance_id)
     if request.method == 'POST':
-        form = SousTraitanceForm(request.POST, instance=sous_traitance)
+        form = SousTraitanceForm(request.POST, instance=sous_traitance, dossier=request.dossier)
         if form.is_valid():
             sous_traitance = form.save()
             if request.GET.get('modal') == 'true':
@@ -908,8 +965,9 @@ def modifier_sous_traitance(request, sous_traitance_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_sous_traitance(request, sous_traitance_id):
-    sous_traitance = get_object_or_404(SousTraitance, id=sous_traitance_id)
+    sous_traitance = _objet(request, SousTraitance, id=sous_traitance_id)
     sous_traitance.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Sous-traitance ' + sous_traitance.designation + ' supprimée avec succès.'})
@@ -920,7 +978,7 @@ def supprimer_sous_traitance(request, sous_traitance_id):
 @chef_projet_required
 def ajouter_consommable(request):
     if request.method == 'POST':
-        form = ConsommableForm(request.POST)
+        form = ConsommableForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             consommable = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -929,15 +987,15 @@ def ajouter_consommable(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = ConsommableForm()
+        form = ConsommableForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/consommables.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_consommable(request, consommable_id):
-    consommable = get_object_or_404(Consommable, id=consommable_id)
+    consommable = _objet(request, Consommable, id=consommable_id)
     if request.method == 'POST':
-        form = ConsommableForm(request.POST, instance=consommable)
+        form = ConsommableForm(request.POST, instance=consommable, dossier=request.dossier)
         if form.is_valid():
             consommable = form.save()
             if request.GET.get('modal') == 'true':
@@ -948,8 +1006,9 @@ def modifier_consommable(request, consommable_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_consommable(request, consommable_id):
-    consommable = get_object_or_404(Consommable, id=consommable_id)
+    consommable = _objet(request, Consommable, id=consommable_id)
     consommable.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Consommable ' + consommable.designation + ' supprimé avec succès.'})
@@ -960,7 +1019,7 @@ def supprimer_consommable(request, consommable_id):
 @chef_projet_required
 def ajouter_fourniture(request):
     if request.method == 'POST':
-        form = FournitureForm(request.POST)
+        form = FournitureForm(request.POST, dossier=request.dossier)
         if form.is_valid():
             fourniture = form.save()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -969,15 +1028,15 @@ def ajouter_fourniture(request):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': False, 'errors': form.errors})
     else:
-        form = FournitureForm()
+        form = FournitureForm(dossier=request.dossier)
     return render(request, 'projets/data/partials/fournitures.html', {'form': form})
 
 
 @chef_projet_required
 def modifier_fourniture(request, fourniture_id):
-    fourniture = get_object_or_404(Fourniture, id=fourniture_id)
+    fourniture = _objet(request, Fourniture, id=fourniture_id)
     if request.method == 'POST':
-        form = FournitureForm(request.POST, instance=fourniture)
+        form = FournitureForm(request.POST, instance=fourniture, dossier=request.dossier)
         if form.is_valid():
             fourniture = form.save()
             if request.GET.get('modal') == 'true':
@@ -988,8 +1047,9 @@ def modifier_fourniture(request, fourniture_id):
 
 
 @chef_projet_required
+@require_POST
 def supprimer_fourniture(request, fourniture_id):
-    fourniture = get_object_or_404(Fourniture, id=fourniture_id)
+    fourniture = _objet(request, Fourniture, id=fourniture_id)
     fourniture.delete()
     if request.headers.get('x-requested-with') == 'XMLHttpRequest':
         return JsonResponse({'success': True, 'message': 'Fourniture ' + fourniture.designation + ' supprimée avec succès.'})

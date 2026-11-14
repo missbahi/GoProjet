@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.views.decorators.http import require_GET
 
 from projets.decorators import (
-    consultation_projet_required, est_chef_projet, est_observateur, projets_accessibles,
+    consultation_projet_required, est_observateur, peut_gerer_projet, projets_accessibles,
 )
 from projets.services import sommaire as service
 from projets.services.home_indicators import indicateurs_home
@@ -27,7 +27,7 @@ def sommaire_liste_required(view_func):
     @wraps(view_func)
     def wrapped(request, *args, **kwargs):
         user = request.user
-        if not (user.is_superuser or est_observateur(user) or est_chef_projet(user)):
+        if not (peut_gerer_projet(user) or est_observateur(user)):
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return login_required(wrapped)

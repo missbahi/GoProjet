@@ -83,7 +83,11 @@ class CategorieDepenseTravaux(models.TextChoices):
     CONSOMMABLE = 'CONSOMMABLE', _('Consommable')
 
 class CategorieCharge(models.Model):
-    code = models.SlugField(max_length=50, unique=True, verbose_name=_('Code'))
+    dossier = models.ForeignKey(
+        'projets.Dossier', on_delete=models.PROTECT, null=True, blank=True,
+        related_name='categoriecharge_catalogue',
+    )
+    code = models.SlugField(max_length=50, verbose_name=_('Code'))
     nom = models.CharField(max_length=100, verbose_name=_('Nom'))
     actif = models.BooleanField(default=True, verbose_name=_('Active'))
     ordre = models.PositiveIntegerField(default=0, verbose_name=_('Ordre'))
@@ -92,6 +96,11 @@ class CategorieCharge(models.Model):
         ordering = ['ordre', 'nom', 'id']
         verbose_name = _('Catégorie de charge')
         verbose_name_plural = _('Catégories de charges')
+        constraints = [
+            models.UniqueConstraint(fields=['dossier', 'code'], name='categorie_code_dossier_unique'),
+            models.UniqueConstraint(fields=['code'], condition=models.Q(dossier__isnull=True),
+                                    name='categorie_code_orphelin_unique'),
+        ]
 
     def __str__(self):
         return self.nom

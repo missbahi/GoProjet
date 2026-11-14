@@ -6,13 +6,14 @@ from .models.profile import Profile
 # from .models.revision import ConfigRevisionProjet, IndiceRevision, RevisionPrix, ValeurIndice
 from .models import (
     Attachement, Decompte, Dossier, DocumentAdministratif, OrdreService, Projet,
-    Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService,
+    Client, Ingenieur, Entreprise, AppelOffre, SuiviExecution, Tache, Notification, TypeOrdreService,
     Personnel, Materiel, Transport, Location, SousTraitance, Fourniture, Consommable,
     CategorieCharge,
 )
 
 class ProfileInline(admin.StackedInline):
     model = Profile
+    fk_name = 'user'
     can_delete = False
 
 class CustomUserAdmin(UserAdmin):
@@ -26,9 +27,15 @@ admin.site.register(User, CustomUserAdmin)
 # ------------------------ Admin Entreprise ------------------------
 @admin.register(Entreprise)
 class EntrepriseAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'contact', 'email', 'telephone')
+    list_display = ('nom', 'dossier', 'contact', 'email', 'telephone')
+    list_filter = ('dossier',)
     search_fields = ('nom', 'contact', 'email', 'telephone')
     list_per_page = 20
+
+@admin.register(Client, Ingenieur)
+class IntervenantDossierAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'dossier')
+    list_filter = ('dossier',)
 
 @admin.register(Dossier)
 class DossierAdmin(admin.ModelAdmin):
@@ -94,8 +101,8 @@ class TypeOrdreServiceAdmin(admin.ModelAdmin):
 
 @admin.register(CategorieCharge)
 class CategorieChargeAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'code', 'actif', 'ordre')
-    list_filter = ('actif',)
+    list_display = ('nom', 'dossier', 'code', 'actif', 'ordre')
+    list_filter = ('dossier', 'actif')
     search_fields = ('nom', 'code')
     ordering = ('ordre', 'nom')
 
@@ -170,50 +177,50 @@ class SuiviExecutionAdmin(admin.ModelAdmin):
 # ------------------------ Admin Ressources ------------------------
 @admin.register(Personnel)
 class PersonnelAdmin(admin.ModelAdmin):
-    list_display = ('nom', 'fonction', 'telephone', 'unite', 'tarif', 'actif')
-    list_filter = ('actif', 'fonction')
+    list_display = ('nom', 'dossier', 'fonction', 'telephone', 'unite', 'tarif', 'actif')
+    list_filter = ('dossier', 'actif', 'fonction')
     search_fields = ('nom', 'fonction')
     list_per_page = 20
 
 @admin.register(Materiel)
 class MaterielAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_materiel')
+    list_display = ('designation', 'dossier', 'type_materiel', 'immatriculation', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_materiel')
     search_fields = ('designation', 'immatriculation')
     list_per_page = 20
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_materiel')
+    list_display = ('designation', 'dossier', 'type_materiel', 'locataire', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_materiel')
     search_fields = ('designation', 'locataire')
     list_per_page = 20
 
 @admin.register(Transport)
 class TransportAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_transport')
+    list_display = ('designation', 'dossier', 'type_transport', 'transporteur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_transport')
     search_fields = ('designation', 'transporteur')
     list_per_page = 20
 
 @admin.register(SousTraitance)
 class SousTraitanceAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_sous_traitance')
+    list_display = ('designation', 'dossier', 'type_sous_traitance', 'prestataire', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_sous_traitance')
     search_fields = ('designation', 'prestataire')
     list_per_page = 20
 
 @admin.register(Fourniture)
 class FournitureAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_fourniture')
+    list_display = ('designation', 'dossier', 'type_fourniture', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_fourniture')
     search_fields = ('designation', 'fournisseur')
     list_per_page = 20
 
 @admin.register(Consommable)
 class ConsommableAdmin(admin.ModelAdmin):
-    list_display = ('designation', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
-    list_filter = ('actif', 'type_consommable')
+    list_display = ('designation', 'dossier', 'type_consommable', 'fournisseur', 'unite', 'prix_unitaire', 'actif')
+    list_filter = ('dossier', 'actif', 'type_consommable')
     search_fields = ('designation', 'fournisseur')
     list_per_page = 20
     

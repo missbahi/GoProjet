@@ -79,10 +79,17 @@ def import_mspdi(request, plan_id=None):
                         if _fingerprint(target) != draft["revision"]:
                             raise ValidationError("Le planning a changé depuis la sélection du fichier. Relancez l'import.")
                     imported = import_mspdi_to_new_plan(xml)
-                    form = ImportedPlanForm(request.POST, imported=imported, replacing=replacing)
+                    form = ImportedPlanForm(
+                        request.POST, imported=imported, replacing=replacing,
+                        user=request.user, target=target,
+                    )
                     if form.is_valid():
                         imported.nom = form.cleaned_data["nom"]
                         imported.description = form.cleaned_data["description"]
+                        project = form.cleaned_data['projet']
+                        if imported.calendrier_id and not imported.calendrier.is_default and project:
+                            imported.calendrier.dossier_id = project.dossier_id
+                            imported.calendrier.save(update_fields=['dossier'])
                         if replacing:
                             # Keep the destination URL/identity, but replace all its planning data.
                             target.taches.all().delete()
@@ -92,14 +99,14 @@ def import_mspdi(request, plan_id=None):
                             target.date_fin_cible = imported.date_fin_cible
                             target.date_etat = imported.date_etat
                             target.calendrier = imported.calendrier
-                            target.content_type = None
-                            target.object_id = None
+                            target.source_object = project
                             target.save()
                             imported.taches.update(plan=target)
                             imported.delete()
                             saved = target
                         else:
-                            imported.save(update_fields=["nom", "description"])
+                            imported.source_object = project
+                            imported.save(update_fields=["nom", "description", "content_type", "object_id"])
                             saved = imported
                         # Session nonce makes a successful confirmation single-use.
                         request.session["goplan_import_drafts"] = [
@@ -120,7 +127,9 @@ def import_mspdi(request, plan_id=None):
                 xml = upload_form.cleaned_data["fichier"].read()
                 with transaction.atomic():
                     imported = import_mspdi_to_new_plan(xml)
-                    form = ImportedPlanForm(imported=imported, replacing=replacing)
+                    form = ImportedPlanForm(
+                        imported=imported, replacing=replacing, user=request.user, target=target,
+                    )
                     summary = _summary(imported, xml)
                     transaction.set_rollback(True)
                 nonce = secrets.token_urlsafe(24)

@@ -9,33 +9,39 @@
 {% endblock %}
 {% block content %}
 {% breadcrumb %}
-<div class="attachment-workflow-page max-w-full mx-auto" data-family="project" data-page-title="CA mensuel" data-page-icon="fa-chart-line">
+<div class="attachment-workflow-page ca-editor max-w-full mx-auto" data-ca-editor data-fullscreen-document data-family="project" data-page-title="CA mensuel" data-page-icon="fa-chart-line">
     <div class="ca-page-heading">
         <h1 class="app-section-title">CA mensuel — {{ projet.nom }}</h1>
         <span>Statut : {{ ca.get_statut_display }}</span>
-        <button type="button" id="ca-help-open" class="goplan-toolbar-btn ca-help-button"
-                aria-label="Aide à la saisie du CA" title="Aide à la saisie du CA" aria-controls="ca-help-dialog">
-            <i class="fas fa-info" aria-hidden="true"></i>
-        </button>
     </div>
     {% include "projets/home/_action_messages.html" %}
     <div id="ca-error" class="app-alert app-alert-error p-4 mb-4" role="alert" hidden></div>
+    <p data-planning-fullscreen-error class="app-alert app-alert-error" role="alert" hidden></p>
     <form id="ca-form" method="post" class="app-card ca-compact-form"
           data-existant="{{ existant|yesno:'true,false' }}" data-statut="{{ ca.statut }}">
         {% csrf_token %}
-        <div class="ca-form-header">
-            <div>{{ form.mois.label_tag }}{{ form.mois }}</div>
-            <div>{{ form.origine.label_tag }}{{ form.origine }}</div>
-            <div>{{ form.observations.label_tag }}{{ form.observations }}</div>
-        </div>
         <div class="ca-selection-toolbar">
             <div class="ca-toolbar-actions">
+            <div class="ca-toolbar-group" role="group" aria-label="Plein écran">
+                <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
+                        aria-label="Passer en plein écran" aria-pressed="false"
+                        title="Passer en plein écran (Échap pour quitter)">
+                    <i class="fas fa-expand" aria-hidden="true"></i>
+                </button>
+            </div>
+            <div class="ca-toolbar-group" role="group" aria-label="Affichage et aide">
             <button type="button" id="toggle-expanded-all-btn" class="goplan-toolbar-btn"
                     aria-label="Développer ou réduire toutes les lignes filles"
                     title="Développer ou réduire toutes les lignes filles" disabled>
                 <i class="fas fa-compress-alt" aria-hidden="true"></i>
             </button>
+            <button type="button" id="ca-help-open" class="goplan-toolbar-btn" data-observer-safe
+                    aria-label="Aide à la saisie du CA" title="Aide à la saisie du CA" aria-controls="ca-help-dialog">
+                <i class="fas fa-info" aria-hidden="true"></i>
+            </button>
+            </div>
             {% if peut_modifier %}
+            <div class="ca-toolbar-group" role="group" aria-label="Enregistrement et validation">
             <button type="submit" name="action" value="enregistrer" class="goplan-toolbar-btn"
                     aria-label="Vérifier et enregistrer" title="Vérifier et enregistrer"{% if existant %} disabled{% endif %}>
                 <i class="fas fa-save" aria-hidden="true"></i>
@@ -50,15 +56,27 @@
                 <i class="fas fa-lock-open" aria-hidden="true"></i>
             </button>
             {% endif %}
+            </div>
             {% endif %}
             </div>
             <div id="selectionSumDisplay" class="selection-sum-display ca-selection-sum" role="status" aria-live="polite"></div>
         </div>
-        <div class="overflow-x-auto">
+        <div class="ca-form-header" data-fullscreen-fields>
+            <div>{{ form.mois.label_tag }}{{ form.mois }}</div>
+            <div>{{ form.origine.label_tag }}{{ form.origine }}</div>
+            <div>{{ form.observations.label_tag }}{{ form.observations }}</div>
+        </div>
+        <div class="ca-table-section">
             <div id="ca-table" data-editable="{{ peut_modifier|yesno:'true,false' }}" data-premier="{{ premier|yesno:'true,false' }}"></div>
         </div>
-        <div class="ca-form-total"><strong>CA mensuel HT : <span id="ca-total">0,00</span> DH</strong></div>
     </form>
+    <div class="ca-form-total">
+        <div class="ca-total-label">
+            <i class="fas fa-calculator" aria-hidden="true"></i>
+            <strong>CA mensuel HT</strong>
+        </div>
+        <strong><span id="ca-total">0,00</span> DH</strong>
+    </div>
     <dialog id="ca-help-dialog" class="ca-help-dialog" aria-labelledby="ca-help-title">
         <div class="ca-help-heading">
             <h2 id="ca-help-title" class="app-section-title">Aide à la saisie du CA</h2>

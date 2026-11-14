@@ -1,8 +1,9 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from .catalogue import CatalogueDossier
 
 
-class Personnel(models.Model):
+class Personnel(CatalogueDossier):
     nom = models.CharField(_("Nom"), max_length=150)
     fonction = models.CharField(_("Fonction"), max_length=100, blank=True)
     telephone = models.CharField(_("Téléphone"), max_length=20, blank=True)
@@ -55,7 +56,7 @@ class EtatMateriel(models.TextChoices):
     MAINTENANCE = "MAINTENANCE", _("En maintenance")
     DISPONIBLE = "DISPONIBLE", _("Disponible")
 
-class Materiel(models.Model):
+class Materiel(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_materiel = models.ForeignKey(
         TypeMateriel,
@@ -155,7 +156,7 @@ class AffectationRessource(models.Model):
     def __str__(self):
         return f"{self.materiel} → {self.atelier}"
 
-class Location(models.Model):
+class Location(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_materiel = models.CharField(_("Type de matériel"), max_length=100, blank=True)
     locataire = models.CharField(_("Locataire"), max_length=50, blank=True)
@@ -171,7 +172,7 @@ class Location(models.Model):
     def __str__(self):
         return self.designation
 
-class Transport(models.Model):
+class Transport(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_transport = models.CharField(_("Type"), max_length=100, blank=True)
     transporteur = models.CharField(_("Transporteur"), max_length=50, blank=True)
@@ -187,7 +188,7 @@ class Transport(models.Model):
     def __str__(self):
         return self.designation
 
-class SousTraitance(models.Model):
+class SousTraitance(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_sous_traitance = models.CharField(_("Type"), max_length=100, blank=True)
     prestataire = models.CharField(_("Prestataire"), max_length=50, blank=True)
@@ -203,7 +204,7 @@ class SousTraitance(models.Model):
     def __str__(self):
         return self.designation
 
-class Consommable(models.Model):
+class Consommable(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_consommable = models.CharField(_("Type"), max_length=100, blank=True)
     fournisseur = models.CharField(_("Fournisseur"), max_length=50, blank=True)
@@ -219,7 +220,7 @@ class Consommable(models.Model):
     def __str__(self):
         return self.designation
 
-class Fourniture(models.Model):
+class Fourniture(CatalogueDossier):
     designation = models.CharField(_("Désignation"), max_length=150)
     type_fourniture = models.CharField(_("Type"), max_length=100, blank=True)
     fournisseur = models.CharField(_("Fournisseur"), max_length=50, blank=True)

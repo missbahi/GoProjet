@@ -13,7 +13,11 @@
             Modifier le dossier
         </h1>
         <p class="mt-2" style="color: var(--text-secondary);">
-            Ajoutez ou retirez des projets de « {{ dossier.nom }} ».
+            {% if user.is_superuser %}
+                Ajoutez ou retirez des projets de « {{ dossier.nom }} ».
+            {% else %}
+                Modifiez les informations de « {{ dossier.nom }} ».
+            {% endif %}
         </p>
     </div>
 
@@ -66,6 +70,7 @@
             </div>
 
             <!-- Gérant -->
+            {% if form.gerant %}
             <div>
                 <label for="{{ form.gerant.id_for_label }}" class="mb-2 block font-medium" style="color: var(--text-primary);">
                     {{ form.gerant.label }}
@@ -75,8 +80,10 @@
                     <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
                 {% endfor %}
             </div>
+            {% endif %}
 
             <!-- Projets -->
+            {% if form.projets %}
             <div>
                 <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <label class="font-medium" style="color: var(--text-primary);">
@@ -89,6 +96,7 @@
                         Tout sélectionner
                     </button>
                 </div>
+                {% endif %}
 
                 <div class="max-h-96 space-y-2 overflow-y-auto rounded-lg p-3"
                      style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
@@ -105,9 +113,11 @@
                         </p>
                     {% endfor %}
                 </div>
+                {% if user.is_superuser %}
                 <p class="mt-2 text-sm" style="color: var(--text-muted);">
                     Décochez un projet pour le rendre disponible et le rattacher à un autre dossier.
                 </p>
+                {% endif %}
                 {% for error in form.projets.errors %}
                     <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
                 {% endfor %}
@@ -115,8 +125,13 @@
 
             <!-- Boutons -->
             <div class="flex flex-col sm:flex-row gap-3">
-                <a href="{% url 'projets:gerer_dossiers' %}"
-                hx-get="{% url 'projets:gerer_dossiers' %}"
+                {% if user.is_superuser %}
+                    {% url 'projets:gerer_dossiers' as retour_url %}
+                {% else %}
+                    {% url 'projets:home' as retour_url %}
+                {% endif %}
+                <a href="{{ retour_url }}"
+                hx-get="{{ retour_url }}"
                 hx-target="#main-content"
                 hx-swap="innerHTML swap:150ms settle:150ms show:top"
                 hx-push-url="true"

@@ -29,6 +29,7 @@
         '[data-attachment-trace]', '[data-attachment-dialog-close]', '[data-modal-close]',
         '[data-goplan-view]', '[data-gantt-view]', '[data-gantt-zoom]',
         '[data-view]', '[data-tv-action="fold"]', '.tv-row-header button',
+        '.table-view-resize-handle', '.table-view-header-resize-handle',
         '.goplan-gantt-group-toggle', '#gantt-zoom-in', '#gantt-zoom-out', '#gantt-today',
         '#toggle-expanded-all-btn', '#ca-help-open', '#ca-help-close',
         '#searchToggle', '#clearSearch', '.vue-btn',

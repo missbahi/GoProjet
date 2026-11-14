@@ -54,6 +54,11 @@ OBJECT_SCOPES = {
     'ordre_id': ('OrdreService', 'projet_id'),
     'ca_id': ('ChiffreAffaire', 'projet_id'),
     'lot_id': ('LotProjet', 'projet_id'),
+    'suivi_id': ('SuiviExecution', 'projet_id'),
+    'ressource_id': ('RessourceAffectee', 'projet_id'),
+    'affectation_id': ('AffectationRessource', 'atelier__projet_id'),
+    'etape_id': ('EtapeValidation', 'processValidation__attachement__projet_id'),
+    'process_id': ('ProcessValidation', 'attachement__projet_id'),
 }
 
 DOWNLOAD_SCOPES = {
@@ -99,7 +104,7 @@ def verifier_perimetre_observateur(request, match):
                 qs = qs.filter(**{project_path: kwargs['projet_id']})
             if not qs.exists():
                 raise PermissionDenied("Cet élément n'appartient pas à vos dossiers.")
-    if match.url_name == 'detail_tache':
+    if match.url_name in {'detail_tache', 'modifier_tache', 'supprimer_tache'}:
         from projets.models import Tache
         if not Tache.objects.filter(pk=kwargs['pk'], projet__in=accessibles).exists():
             raise PermissionDenied

@@ -1,7 +1,7 @@
 from decimal import Decimal
 import os
 from django.db import models, transaction
-from django.db.models import Sum
+from django.db.models import Q, Sum
 from django.core.exceptions import NON_FIELD_ERRORS, ValidationError
 from django.utils.translation import gettext_lazy as _
 from datetime import date, timedelta
@@ -60,11 +60,25 @@ class Attachement(models.Model):
     def initialiser_processus_validation(self, demandeur):
         if self.projet.dossier_id and self.projet.dossier.activite == 'TRAVAUX':
             return
+        from projets.decorators import est_observateur, projets_accessibles
+
+        validateur_local = None
+        if self.projet.dossier_id:
+            candidats = self.projet.dossier.utilisateurs.filter(is_active=True).filter(
+                Q(is_staff=True)
+                | Q(profile__role__in=['ADMIN_DOSSIER', 'DIRECTEUR_PROJET', 'CHEF_PROJET'])
+            ).order_by('-is_staff', 'pk')
+            validateur_local = next((
+                user for user in candidats
+                if not est_observateur(user)
+                and projets_accessibles(user).filter(pk=self.projet_id).exists()
+            ), None)
+        validateur_global = User.objects.filter(is_active=True, is_superuser=True).first()
         types_validation = [
-            ('TECHNIQUE', 1, True, User.objects.filter(is_staff=True).first()),
-            ('ADMINISTRATIVE', 2, True, User.objects.filter(is_staff=True).first()),
-            ('FINANCIERE', 3, True, User.objects.filter(is_superuser=True).first()),
-            ('FINAL', 4, True, User.objects.filter(is_superuser=True).first()),
+            ('TECHNIQUE', 1, True, validateur_local or validateur_global),
+            ('ADMINISTRATIVE', 2, True, validateur_local or validateur_global),
+            ('FINANCIERE', 3, True, validateur_global),
+            ('FINAL', 4, True, validateur_global),
         ]
         
         for type_val, ordre, obligatoire, validateur_par_defaut in types_validation:
@@ -95,9 +109,11 @@ class Attachement(models.Model):
     def peut_etre_reouvert_par(self, user):
         if not self.peut_etre_reouvert:
             return False
-        from projets.decorators import est_observateur, peut_valider_directement
+        from projets.decorators import est_observateur, peut_valider_directement, projets_accessibles
 
         if est_observateur(user):
+            return False
+        if not user.is_superuser and not projets_accessibles(user).filter(pk=self.projet_id).exists():
             return False
         return (
             user.is_superuser or user.is_staff or user.has_perm('projets.reopen_attachment')
@@ -582,11 +598,15 @@ class ProcessValidation(models.Model):
         if user.is_superuser:
             return True
 
-        if user.is_staff and self.type_validation in ['TECHNIQUE', 'ADMINISTRATIVE']:
-            return True
+        from projets.decorators import est_observateur, peut_gerer_projet, projets_accessibles
 
-        role = getattr(getattr(user, 'profile', None), 'role', None)
-        if role in {'GERANT', 'CHEF_PROJET'}:
+        if est_observateur(user) or not projets_accessibles(user).filter(
+            pk=self.attachement.projet_id,
+        ).exists():
+            return False
+        if peut_gerer_projet(user):
+            return True
+        if user.is_staff and self.type_validation in ['TECHNIQUE', 'ADMINISTRATIVE']:
             return True
 
         if self.validateur and self.validateur == user:

@@ -33,6 +33,7 @@ commun_urlpatterns = [
     path('projet/<int:projet_id>/sommaire/<slug:onglet>/', sommaire_views.sommaire_onglet, name='sommaire_onglet'),
     path('dossiers/gerer/', project_views.gerer_dossiers, name='gerer_dossiers'),
     path('dossiers/<int:dossier_id>/modifier/', project_views.modifier_dossier, name='modifier_dossier'),
+    path('dossiers/<int:dossier_id>/supprimer/', project_views.supprimer_dossier, name='supprimer_dossier'),
     path('', site_views.landing, name='landing'),
     # Apropos
     path('apropos/', site_views.apropos, name='apropos'),

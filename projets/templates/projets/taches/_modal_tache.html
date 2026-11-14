@@ -26,6 +26,7 @@
             <input type="hidden" name="tache_id" id="tacheId">
             <input type="hidden" name="projetId" id="projetId"
                    value="{% if projet %}{{ projet.id }}{% endif %}">
+            <p id="taskAssignmentWarning" class="app-alert app-alert-warning" role="alert" hidden></p>
 
             <!-- Grille 2 colonnes -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -76,7 +77,7 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-sm font-medium mb-1" style="color: var(--text-primary);">
-                            Responsable *
+                            Responsable de la tâche *
                         </label>
                         <select name="responsable" id="responsable" required>
                             <option value="">Chargement...</option>

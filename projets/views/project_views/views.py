@@ -3,14 +3,20 @@ from projets.models.profile import Profile
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg, Q, Sum
+from django.core.exceptions import PermissionDenied
+from django.db.models import Avg, ProtectedError, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.http import require_POST
 
-from projets.decorators import can_view_projet, chef_projet_required, projets_accessibles, superuser_required
+from projets.decorators import (
+    can_view_projet, chef_projet_required, dossier_utilisateur, est_admin_dossier,
+    peut_creer_projet, peut_gerer_projet, peut_supprimer_projet,
+    projets_accessibles, superuser_required,
+)
 from projets.forms import DossierForm, ProjetForm
 from projets.models import (
     Attachement, Decompte, DocumentAdministratif, Dossier, Entreprise,
@@ -24,7 +30,7 @@ from projets.services.avancement_projet import avancement_ttc
 @superuser_required
 def gerer_dossiers(request):
     if request.method == 'POST':
-        form = DossierForm(request.POST)
+        form = DossierForm(request.POST, user=request.user)
         if form.is_valid():
             dossier = form.save()
             messages.success(
@@ -33,7 +39,7 @@ def gerer_dossiers(request):
             )
             return redirect('projets:gerer_dossiers')
     else:
-        form = DossierForm()
+        form = DossierForm(user=request.user)
     context = {
         'form': form,
         'dossiers': Dossier.objects.prefetch_related('projets'),
@@ -48,18 +54,23 @@ def gerer_dossiers(request):
     )
 
     
-@superuser_required
+@login_required
 def modifier_dossier(request, dossier_id):
     dossier = get_object_or_404(Dossier, id=dossier_id)
+    if not request.user.is_superuser and (
+        not est_admin_dossier(request.user)
+        or dossier_utilisateur(request.user).pk != dossier.pk
+    ):
+        raise PermissionDenied
 
     if request.method == 'POST':
-        form = DossierForm(request.POST, instance=dossier)
+        form = DossierForm(request.POST, instance=dossier, user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, f'Le dossier « {dossier.nom} » a été modifié.')
-            return redirect('projets:gerer_dossiers')
+            return redirect('projets:gerer_dossiers' if request.user.is_superuser else 'projets:home')
     else:
-        form = DossierForm(instance=dossier)
+        form = DossierForm(instance=dossier, user=request.user)
 
     context = {
         'form': form,
@@ -70,6 +81,22 @@ def modifier_dossier(request, dossier_id):
     if request.headers.get('HX-Request'):
         return render(request, 'projets/dossiers/_modifier_dossier_content.html', context)
     return render(request, 'projets/dossiers/modifier_dossier.html', context)
+
+
+@superuser_required
+@require_POST
+def supprimer_dossier(request, dossier_id):
+    dossier = get_object_or_404(Dossier, pk=dossier_id)
+    if dossier.projets.exists() or dossier.utilisateurs.exists():
+        messages.error(request, "Retirez les projets et les utilisateurs avant de supprimer ce dossier.")
+        return redirect('projets:gerer_dossiers')
+    try:
+        dossier.delete()
+    except ProtectedError:
+        messages.error(request, "Ce dossier contient encore des référentiels ou des calendriers.")
+        return redirect('projets:gerer_dossiers')
+    messages.success(request, "Le dossier a été supprimé.")
+    return redirect('projets:gerer_dossiers')
 
 from django.core.paginator import Paginator
 
@@ -99,7 +126,7 @@ def liste_projets(request):
     if vue not in ('tableau', 'cartes'):
         vue = 'tableau'
  
-    can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
+    can_handler = peut_gerer_projet(request.user)
 
     projets = (
         projets_accessibles(request.user)
@@ -144,6 +171,8 @@ def liste_projets(request):
     page_obj = paginator.get_page(page_number)
     context = {
         'can_handler': can_handler,
+        'can_create_project': peut_creer_projet(request.user),
+        'can_delete_project': peut_supprimer_projet(request.user),
         'page_obj': page_obj,
         'projets': page_obj,  # rétrocompatibilité
         'vue': vue,
@@ -169,6 +198,8 @@ def liste_projets(request):
 
 @chef_projet_required
 def ajouter_projet_modal(request):
+    if not peut_creer_projet(request.user):
+        raise PermissionDenied("Vous ne pouvez pas créer de projet.")
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         form = ProjetForm(request.POST, user=request.user)
@@ -231,18 +262,23 @@ def modifier_projet_modal(request, projet_id):
                 'message': 'Veuillez corriger les erreurs ci-dessous',
             }, status=400)
 
-    form = ProjetForm(instance=projet, user=request.user)
+    else:
+        form = ProjetForm(instance=projet, user=request.user)
     return render(request, 'projets/projets/modifier_projet_modal.html', {
         'form': form,
         'projet': projet,
         'statuts': Projet.Statut.choices,
-        'entreprises': Entreprise.objects.all(),
+        'entreprises': form.fields['entreprise'].queryset,
     })
 
 
 @chef_projet_required
 def supprimer_projet(request, projet_id):
+    if not peut_supprimer_projet(request.user):
+        raise PermissionDenied("La suppression d'un projet est réservée aux administrateurs.")
     projet = get_object_or_404(Projet, id=projet_id)
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non supportée'}, status=405)
     projet.delete()
     return redirect('projets:liste_projets')
 
@@ -327,7 +363,7 @@ def dashboard_projet(request, projet_id):
         'message': message_delai,
     }
     suivis_execution = SuiviExecution.objects.filter(projet=projet)
-    can_handler = request.user.is_superuser or request.user.dossiers_geres.exists()
+    can_handler = peut_gerer_projet(request.user)
 
     template = (
         'projets/dashboard_projet/_dashboard_fragment.html'

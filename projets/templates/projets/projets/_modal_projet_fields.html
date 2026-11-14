@@ -8,13 +8,19 @@
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         <!-- Dossier -->
+        {% if form.dossier.is_hidden %}
+            {{ form.dossier }}
+            {{ form.dossier.errors }}
+        {% else %}
         <div class="space-y-2">
             <label for="{{ form.dossier.id_for_label }}" class="block text-sm font-semibold" style="color: var(--text-primary);">
                 <i class="fas fa-folder mr-2" style="color: var(--accent-green);"></i>
                 {{ form.dossier.label }}
             </label>
             {{ form.dossier }}
+            {{ form.dossier.errors }}
         </div>
+        {% endif %}
 
         <!-- Nom -->
         <div class="space-y-2">

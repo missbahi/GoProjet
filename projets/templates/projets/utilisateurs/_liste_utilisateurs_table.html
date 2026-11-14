@@ -49,9 +49,21 @@
                     <td class="px-4 py-3">
                         {% if utilisateur.is_superuser %}
                             <span class="badge-role badge-superadmin">
-                                <i class="fas fa-crown"></i> Super Admin
+                                <i class="fas fa-crown"></i> Admin
                             </span>
-                        {% elif utilisateur.profile.role == 'GERANT' or utilisateur.profile.role == 'CHEF_PROJET' %}
+                        {% elif utilisateur.profile.role == 'ADMIN_DOSSIER' %}
+                            <span class="badge-role badge-gerant">
+                                <i class="fas fa-user-shield"></i> Administrateur de dossier
+                            </span>
+                        {% elif utilisateur.profile.role == 'DIRECTEUR_PROJET' %}
+                            <span class="badge-role badge-gerant">
+                                <i class="fas fa-user-tie"></i> Directeur de projet
+                            </span>
+                        {% elif utilisateur.profile.role == 'A_RECLASSER' %}
+                            <span class="badge-role badge-inactif">
+                                <i class="fas fa-exclamation-triangle"></i> À reclasser par l'Admin
+                            </span>
+                        {% elif utilisateur.profile.role == 'CHEF_PROJET' %}
                             <span class="badge-role badge-gerant">
                                 <i class="fas fa-user-tie"></i> Chef de projet
                             </span>
@@ -107,6 +119,7 @@
                     <!-- Actions -->
                     <td class="px-4 py-3">
                         <div class="flex justify-center gap-2">
+                            {% if utilisateur.can_edit_account %}
                             <a href="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
                                hx-get="{% url 'projets:modifier_utilisateur' utilisateur.id %}"
                                hx-target="#user-modal-content"
@@ -118,6 +131,8 @@
                                style="color: var(--accent-info); background-color: rgba(59, 130, 246, 0.1);">
                                 <i class="fas fa-edit"></i>
                             </a>
+                            {% endif %}
+                            {% if utilisateur.can_assign_projects %}
                             <a href="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
                                hx-get="{% url 'projets:gerer_projets_utilisateur' utilisateur.id %}"
                                hx-target="#user-modal-content"
@@ -129,14 +144,18 @@
                                style="color: var(--accent-success); background-color: rgba(16, 185, 129, 0.1);">
                                 <i class="fas fa-project-diagram"></i>
                             </a>
-                            {% if not utilisateur.is_superuser or request.user.is_superuser %}
-                            <a href="{% url 'projets:supprimer_utilisateur' utilisateur.id %}"
-                               onclick="return confirm('Supprimer cet utilisateur ? Cette action est irréversible.')"
+                            {% endif %}
+                            {% if utilisateur.can_delete_account %}
+                            <form method="post" action="{% url 'projets:supprimer_utilisateur' utilisateur.id %}"
+                                  onsubmit="return confirm('Supprimer cet utilisateur ? Cette action est irréversible.')">
+                                {% csrf_token %}
+                            <button type="submit"
                                class="action-btn"
                                title="Supprimer"
                                style="color: var(--accent-danger); background-color: rgba(239, 68, 68, 0.1);">
                                 <i class="fas fa-trash"></i>
-                            </a>
+                            </button>
+                            </form>
                             {% endif %}
                         </div>
                     </td>

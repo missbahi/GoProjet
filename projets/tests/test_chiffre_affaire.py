@@ -28,11 +28,13 @@ class ChiffreAffaireTests(TestCase):
         self.chef = User.objects.create_user(username='chef-ca')
         self.chef.profile.role = 'CHEF_PROJET'
         self.chef.profile.save()
-        self.dossier = Dossier.objects.create(nom='Travaux CA', activite='TRAVAUX', gerant=self.chef)
+        self.dossier = Dossier.objects.create(nom='Travaux CA', activite='TRAVAUX')
+        self.dossier.utilisateurs.add(self.chef)
         self.projet = Projet.objects.create(
             dossier=self.dossier, nom='Projet CA', objet='Travaux', numero='CA-TEST',
             maitre_ouvrage='MO', localisation='Site',
         )
+        self.projet.users.add(self.chef)
         self.lot = LotProjet.objects.create(projet=self.projet, nom='Lot CA')
         self.ligne = LigneBordereau.objects.create(
             lot=self.lot, numero='1', designation='Production', unite='m',
@@ -371,6 +373,8 @@ class ChiffreAffaireTests(TestCase):
         self.assertEqual(saved.status_code, 200, saved.content)
         ca_url = saved.json()['redirect']
         viewer = User.objects.create_user(username='viewer-ca')
+        viewer.profile.role = 'OBSERVATEUR'
+        viewer.profile.save()
         self.dossier.utilisateurs.add(viewer)
         self.client.force_login(viewer)
         self.assertEqual(self.client.get(ca_url).status_code, 200)
@@ -397,6 +401,30 @@ class ChiffreAffaireTests(TestCase):
         self.assertNotContains(partial, '<html')
         self.assertNotContains(partial, 'id="main-content"')
         self.assertContains(partial, reverse('projets:modifier_ca', args=[self.projet.pk, ChiffreAffaire.objects.get().pk]))
+
+    def test_observer_can_use_ca_display_controls_without_write_access(self):
+        ca = self.save_ca()
+        observer = User.objects.create_user(username='observer-ca')
+        observer.profile.role = 'OBSERVATEUR'
+        observer.profile.save()
+        self.dossier.utilisateurs.add(observer)
+        self.client.force_login(observer)
+        url = reverse('projets:modifier_ca', args=[self.projet.pk, ca.pk])
+        lines = list(ca.lignes.values())
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-ca-editor data-fullscreen-document')
+        self.assertContains(response, 'data-planning-fullscreen data-observer-safe')
+        self.assertContains(response, 'data-editable="false"')
+        self.assertContains(response, 'id="ca-help-open"')
+        self.assertContains(response, 'class="ca-form-total"')
+        self.assertNotContains(response, 'name="action" value="enregistrer"')
+        self.assertNotContains(response, 'name="action" value="valider"')
+        self.assertNotContains(response, 'name="action" value="devalider"')
+        self.assertEqual(self.client.post(url, {'action': 'enregistrer'}).status_code, 403)
+        self.assertEqual(list(ca.lignes.values()), lines)
 
     def ca_action(self, ca, action, **kwargs):
         return self.client.post(reverse(f'projets:{action}_ca', args=[self.projet.pk, ca.pk]), **kwargs)

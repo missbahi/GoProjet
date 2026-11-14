@@ -130,7 +130,7 @@
                     <div class="{% if not categorie_forms %}hidden{% endif %} p-3"
                          id="depense-table-{{ value }}">
 
-                        {% if user.is_superuser or user.profile.role == 'CHEF_PROJET' or user.profile.role == 'GERANT' %}
+                        {% if can_manage_project %}
                         <div class="flex items-center justify-between mb-2 pb-2"
                              style="border-bottom: 1px solid var(--border-subtle);">
                             <span class="text-xs" style="color: var(--text-muted);">

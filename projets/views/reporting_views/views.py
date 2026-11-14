@@ -30,7 +30,6 @@ from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuell
 from projets.models.projet import Dossier
 from projets.models import ChiffreAffaire
 from projets.services.chiffre_affaire import synchroniser_situation_ca
-from projets.models.ressources import Consommable, Fourniture, Location, Materiel, Personnel, SousTraitance
 from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
 from projets.utils.navigation import crumb, project_crumbs
 
@@ -184,7 +183,7 @@ def ajouter_rapport_journalier(request, projet_id):
 
     if request.method == 'POST':
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
-        depenses = DepenseRapportJournalierFormSet(request.POST)
+        depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet(request.POST)
 
         if form.is_valid() and depenses.is_valid() and stocks.is_valid():
@@ -242,7 +241,7 @@ def ajouter_rapport_journalier(request, projet_id):
         'date': today.strftime('%Y-%m-%d'),
         'redacteur': request.user.get_full_name() or request.user.username,
     })
-    depenses = DepenseRapportJournalierFormSet()
+    depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
     stocks = StockRapportJournalierFormSet()
 
     ctx = _build_ctx(form, depenses, stocks)
@@ -266,7 +265,9 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
 
     depenses = list(rapport.depenses.select_related('categorie_charge'))
     categorie_ids = {d.categorie_charge_id for d in depenses if d.categorie_charge_id}
-    categories = CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=categorie_ids))
+    categories = CategorieCharge.objects.filter(
+        Q(actif=True) | Q(pk__in=categorie_ids), dossier_id=projet.dossier_id,
+    )
 
     depenses_groupees = []
     for category in categories:
@@ -294,74 +295,42 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         return render(request, 'projets/rapports/_detail_rapport_journalier_content.html', ctx)
     return render(request, 'projets/rapports/detail_rapport_journalier.html', ctx)
 
-def _referentiel_depenses(projet=None):
-    """Entrées du référentiel proposées par catégorie de dépense.
-    Si `projet` est fourni, on filtre aux ressources affectées à ce projet.
-    """
-    
-    def options(queryset, champ_designation, champ_prix):
+def _referentiel_depenses(projet):
+    """Propose uniquement les ressources affectées au projet."""
+    def options_from_project(code):
         return [
             {
-                'designation': getattr(obj, champ_designation),
-                'unite': obj.unite or '',
-                'prix': getattr(obj, champ_prix) or Decimal('0.00'),
+                'designation': resource.designation,
+                'unite': resource.unite or '',
+                'prix': resource.tarif or Decimal('0.00'),
             }
-            for obj in queryset
+            for resource in projet.ressources_affectees.filter(
+                categorie_charge__code=code,
+                categorie_charge__dossier_id=projet.dossier_id,
+                actif=True,
+            ).order_by('designation')
         ]
 
-    if projet is not None:
-        # 🔥 Mode filtré : on utilise RessourceAffectee
-        def options_from_project(code):
-            return [
-                {
-                    'designation': r.designation,
-                    'unite': r.unite or '',
-                    'prix': r.tarif or Decimal('0.00'),
-                }
-                for r in projet.ressources_affectees.filter(
-                    categorie_charge__code=code, actif=True,
-                ).order_by('designation')
-            ]
-
-        return {
-            CategorieDepenseTravaux.PERSONNEL: options_from_project('PERSONNEL'),
-            CategorieDepenseTravaux.MATERIEL: options_from_project('MATERIEL'),
-            CategorieDepenseTravaux.LOCATION: options_from_project('LOCATION'),
-            CategorieDepenseTravaux.SOUS_TRAITANCE: options_from_project('SOUS_TRAITANCE'),
-            CategorieDepenseTravaux.FOURNITURE: options_from_project('FOURNITURE'),
-            CategorieDepenseTravaux.CONSOMMABLE: options_from_project('CONSOMMABLE'),
-        }
-
     return {
-        CategorieDepenseTravaux.PERSONNEL: options(
-            Personnel.objects.filter(actif=True).order_by('nom'), 'nom', 'tarif'
-        ),
-        CategorieDepenseTravaux.MATERIEL: options(
-            Materiel.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
-        ),
-        CategorieDepenseTravaux.LOCATION: options(
-            Location.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
-        ),
-        CategorieDepenseTravaux.SOUS_TRAITANCE: options(
-            SousTraitance.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
-        ),
-        CategorieDepenseTravaux.FOURNITURE: options(
-            Fourniture.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
-        ),
-        CategorieDepenseTravaux.CONSOMMABLE: options(
-            Consommable.objects.filter(actif=True).order_by('designation'), 'designation', 'prix_unitaire'
-        ),
+        CategorieDepenseTravaux.PERSONNEL: options_from_project('PERSONNEL'),
+        CategorieDepenseTravaux.MATERIEL: options_from_project('MATERIEL'),
+        CategorieDepenseTravaux.LOCATION: options_from_project('LOCATION'),
+        CategorieDepenseTravaux.SOUS_TRAITANCE: options_from_project('SOUS_TRAITANCE'),
+        CategorieDepenseTravaux.FOURNITURE: options_from_project('FOURNITURE'),
+        CategorieDepenseTravaux.CONSOMMABLE: options_from_project('CONSOMMABLE'),
     }
 
-def _grouper_depenses_par_categorie(depenses_formset, projet=None):
-    categories = list(CategorieCharge.objects.filter(actif=True))
+def _grouper_depenses_par_categorie(depenses_formset, projet):
+    categories = list(CategorieCharge.objects.filter(actif=True, dossier_id=projet.dossier_id))
     existing_ids = {
         form.instance.categorie_charge_id
         for form in depenses_formset.forms
         if form.instance.categorie_charge_id
     }
     if existing_ids:
-        categories = list(CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=existing_ids)))
+        categories = list(CategorieCharge.objects.filter(
+            Q(actif=True) | Q(pk__in=existing_ids), dossier_id=projet.dossier_id,
+        ))
     groupes = {category.code: [] for category in categories}
     for depense_form in depenses_formset.forms:
         categorie = (
@@ -391,7 +360,7 @@ def formulaire_rapport_journalier(request, projet_id):
     
     if request.method == 'POST':
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
-        depenses = DepenseRapportJournalierFormSet(request.POST)
+        depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet(request.POST)
         
         if form.is_valid() and depenses.is_valid() and stocks.is_valid():
@@ -446,7 +415,7 @@ def formulaire_rapport_journalier(request, projet_id):
             'date': today.strftime('%Y-%m-%d'),  # Format ISO explicite
             'redacteur': request.user.get_full_name() or request.user.username
         })
-        depenses = DepenseRapportJournalierFormSet()
+        depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet()
     
     depenses_groupees = _grouper_depenses_par_categorie(depenses, projet=projet)
@@ -483,7 +452,9 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
 
     if request.method == 'POST':
         form = RapportJournalierForm(request.POST, request.FILES, instance=rapport, projet=projet)
-        depenses = DepenseRapportJournalierFormSet(request.POST, instance=rapport)
+        depenses = DepenseRapportJournalierFormSet(
+            request.POST, instance=rapport, form_kwargs={'projet': projet},
+        )
         stocks = StockRapportJournalierFormSet(request.POST, instance=rapport)
 
         if form.is_valid() and depenses.is_valid() and stocks.is_valid():
@@ -526,7 +497,7 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
     form = RapportJournalierForm(instance=rapport)
     if rapport.date:
         form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
-    depenses = DepenseRapportJournalierFormSet(instance=rapport)
+    depenses = DepenseRapportJournalierFormSet(instance=rapport, form_kwargs={'projet': projet})
     stocks = StockRapportJournalierFormSet(instance=rapport)
 
     ctx = _build_ctx(form, depenses, stocks)
@@ -659,7 +630,9 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
     )
     depenses = list(situation.depenses.select_related('categorie_charge'))
     categorie_ids = {depense.categorie_charge_id for depense in depenses if depense.categorie_charge_id}
-    categories = CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=categorie_ids))
+    categories = CategorieCharge.objects.filter(
+        Q(actif=True) | Q(pk__in=categorie_ids), dossier_id=projet.dossier_id,
+    )
     depenses_par_categorie = []
     for category in categories:
         category_depenses = [
@@ -681,15 +654,17 @@ def apercu_situation_mensuelle(request, projet_id, situation_id):
     })
 
 
-def _group_situation_expenses(formset):
-    categories = list(CategorieCharge.objects.filter(actif=True))
+def _group_situation_expenses(formset, projet):
+    categories = list(CategorieCharge.objects.filter(actif=True, dossier_id=projet.dossier_id))
     existing_ids = {
         form.instance.categorie_charge_id
         for form in formset.forms
         if form.instance.categorie_charge_id
     }
     if existing_ids:
-        categories = list(CategorieCharge.objects.filter(Q(actif=True) | Q(pk__in=existing_ids)))
+        categories = list(CategorieCharge.objects.filter(
+            Q(actif=True) | Q(pk__in=existing_ids), dossier_id=projet.dossier_id,
+        ))
     groups = {category.code: [] for category in categories}
     for form in formset.forms:
         code = form.instance.categorie_charge.code if form.instance.categorie_charge_id else form.instance.categorie
@@ -751,7 +726,7 @@ def upload_rapport_document(request, projet_id, rapport_id):
 @chef_projet_required
 def ajouter_situation_mensuelle(request, projet_id):
     projet = _projet_travaux_or_403(projet_id)
-    depenses = DepenseSituationMensuelleFormSet(request.POST or None)
+    depenses = DepenseSituationMensuelleFormSet(request.POST or None, form_kwargs={'projet': projet})
     stocks = StockSituationMensuelleFormSet(request.POST or None)
     recettes = _recettes_formset(request.POST or None)
     documents = DocumentSituationMensuelleFormSet(request.POST or None, request.FILES or None)
@@ -764,7 +739,9 @@ def ajouter_situation_mensuelle(request, projet_id):
             if periode:
                 year, month = (int(part) for part in periode.split('-'))
                 situation.annee, situation.mois = year, month
-            depenses = DepenseSituationMensuelleFormSet(request.POST, instance=situation)
+            depenses = DepenseSituationMensuelleFormSet(
+                request.POST, instance=situation, form_kwargs={'projet': projet},
+            )
             stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
             recettes = _recettes_formset(request.POST, situation=situation)
             documents = DocumentSituationMensuelleFormSet(request.POST, request.FILES, instance=situation)
@@ -795,7 +772,7 @@ def ajouter_situation_mensuelle(request, projet_id):
             'annee': timezone.now().year,
             'mois': timezone.now().month,
         })
-        depenses = DepenseSituationMensuelleFormSet()
+        depenses = DepenseSituationMensuelleFormSet(form_kwargs={'projet': projet})
         stocks = StockSituationMensuelleFormSet()
         recettes = _recettes_formset()
         documents = DocumentSituationMensuelleFormSet()
@@ -807,7 +784,7 @@ def ajouter_situation_mensuelle(request, projet_id):
         'stocks': stocks,
         'recettes': recettes,
         'documents': documents,
-        'depenses_groupees': _group_situation_expenses(depenses),
+        'depenses_groupees': _group_situation_expenses(depenses, projet),
         'breadcrumb_items': _crumbs_situations(projet, crumb("Nouvelle situation")),
     })
 
@@ -824,6 +801,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
             request.POST,
             instance=situation,
             queryset=depenses_queryset,
+            form_kwargs={'projet': projet},
         )
         stocks = StockSituationMensuelleFormSet(request.POST, instance=situation)
         recettes = _recettes_formset(request.POST, situation=situation)
@@ -885,6 +863,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         depenses = DepenseSituationMensuelleFormSet(
             instance=situation,
             queryset=depenses_queryset,
+            form_kwargs={'projet': projet},
         )
         stocks = StockSituationMensuelleFormSet(instance=situation)
         recettes = _recettes_formset(situation=situation)
@@ -893,7 +872,7 @@ def modifier_situation_mensuelle(request, projet_id, situation_id):
         'projet': projet, 'situation': situation, 'form': form,
         'depenses': depenses, 'stocks': stocks,
         'recettes': recettes,
-        'depenses_groupees': _group_situation_expenses(depenses),
+        'depenses_groupees': _group_situation_expenses(depenses, projet),
         'documents': documents,
         'validation_errors': validation_errors if request.method == 'POST' else [],
         'breadcrumb_items': _crumbs_situations(

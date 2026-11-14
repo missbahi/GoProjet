@@ -85,6 +85,7 @@ MIDDLEWARE = [
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'projets.middleware.observer.ObserverReadOnlyMiddleware',
+    'projets.middleware.project_scope.ProjectScopeMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'projets.middleware.toast_messages.ToastMessagesMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',

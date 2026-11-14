@@ -2,19 +2,20 @@ import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_http_methods, require_POST
 
 from projets.utils.navigation import crumb
-from projets.decorators import est_observateur
+from projets.decorators import dossier_utilisateur, peut_gerer_projet
 from projets.observer_access import plans_observables
 
 from ..calendar_forms import CalendarExceptionFormSet, CalendarForm, WEEKDAYS
 from ..models import GWorkCalendar
 from ..services.calendar import WorkCalendarService
+from ..access import calendriers_accessibles, calendriers_modifiables, plans_accessibles
 
 logger = logging.getLogger(__name__)
 
@@ -36,18 +37,19 @@ def liste_calendriers(request):
         resources_count=Count("gresource", distinct=True),
         exceptions_count=Count("exceptions", distinct=True),
     ).order_by("-is_default", "nom", "pk")
-    if est_observateur(request.user):
-        calendars = GWorkCalendar.objects.filter(
-            pk__in=plans_observables(request.user).values('calendrier_id'),
-        ).annotate(
+    if not request.user.is_superuser:
+        calendars = calendriers_accessibles(request.user).annotate(
             plans_count=Count('gplan', filter=Q(
-                gplan__in=plans_observables(request.user),
+                gplan__in=plans_accessibles(request.user),
             ), distinct=True),
             exceptions_count=Count('exceptions', distinct=True),
         ).order_by('-is_default', 'nom', 'pk')
 
+    modifiables = set(calendriers_modifiables(request.user).values_list('pk', flat=True)) \
+        if peut_gerer_projet(request.user) else set()
     for calendar in calendars:
         calendar.workday_labels = [label for day, label in WEEKDAYS if day in calendar.jours_ouvres]
+        calendar.can_edit = calendar.pk in modifiables
 
     # Si la requête est GET, appel du template HTML pour afficher la liste des calendriers
     ctx = {
@@ -64,10 +66,18 @@ def liste_calendriers(request):
 @login_required
 @require_http_methods(["GET", "POST"])
 def calendrier_form(request, calendar_id=None):
-    calendar = get_object_or_404(GWorkCalendar, pk=calendar_id) if calendar_id else GWorkCalendar()
+    if not peut_gerer_projet(request.user):
+        raise PermissionDenied
+    calendar = get_object_or_404(
+        calendriers_modifiables(request.user), pk=calendar_id,
+    ) if calendar_id else GWorkCalendar()
+    if not request.user.is_superuser:
+        calendar.dossier = dossier_utilisateur(request.user)
     data = request.POST if request.method == "POST" else None
 
     form = CalendarForm(data, instance=calendar)
+    if not request.user.is_superuser:
+        form.fields['is_default'].disabled = True
     exceptions = CalendarExceptionFormSet(
         data, instance=calendar, prefix="exceptions",
     )
@@ -107,7 +117,9 @@ def calendrier_form(request, calendar_id=None):
 @login_required
 @require_POST
 def supprimer_calendrier(request, calendar_id):
-    calendar = get_object_or_404(GWorkCalendar, pk=calendar_id)
+    if not peut_gerer_projet(request.user):
+        raise PermissionDenied
+    calendar = get_object_or_404(calendriers_modifiables(request.user), pk=calendar_id)
     try:
         with transaction.atomic():
             calendar = GWorkCalendar.objects.select_for_update().get(pk=calendar.pk)

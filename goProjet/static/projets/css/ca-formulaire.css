@@ -116,10 +116,12 @@
     justify-content: space-between;
     align-items: center;
     gap: .25rem .5rem;
-    padding: .25rem .5rem;
+    padding: .5rem;
+    margin-bottom: .5rem;
     border: 1px solid var(--border-default);
-    border-radius: .5rem .5rem 0 0;
-    background: var(--bg-elevated);
+    border-radius: 12px;
+    background: var(--bg-surface);
+    box-shadow: 0 3px 8px rgba(36, 72, 90, .12);
     color: var(--text-secondary);
     font-size: .8125rem;
 }
@@ -137,12 +139,98 @@
 .ca-toolbar-actions {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+}
+
+.ca-toolbar-group {
+    display: flex;
+    align-items: center;
     gap: .25rem;
 }
 
+.ca-toolbar-group + .ca-toolbar-group {
+    border-left: 1px solid var(--border-default);
+    padding-left: .5rem;
+}
+
 .ca-form-total {
-    padding-top: .375rem;
-    text-align: right;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    border: 1px solid var(--accent-success);
+    border-radius: 12px;
+    background: var(--bg-elevated);
+    font-variant-numeric: tabular-nums;
+}
+
+.ca-total-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--accent-primary);
+}
+
+.ca-form-total > strong {
+    font-size: 1.5rem;
+    white-space: nowrap;
+}
+
+#ca-table .table-view-table {
+    min-width: max(1200px, 100%);
+}
+
+[data-ca-editor][data-workspace-fullscreen] {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    margin: 0;
+    padding: .5rem;
+    overflow: hidden;
+    background: var(--bg-page);
+}
+
+[data-ca-editor][data-workspace-fullscreen] .ca-page-heading,
+[data-ca-editor][data-workspace-fullscreen] .ca-form-header {
+    display: none;
+}
+
+[data-ca-editor][data-workspace-fullscreen] #ca-form,
+[data-ca-editor][data-workspace-fullscreen] .ca-table-section,
+[data-ca-editor][data-workspace-fullscreen] #ca-table {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+}
+
+[data-ca-editor][data-workspace-fullscreen] #ca-table > .table-view-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}
+
+[data-ca-editor][data-workspace-fullscreen] .ca-selection-toolbar,
+[data-ca-editor][data-workspace-fullscreen] .ca-form-total {
+    flex-shrink: 0;
+}
+
+[data-ca-editor][data-workspace-fullscreen] .ca-form-total {
+    margin: .5rem 0 0;
+    padding: .5rem;
 }
 
 #ca-table .table-view-table .native-bdp-title-row td {

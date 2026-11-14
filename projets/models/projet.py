@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.db.models import Q
 from django.core.exceptions import ValidationError
+from .catalogue import CatalogueDossier
 
 # ------------------------ Entreprise ------------------------ #
 def ajouter_mois_calendaires(date_depart, mois):
@@ -23,7 +24,7 @@ def ajouter_mois_calendaires(date_depart, mois):
     )
 
 
-class Entreprise(models.Model):
+class Entreprise(CatalogueDossier):
     nom = models.CharField(_("Nom de l'entreprise"), max_length=200)
     contact = models.CharField(_("Contact"), max_length=150, blank=True)
     email = models.EmailField(_("Email"), blank=True)
@@ -847,6 +848,24 @@ class Tache(models.Model):
         
         if self.avancement is not None and (self.avancement < 0 or self.avancement > 100):
             errors['avancement'] = _("L'avancement doit être compris entre 0 et 100.")
+
+        from projets.task_policy import responsables_eligibles
+
+        original = type(self).objects.filter(pk=self.pk).values(
+            'projet_id', 'responsable_id', 'terminee',
+        ).first() if self.pk else None
+        historique = bool(
+            original and original['terminee'] and self.terminee
+            and original['projet_id'] == self.projet_id
+            and original['responsable_id'] == self.responsable_id
+        )
+        if original and original['projet_id'] != self.projet_id:
+            errors['projet'] = _("Le projet d'une tâche ne peut pas être changé.")
+        if not historique and self.projet_id and (
+            not self.responsable_id
+            or not responsables_eligibles(self.projet).filter(pk=self.responsable_id).exists()
+        ):
+            errors['responsable'] = _("Choisissez un responsable actif et autorisé sur ce projet.")
         
         if self.terminee and self.avancement is not None and self.avancement < 100:
             errors['avancement'] = _("Une tâche terminée doit avoir un avancement de 100%.")
@@ -873,28 +892,20 @@ class Tache(models.Model):
     @classmethod
     def accessibles(cls, user):
         """Retourne les tâches que l'utilisateur peut voir."""
-        if user.is_superuser:
-            return cls.objects.all()
-        
-        # Filtre : tâches dont le projet est accessible
-        return cls.objects.filter(
-            Q(projet__users=user)
-            | Q(projet__dossier__utilisateurs=user)
-            | Q(projet__dossier__gerant=user)
-        ).distinct()
+        from projets.decorators import projets_accessibles
+        return cls.objects.filter(projet__in=projets_accessibles(user))
     
     def est_accessible_par(self, user):
         """Vérifie si un user peut voir cette tâche."""
-        if user.is_superuser:
-            return True
-        return (
-            self.projet.users.filter(id=user.id).exists()
-            or (
-                self.projet.dossier and (
-                    self.projet.dossier.utilisateurs.filter(id=user.id).exists()
-                    or self.projet.dossier.gerant_id == user.id
-                )
-            )
+        from projets.decorators import projets_accessibles
+        return projets_accessibles(user).filter(pk=self.projet_id).exists()
+
+    @property
+    def responsable_a_reaffecter(self):
+        from projets.task_policy import responsables_eligibles
+        return not self.terminee and (
+            not self.responsable_id
+            or not responsables_eligibles(self.projet).filter(pk=self.responsable_id).exists()
         )
     
     @property
@@ -1775,7 +1786,7 @@ class Notification(models.Model):
             'recentes': notifications.filter(date_creation__gte=timezone.now() - timedelta(days=1)).count(),
         }
 # ------------------------ Client ------------------------
-class Client(models.Model):
+class Client(CatalogueDossier):
     nom = models.CharField(max_length=100)
     contact = models.CharField(max_length=150, blank=True)
     email = models.EmailField(_("Email"), blank=True)
@@ -1786,7 +1797,7 @@ class Client(models.Model):
         return self.nom
 
 # ------------------------ Ingenieur ------------------------
-class Ingenieur(models.Model):
+class Ingenieur(CatalogueDossier):
     nom = models.CharField(max_length=100)
 
     def __str__(self):

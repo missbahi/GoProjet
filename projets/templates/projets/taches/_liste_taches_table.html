@@ -24,7 +24,12 @@
                     </a>
                 </td>
                 <td>{{ tache.projet.nom }}</td>
-                <td>{{ tache.responsable.username|default:"—" }}</td>
+                <td>
+                    {{ tache.responsable_label }}
+                    {% if tache.assignment_warning %}
+                        <p class="text-sm" style="color: var(--accent-warning);" role="status">{{ tache.assignment_warning }}</p>
+                    {% endif %}
+                </td>
                 <td>{{ tache.get_priorite_display }}</td>
                 <td class="text-center">
                     {% if tache.terminee %}
@@ -44,18 +49,22 @@
                     </div>
                 </td>
                 <td class="text-center space-x-2">
+                    {% if tache.can_update %}
                     <button type="button"
                             onclick="openTaskModal({{ tache.id }}, {{ tache.projet_id }}, '{{ tache.projet.nom|escapejs }}')"
                             class="app-action-btn app-action-edit"
-                            title="Modifier">
+                            title="{% if tache.can_manage %}Modifier{% else %}Actualiser l'avancement{% endif %}">
                         <i class="fas fa-edit"></i>
                     </button>
+                    {% endif %}
+                    {% if tache.can_manage %}
                     <button type="button"
                             onclick="deleteTask({{ tache.id }}, {{ tache.projet_id }})"
                             class="app-action-btn app-action-delete"
                             title="Supprimer">
                         <i class="fas fa-trash"></i>
                     </button>
+                    {% endif %}
                 </td>
             </tr>
             {% empty %}

@@ -11,21 +11,40 @@
  */
 (function() {
     'use strict';
+    let optionsVersion = 0;
 
     // ============================================================
     // CHARGEMENT DES DONNÉES (responsables + priorités)
     // ============================================================
-    async function loadFormData() {
-        try {
-            const response = await fetch('/api/get-form-data/', {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            return await response.json();
-        } catch (error) {
-            console.error('[taches] Erreur chargement form data:', error);
-            return null;
+    async function loadFormData(projetId) {
+        const query = projetId ? `?projet_id=${encodeURIComponent(projetId)}` : '';
+        const response = await fetch(`/api/get-form-data/${query}`, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        });
+        if (!response.ok) throw new Error(`Chargement des responsables impossible (HTTP ${response.status}).`);
+        return await response.json();
+    }
+
+    function setTaskPermissions(canManage, canUpdate) {
+        const form = document.getElementById('taskForm');
+        form.dataset.canManage = canManage ? 'true' : 'false';
+        for (const field of form.elements) {
+            if (['titre', 'description', 'date_debut', 'date_fin', 'priorite', 'responsable'].includes(field.name)) {
+                field.disabled = !canManage;
+            }
         }
+        const project = document.getElementById('projet');
+        project.disabled = !canManage || !!form.dataset.projetId;
+        const responsable = document.getElementById('responsable');
+        const singleChoice = Array.from(responsable.options).filter(option => option.value).length === 1;
+        responsable.disabled = !canManage || !project.value || (singleChoice && !!responsable.value);
+        form.querySelector('button[type="submit"]').disabled = !canUpdate || !project.value;
+    }
+
+    function showAssignmentWarning(message) {
+        const warning = document.getElementById('taskAssignmentWarning');
+        warning.textContent = message;
+        warning.hidden = !message;
     }
 
     function populateFormOptions(data, projetId = null) {
@@ -36,12 +55,15 @@
         // ═══════════════════════════════════════════════════════════
         const projetSelect = document.getElementById('projet');
         if (projetSelect && !projetId) {
-            const currentValue = projetSelect.value;
+            const currentValue = data.projet_id || projetSelect.value;
             projetSelect.innerHTML = '<option value="">Sélectionnez un projet...</option>';
             (data.projets || []).forEach(p => {
                 projetSelect.add(new Option(p.nom, p.id));
             });
             if (currentValue) projetSelect.value = currentValue;
+            if (data.projet_unique && currentValue) {
+                document.getElementById('taskForm').dataset.projetId = currentValue;
+            }
         }
 
         // ═══════════════════════════════════════════════════════════
@@ -50,12 +72,20 @@
         const responsableSelect = document.getElementById('responsable');
         if (responsableSelect) {
             const currentValue = responsableSelect.value;
-            responsableSelect.innerHTML = '<option value="">Sélectionnez...</option>';
+            responsableSelect.innerHTML = projetSelect.value
+                ? '<option value="">Sélectionnez...</option>'
+                : '<option value="">Sélectionnez d\'abord un projet...</option>';
             (data.responsables || []).forEach(r => {
-                responsableSelect.add(new Option(r.username, r.id));
+                responsableSelect.add(new Option(r.label, r.id));
             });
             if (currentValue) responsableSelect.value = currentValue;
+            if (!responsableSelect.value && data.responsables.length === 1) {
+                responsableSelect.value = data.responsables[0].id;
+            }
         }
+        showAssignmentWarning(
+            projetSelect.value && !data.responsables.length ? 'Aucun responsable éligible sur ce projet.' : ''
+        );
 
         // ═══════════════════════════════════════════════════════════
         // PRIORITÉS
@@ -91,10 +121,14 @@
         if (title) title.textContent = tacheId ? 'Modifier Tâche' : 'Nouvelle Tâche';
 
         const tacheIdInput = document.getElementById('tacheId');
-        if (tacheIdInput) tacheIdInput.value = tacheId || '';
 
         const form = document.getElementById('taskForm');
         const projetSelect = document.getElementById('projet');
+        form.reset();
+        if (tacheIdInput) tacheIdInput.value = tacheId || '';
+        document.getElementById('responsable').required = true;
+        showAssignmentWarning('');
+        const version = ++optionsVersion;
 
         /* ═══════════════════════════════════════════════════════════
         GESTION DU PROJET (pré-remplir + verrouiller)
@@ -158,10 +192,13 @@
             document.getElementById('projetHidden')?.remove();
             document.getElementById('projetLockedHint')?.remove();
         }
+        setTaskPermissions(true, false);
 
         try {
-            const data = await loadFormData();
-            populateFormOptions(data);
+            const data = await loadFormData(projetId);
+            if (version !== optionsVersion) return;
+            populateFormOptions(data, projetId);
+            setTaskPermissions(data.can_manage, data.can_manage);
 
             if (tacheId) {
                 const url = `/projet/${projetId}/taches/${tacheId}/`;
@@ -175,11 +212,14 @@
                 if (!response.ok) throw new Error(`Erreur ${response.status}`);
 
                 const taskData = await response.json();
+                if (version !== optionsVersion) return;
                 if (!taskData?.success) throw new Error(taskData?.message || 'Réponse invalide');
 
                 fillTaskForm(taskData.data);
+                setTaskPermissions(taskData.data.can_manage, taskData.data.can_update);
             }
         } catch (error) {
+            if (version !== optionsVersion) return;
             console.error('[taches] Erreur ouverture modal:', error);
             showAlert('error', 'Erreur: ' + error.message);
             closeTaskModal();
@@ -190,6 +230,19 @@
     // REMPLISSAGE DU FORMULAIRE (pour modification)
     // ============================================================
     function fillTaskForm(tache) {
+        const responsable = document.getElementById('responsable');
+        responsable.required = !tache.terminee || !!tache.responsable?.id;
+        if (tache.responsable?.id && (tache.terminee || tache.responsable_eligible)
+            && !Array.from(responsable.options).some(option => option.value === String(tache.responsable.id))) {
+            const label = tache.responsable_eligible
+                ? tache.responsable.label : `${tache.responsable.label} (historique)`;
+            responsable.add(new Option(label, tache.responsable.id));
+        }
+        showAssignmentWarning(
+            tache.assignment_warning
+                ? `${tache.assignment_warning} ${tache.responsable?.id ? tache.responsable.label : ''}`
+                : ''
+        );
         const fields = {
             titre: tache.titre,
             responsable: tache.responsable?.id || '',
@@ -228,6 +281,7 @@
     // FERMETURE DE LA MODAL
     // ============================================================
     window.closeTaskModal = function() {
+        optionsVersion++;
         const modal = document.getElementById('taskModal');
         if (!modal) return;
 
@@ -287,6 +341,10 @@
             // ⚡ Forcer le projet dans les données POST
             //    (le <select disabled> n'envoie pas sa valeur)
             formData.set('projet', projetId);
+            const responsable = document.getElementById('responsable');
+            if (form.dataset.canManage === 'true' && responsable.disabled && responsable.value) {
+                formData.set('responsable', responsable.value);
+            }
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -301,7 +359,8 @@
 
             if (!data.success) {
                 if (data.errors) console.error('[taches] Erreurs:', data.errors);
-                throw new Error(data.message || 'Erreur lors de la sauvegarde');
+                const errors = Object.values(data.errors || {}).flat().map(error => error.message);
+                throw new Error(errors.join(' ') || data.message || 'Erreur lors de la sauvegarde');
             }
 
             showAlert('success', data.message);
@@ -417,6 +476,25 @@
     // ============================================================
 
     // Input avancement (range) → mise à jour du label
+    document.addEventListener('change', async function(event) {
+        if (event.target.id !== 'projet' || !event.target.closest('#taskForm')) return;
+        const projetId = event.target.value;
+        const version = ++optionsVersion;
+        const responsable = document.getElementById('responsable');
+        responsable.value = '';
+        responsable.disabled = true;
+        const submit = document.querySelector('#taskForm button[type="submit"]');
+        submit.disabled = true;
+        try {
+            const data = await loadFormData(projetId);
+            if (version !== optionsVersion) return;
+            populateFormOptions(data, projetId);
+            setTaskPermissions(data.can_manage, data.can_manage);
+        } catch (error) {
+            if (version === optionsVersion) showAlert('error', error.message);
+        }
+    });
+
     document.addEventListener('input', function(e) {
         if (e.target && e.target.id === 'avancement') {
             const label = document.getElementById('avancementLabel');

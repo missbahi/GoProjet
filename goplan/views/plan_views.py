@@ -13,13 +13,14 @@ from projets.observer_access import plans_observables
 
 from ..models import GPlan
 from ..forms import GPlanForm
+from ..access import plans_accessibles
 
 
 @login_required
 def liste_plans(request):
     plans = GPlan.objects.select_related('calendrier').order_by('-created_at')
-    if est_observateur(request.user):
-        plans = plans.filter(pk__in=plans_observables(request.user).values('pk'))
+    if not request.user.is_superuser:
+        plans = plans.filter(pk__in=plans_accessibles(request.user).values('pk'))
 
     ctx = {
         'plans': plans,

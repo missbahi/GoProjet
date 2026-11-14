@@ -140,6 +140,12 @@ class SupprimerDecompteTests(AttachementTestData, TestCase):
 
     def test_access_denied_outside_project_and_allowed_inside(self):
         user = User.objects.create_user(username='suppression-non-membre')
+        user.profile.role = 'CHEF_PROJET'
+        user.profile.save()
+        dossier = Dossier.objects.create(nom='Dossier suppression', activite='SERVICES')
+        self.projet.dossier = dossier
+        self.projet.save(update_fields=['dossier'])
+        dossier.utilisateurs.add(user)
         self.client.force_login(user)
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.assertEqual(self.client.post(self.url).status_code, 403)
@@ -171,8 +177,10 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
         self.chef.profile.role = 'CHEF_PROJET'
         self.chef.profile.save()
         self.dossier = Dossier.objects.create(nom='Dossier Travaux test', activite='TRAVAUX', gerant=self.chef)
+        self.dossier.utilisateurs.add(self.chef)
         self.projet.dossier = self.dossier
         self.projet.save()
+        self.projet.users.add(self.chef)
         self.attachement = self.create_attachement(1, date(2025, 1, 10), date(2025, 1, 31))
         self.url = reverse('projets:modifier_attachement', args=[self.attachement.pk])
         self.client.force_login(self.chef)
@@ -240,6 +248,8 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
         url = reverse('projets:changer_statut_attachement', args=[self.attachement.pk])
         liste = reverse('projets:liste_attachements', args=[self.projet.pk])
         autre = User.objects.create_user(username='lecteur-attachement')
+        autre.profile.role = 'OBSERVATEUR'
+        autre.profile.save()
         self.dossier.utilisateurs.add(autre)
         self.client.force_login(autre)
         self.assertNotContains(self.client.get(liste), 'value="valider"')
@@ -357,6 +367,7 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
     def test_unauthorized_role_or_project_cannot_validate(self):
         autre = User.objects.create_user(username='autre-validation')
         self.dossier.utilisateurs.add(autre)
+        self.projet.users.add(autre)
         self.client.force_login(autre)
         response = self.client.post(self.url, self.payload())
         self.assertEqual(response.status_code, 200)
@@ -409,6 +420,7 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
             compte.delete()
         autre = User.objects.create_user(username='compte-non-chef')
         self.dossier.utilisateurs.add(autre)
+        self.projet.users.add(autre)
         self.client.force_login(autre)
         response = self.client.post(url, self.compte_payload())
         self.assertEqual(response.status_code, 200)
@@ -1123,6 +1135,10 @@ class CorrectionOrdreTests(AttachementTestData, TestCase):
         manager = User.objects.create_user(username='manager-ordre')
         manager.profile.role = 'CHEF_PROJET'
         manager.profile.save()
+        dossier = Dossier.objects.create(nom='Dossier correction ordre', activite='SERVICES')
+        self.projet.dossier = dossier
+        self.projet.save(update_fields=['dossier'])
+        dossier.utilisateurs.add(manager)
         payload = self.payload()
         self.client.force_login(manager)
         self.assertEqual(self.client.get(self.url).status_code, 403)
@@ -1350,6 +1366,10 @@ class CorrectionExceptionnelleTests(AttachementTestData, TestCase):
         manager = User.objects.create_user(username='manager-exception')
         manager.profile.role = 'CHEF_PROJET'
         manager.profile.save()
+        dossier = Dossier.objects.create(nom='Dossier correction exceptionnelle', activite='SERVICES')
+        self.projet.dossier = dossier
+        self.projet.save(update_fields=['dossier'])
+        dossier.utilisateurs.add(manager)
         self.client.force_login(manager)
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.assertEqual(self.client.post(self.url, self.payload()).status_code, 403)
@@ -1367,6 +1387,10 @@ class CorrectionExceptionnelleTests(AttachementTestData, TestCase):
 
     def test_staff_without_manager_role_cannot_override_validated_status(self):
         staff = User.objects.create_user(username='staff-exception', is_staff=True)
+        dossier = Dossier.objects.create(nom='Dossier staff historique', activite='SERVICES')
+        self.projet.dossier = dossier
+        self.projet.save(update_fields=['dossier'])
+        dossier.utilisateurs.add(staff)
         self.projet.users.add(staff)
         self.client.force_login(staff)
         self.assertEqual(self.client.get(self.url).status_code, 403)
