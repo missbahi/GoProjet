@@ -6,7 +6,9 @@ from unittest.mock import patch
 
 from django.core.exceptions import ValidationError
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.http import Http404
+from django.template.loader import render_to_string
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.test import RequestFactory
 from django.urls import reverse
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -91,6 +93,122 @@ class AttachementTestData:
             titre=code, description=code, date_publication=date(2025, 1, 1),
             date_effet=effet, statut=statut,
         )
+
+
+@override_settings(STORAGES={
+    'default': {'BACKEND': 'django.core.files.storage.InMemoryStorage'},
+    'staticfiles': {'BACKEND': 'django.contrib.staticfiles.storage.StaticFilesStorage'},
+})
+class FicheControleImpressionTests(SimpleTestCase):
+    def test_attachment_details_are_available_in_print_header(self):
+        attachement = SimpleNamespace(
+            id=1,
+            numero='ATT-01',
+            date_etablissement=date(2025, 1, 31),
+            date_debut_periode=date(2025, 1, 1),
+            date_fin_periode=date(2025, 1, 31),
+            get_statut_display=lambda: 'Validé',
+        )
+        html = render_to_string('projets/decomptes/_fiche_controle_content.html', {
+            'projet': SimpleNamespace(nom='Projet test', numero='MARCHE-SECRET', maitre_ouvrage='MAITRE-TEST'),
+            'attachement_courant': attachement,
+            'attachements': [attachement],
+            'donnees_controle': [],
+            'total_general': {},
+        })
+        header = html.split('<div class="fiche-print-attachment">', 1)[1].split('</div>', 1)[0]
+        for value in ('ATT-01', '01/01/2025', '31/01/2025', 'Validé'):
+            self.assertIn(value, header)
+        toolbar = html.split('aria-label="Actions de la fiche de contrôle"', 1)[1].split(
+            '<div class="fiche-editor', 1,
+        )[0]
+        self.assertIn('id="attachement-select"', toolbar)
+        self.assertIn('value="1" selected', toolbar)
+        self.assertNotIn('MARCHE-SECRET', html)
+        self.assertNotIn('MAITRE-TEST', html)
+        self.assertNotIn('fiche-screen-info', html)
+        self.assertIn('id="fiche-info-open"', html)
+        self.assertIn('id="fiche-help-dialog"', html)
+
+    def test_print_header_is_absent_without_attachment(self):
+        html = render_to_string('projets/decomptes/_fiche_controle_content.html', {
+            'projet': SimpleNamespace(nom='Projet test'),
+            'attachements': [],
+        })
+        self.assertNotIn('fiche-print-attachment', html)
+        self.assertIn('data-fiche-controle-editor data-fullscreen-document', html)
+        self.assertIn('id="fiche-help-open"', html)
+        self.assertIn('id="fiche-info-open"', html)
+        self.assertIn('id="fiche-toggle-expanded-all"', html)
+        self.assertIn("Sélectionnez un attachement dans la barre d'outils", html)
+        self.assertIn('Qté cumul N-1', html)
+        self.assertIn('Mt part.', html)
+
+    def test_tableview_source_preserves_hierarchy_and_formatted_values(self):
+        titre = {
+            'id': 10, 'parent_id': None, 'niveau': 0, 'numero': '1',
+            'designation': 'Ouvrages', 'is_title': True, 'can_be_hidden': False,
+        }
+        ligne = {
+            'id': 11, 'parent_id': 10, 'niveau': 1, 'numero': '1.1',
+            'designation': 'Travaux', 'unite': 'm', 'is_title': False,
+            'can_be_hidden': False, 'quantite_marche': Decimal('100.00'),
+            'montant_marche': Decimal('1234.50'), 'quantite_s1': Decimal('1.00'),
+            'quantite_partiel': Decimal('2.00'), 'montant_partiel': Decimal('24.00'),
+            'quantite_s': Decimal('3.00'), 'montant_s': Decimal('36.00'),
+            'delta_quantite': Decimal('97.00'), 'delta_montant': Decimal('1198.50'),
+            'pourcentage_realise': Decimal('3.00'),
+        }
+        html = render_to_string('projets/decomptes/_fiche_controle_content.html', {
+            'projet': SimpleNamespace(nom='Projet test'),
+            'attachement_courant': SimpleNamespace(id=1),
+            'donnees_controle': [{'lignes': [titre, ligne]}],
+            'total_general': {},
+        })
+        self.assertIn('data-ligne-id="10" data-parent-id=""', html)
+        self.assertIn('data-ligne-id="11" data-parent-id="10"', html)
+        self.assertIn('1 234,50', html)
+        for heading in ('QTE CUMUL.<br>N-1', 'QTE CUMUL N', 'MT CUMUL. N',
+                        'QTE M - QTE N', 'MT M - MT N'):
+            self.assertIn(heading, html)
+        self.assertIn('fiche-controle-tableview.js', html)
+
+    def test_attachment_selection_on_initial_load_and_explicit_choice(self):
+        projet = SimpleNamespace(id=1)
+        first = SimpleNamespace(id=1, get_previous_attachement=lambda: None)
+        second = SimpleNamespace(id=2, get_previous_attachement=lambda: None)
+
+        for attachments, query, expected in (
+            ([], '', None),
+            ([first], '', first),
+            ([first, second], '', None),
+            ([first, second], '?attachement_id=2', second),
+            ([first], '?attachement_id=2', Http404),
+        ):
+            with self.subTest(count=len(attachments), query=query):
+                def get_object(model, **kwargs):
+                    if model is Projet:
+                        return projet
+                    self.assertIs(kwargs['projet'], projet)
+                    for attachment in attachments:
+                        if str(attachment.id) == kwargs['id']:
+                            return attachment
+                    raise Http404
+
+                with patch.object(attachement_views, 'get_object_or_404', side_effect=get_object), \
+                     patch.object(Attachement.objects, 'filter') as attachment_filter, \
+                     patch.object(LotProjet.objects, 'filter') as lot_filter, \
+                     patch.object(attachement_views, '_crumbs_attachements', return_value=[]), \
+                     patch.object(attachement_views, 'render', side_effect=lambda request, template, context: context):
+                    attachment_filter.return_value.order_by.return_value = attachments
+                    lot_filter.return_value.order_by.return_value = []
+                    request = RequestFactory().get('/fiche/' + query)
+                    if expected is Http404:
+                        with self.assertRaises(Http404):
+                            attachement_views.fiche_controle.__wrapped__(request, projet_id=1)
+                    else:
+                        context = attachement_views.fiche_controle.__wrapped__(request, projet_id=1)
+                        self.assertIs(context['attachement_courant'], expected)
 
 
 @override_settings(STORAGES={

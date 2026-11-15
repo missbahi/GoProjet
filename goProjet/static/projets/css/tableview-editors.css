@@ -1,0 +1,73 @@
+:is(#hot, #ca-table, #fiche-tableview) .table-view-scroll,
+.attachement-tableview .table-view-scroll {
+    max-height: 72vh;
+    -webkit-overflow-scrolling: touch;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table {
+    min-width: 860px;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table,
+.attachement-tableview .table-view-table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table th,
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table td,
+.attachement-tableview .table-view-table th,
+.attachement-tableview .table-view-table td {
+    border-width: 0 1px 1px 0;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table tr > :first-child,
+.attachement-tableview .table-view-table tr > :first-child {
+    border-left-width: 1px;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table thead tr:first-child > th,
+.attachement-tableview .table-view-table thead tr:first-child > th {
+    border-top-width: 1px;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table th {
+    font-size: 12px;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table th,
+.attachement-tableview .table-view-table th {
+    text-align: center;
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table tbody td {
+    color: var(--tv-text-color, #24485a);
+}
+
+:is(#hot, #ca-table, #fiche-tableview) .table-view-table td.is-amount {
+    color: var(--tv-amount-color, #15803d);
+}
+
+#ca-table .table-view-table td.ca-designation,
+#fiche-tableview .table-view-table td.fiche-designation,
+.attachement-tableview .table-view-table td.attachment-designation {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#ca-table .tv-hierarchy-content,
+#fiche-tableview .tv-hierarchy-content,
+.attachement-tableview .tv-hierarchy-content {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+[data-bordereau-editor][data-workspace-fullscreen] #hot > .table-view-scroll,
+[data-ca-editor][data-workspace-fullscreen] #ca-table > .table-view-scroll,
+[data-fiche-controle-editor][data-workspace-fullscreen] #fiche-tableview > .table-view-scroll,
+[data-attachement-editor][data-workspace-fullscreen] .table-view-scroll {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+}

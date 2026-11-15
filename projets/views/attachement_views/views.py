@@ -1236,7 +1236,7 @@ def calcul_retard_decompte(request, decompte_id):
 @modules_projet_required
 def fiche_controle(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
-    attachements = Attachement.objects.filter(projet=projet).order_by('-sequence')
+    attachements = list(Attachement.objects.filter(projet=projet).order_by('-sequence'))
     attachement_courant = None
     donnees_controle = []
     total_general = {
@@ -1250,6 +1250,10 @@ def fiche_controle(request, projet_id):
     attachement_id = request.GET.get('attachement_id')
     if attachement_id:
         attachement_courant = get_object_or_404(Attachement, id=attachement_id, projet=projet)
+    elif len(attachements) == 1:
+        attachement_courant = attachements[0]
+
+    if attachement_courant:
         attachement_precedent = attachement_courant.get_previous_attachement()
 
         lots = LotProjet.objects.filter(projet=projet).order_by('id')
@@ -1270,6 +1274,9 @@ def fiche_controle(request, projet_id):
                     continue
                 if ligne_bordereau.is_title:
                     ligne_controle = {
+                        'id': ligne_bordereau.id,
+                        'parent_id': ligne_bordereau.parent_id,
+                        'niveau': ligne_bordereau.niveau,
                         'numero': ligne_bordereau.numero or '',
                         'designation': ligne_bordereau.designation,
                         'is_title': True,
@@ -1302,6 +1309,9 @@ def fiche_controle(request, projet_id):
                 pourcentage_realise = (quantite_s / quantite_marche * 100) if quantite_marche > 0 else Decimal('0')
 
                 ligne_controle = {
+                    'id': ligne_bordereau.id,
+                    'parent_id': ligne_bordereau.parent_id,
+                    'niveau': ligne_bordereau.niveau,
                     'numero': ligne_bordereau.numero,
                     'designation': ligne_bordereau.designation,
                     'unite': ligne_bordereau.unite,

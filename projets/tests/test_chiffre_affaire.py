@@ -420,6 +420,12 @@ class ChiffreAffaireTests(TestCase):
         self.assertContains(response, 'data-editable="false"')
         self.assertContains(response, 'id="ca-help-open"')
         self.assertContains(response, 'class="ca-form-total"')
+        toolbar = response.content.decode().split('aria-label="Actions et informations du CA"', 1)[1].split(
+            '<div class="ca-table-section', 1,
+        )[0]
+        for field in ('mois', 'origine', 'observations'):
+            self.assertIn(f'name="{field}"', toolbar)
+            self.assertRegex(toolbar, rf'name="{field}"[^>]*disabled')
         self.assertNotContains(response, 'name="action" value="enregistrer"')
         self.assertNotContains(response, 'name="action" value="valider"')
         self.assertNotContains(response, 'name="action" value="devalider"')

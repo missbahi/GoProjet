@@ -6,6 +6,16 @@
 
 Application Django de gestion de projets de BTP pour bureaux d'études marocains.
 
+## Tests Django
+
+`python manage.py test` utilise une base SQLite temporaire en mémoire, sans
+modifier la base de travail configurée dans l'environnement. Pour un test
+spécifique à PostgreSQL, une configuration de test distincte peut être choisie
+explicitement avec `--settings` ; elle doit utiliser une base dédiée aux tests.
+La commande `python -m django test` ou une configuration explicitement imposée
+ne bénéficient pas de ce choix automatique : utilisez `goProjet.test_settings`
+pour conserver l'isolation en mémoire.
+
 ## Fonctionnalités
 
 - Projets, lots, documents administratifs et ordres de service
@@ -20,10 +30,23 @@ Application Django de gestion de projets de BTP pour bureaux d'études marocains
   sont masqués en plein écran ; ils réapparaissent à la sortie, sans perdre la saisie.
   Les lignes de l'attachement se développent ou se réduisent par groupe, ou avec
   le bouton global, sans modifier les sous-totaux ni les quantités enregistrées.
-  Les chevrons des groupes sont identiques dans le bordereau, le CA et l'attachement.
+  Les chevrons de développement sont communs à tous les tableaux TableView.
+  Les quatre éditeurs partagent les feuilles `tableview-editors.css` pour le
+  tableau et `tableview-editor-controls.css` pour les contrôles et le plein écran.
   L'éditeur de CA mensuel reprend ce mode plein écran et conserve son total visible.
+  Le mois, l'origine et les observations restent accessibles dans la barre d'outils,
+  y compris en plein écran.
   La colonne N° reste fixe et les colonnes sont redimensionnables, y compris pour
   l'Observateur en consultation seule.
+  La fiche de contrôle occupe la largeur disponible ; son sélecteur
+  d'attachement reste accessible dans la barre d'outils avec le plein
+  écran, le développement des groupes, l'aide et l'impression. Un attachement
+  unique est sélectionné automatiquement ; sinon, choisissez-en un dans la liste.
+  Une roue indique le chargement après une sélection.
+  L'aide explique le choix de l'attachement et les colonnes, avec N pour
+  l'attachement courant et N-1 pour le précédent. Le total général reste fixé
+  en bas du tableau pendant son défilement, y compris en plein écran. L'impression
+  contient toutes les lignes, même lorsqu'elles sont masquées à l'écran.
 - Suivi d'exécution, situations mensuelles, planning des ateliers, ressources
 - Workflow de validation, utilisateurs, notifications
 - Export Excel et PDF
@@ -248,13 +271,9 @@ aux tâches non terminées des projets accessibles.
 
 ### Menu contextuel du bordereau des prix
 
-Le bordereau utilise TableView sur les données du lot. Le gestionnaire ne prend
-plus en charge Handsontable ni le paramètre de choix du renderer.
-L'ancien template `saisie_bordereau_.html` est conservé comme archive, mais n'est
-plus compatible avec le gestionnaire actuel. Handsontable reste utilisé dans
-les formulaires d'attachements ; ses ressources ne sont pas supprimées.
+Le bordereau et les formulaires d'attachements utilisent TableView.
 
-### Essai TableView pour les attachements
+### TableView pour les attachements
 
 Lors de la modification d'un attachement existant, la continuité de sa date
 de début est contrôlée au passage au statut Transmis, et non à chaque sauvegarde.
@@ -353,24 +372,18 @@ historiques. Aucun motif ni journal supplémentaire n'est imposé pour cette
 édition complète ; le journal de l'écran historique reste distinct.
 Les documents déjà émis ne sont pas régénérés automatiquement.
 
-Pour les essais approfondis, les vues de création et de modification chargent
-directement `attachement_form.html`, qui utilise
-`_attachement_form_content_test.html` sans paramètre d'URL.
-L'enveloppe `attachement_form.html` conserve les deux moteurs, avec TableView
-via `?tableview=1` et Handsontable sinon, mais n'est plus utilisée par ces vues.
-Le mode d'essai charge uniquement TableView ; les champs, les actions et le format envoyé au
-serveur sont partagés avec le formulaire habituel. **Les enregistrements et
-les suppressions sont réels**, il est donc conseillé d'utiliser un projet de test.
+Les vues de création et de modification chargent `attachement_form.html`, qui
+utilise TableView sans paramètre d'URL. **Les enregistrements et les suppressions
+sont réels**, il est donc conseillé d'utiliser un projet de test.
 
 Seul le nouveau cumul des lignes de travaux est modifiable. Le tableau conserve
 les montants, le total, la sélection multiple, sa somme et sa moyenne, le
 copier-coller et le repérage des cellules modifiées. Les valeurs négatives,
 non numériques ou dépassant trois décimales sont refusées ; le collage ne peut
 pas créer de lignes. La dernière cellule éditée est validée avant soumission.
-Comme le formulaire habituel, cette variante exige au moins une quantité
-strictement positive pour enregistrer. Les largeurs sont redimensionnables,
-mais ne sont pas persistées ; le redimensionnement individuel des lignes de
-Handsontable n'est pas reproduit.
+Le formulaire exige au moins une quantité strictement positive pour enregistrer.
+Les largeurs sont redimensionnables, mais ne sont pas persistées ; les lignes
+ne sont pas redimensionnables individuellement.
 
 Sur une cellule TableView sélectionnée, taper un caractère commence directement
 la saisie en remplaçant son contenu. Entrée, F2 et le double-clic conservent
@@ -645,7 +658,7 @@ le nouveau type d'OS.
 
 ## Technologies
 
-Django 5.2.5 · HTML/CSS/JavaScript · Handsontable · Tailwind CSS ·
+Django 5.2.5 · HTML/CSS/JavaScript · TableView · Tailwind CSS ·
 SQLite (développement) / PostgreSQL (production)
 
 ## Installation

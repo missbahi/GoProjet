@@ -1,0 +1,160 @@
+@page {
+    size: A4 landscape;
+    margin: 10mm;
+}
+
+@media print {
+    html:has(.attachment-page--fiche_controle),
+    body:has(.attachment-page--fiche_controle) {
+        height: auto !important;
+        background: white !important;
+        color: black !important;
+    }
+
+    body:has(.attachment-page--fiche_controle) > :not(.flex.h-screen),
+    body:has(.attachment-page--fiche_controle) .sidebar,
+    body:has(.attachment-page--fiche_controle) .sidebar-mobile,
+    body:has(.attachment-page--fiche_controle) .app-topbar,
+    body:has(.attachment-page--fiche_controle) #sidebar-toggle-btn,
+    body:has(.attachment-page--fiche_controle) #topbar-toggle-btn,
+    body:has(.attachment-page--fiche_controle) #htmx-progress,
+    body:has(.attachment-page--fiche_controle) [data-observer-banner],
+    body:has(.attachment-page--fiche_controle) .app-breadcrumb,
+    .attachment-page--fiche_controle .no-print,
+    .attachment-page--fiche_controle #contextMenu {
+        display: none !important;
+    }
+
+    body:has(.attachment-page--fiche_controle) > .flex.h-screen,
+    body:has(.attachment-page--fiche_controle) > .flex.h-screen > .flex-1,
+    body:has(.attachment-page--fiche_controle) main.app-main-sidebar,
+    body:has(.attachment-page--fiche_controle) #main-content {
+        display: block !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        background: white !important;
+    }
+
+    .attachment-workflow-page.attachment-page--fiche_controle {
+        padding: 0 !important;
+        background: white !important;
+        color: black !important;
+        font-family: Arial, sans-serif;
+    }
+
+    .attachment-page--fiche_controle .fiche-container,
+    .attachment-page--fiche_controle .fiche-header {
+        overflow: visible !important;
+        background: white !important;
+        color: black !important;
+        border: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+    }
+
+    .attachment-page--fiche_controle .fiche-header {
+        padding: 0 0 3mm !important;
+        border-bottom: 1px solid #444 !important;
+        break-inside: avoid;
+        font-size: 9pt;
+    }
+
+    .attachment-page--fiche_controle .fiche-header *,
+    .attachment-page--fiche_controle .table-fiche th,
+    .attachment-page--fiche_controle .table-fiche td {
+        color: black !important;
+    }
+
+    .attachment-page--fiche_controle .fiche-header .app-section-title {
+        font-size: 15pt;
+    }
+
+    .attachment-page--fiche_controle .fiche-print-attachment {
+        display: flex !important;
+        flex-wrap: wrap;
+        gap: 1mm 7mm;
+        margin-top: 3mm;
+    }
+
+    .attachment-page--fiche_controle .overflow-x-auto {
+        overflow: visible !important;
+    }
+
+    .attachment-page--fiche_controle .fiche-print-header,
+    .attachment-page--fiche_controle .fiche-print-table {
+        display: block !important;
+    }
+
+    [data-fiche-controle-editor][data-workspace-fullscreen] {
+        position: static !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+
+    [data-fiche-controle-editor][data-workspace-fullscreen] > div {
+        display: block !important;
+        height: auto !important;
+    }
+
+    .attachment-workflow-page.attachment-page--fiche_controle .table-fiche {
+        width: 100%;
+        min-width: 0;
+        table-layout: fixed;
+        border-collapse: collapse;
+        background: white;
+        font-size: 7pt;
+    }
+
+    .attachment-page--fiche_controle .table-fiche col:nth-child(1) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(2) { width: 23%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(3) { width: 4%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(4) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(5) { width: 9%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(6) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(7) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(8) { width: 8%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(9) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(10) { width: 8%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(11) { width: 6%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(12) { width: 8%; }
+    .attachment-page--fiche_controle .table-fiche col:nth-child(13) { width: 4%; }
+
+    .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th,
+    .attachment-workflow-page.attachment-page--fiche_controle .table-fiche td {
+        padding: 1mm;
+        border: 0.4pt solid #777;
+        font-size: 7pt;
+        line-height: 1.2;
+        letter-spacing: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .attachment-workflow-page.attachment-page--fiche_controle .table-fiche th {
+        background: #f2f2f2 !important;
+    }
+
+    .attachment-page--fiche_controle .table-fiche th::after {
+        display: none;
+    }
+
+    .attachment-page--fiche_controle .table-fiche thead {
+        display: table-header-group;
+    }
+
+    .attachment-page--fiche_controle .table-fiche tr {
+        break-inside: avoid;
+        page-break-inside: avoid;
+        background: white !important;
+    }
+
+    .attachment-page--fiche_controle .table-fiche tr.lot-header,
+    .attachment-page--fiche_controle .table-fiche tr.sous-total,
+    .attachment-page--fiche_controle .table-fiche tr.total-general {
+        font-weight: bold;
+    }
+}

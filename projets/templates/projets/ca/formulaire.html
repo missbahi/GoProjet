@@ -2,25 +2,28 @@
 {% load static navigation %}
 {% block title %}CA mensuel — {{ projet.nom }}{% endblock %}
 {% block extra_css %}
-{{ block.super }}
-<link rel="stylesheet" href="{% static 'projets/css/bordereau-tableview.css' %}">
-<link rel="stylesheet" href="{% static 'projets/css/bordereau-controls.css' %}">
+{{ block.super }} 
+<link rel="stylesheet" href="{% static 'projets/css/tableview-editors.css' %}">
+<link rel="stylesheet" href="{% static 'projets/css/tableview-editor-controls.css' %}">
 <link rel="stylesheet" href="{% static 'projets/css/ca-formulaire.css' %}">
 {% endblock %}
 {% block content %}
 {% breadcrumb %}
 <div class="attachment-workflow-page ca-editor max-w-full mx-auto" data-ca-editor data-fullscreen-document data-family="project" data-page-title="CA mensuel" data-page-icon="fa-chart-line">
-    <div class="ca-page-heading">
-        <h1 class="app-section-title">CA mensuel — {{ projet.nom }}</h1>
-        <span>Statut : {{ ca.get_statut_display }}</span>
+    <div class="ca-page-heading mb-6">
+        <h1 class="app-section-title mb-2"><i class="fas fa-chart-line mr-2" aria-hidden="true"></i>CA mensuel</h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm flex flex-wrap items-center gap-2" style="color: var(--text-secondary);"><i class="fas fa-info-circle" aria-hidden="true"></i> Saisie du chiffre d'affaires
+            <span class="app-badge {% if ca.statut == 'VALIDE' %}app-badge-success{% else %}app-badge-muted{% endif %}">{{ ca.get_statut_display }}</span>
+        </p>
     </div>
     {% include "projets/home/_action_messages.html" %}
     <div id="ca-error" class="app-alert app-alert-error p-4 mb-4" role="alert" hidden></div>
     <p data-planning-fullscreen-error class="app-alert app-alert-error" role="alert" hidden></p>
-    <form id="ca-form" method="post" class="app-card ca-compact-form"
+    <form id="ca-form" method="post"
           data-existant="{{ existant|yesno:'true,false' }}" data-statut="{{ ca.statut }}">
         {% csrf_token %}
-        <div class="ca-selection-toolbar">
+        <div class="ca-selection-toolbar" role="toolbar" aria-label="Actions et informations du CA">
             <div class="ca-toolbar-actions">
             <div class="ca-toolbar-group" role="group" aria-label="Plein écran">
                 <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
@@ -58,15 +61,15 @@
             {% endif %}
             </div>
             {% endif %}
+            <div class="ca-toolbar-group ca-toolbar-fields" role="group" aria-label="Informations du CA">
+                <div class="ca-toolbar-field ca-toolbar-field--mois">{{ form.mois.label_tag }}{{ form.mois }}</div>
+                <div class="ca-toolbar-field ca-toolbar-field--origine">{{ form.origine.label_tag }}{{ form.origine }}</div>
+                <div class="ca-toolbar-field ca-toolbar-field--observations">{{ form.observations.label_tag }}{{ form.observations }}</div>
+            </div>
             </div>
             <div id="selectionSumDisplay" class="selection-sum-display ca-selection-sum" role="status" aria-live="polite"></div>
         </div>
-        <div class="ca-form-header" data-fullscreen-fields>
-            <div>{{ form.mois.label_tag }}{{ form.mois }}</div>
-            <div>{{ form.origine.label_tag }}{{ form.origine }}</div>
-            <div>{{ form.observations.label_tag }}{{ form.observations }}</div>
-        </div>
-        <div class="ca-table-section">
+        <div class="ca-table-section app-card ca-compact-form">
             <div id="ca-table" data-editable="{{ peut_modifier|yesno:'true,false' }}" data-premier="{{ premier|yesno:'true,false' }}"></div>
         </div>
     </form>

@@ -238,8 +238,15 @@
                 width: 22px; height: 22px; padding: 0; border: 0; border-radius: 3px;
                 background: transparent; color: var(--tv-active-color); cursor: pointer;
             }
+            .tv-fold { width: 20px; height: 20px; color: var(--accent-primary, var(--tv-active-color)); }
+            .tv-fold::before {
+                content: ''; width: 7px; height: 7px;
+                border-top: 2px solid currentColor; border-right: 2px solid currentColor;
+                transform: rotate(45deg);
+            }
+            .tv-fold[aria-expanded="true"]::before { transform: rotate(135deg); }
             .tv-fold:hover, .tv-row-action:hover { background: rgba(14,165,233,.14); }
-            .tv-fold-spacer { flex: 0 0 22px; }
+            .tv-fold-spacer { flex: 0 0 20px; }
             .tv-row-actions { display: inline-flex; gap: 2px; }
             .tv-context-menu {
                 position: fixed; z-index: 10000; min-width: 220px;
@@ -843,7 +850,6 @@
                 control.type = 'button';
                 control.className = 'tv-fold';
                 control.dataset.tvAction = 'fold';
-                control.textContent = expanded ? '\u25be' : '\u25b8';
                 control.setAttribute('aria-expanded', String(expanded));
                 control.setAttribute('aria-label', expanded ? 'Collapse row' : 'Expand row');
                 control.disabled = typeof hierarchy.onToggle !== 'function';

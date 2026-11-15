@@ -374,7 +374,6 @@
         });
         const reopenButton = document.getElementById('reouvrir-btn');
         if (reopenButton) {
-            reopenButton.removeAttribute('onclick');
             reopenButton.addEventListener('click', () => {
                 if (confirm("Réouvrir cet attachement et réinitialiser ses validations ?")) {
                     loading(reopenButton, 'Réouverture...');
@@ -383,7 +382,6 @@
             });
         }
         const fileInput = document.getElementById('fichier');
-        fileInput.removeAttribute('onchange');
         fileInput.addEventListener('change', () => {
             document.getElementById('original_filename').value = fileInput.files[0]?.name || '';
         });

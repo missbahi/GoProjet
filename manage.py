@@ -6,7 +6,12 @@ import sys
 
 def main():
     """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'goProjet.settings')
+    if len(sys.argv) > 1 and sys.argv[1] == 'test' and os.environ.get(
+        'DJANGO_SETTINGS_MODULE', 'goProjet.settings'
+    ) == 'goProjet.settings':
+        os.environ['DJANGO_SETTINGS_MODULE'] = 'goProjet.test_settings'
+    else:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'goProjet.settings')
     try:
         from django.core.management import execute_from_command_line
     except ImportError as exc:

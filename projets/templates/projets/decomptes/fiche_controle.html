@@ -4,13 +4,17 @@
 {% block extra_css %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static 'projets/css/attachements.css' %}">
-<link rel="stylesheet" href="{% static 'projets/css/context-menu.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/tableview-editors.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/tableview-editor-controls.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/ca-formulaire.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/fiche-controle-tableview.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/fiche-controle-print.css' %}" media="print">
 
 
 {% endblock %}
 {% block extra_head %}
     {{ block.super }}
-
+    <script src="{% static 'projets/js/table-view.js' %}"></script>
 {% endblock %}
 {% block content %}
     {% include "projets/decomptes/_fiche_controle_content.html" %}

@@ -1,0 +1,93 @@
+.attachment-page--fiche_controle .fiche-print-header,
+.attachment-page--fiche_controle .fiche-print-table {
+    display: none;
+}
+
+.fiche-info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent-primary);
+    cursor: pointer;
+    font: inherit;
+}
+
+.fiche-info-button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 3px;
+}
+
+.fiche-attachement-loading {
+    flex-shrink: 0;
+    color: var(--accent-primary);
+}
+
+#fiche-tableview .table-view-table {
+    min-width: max(860px, 100%);
+}
+
+#fiche-tableview .table-view-table th {
+    white-space: normal;
+}
+
+#fiche-tableview .tv-hierarchy-content {
+    white-space: nowrap;
+}
+
+#fiche-tableview .table-view-table td.montant,
+#fiche-tableview .table-view-table td.delta-positif {
+    color: #15803d;
+}
+
+#fiche-tableview .table-view-table td.delta-negatif {
+    color: #b91c1c;
+}
+
+#fiche-tableview .table-view-table tr.fiche-lot td,
+#fiche-tableview .table-view-table tr.fiche-sous-total td,
+#fiche-tableview .table-view-table tr.fiche-total td,
+#fiche-tableview .table-view-table tr.fiche-titre td {
+    font-weight: 700;
+}
+
+#fiche-tableview .table-view-table tr.fiche-total > td {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    border-top: 1px solid var(--tv-border-color);
+}
+
+#fiche-tableview .table-view-table tr.fiche-hauteur-compacte td {
+    height: 24px;
+}
+
+#fiche-tableview .table-view-table tr.fiche-hauteur-large td {
+    height: 56px;
+}
+
+[data-fiche-controle-editor][data-workspace-fullscreen] {
+    z-index: 2000;
+}
+
+[data-fiche-controle-editor][data-workspace-fullscreen] > div,
+[data-fiche-controle-editor][data-workspace-fullscreen] .fiche-editor,
+[data-fiche-controle-editor][data-workspace-fullscreen] #fiche-tableview {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+}
+
+[data-fiche-controle-editor][data-workspace-fullscreen] .ca-page-heading {
+    display: none;
+}
+
+[data-fiche-controle-editor][data-workspace-fullscreen] .ca-selection-toolbar {
+    flex-shrink: 0;
+}

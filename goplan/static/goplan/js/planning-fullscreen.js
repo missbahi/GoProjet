@@ -2,7 +2,7 @@
     'use strict';
     if (window.GoPlanFullscreen) return;
     window.GoPlanFullscreen = true;
-    const workspaceSelector = '[data-goplan-inline], [data-goplan-gantt], [data-bordereau-editor], [data-attachement-editor], [data-ca-editor]';
+    const workspaceSelector = '[data-goplan-inline], [data-goplan-gantt], [data-bordereau-editor], [data-attachement-editor], [data-ca-editor], [data-fiche-controle-editor]';
     let pending = false;
     let revealingFields = false;
 

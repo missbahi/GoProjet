@@ -1,0 +1,47 @@
+.attachement-tableview .table-view-scroll {
+    width: 100%;
+}
+
+.attachement-tableview .table-view-table {
+    width: 100%;
+    min-width: max(1200px, 100%);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+.attachement-tableview .table-view-table th {
+    white-space: normal;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.attachement-tableview .table-view-table td {
+    line-height: 1.4;
+    font-size: 12px;
+}
+
+.attachement-tableview .table-view-table .attachment-title td {
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--tv-title-color);
+}
+
+.attachement-tableview .table-view-table .attachment-quantity {
+    color: var(--success-color, #2b9c62);
+    font-weight: 600;
+}
+
+.attachement-tableview .table-view-table .attachment-amount {
+    color: #2b9c62;
+    font-weight: 600;
+}
+
+.attachement-tableview .table-view-table .modified-cell {
+    color: #ecad26;
+    font-weight: 600;
+}
+
+.attachement-tableview .table-view-table .modified-cell::after {
+    content: '\2713';
+    color: var(--success-color, #2b9c62);
+    margin-left: 0.5rem;
+}
