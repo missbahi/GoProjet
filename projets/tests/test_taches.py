@@ -53,7 +53,7 @@ class TacheResponsableTests(TestCase):
         cls.exterieur = membre('exterieur', 'CHEF_PROJET', cls.projet, cls.autre_dossier)
         cls.admin_global = User.objects.create_superuser('admin-global-taches')
         cls.tache = Tache.objects.create(
-            projet=cls.projet, responsable=cls.responsable, titre='Tâche à suivre',
+            projet=cls.projet, responsable=cls.responsable, cree_par=cls.directeur, titre='Tâche à suivre',
             description='Suivi du chantier', date_debut=timezone.localdate() - timedelta(days=1),
             date_fin=timezone.localdate(),
         )
@@ -236,6 +236,82 @@ class TacheResponsableTests(TestCase):
         form = TacheForm(self.payload(avancement=50), instance=self.tache, user=self.directeur)
         self.assertFalse(form.is_valid())
         self.assertIn('responsable', form.errors)
+
+    @override_settings(SEND_EMAIL_NOTIFICATIONS=True, SITE_URL='https://exemple.test')
+    def test_seul_le_responsable_est_notifie_et_recoit_un_email(self):
+        from django.core import mail
+        Notification.objects.all().delete()
+        mail.outbox.clear()
+        tache = Tache.objects.create(
+            projet=self.projet, responsable=self.responsable, titre='Nouvelle',
+            description='x', date_debut=self.tache.date_debut, date_fin=self.tache.date_fin,
+        )
+        self.assertEqual(
+            list(Notification.objects.values_list('utilisateur__username', 'type_notification')),
+            [('chantier', 'TACHE_ASSIGNEE')],
+        )
+        self.assertEqual([m.to for m in mail.outbox], [['chantier@example.test']])
+        Notification.objects.all().delete()
+        tache.responsable = self.directeur
+        tache.save()
+        self.assertCountEqual(
+            Notification.objects.values_list('utilisateur__username', 'type_notification'),
+            [('directeur', 'TACHE_ASSIGNEE'), ('chantier', 'TACHE_MODIFIEE')],
+        )
+        Notification.objects.all().delete()
+        tache.priorite = 'URGENTE'
+        tache.save()
+        self.assertEqual(
+            list(Notification.objects.values_list('utilisateur__username', 'type_notification')),
+            [('directeur', 'TACHE_URGENTE')],
+        )
+
+    def test_createur_notifie_a_l_achevement_par_le_responsable(self):
+        Notification.objects.all().delete()
+        self.client.force_login(self.directeur)
+        response = self.client.post(
+            reverse('projets:creer_tache', args=[self.projet.pk]),
+            self.payload(), HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200, response.content)
+        tache = Tache.objects.get(pk=response.json()['tache_id'])
+        self.assertEqual(tache.cree_par, self.directeur)
+        Notification.objects.all().delete()
+        tache.avancement = 100
+        tache._emetteur = tache.responsable
+        tache.save()
+        self.assertEqual(
+            list(Notification.objects.values_list('utilisateur__username', 'type_notification')),
+            [('directeur', 'TACHE_TERMINEE')],
+        )
+
+    def test_detail_page_has_breadcrumb_and_edit_button_for_allowed_users(self):
+        url = reverse('projets:detail_tache', args=[self.projet.pk, self.tache.pk])
+        self.client.force_login(self.directeur)
+        response = self.client.get(url)
+        self.assertContains(response, 'Projet A')
+        self.assertContains(response, f'openTaskModal({self.tache.pk}')
+        self.assertContains(response, reverse('projets:liste_taches_projet', args=[self.projet.pk]))
+        self.client.force_login(self.observateur)
+        self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_visibilite_limitee_aux_personnes_concernees(self):
+        mine = Tache.objects.create(
+            projet=self.projet, responsable=self.directeur, cree_par=self.administrateur,
+            titre='Confidentielle', description='x',
+            date_debut=self.tache.date_debut, date_fin=self.tache.date_fin,
+        )
+        url = reverse('projets:detail_tache', args=[self.projet.pk, mine.pk])
+        for user, attendu in [
+            (self.directeur, 200), (self.administrateur, 200), (self.admin_global, 200),
+            (self.responsable, 404), (self.observateur, 404), (self.pointeur, 404),
+        ]:
+            self.client.force_login(user)
+            self.assertEqual(self.client.get(url).status_code, attendu, user.username)
+        self.client.force_login(self.responsable)
+        liste = self.client.get(reverse('projets:liste_taches_projet', args=[self.projet.pk]))
+        self.assertNotContains(liste, 'Confidentielle')
+        self.assertContains(liste, 'Tâche à suivre')
 
     def test_model_visibility_uses_project_assignments_not_just_dossier_membership(self):
         other_task = Tache.objects.create(

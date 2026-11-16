@@ -1,9 +1,10 @@
 {% extends "projets/home/base_sidebar.html" %}
-{% load static %}
+{% load static navigation %}
 
 {% block title %}{{ tache.titre }} – Tâche{% endblock %}
 
 {% block content %}
+{% breadcrumb %}
 <div class="max-w-4xl mx-auto">
 
     {# En-tête #}
@@ -12,9 +13,9 @@
 
         <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
-                <span class="app-badge {% if tache.terminee %}app-badge-success{% elif tache.jours_restants < 0 %}app-badge-danger{% elif tache.jours_restants < 3 %}app-badge-warning{% else %}app-badge-info{% endif %}">
+                <span class="app-badge {% if tache.terminee %}app-badge-success{% elif est_en_retard %}app-badge-danger{% elif tache.jours_restants < 3 %}app-badge-warning{% else %}app-badge-info{% endif %}">
                     {% if tache.terminee %}Terminée
-                    {% elif tache.jours_restants < 0 %}En retard
+                    {% elif est_en_retard %}En retard
                     {% else %}En cours{% endif %}
                 </span>
                 <span class="app-badge
@@ -37,9 +38,19 @@
             </div>
         </div>
 
-        <a href="{% url 'projets:liste_taches' %}" class="app-btn-secondary">
-            <i class="fas fa-arrow-left mr-2"></i> Retour
-        </a>
+        <div class="flex items-center gap-2">
+            {% if tache.can_update %}
+            <button type="button"
+                    onclick="openTaskModal({{ tache.id }}, {{ tache.projet_id }}, '{{ tache.projet.nom|escapejs }}')"
+                    class="app-btn-primary">
+                <i class="fas fa-edit mr-2"></i>
+                {% if tache.can_manage %}Modifier{% else %}Actualiser l'avancement{% endif %}
+            </button>
+            {% endif %}
+            <a href="{% url 'projets:liste_taches_projet' tache.projet_id %}" class="app-btn-secondary">
+                <i class="fas fa-arrow-left mr-2"></i> Retour
+            </a>
+        </div>
     </div>
 
     {# Grille principale #}
@@ -81,14 +92,11 @@
                     </div>
                     <div class="md:col-span-2">
                         <p class="text-sm mb-1" style="color: var(--text-muted);">Jours restants</p>
-                        <p class="font-semibold
-                            {% if tache.terminee %}style="color: var(--accent-success);"
-                            {% elif tache.jours_restants < 0 %}style="color: var(--accent-danger);"
-                            {% elif tache.jours_restants < 3 %}style="color: var(--accent-warning);"
-                            {% else %}style="color: var(--accent-success);"{% endif %}">
+                        <p class="font-semibold"
+                           style="color: {% if tache.terminee %}var(--accent-success){% elif est_en_retard %}var(--accent-danger){% elif tache.jours_restants < 3 %}var(--accent-warning){% else %}var(--accent-success){% endif %};">
                             {% with jours_retard=tache.jours_restants|stringformat:"d"|cut:"-" %}
                             {% if tache.terminee %}Terminée
-                            {% elif tache.jours_restants < 0 %}{{ jours_retard }} jour(s) de retard
+                            {% elif est_en_retard %}{{ jours_retard }} jour(s) de retard
                             {% else %}{{ tache.jours_restants }} jour(s) restant(s){% endif %}
                             {% endwith %}
                         </p>
@@ -156,6 +164,12 @@
                     Informations
                 </h2>
                 <div class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <span style="color: var(--text-secondary);">Créée par</span>
+                        <span class="font-medium" style="color: var(--text-primary);">
+                            {% if tache.cree_par %}{{ tache.cree_par.get_full_name|default:tache.cree_par.username }}{% else %}—{% endif %}
+                        </span>
+                    </div>
                     <div class="flex justify-between">
                         <span style="color: var(--text-secondary);">Créée le</span>
                         <span class="font-medium" style="color: var(--text-primary);">{{ tache.created_at|date:"d/m/Y H:i" }}</span>

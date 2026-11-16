@@ -161,8 +161,9 @@ class HomeIndicatorsTests(AttachementTestData, TestCase):
         ChiffreAffaire.objects.create(projet=other, periode=date(2025, 1, 1), montant_mensuel=99999)
         Tache.objects.create(projet=other, titre='Secret task', date_debut=self.today, date_fin=self.today)
         Tache.objects.create(projet=self.projet, titre='Finished task', date_debut=self.today, date_fin=self.today, terminee=True)
-        Tache.objects.create(projet=self.projet, titre='Visible task', date_debut=self.today, date_fin=self.today)
         viewer = User.objects.create_user(username='home-viewer')
+        Tache.objects.create(projet=self.projet, responsable=viewer, titre='Visible task', date_debut=self.today, date_fin=self.today)
+        Tache.objects.create(projet=self.projet, titre='Hidden colleague task', date_debut=self.today, date_fin=self.today)
         viewer.profile.role = 'OBSERVATEUR'
         viewer.profile.save()
         self.dossier.utilisateurs.add(viewer)
@@ -172,6 +173,7 @@ class HomeIndicatorsTests(AttachementTestData, TestCase):
         self.assertEqual(response.context['indicateurs_home']['ca_annuel'], Decimal('0'))
         self.assertContains(response, 'Visible task')
         self.assertNotContains(response, 'Secret task')
+        self.assertNotContains(response, 'Hidden colleague task')
         self.assertNotContains(response, 'Finished task')
         self.assertNotContains(response, 'HOME-SECRET')
 

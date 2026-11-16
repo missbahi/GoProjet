@@ -845,6 +845,10 @@ class Tache(models.Model):
     date_fin = models.DateField() 
     priorite = models.CharField(max_length=10, choices=PRIORITE, default='NORMALE')
     responsable = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    cree_par = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='taches_creees', editable=False,
+    )
     terminee = models.BooleanField(default=False)
     avancement = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -919,14 +923,22 @@ class Tache(models.Model):
     
     @classmethod
     def accessibles(cls, user):
-        """Retourne les tâches que l'utilisateur peut voir."""
+        """Tâches que l'utilisateur peut lire : supervision ou personnes concernées."""
         from projets.decorators import projets_accessibles
-        return cls.objects.filter(projet__in=projets_accessibles(user))
-    
+        qs = cls.objects.filter(projet__in=projets_accessibles(user))
+        if not (user and user.is_authenticated):
+            return cls.objects.none()
+        if user.is_superuser:
+            return qs
+        profile = getattr(user, 'profile', None)
+        concerne = Q(responsable=user) | Q(cree_par=user) | Q(projet__dossier__gerant=user)
+        if profile and profile.role == 'ADMIN_DOSSIER':
+            concerne |= Q(projet__dossier__in=user.dossiers.all())
+        return qs.filter(concerne)
+
     def est_accessible_par(self, user):
-        """Vérifie si un user peut voir cette tâche."""
-        from projets.decorators import projets_accessibles
-        return projets_accessibles(user).filter(pk=self.projet_id).exists()
+        """Vérifie si un user peut lire cette tâche."""
+        return type(self).accessibles(user).filter(pk=self.pk).exists()
 
     @property
     def responsable_a_reaffecter(self):

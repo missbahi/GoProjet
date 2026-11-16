@@ -87,7 +87,7 @@ def sommaire_onglet(request, projet_id, onglet):
             lots=service.synthese_lots(projet),
             decomptes=service.synthese_decomptes(projet),
             administratif=service.suivi_administratif(projet),
-            taches=service.prochaines_taches(projet, today),
+            taches=service.prochaines_taches(projet, today, request.user),
         )
     elif onglet == 'bordereau':
         context['lots'] = service.synthese_lots(projet)

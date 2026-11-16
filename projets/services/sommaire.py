@@ -239,8 +239,8 @@ def suivi_administratif(projet):
     }
 
 
-def prochaines_taches(projet, today):
-    taches = Tache.objects.filter(projet=projet, terminee=False)
+def prochaines_taches(projet, today, user):
+    taches = Tache.accessibles(user).filter(projet=projet, terminee=False)
     return {
         'a_venir': list(taches.filter(date_fin__gte=today).order_by('date_fin', 'pk')[:5]),
         'nb_en_retard': taches.filter(date_fin__lt=today).count(),

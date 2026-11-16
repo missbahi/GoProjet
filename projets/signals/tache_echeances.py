@@ -3,7 +3,6 @@ from django.utils import timezone
 from datetime import timedelta
 from django.conf import settings
 from django.core.mail import send_mail
-from django.template.loader import render_to_string
 
 from ..models import Tache, Notification
 from projets.decorators import projets_accessibles
@@ -74,7 +73,6 @@ def check_echeances_taches_quotidien():
     for tache in taches_aujourdhui:
         action_url = f"/projet/{tache.projet_id}/taches/{tache.id}/"
         titre_resp = "Échéance aujourd'hui"
-        titre_projet = "Échéance de tâche aujourd'hui"
         message = f"La tâche « {tache.titre} » expire aujourd'hui."
 
         if tache.responsable and not tache.responsable_a_reaffecter:
@@ -90,22 +88,12 @@ def check_echeances_taches_quotidien():
             # Email optionnel
             if getattr(settings, 'SEND_EMAIL_NOTIFICATIONS', False):
                 email_subject = f"[{getattr(settings, 'SITE_NAME', 'GoProjet')}] {titre_resp}"
-                email_message = render_to_string('emails/echeance_aujourdhui.txt', {
-                    'tache': tache,
-                    'user': tache.responsable,
-                    'site_name': getattr(settings, 'SITE_NAME', 'GoProjet'),
-                    'site_url': getattr(settings, 'SITE_URL', ''),
-                })
+                email_message = (
+                    f"Bonjour {tache.responsable.get_full_name().strip() or tache.responsable.username},\n\n"
+                    f"{message}\nProjet : {tache.projet.nom}"
+                )
                 send_email_notification(tache.responsable, email_subject, email_message)
 
-        notify_projet_users(
-            tache.projet,
-            titre_projet, message,
-            'TACHE_ECHEANCE',
-            action_url,
-            exclude_user=tache.responsable,
-            niveau_urgence='ELEVE',
-        )
         stats['aujourdhui'] += 1
 
     # ───────── 2. Tâches qui expirent demain ─────────
@@ -151,15 +139,6 @@ def check_echeances_taches_quotidien():
                 niveau_urgence='CRITIQUE',
             )
 
-        notify_projet_users(
-            tache.projet,
-            "Tâche en retard",
-            message,
-            'TACHE_EN_RETARD',
-            action_url,
-            exclude_user=tache.responsable,
-            niveau_urgence='CRITIQUE',
-        )
         stats['retard'] += 1
 
     # ───────── 4. Tâches URGENTES non terminées ─────────

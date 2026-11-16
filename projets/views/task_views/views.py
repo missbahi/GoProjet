@@ -17,7 +17,7 @@ from projets.task_policy import (
     libelle_responsable, peut_actualiser_tache, peut_gerer_taches,
     responsables_affectables, responsables_eligibles,
 )
-from projets.utils.navigation import crumb
+from projets.utils.navigation import crumb, project_crumbs
 
 logger = logging.getLogger(__name__)
 
@@ -49,10 +49,7 @@ class ListeTachesView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         user = self.request.user
-        queryset = Tache.objects.select_related('projet__dossier', 'responsable__profile')
-
-        if not user.is_superuser:
-            queryset = queryset.filter(projet__in=projets_accessibles(user))
+        queryset = Tache.accessibles(user).select_related('projet__dossier', 'responsable__profile')
 
         projet_id = self.kwargs.get('projet_id')
         if projet_id:
@@ -197,6 +194,8 @@ class CreerTacheView(LoginRequiredMixin, CreateView):
             return self.form_invalid(form)
 
         form.instance.projet = self.projet
+        form.instance.cree_par = self.request.user
+        form.instance._emetteur = self.request.user
 
         try:
             self.object = form.save()
@@ -265,8 +264,7 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
 
     def get_queryset(self):
         # ⚡ Double filtre : tâches accessibles ET appartenant au projet de l'URL
-        return Tache.objects.select_related('projet', 'responsable').filter(
-            projet__in=projets_accessibles(self.request.user),
+        return Tache.accessibles(self.request.user).select_related('projet', 'responsable').filter(
             projet_id=self.kwargs['projet_id'],
         )
 
@@ -277,6 +275,7 @@ class ModifierTacheView(LoginRequiredMixin, UpdateView):
         return kwargs
 
     def form_valid(self, form):
+        form.instance._emetteur = self.request.user
         try:
             self.object = form.save()
 
@@ -336,16 +335,20 @@ class DetailTacheView(LoginRequiredMixin, DetailView):
     context_object_name = 'tache'
 
     def get_queryset(self):
-        return Tache.objects.select_related('projet', 'responsable').filter(
-            projet__in=projets_accessibles(self.request.user),
-            projet_id=self.kwargs['projet_id'],
-        )
+        return Tache.accessibles(self.request.user).select_related(
+            'projet', 'responsable', 'cree_par',
+        ).filter(projet_id=self.kwargs['projet_id'])
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['now'] = timezone.now()
         tache = self.object
         _preparer_tache(tache, self.request.user)
+        context['breadcrumb_items'] = project_crumbs(
+            tache.projet,
+            crumb("Tâches", "projets:liste_taches_projet", args=[tache.projet_id]),
+            crumb(tache.titre),
+        )
         context['priorite_display'] = tache.get_priorite_display()
         context['est_en_retard'] = (
             tache.date_fin and tache.date_fin < timezone.now().date() and not tache.terminee
@@ -409,8 +412,7 @@ class SupprimerTacheView(LoginRequiredMixin, DeleteView):
     def get_queryset(self):
         if not peut_gerer_taches(self.request.user):
             raise PermissionDenied("La suppression est réservée aux responsables du projet.")
-        return Tache.objects.filter(
-            projet__in=projets_accessibles(self.request.user),
+        return Tache.accessibles(self.request.user).filter(
             projet_id=self.kwargs['projet_id'],
         )
 

@@ -12,6 +12,16 @@ APP_VERSION = "2.7.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.7.1": {
+        "date": "2026-11-16",
+        "titre": "Tâches : notifications et visibilité",
+        "highlights": [
+            "Seul le responsable est notifié d'une tâche ; le créateur est prévenu à l'achèvement",
+            "Les tâches ne sont visibles que par les personnes concernées",
+            "Page de détail d'une tâche améliorée (fil d'Ariane, modification)",
+        ],
+        "niveau": "info",
+    },
     "2.7.0": {
         "date": "2026-11-16",
         "titre": "Modules disponibles par utilisateur",

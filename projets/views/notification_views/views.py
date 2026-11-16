@@ -332,7 +332,7 @@ def notification_data_api(request, projet_id):
 
         statut_filter = request.GET.get('statut', '')
 
-        taches_qs = Tache.objects.filter(projet=projet)
+        taches_qs = Tache.accessibles(request.user).filter(projet=projet)
         documents_qs = DocumentAdministratif.objects.filter(projet=projet)
         ordres_service_qs = OrdreService.objects.filter(projet=projet)
 

@@ -77,7 +77,7 @@ def home(request):
          'icône': 'fa-file-signature', 'sous_titre': 'Dernier cumul validé par projet',
          'sous_valeur': f"{indicateurs['nb_attachements']} projets", 'progress': None},
     ]
-    echeances = Tache.objects.filter(
+    echeances = Tache.accessibles(request.user).filter(
         projet__in=projets_utilisateur, date_fin__gte=today, terminee=False,
     ).order_by('date_fin', 'pk')[:3]
     chart_data = {
