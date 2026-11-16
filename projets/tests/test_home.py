@@ -131,7 +131,11 @@ class HomeIndicatorsTests(AttachementTestData, TestCase):
         with CaptureQueriesContext(connection) as queries:
             response = self.home()
         self.assertEqual(response.status_code, 200)
-        writes = [q['sql'] for q in queries if q['sql'].lstrip().upper().startswith(('UPDATE', 'INSERT', 'DELETE'))]
+        writes = [
+            q['sql'] for q in queries
+            if q['sql'].lstrip().upper().startswith(('UPDATE', 'INSERT', 'DELETE'))
+            and 'projets_journalacces' not in q['sql']
+        ]
         self.assertEqual(writes, [])
         project = response.context['projets_recents'][0]
         chart = response.context['chart_data']

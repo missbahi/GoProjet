@@ -1,4 +1,5 @@
 import json
+import csv
 import mimetypes
 import os
 
@@ -31,6 +32,10 @@ from projets.decorators import (
 )
 from projets.forms import AvatarUpdateForm, UtilisateurCreationForm
 from projets.models import Dossier, Profile
+from projets.models.journal import JournalAcces
+from django.utils.dateparse import parse_date
+from django.utils import timezone
+from projets.modules import MODULE_CHOICES
 from projets.views.os_views.views import clean_url
 from projets.utils.navigation import crumb
 from projets.user_policy import (
@@ -213,6 +218,11 @@ def _modifier_utilisateur_context(
         'can_keep_current_role': target_user.profile.role in RETIRED_ROLES,
         'can_manage_user_dossiers': can_manage_user_dossiers,
         'can_manage_password': peut_agir_utilisateur(request.user, target_user, 'password'),
+        'can_manage_modules': peut_agir_utilisateur(request.user, target_user, 'modules'),
+        'module_choices': [
+            (key, label, key not in (target_user.profile.modules_desactives or []))
+            for key, label in MODULE_CHOICES
+        ],
     }
 
 
@@ -434,6 +444,59 @@ def serve_avatar(request, filename):
         )
     return redirect(avatar_url)
 
+
+@login_required
+def journal_acces_utilisateur(request, user_id):
+    """Historique d'accès complet d'un utilisateur (super-admin uniquement)."""
+    if not request.user.is_superuser:
+        raise PermissionDenied("Réservé au super-administrateur.")
+    cible = get_object_or_404(User, pk=user_id)
+    entrees = JournalAcces.objects.filter(user=cible)
+
+    filtres = {k: request.GET.get(k, '').strip() for k in ('debut', 'fin', 'module', 'event', 'projet')}
+    debut, fin = parse_date(filtres['debut']), parse_date(filtres['fin'])
+    if debut:
+        entrees = entrees.filter(date__date__gte=debut)
+    if fin:
+        entrees = entrees.filter(date__date__lte=fin)
+    if filtres['module']:
+        entrees = entrees.filter(module=filtres['module'])
+    if filtres['event'] in {'ACCES', 'LOGIN', 'LOGOUT', 'ECHEC'}:
+        entrees = entrees.filter(event=filtres['event'])
+    if filtres['projet'].isdigit():
+        entrees = entrees.filter(projet_id=int(filtres['projet']))
+
+    if request.GET.get('export') == 'csv':
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = f'attachment; filename="journal_{cible.username}.csv"'
+        response.write('\ufeff')
+        writer = csv.writer(response, delimiter=';')
+        writer.writerow(['Date', 'Événement', 'Méthode', 'Chemin', 'Route', 'Module',
+                         'Projet', 'Statut', 'IP', 'Navigateur'])
+        for e in entrees.iterator():
+            writer.writerow([
+                timezone.localtime(e.date).strftime('%d/%m/%Y %H:%M:%S'), e.get_event_display(),
+                e.method, e.path, e.route, e.module, e.projet_id or '',
+                e.status_code or '', e.ip or '', e.user_agent,
+            ])
+        return response
+
+    page_obj = Paginator(entrees, 50).get_page(request.GET.get('page', 1))
+    query = request.GET.copy()
+    query.pop('page', None)
+    return render(request, 'projets/utilisateurs/journal_acces.html', {
+        'cible': cible,
+        'page_obj': page_obj,
+        'filtres': filtres,
+        'query': query.urlencode(),
+        'module_choices': MODULE_CHOICES,
+        'event_choices': JournalAcces.EVENT_CHOICES,
+        'breadcrumb_items': [
+            crumb("Home", "projets:home"),
+            crumb("Utilisateurs", "projets:liste_utilisateurs"),
+            crumb(f"Historique de {cible.username}"),
+        ],
+    })
 
 @login_required
 @require_POST

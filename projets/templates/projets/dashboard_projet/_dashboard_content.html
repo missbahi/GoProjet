@@ -127,10 +127,12 @@
                     {% if delai_pilotage.jours_ecoules is not None %}
                         <span><strong style="color: var(--text-primary);">{{ delai_pilotage.jours_ecoules }}</strong> jours effectifs</span>
                     {% endif %}
+                    {% if 'os' not in modules_desactives %}
                     <a href="{% url 'projets:ordres_service' projet.id %}"
                     class="font-semibold" style="color: var(--accent-primary);">
                         Voir les OS <i class="fas fa-arrow-right ml-1"></i>
                     </a>
+                    {% endif %}
                 </div>
             </div>
         </section>
@@ -146,6 +148,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
 
                 {# ═══════════ Lots et Bordereaux ═══════════ #}
+                {% if 'lots' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-cubes"></i></div>
                     <h4 class="dashboard-module-title">Lots et Bordereaux</h4>
@@ -173,8 +176,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
                 
                 {# ═══════════ Documents ═══════════ #}
+                {% if 'documents' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-paperclip"></i></div>
                     <h4 class="dashboard-module-title">Documents administratifs</h4>
@@ -192,8 +197,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 {# ═══════════ Ordres de service ═══════════ #}
+                {% if 'os' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-file-contract"></i></div>
                     <h4 class="dashboard-module-title">Ordres de services</h4>
@@ -211,9 +218,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 {# ═══════════ Situations mensuelles ═══════════ #}
-                {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
+                {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' and 'situations' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-calendar-check"></i></div>
                     <h4 class="dashboard-module-title">Situations mensuelles</h4>
@@ -240,6 +248,7 @@
                 {% endif %}
 
                 {# ═══════════ Attachements ═══════════ #}
+                {% if 'attachements' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-file-invoice-dollar"></i></div>
                     <h4 class="dashboard-module-title">Attachements</h4>
@@ -257,8 +266,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 {# ═══════════ Suivi d'exécution ═══════════ #}
+                {% if 'suivi' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-chart-line"></i></div>
                     <h4 class="dashboard-module-title">Suivi d'exécution</h4>
@@ -276,9 +287,11 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
                 {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
                 {# ═══════════ Affectation des ressources (TRAVAUX) ═══════════ #}
+                {% if 'ressources' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-boxes-packing"></i></div>
                     <h4 class="dashboard-module-title">Ressources</h4>
@@ -290,8 +303,10 @@
                         </a>
                     </div>
                 </div>
+                {% endif %}
 
                 {# ═══════════ Rapports journaliers (TRAVAUX) ═══════════ #}
+                {% if 'rapports_journaliers' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-calendar-day"></i></div>
                     <h4 class="dashboard-module-title">Rapports journaliers</h4>
@@ -313,8 +328,10 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
                 
                 {# ═══════════ Ateliers ═══════════ #}
+                {% if 'ateliers' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-people-group"></i></div>
                     <h4 class="dashboard-module-title">Ateliers</h4>
@@ -334,8 +351,10 @@
                     </div>
                 </div>
                 {% endif %}
+                {% endif %}
 
                 {# ═══════════ Fiche de contrôle ═══════════ #}
+                {% if 'fiche_controle' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-clipboard-check"></i></div>
                     <h4 class="dashboard-module-title">Fiche de Contrôle d'attachements</h4>
@@ -353,11 +372,13 @@
                         {% endif %}
                     </div>
                 </div>
+                {% endif %}
 
             </div>
         </div>
 
         <!-- Section Décomptes -->
+        {% if 'decomptes' not in modules_desactives %}
         <div class="project-dashboard-card">
             <div class="flex justify-between items-center mb-4 md:mb-6 flex-col sm:flex-row gap-3">
                 <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
@@ -463,5 +484,6 @@
                 </div>
             {% endif %}
         </div>
+        {% endif %}
     </div>
 </div>

@@ -48,6 +48,8 @@ def utilisateurs_gerables(actor):
 def peut_agir_utilisateur(actor, target, action):
     if not actor.is_authenticated:
         return False
+    if action == 'modules':
+        return actor.is_superuser and not target.is_superuser
     if actor.is_superuser:
         return action not in {'delete', 'status'} or actor.pk != target.pk
     if action == 'dossiers':

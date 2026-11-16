@@ -1,4 +1,5 @@
 from django.utils import timezone
+from .modules import modules_desactives
 from .version import APP_VERSION, get_versions_between
 
 
@@ -28,6 +29,7 @@ def observer_access(request):
             and getattr(getattr(request.user, 'profile', None), 'role', None) == 'A_RECLASSER'
         ),
         'dossier_affectation_invalide': False,
+        'modules_desactives': modules_desactives(request.user) if request.user.is_authenticated else frozenset(),
     }
     dossier = getattr(request, 'dossier', None)
     if dossier is None and request.user.is_authenticated:

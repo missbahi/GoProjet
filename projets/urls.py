@@ -291,6 +291,7 @@ utilisateur_urlpatterns = [
     path('utilisateurs/modifier/<int:user_id>/', user_views.modifier_utilisateur, name='modifier_utilisateur'),
     path('utilisateurs/supprimer/<int:user_id>/', user_views.supprimer_utilisateur, name='supprimer_utilisateur'),
     path('utilisateurs/<int:user_id>/gerer-projets/', user_views.gerer_projets_utilisateur, name='gerer_projets_utilisateur'),
+    path('utilisateurs/<int:user_id>/journal-acces/', user_views.journal_acces_utilisateur, name='journal_acces_utilisateur'),
 ]
 
 # Gestion des ordres de service et API associées

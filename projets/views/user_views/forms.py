@@ -4,6 +4,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 
 from projets.models import Projet
+from projets.modules import MODULE_CHOICES
 from projets.user_policy import (
     RETIRED_ROLES, dossiers_affectables, peut_agir_utilisateur,
     roles_assignables, valider_dossiers_utilisateur,
@@ -20,6 +21,7 @@ class UtilisateurModificationForm(forms.Form):
     is_active = forms.BooleanField(required=False)
     dossiers = forms.ModelMultipleChoiceField(queryset=None, required=False)
     avatar = forms.ImageField(required=False)
+    modules = forms.MultipleChoiceField(choices=MODULE_CHOICES, required=False)
 
     def __init__(self, *args, actor, target, **kwargs):
         super().__init__(*args, **kwargs)
@@ -29,6 +31,7 @@ class UtilisateurModificationForm(forms.Form):
             'is_active': peut_agir_utilisateur(actor, target, 'status'),
             'dossiers': peut_agir_utilisateur(actor, target, 'dossiers'),
             'password': peut_agir_utilisateur(actor, target, 'password'),
+            'modules': peut_agir_utilisateur(actor, target, 'modules'),
         }
         self.fields['role'].choices = roles_assignables(actor)
         if self.is_bound and self.data.get('role') and self.data['role'] not in {
@@ -36,7 +39,7 @@ class UtilisateurModificationForm(forms.Form):
         }:
             raise PermissionDenied("Ce rôle ne peut pas être attribué.")
         self.fields['dossiers'].queryset = dossiers_affectables(actor)
-        for field in ('role', 'is_active', 'dossiers'):
+        for field in ('role', 'is_active', 'dossiers', 'modules'):
             if not self.permissions[field]:
                 self.fields.pop(field)
         if not self.permissions['password']:
@@ -121,6 +124,12 @@ class UtilisateurModificationForm(forms.Form):
         target.profile.role = self.resulting_role
         if self.resulting_role == 'OBSERVATEUR':
             target.is_staff = False
+        if self.permissions['modules']:
+            # Les cases cochées sont les modules disponibles ; le reste est désactivé.
+            disponibles = set(self.cleaned_data.get('modules') or [])
+            target.profile.modules_desactives = [
+                key for key, _label in MODULE_CHOICES if key not in disponibles
+            ]
         if self.cleaned_data.get('avatar'):
             target.profile.avatar = self.cleaned_data['avatar']
         target.save()

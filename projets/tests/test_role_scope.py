@@ -16,6 +16,8 @@ from goplan.forms import GPlanForm
 from projets.decorators import projets_accessibles
 from projets.forms import ProjetForm
 from projets.models import Dossier, Notification, ProcessValidation, Projet
+from projets.modules import MODULE_CHOICES
+from projets.models.journal import JournalAcces
 from projets.tests.test_attachements import AttachementTestData
 
 
@@ -183,6 +185,56 @@ class RoleScopeTests(AttachementTestData, TestCase):
             'dossiers': self.autre_dossier.pk,
         }).status_code, 403)
         self.assertEqual(list(self.responsable.dossiers.all()), [self.dossier])
+
+    def test_modules_disponibles_reserves_au_super_admin(self):
+        target = self.actor('membre-modules', 'CHEF_PROJET')
+        self.projet.users.add(target)
+        lots = reverse('projets:lots_projet', args=[self.projet.pk])
+        url = reverse('projets:modifier_utilisateur', args=[target.pk])
+
+        self.client.force_login(self.responsable)
+        self.assertNotContains(self.client.get(url), 'name="modules"')
+        self.assertEqual(self.client.post(url, {
+            'role': 'CHEF_PROJET', 'is_active': 'on', 'modules': ['os'],
+        }).status_code, 403)
+
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(url), 'name="modules"')
+        modules = [key for key, _label in MODULE_CHOICES if key != 'lots']
+        self.assertEqual(self.client.post(url, {
+            'role': 'CHEF_PROJET', 'is_active': 'on', 'modules': modules,
+            'dossiers': self.dossier.pk,
+        }).status_code, 302)
+        target.profile.refresh_from_db()
+        self.assertEqual(target.profile.modules_desactives, ['lots'])
+
+        self.client.force_login(target)
+        self.assertEqual(self.client.get(lots).status_code, 403)
+        self.assertNotContains(
+            self.client.get(reverse('projets:dashboard', args=[self.projet.pk])),
+            reverse('projets:lots_projet', args=[self.projet.pk]),
+        )
+        self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(lots).status_code, 200)
+
+    def test_journal_acces_reserve_au_super_admin(self):
+        target = self.actor('membre-journal', 'CHEF_PROJET')
+        self.projet.users.add(target)
+        self.client.force_login(target)
+        self.client.get(reverse('projets:lots_projet', args=[self.projet.pk]))
+        entree = JournalAcces.objects.filter(user=target, module='lots').first()
+        self.assertIsNotNone(entree)
+        self.assertEqual(entree.projet_id, self.projet.pk)
+
+        url = reverse('projets:journal_acces_utilisateur', args=[target.pk])
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_login(self.responsable)
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.client.force_login(self.admin)
+        self.assertContains(self.client.get(url), 'lots_projet'.replace('_projet', ''))
+        csv_response = self.client.get(url, {'export': 'csv', 'debut': 'invalide'})
+        self.assertEqual(csv_response.status_code, 200)
+        self.assertIn('text/csv', csv_response['Content-Type'])
 
     def test_local_project_creation_inherits_dossier_and_cannot_be_forged(self):
         data = model_to_dict(self.projet, fields=ProjetForm._meta.fields)

@@ -147,6 +147,29 @@
         </div>
         {% endif %}
 
+        {% if can_manage_modules %}
+        <div>
+            <label class="block text-sm font-medium mb-2" style="color: var(--text-primary);">
+                Modules disponibles
+            </label>
+            <div class="rounded-lg p-3 max-h-60 overflow-y-auto space-y-2"
+                 style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
+                {% for key, label, disponible in module_choices %}
+                    <label class="flex items-center gap-2 cursor-pointer p-1 rounded"
+                           style="color: var(--text-primary);">
+                        <input type="checkbox" name="modules" value="{{ key }}"
+                               style="accent-color: var(--accent-green);"
+                               {% if disponible %}checked{% endif %}>
+                        <span class="text-sm">{{ label }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            <p class="text-xs mt-1" style="color: var(--text-muted);">
+                Les modules décochés sont inaccessibles à cet utilisateur.
+            </p>
+        </div>
+        {% endif %}
+
         {% if can_manage_account_status %}
         <div>
             <label class="flex items-center gap-2 cursor-pointer"

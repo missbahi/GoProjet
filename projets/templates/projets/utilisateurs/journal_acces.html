@@ -1,0 +1,84 @@
+{% extends "projets/home/base_sidebar.html" %}
+
+{% block content %}
+<div data-family="app" class="mx-auto max-w-6xl">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <h1 class="text-2xl font-bold" style="color: var(--text-primary);">
+            <i class="fas fa-clock-rotate-left mr-2"></i>Historique d'accès — {{ cible.get_full_name|default:cible.username }}
+        </h1>
+        <div class="flex gap-2">
+            <a href="?{{ query }}{% if query %}&{% endif %}export=csv" hx-boost="false" class="app-btn-secondary">
+                <i class="fas fa-file-csv"></i> Export CSV
+            </a>
+            <a href="{% url 'projets:liste_utilisateurs' %}" class="app-btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="app-card p-4 mb-6 grid grid-cols-1 md:grid-cols-6 gap-3 items-end" hx-boost="false">
+        <label class="text-sm" style="color: var(--text-secondary);">Du
+            <input type="date" name="debut" value="{{ filtres.debut }}" class="app-input"></label>
+        <label class="text-sm" style="color: var(--text-secondary);">Au
+            <input type="date" name="fin" value="{{ filtres.fin }}" class="app-input"></label>
+        <label class="text-sm" style="color: var(--text-secondary);">Événement
+            <select name="event" class="app-input">
+                <option value="">Tous</option>
+                {% for value, label in event_choices %}
+                    <option value="{{ value }}" {% if filtres.event == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select></label>
+        <label class="text-sm" style="color: var(--text-secondary);">Module
+            <select name="module" class="app-input">
+                <option value="">Tous</option>
+                {% for value, label in module_choices %}
+                    <option value="{{ value }}" {% if filtres.module == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select></label>
+        <label class="text-sm" style="color: var(--text-secondary);">N° projet
+            <input type="number" name="projet" value="{{ filtres.projet }}" class="app-input"></label>
+        <button type="submit" class="app-btn-primary text-white px-4 py-2 rounded-lg">Filtrer</button>
+    </form>
+
+    <div class="app-card overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr style="color: var(--text-muted);" class="text-left">
+                    <th class="px-3 py-2">Date</th>
+                    <th class="px-3 py-2">Événement</th>
+                    <th class="px-3 py-2">Requête</th>
+                    <th class="px-3 py-2">Module</th>
+                    <th class="px-3 py-2">Projet</th>
+                    <th class="px-3 py-2">Statut</th>
+                    <th class="px-3 py-2">IP</th>
+                </tr>
+            </thead>
+            <tbody style="color: var(--text-primary);">
+                {% for e in page_obj %}
+                <tr style="border-top: 1px solid var(--border-default);">
+                    <td class="px-3 py-2 whitespace-nowrap">{{ e.date|date:"d/m/Y H:i:s" }}</td>
+                    <td class="px-3 py-2">{{ e.get_event_display }}</td>
+                    <td class="px-3 py-2" title="{{ e.user_agent }}">
+                        {% if e.method %}<strong>{{ e.method }}</strong> {{ e.path|truncatechars:80 }}{% else %}—{% endif %}
+                    </td>
+                    <td class="px-3 py-2">{{ e.module|default:"—" }}</td>
+                    <td class="px-3 py-2">{{ e.projet_id|default:"—" }}</td>
+                    <td class="px-3 py-2" {% if e.status_code == 403 %}style="color: var(--accent-danger);"{% endif %}>{{ e.status_code|default:"—" }}</td>
+                    <td class="px-3 py-2">{{ e.ip|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7" class="px-3 py-6 text-center" style="color: var(--text-muted);">Aucune entrée.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="flex justify-center gap-3 mt-4 text-sm" style="color: var(--text-secondary);">
+        {% if page_obj.has_previous %}<a href="?{{ query }}&page={{ page_obj.previous_page_number }}" hx-boost="false">&laquo; Précédent</a>{% endif %}
+        <span>Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?{{ query }}&page={{ page_obj.next_page_number }}" hx-boost="false">Suivant &raquo;</a>{% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

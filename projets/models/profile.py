@@ -64,6 +64,13 @@ class Profile(models.Model):
         help_text=_("Si coché, la fenêtre de bienvenue de l'Observateur ne s'ouvre plus automatiquement."),
     )
 
+    modules_desactives = models.JSONField(
+        _("Modules désactivés"),
+        default=list,
+        blank=True,
+        help_text=_("Clés des modules retirés à cet utilisateur (voir projets/modules.py)."),
+    )
+
     def __str__(self):
         return f"{self.user.username} Profile"
 

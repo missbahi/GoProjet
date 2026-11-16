@@ -109,7 +109,7 @@ class ObservateurTests(AttachementTestData, TestCase):
         ]
         before = ProcessValidation.objects.count()
         domain_models = [model for model in apps.get_app_config('projets').get_models()
-                         if model.__name__ != 'Profile']
+                         if model.__name__ not in {'Profile', 'JournalAcces'}]
         snapshot = {model: list(model.objects.order_by('pk').values()) for model in domain_models}
         for name, args in routes:
             with self.subTest(name=name):

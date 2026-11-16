@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.6.0"
+APP_VERSION = "2.7.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,15 @@ APP_VERSION = "2.6.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.7.0": {
+        "date": "2026-11-16",
+        "titre": "Modules disponibles par utilisateur",
+        "highlights": [
+            "Le super-administrateur peut choisir les modules accessibles à chaque utilisateur",
+            "Les modules indisponibles sont masqués du tableau de bord et inaccessibles",
+        ],
+        "niveau": "info",
+    },
     "2.6.0": {
         "date": "2026-11-16",
         "titre": "Ordres de service : insertion de séquences et impressions",
