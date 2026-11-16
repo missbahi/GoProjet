@@ -1,0 +1,40 @@
+{% extends 'projets/_apercu_liste_base.html' %}
+{% load formatters %}
+{% block doc_titre %}Ordres de service{% endblock %}
+{% block doc_titre_page %}Ordres de service{% endblock %}
+{% block barre_titre %}Ordres de service{% endblock %}
+{% block nom_fichier %}Ordres_de_service{% endblock %}
+{% block titre %}Ordres de service{% endblock %}
+{% block url_retour %}{% url 'projets:ordres_service' projet.id %}{% endblock %}
+{% block contenu %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th class="center">Séq.</th>
+            <th>Type</th>
+            <th>Référence / Objet</th>
+            <th class="center">Statut</th>
+            <th class="center">Publication</th>
+            <th class="center">Effet</th>
+            <th class="right">Extension</th>
+            <th class="right">Montant suppl.</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for os in ordres %}
+        <tr>
+            <td class="cell-center">{{ os.ordre_sequence }}</td>
+            <td class="cell-nowrap"><strong>{{ os.type_os.code }}</strong></td>
+            <td><strong>{{ os.reference }}</strong><br>{{ os.titre }}</td>
+            <td class="cell-center">{{ os.get_statut_display }}</td>
+            <td class="cell-center cell-nowrap">{{ os.date_publication|date:"d/m/Y"|default:"—" }}</td>
+            <td class="cell-center cell-nowrap">{{ os.date_effet|date:"d/m/Y"|default:"—" }}</td>
+            <td class="cell-right cell-nowrap">{% if os.duree_extension %}{{ os.extension_formatee }}{% else %}—{% endif %}</td>
+            <td class="cell-right cell-mono">{% if os.montant_supplementaire %}{{ os.montant_supplementaire|format_french_number }}{% else %}—{% endif %}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="vide">Aucun ordre de service.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

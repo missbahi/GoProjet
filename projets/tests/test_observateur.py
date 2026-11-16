@@ -104,6 +104,8 @@ class ObservateurTests(AttachementTestData, TestCase):
             ('detail_attachement', [self.attachement.pk]),
             ('tracabilite_validation_attachement', [self.attachement.pk]),
             ('liste_decomptes', [self.projet.pk]), ('ordres_service', [self.projet.pk]),
+            ('apercu_impression_attachements', [self.projet.pk]),
+            ('apercu_impression_ordres_service', [self.projet.pk]),
         ]
         before = ProcessValidation.objects.count()
         domain_models = [model for model in apps.get_app_config('projets').get_models()

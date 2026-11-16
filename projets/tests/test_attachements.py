@@ -1700,6 +1700,14 @@ class InsertionSequenceArretRepriseTests(AttachementTestData, TestCase):
             'reference', 'ordre_sequence',
         ))
 
+    def test_apercu_impression_os_et_attachements(self):
+        self.client.force_login(User.objects.create_superuser(username='apercu-impression'))
+        self.create_attachement(1, date(2025, 1, 10), date(2025, 1, 31))
+        r = self.client.get(reverse('projets:apercu_impression_ordres_service', args=[self.projet.pk]))
+        self.assertContains(r, 'OSC-001')
+        r = self.client.get(reverse('projets:apercu_impression_attachements', args=[self.projet.pk]))
+        self.assertContains(r, '31/01/2025')
+
     def test_insere_paire_avant_une_paire_existante_et_renumerote(self):
         osvd = TypeOrdreService.objects.get_or_create(
             code='OSV', defaults={'nom': 'OSV', 'description': 'OSV'},

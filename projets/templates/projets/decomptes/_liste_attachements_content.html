@@ -9,7 +9,8 @@
      data-page-icon="fa-file-contract">
 
     <!-- En-tête -->
-    <div class="mb-6">
+    <div class="mb-6 flex flex-wrap items-start justify-between gap-3">
+      <div>
         <h1 class="app-section-title mb-2">
             <i class="fas fa-file-contract mr-2"></i>
             Attachements
@@ -19,6 +20,14 @@
             <i class="fas fa-info-circle"></i>
             Gestion des attachements du projet
         </p>
+      </div>
+      {% if attachements %}
+      <a href="{% url 'projets:apercu_impression_attachements' projet.id %}" target="_blank" rel="noopener"
+         hx-boost="false" class="app-btn-secondary"
+         style="background-color: var(--accent-warning); color: var(--text-inverse);">
+          <i class="fas fa-eye"></i> Aperçu avant impression
+      </a>
+      {% endif %}
     </div>
 
     <!-- Infos projet -->

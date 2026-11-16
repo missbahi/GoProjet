@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aperçu impression – {% block doc_titre %}{% endblock %} {{ projet.nom }}</title>
+    {% load formatters %}
+    <style>
+        :root {
+            --papier-fond: #FAFAFA;
+            --papier-fond-alt: #F2F2F3;
+            --papier-bordure: #D4D6D8;
+            --encre-forte: #1F2023;
+            --encre-douce: #54585C;
+            --encre-legere: #8A8E92;
+            --fond-gris-fonce: #6d6e6f;
+            --fond-entete-table: #4B5054;
+            --accent-vert: #4A7C59;
+            --accent-vert-fonce: #355B40;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; padding: 0; background: #E5E6E8;
+            font-family: "Georgia", "Times New Roman", serif;
+            color: var(--fond-gris-fonce);
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+        .barre-action {
+            position: sticky; top: 0; z-index: 100; background: #3A3833; color: #F0EDE6;
+            padding: 0.75rem 1.25rem; display: flex; align-items: center;
+            justify-content: space-between; gap: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.25); font-family: Arial, sans-serif;
+        }
+        .barre-action h1 { font-size: 1rem; font-weight: 600; margin: 0; }
+        .barre-action .boutons { display: flex; gap: 0.5rem; }
+        .barre-action button, .barre-action a {
+            font-family: Arial, sans-serif; font-size: 0.85rem; padding: 0.5rem 0.9rem;
+            border-radius: 6px; border: 1px solid transparent; cursor: pointer;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 0.4rem;
+        }
+        .btn-imprimer { background: var(--accent-vert); color: white; }
+        .btn-imprimer:hover { background: var(--accent-vert-fonce); }
+        .btn-retour { background: transparent; color: #F0EDE6; border-color: #6B6558; }
+        .btn-retour:hover { background: #4A463E; }
+
+        .feuille {
+            width: {% block largeur %}210mm{% endblock %}; min-height: 150mm; margin: 1.5rem auto;
+            background: var(--papier-fond); box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            padding: 15mm 12mm;
+        }
+        .page-wrapper { width: 100%; border-collapse: collapse; }
+        .page-wrapper > tbody > tr > td, .page-wrapper > tfoot > tr > td {
+            border: none; padding: 0; vertical-align: top;
+        }
+        .entete-doc {
+            border-bottom: 2px solid var(--fond-gris-fonce);
+            padding-bottom: 0.6rem; margin-bottom: 1rem;
+        }
+        .entete-doc .titre {
+            font-size: 1.35rem; font-weight: bold; letter-spacing: 0.02em;
+            text-transform: uppercase; text-align: center; margin-bottom: 0.5rem;
+        }
+        .entete-doc .chantier { font-size: 0.95rem; text-align: center; color: var(--encre-douce); }
+
+        table.data-table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+        table.data-table thead { display: table-header-group; }
+        table.data-table thead th {
+            background: var(--fond-entete-table); color: white;
+            border: 1px solid var(--fond-entete-table); border-bottom: 2px solid var(--encre-forte);
+            padding: 0.6rem 0.5rem; font-size: 0.72rem; text-align: left;
+            text-transform: uppercase; letter-spacing: 0.05em; line-height: 1.2;
+        }
+        table.data-table thead th.right { text-align: right; }
+        table.data-table thead th.center { text-align: center; }
+        table.data-table tbody td {
+            border: 1px solid var(--papier-bordure); padding: 0.3rem 0.4rem; vertical-align: top;
+        }
+        table.data-table tbody tr:nth-child(even) td { background: var(--papier-fond-alt); }
+        table.data-table tr { page-break-inside: avoid; }
+        table.data-table tfoot td {
+            background: var(--fond-gris-fonce); color: white; font-weight: bold;
+            font-size: 0.75rem; padding: 0.4rem 0.5rem; border: 1px solid var(--papier-bordure);
+        }
+        .cell-right { text-align: right; }
+        .cell-center { text-align: center; }
+        .cell-mono { font-family: "Consolas", "Monaco", monospace; }
+        .cell-nowrap { white-space: nowrap; }
+        .vide { text-align: center; font-style: italic; padding: 1rem; color: var(--encre-legere); }
+
+        .pied-doc-print {
+            border-top: 1px solid var(--papier-bordure); padding-top: 0.4rem; margin-top: 0.75rem;
+            display: flex; justify-content: space-between; font-size: 0.65rem;
+            color: var(--encre-legere); font-style: italic; font-family: Arial, sans-serif;
+        }
+
+        @page {
+            size: A4 {% block orientation %}portrait{% endblock %};
+            margin: 10mm 10mm 15mm 10mm;
+            @bottom-left { content: "{{ projet.nom }}"; font-family: Arial, sans-serif; font-size: 8pt; color: #8A8E92; font-style: italic; }
+            @bottom-center { content: "Page " counter(page) " / " counter(pages); font-family: Arial, sans-serif; font-size: 8pt; color: #54585C; font-weight: 600; }
+            @bottom-right { content: "{% block doc_titre_page %}{% endblock %}"; font-family: Arial, sans-serif; font-size: 8pt; color: #8A8E92; font-style: italic; }
+        }
+        @media print {
+            html, body { background: white; }
+            .barre-action { display: none !important; }
+            .feuille { width: 100%; min-height: auto; margin: 0; box-shadow: none; padding: 0; background: var(--papier-fond); }
+            .page-wrapper > tfoot { display: table-footer-group; }
+            .pied-doc-print { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="barre-action">
+        <h1>Aperçu avant impression – {% block barre_titre %}{% endblock %} {{ projet.nom }}</h1>
+        <div class="boutons">
+            <a href="{% block url_retour %}{% endblock %}" class="btn-retour">← Retour</a>
+            <button type="button" class="btn-imprimer" onclick="window.print()">Imprimer</button>
+        </div>
+    </div>
+
+    <div class="feuille">
+        <table class="page-wrapper">
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="entete-doc">
+                            <div class="titre">{% block titre %}{% endblock %}</div>
+                            <div class="chantier">
+                                <strong>Chantier :</strong> {{ projet.nom }}
+                                {% if projet.numero %} — Réf. {{ projet.numero }}{% endif %}
+                            </div>
+                        </div>
+                        {% block contenu %}{% endblock %}
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td>
+                        <div class="pied-doc-print">
+                            <span>Édité le {{ date_edition|date:"d/m/Y à H:i" }}</span>
+                            <span>{{ projet.nom }}</span>
+                        </div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <script>
+    (function () {
+        const titreOriginal = document.title;
+        window.addEventListener('beforeprint', () => {
+            document.title = '{% block nom_fichier %}{% endblock %}_{{ projet.nom|slugify }}';
+        });
+        window.addEventListener('afterprint', () => { document.title = titreOriginal; });
+    })();
+    </script>
+</body>
+</html>

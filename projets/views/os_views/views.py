@@ -375,6 +375,18 @@ class AfficherDocumentView(View):
 # ------------------------ Views pour Ordres de Service ------------------------
 @login_required
 @modules_projet_required
+def apercu_impression_ordres_service(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    ordres = OrdreService.objects.filter(projet=projet).select_related('type_os').order_by('ordre_sequence')
+    return render(request, 'projets/ordres_service/apercu_impression_ordres_service.html', {
+        'projet': projet,
+        'ordres': ordres,
+        'date_edition': datetime.now(),
+    })
+
+
+@login_required
+@modules_projet_required
 @transaction.atomic
 def ordres_service(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)

@@ -245,6 +245,7 @@ tache_urlpatterns = [
 attachement_urlpatterns = [
     path('projet/<int:projet_id>/attachements/corriger-periodes/', attachement_views.corriger_periodes_attachements, name='corriger_periodes_attachements'),
     path('projet/<int:projet_id>/attachements/', attachement_views.liste_attachements, name='liste_attachements'),
+    path('projet/<int:projet_id>/attachements/apercu/', attachement_views.apercu_impression_attachements, name='apercu_impression_attachements'),
     path('projet/<int:projet_id>/attachements/ajouter/', attachement_views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', attachement_views.modifier_attachement, name='modifier_attachement'),
     path('attachements/<int:attachement_id>/', attachement_views.detail_attachement, name='detail_attachement'),
@@ -296,6 +297,7 @@ utilisateur_urlpatterns = [
 os_urlpatterns = [
      
     path('projet/<int:projet_id>/ordres-service/', os_views.ordres_service , name='ordres_service'),
+    path('projet/<int:projet_id>/ordres-service/apercu/', os_views.apercu_impression_ordres_service, name='apercu_impression_ordres_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/modifier/', os_views.modifier_ordre_service, name='modifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/supprimer/', os_views.supprimer_ordre_service, name='supprimer_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/details/', os_views.details_ordre_service, name='details_ordre_service'),

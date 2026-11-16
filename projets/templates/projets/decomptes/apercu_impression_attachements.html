@@ -1,0 +1,36 @@
+{% extends 'projets/_apercu_liste_base.html' %}
+{% load formatters %}
+{% block doc_titre %}Attachements{% endblock %}
+{% block doc_titre_page %}Liste des attachements{% endblock %}
+{% block barre_titre %}Attachements{% endblock %}
+{% block nom_fichier %}Attachements{% endblock %}
+{% block titre %}Liste des attachements{% endblock %}
+{% block url_retour %}{% url 'projets:liste_attachements' projet.id %}{% endblock %}
+{% block contenu %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>N°</th>
+            <th class="center">Établi le</th>
+            <th class="center">Période</th>
+            <th class="center">Statut</th>
+            <th class="right">Montant situation HT</th>
+            <th class="right">Cumul HT</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for att in attachements %}
+        <tr>
+            <td class="cell-nowrap"><strong>{{ att.numero }}</strong></td>
+            <td class="cell-center cell-nowrap">{{ att.date_etablissement|date:"d/m/Y" }}</td>
+            <td class="cell-center cell-nowrap">{{ att.date_debut_periode|date:"d/m/Y" }} → {{ att.date_fin_periode|date:"d/m/Y" }}</td>
+            <td class="cell-center">{{ att.get_statut_display }}</td>
+            <td class="cell-right cell-mono">{{ att.montant_situation|format_french_number }}</td>
+            <td class="cell-right cell-mono">{{ att.total_montant_ht|format_french_number }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="vide">Aucun attachement.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

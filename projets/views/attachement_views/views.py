@@ -77,6 +77,17 @@ def liste_attachements(request, projet_id):
     return render(request, 'projets/decomptes/liste_attachements.html', context)
 
 
+@modules_projet_required
+def apercu_impression_attachements(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    attachements = list(Attachement.objects.filter(projet=projet).order_by('sequence'))
+    return render(request, 'projets/decomptes/apercu_impression_attachements.html', {
+        'projet': projet,
+        'attachements': attachements,
+        'date_edition': timezone.now(),
+    })
+
+
 @login_required
 @require_POST
 def changer_statut_attachement(request, attachement_id):
