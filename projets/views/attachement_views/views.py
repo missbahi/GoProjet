@@ -84,6 +84,7 @@ def apercu_impression_attachements(request, projet_id):
     return render(request, 'projets/decomptes/apercu_impression_attachements.html', {
         'projet': projet,
         'attachements': attachements,
+        'montant_total_ht': attachements[-1].total_montant_ht if attachements else Decimal('0.00'),
         'date_edition': timezone.now(),
     })
 

@@ -32,5 +32,13 @@
         <tr><td colspan="6" class="vide">Aucun attachement.</td></tr>
         {% endfor %}
     </tbody>
+    {% if attachements %}
+    <tfoot>
+        <tr>
+            <td colspan="5" class="cell-right">Montant total HT</td>
+            <td class="cell-right cell-mono">{{ montant_total_ht|format_french_number }}</td>
+        </tr>
+    </tfoot>
+    {% endif %}
 </table>
 {% endblock %}
