@@ -318,22 +318,24 @@ class Projet(models.Model):
             statut='NOTIFIE'
         ).exists()
     
+    def evenements_arret_reprise(self, candidat=None):
+        """OSA/OSR notifiés en ordre chronologique (même tri que les calculs de délai)."""
+        evenements = list(self.ordres_service.filter(
+            type_os__code__in=['OSA', 'OSR'], statut='NOTIFIE',
+        ).exclude(pk=candidat.pk if candidat and candidat.pk else None).select_related('type_os'))
+        if candidat is not None:
+            evenements.append(candidat)
+        big = 2147483647
+        evenements.sort(key=lambda os: (
+            os.date_effet is None, os.date_effet or date.max,
+            os.ordre_sequence or big, os.pk or big,
+        ))
+        return evenements
+
     @property
     def projet_en_arret(self):
-        dernier_osa = self.ordres_service.filter(
-            type_os__code='OSA', 
-            statut='NOTIFIE'
-        ).order_by('-ordre_sequence').first()
-        
-        if not dernier_osa:
-            return False
-        
-        dernier_osr = self.ordres_service.filter(
-            type_os__code='OSR', 
-            statut='NOTIFIE'
-        ).order_by('-ordre_sequence').first()
-        
-        return not dernier_osr or dernier_osa.ordre_sequence > dernier_osr.ordre_sequence
+        evenements = self.evenements_arret_reprise()
+        return bool(evenements) and evenements[-1].type_os.code == 'OSA'
     
     @property
     def projet_en_cours(self):
@@ -637,6 +639,14 @@ class OrdreService(models.Model):
     class Meta:
         unique_together = ['projet', 'reference']
         ordering = ['projet', 'ordre_sequence', 'date_publication']
+        constraints = [
+            # Différée : permet de décaler les numéros d'un projet en une seule requête.
+            models.UniqueConstraint(
+                fields=['projet', 'ordre_sequence'],
+                name='unique_os_sequence_par_projet',
+                deferrable=models.Deferrable.DEFERRED,
+            ),
+        ]
     @property
     def get_file_name(self):
         if self.original_filename:
@@ -758,27 +768,45 @@ class OrdreService(models.Model):
                 if existing.exists():
                     errors['type_os'] = f"Un {self.type_os.nom} existe déjà pour ce projet"
             
-            if self.type_os.code == 'OSA':
-                dernier_os = OrdreService.objects.filter(
-                    projet=self.projet,
-                    statut='NOTIFIE'
-                ).exclude(pk=self.pk).exclude(type_os__code='OSVD').order_by('-ordre_sequence').first()
-                
-                if dernier_os and dernier_os.type_os.code == 'OSA':
-                    errors['type_os'] = "Un OS d'arrêt ne peut pas suivre un autre OS d'arrêt"
-            
-            if self.type_os.code == 'OSR':
-                dernier_osa = OrdreService.objects.filter(
-                    projet=self.projet,
-                    type_os__code='OSA',
-                    statut='NOTIFIE'
-                ).order_by('-ordre_sequence').first()
-                
-                if not dernier_osa:
-                    errors['type_os'] = "Un OS de reprise doit être précédé d'un OS d'arrêt"
+            if self.type_os.code in ('OSA', 'OSR') and 'type_os' not in errors:
+                self._valider_alternance_arret_reprise(errors)
         
         if errors:
             raise ValidationError(errors)
+    def _valider_alternance_arret_reprise(self, errors):
+        """Valide la séquence chronologique complète OSC → OSA → OSR → OSA …,
+        y compris pour une insertion au milieu de la séquence."""
+        if not self.date_effet:
+            errors['date_effet'] = "La date d'effet est obligatoire pour un OS d'arrêt ou de reprise."
+            return
+        osc = self.projet.ordres_service.filter(
+            type_os__code='OSC', statut='NOTIFIE', date_effet__isnull=False,
+        ).order_by('ordre_sequence').first()
+        if osc and self.date_effet < osc.date_effet:
+            errors['date_effet'] = "La date d'effet ne peut précéder le commencement."
+            return
+        evenements = self.projet.evenements_arret_reprise(candidat=self)
+        if any(e.date_effet is None for e in evenements if e is not self):
+            errors['type_os'] = "Un OS d'arrêt/reprise notifié sans date d'effet empêche de valider la séquence."
+            return
+        attendu = 'OSA'
+        for evenement in evenements:
+            code = evenement.type_os.code
+            if code != attendu:
+                if evenement is self:
+                    errors['type_os'] = (
+                        "Un OS d'arrêt ne peut pas suivre un autre OS d'arrêt"
+                        if code == 'OSA' else
+                        "Un OS de reprise doit être précédé d'un OS d'arrêt"
+                    )
+                else:
+                    errors['date_effet'] = (
+                        f"Cette position romprait l'alternance arrêt/reprise "
+                        f"({evenement.reference} deviendrait invalide)."
+                    )
+                return
+            attendu = 'OSR' if code == 'OSA' else 'OSA'
+
     # def download_url(self):
     #     if not self.fichier:
     #         return None

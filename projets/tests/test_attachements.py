@@ -29,6 +29,7 @@ from projets.services.attachement_service import (
     DonneesAttachementInvalides,
     enregistrer_lignes_attachement,
 )
+from projets.services.os_sequence import inserer_sequence_arret_reprise, normaliser_sequence
 from projets.views.attachement_views import views as attachement_views
 
 
@@ -1646,6 +1647,129 @@ class AttachementSequenceTests(AttachementTestData, TestCase):
         self.projet.delete()
 
         self.assertFalse(Attachement.objects.filter(pk=premier.pk).exists())
+
+class SequenceArretRepriseTests(AttachementTestData, TestCase):
+    def build_os(self, code, effet, reference):
+        type_os = TypeOrdreService.objects.get(code=code)
+        return OrdreService(
+            projet=self.projet, type_os=type_os, reference=reference, titre=code,
+            description=code, date_publication=date(2025, 1, 1), date_effet=effet,
+            statut='NOTIFIE',
+        )
+
+    def test_insertion_au_milieu_respecte_l_alternance(self):
+        self.create_os('OSA', date(2025, 2, 1))
+        self.create_os('OSR', date(2025, 3, 1))
+        # OSA/OSR insérés entre l'arrêt et la reprise existants : OSA, OSA, OSR, OSR
+        with self.assertRaises(ValidationError):
+            self.build_os('OSA', date(2025, 2, 10), 'OSA-MID').clean()
+        with self.assertRaises(ValidationError):
+            self.build_os('OSR', date(2025, 2, 10), 'OSR-MID').clean()
+        # Un arrêt isolé avant un arrêt existant romprait aussi l'alternance
+        with self.assertRaises(ValidationError):
+            self.build_os('OSA', date(2025, 1, 15), 'OSA-EARLY').clean()
+        # Arrêt après la reprise : valide
+        self.build_os('OSA', date(2025, 4, 1), 'OSA-LATE').clean()
+
+    def test_osr_sans_arret_prealable_et_date_avant_commencement(self):
+        with self.assertRaises(ValidationError) as ctx:
+            self.build_os('OSR', date(2025, 2, 1), 'OSR-1').full_clean()
+        self.assertIn('type_os', ctx.exception.message_dict)
+        with self.assertRaises(ValidationError) as ctx:
+            self.build_os('OSA', date(2025, 1, 1), 'OSA-1').full_clean()
+        self.assertIn('date_effet', ctx.exception.message_dict)
+
+    def test_projet_en_arret_suit_l_ordre_chronologique(self):
+        osa = self.create_os('OSA', date(2025, 2, 1))
+        osr = self.create_os('OSR', date(2025, 3, 1))
+        OrdreService.objects.filter(pk=osa.pk).update(ordre_sequence=9)
+        self.assertFalse(Projet.objects.get(pk=self.projet.pk).projet_en_arret)
+        self.assertIsNotNone(osr.pk)
+
+
+class InsertionSequenceArretRepriseTests(AttachementTestData, TestCase):
+    def inserer(self, arret, reprise, suffixe):
+        return inserer_sequence_arret_reprise(
+            self.projet, date_arret=arret, date_reprise=reprise,
+            reference_arret=f'OSA-{suffixe}', reference_reprise=f'OSR-{suffixe}',
+            date_publication=date(2025, 1, 1),
+        )
+
+    def sequence(self):
+        return list(self.projet.ordres_service.order_by('ordre_sequence').values_list(
+            'reference', 'ordre_sequence',
+        ))
+
+    def test_insere_paire_avant_une_paire_existante_et_renumerote(self):
+        osvd = TypeOrdreService.objects.get_or_create(
+            code='OSV', defaults={'nom': 'OSV', 'description': 'OSV'},
+        )[0]
+        OrdreService.objects.create(
+            projet=self.projet, type_os=osvd, reference='OSV-1', titre='V', description='V',
+            date_publication=date(2025, 1, 1), date_effet=date(2025, 3, 1), statut='NOTIFIE',
+            ordre_sequence=2,
+        )
+        self.inserer(date(2025, 4, 1), date(2025, 4, 10), 'B')
+        self.inserer(date(2025, 2, 1), date(2025, 2, 10), 'A')
+        self.assertEqual(self.sequence(), [
+            ('OSC-001', 1), ('OSA-A', 2), ('OSR-A', 3), ('OSV-1', 4), ('OSA-B', 5), ('OSR-B', 6),
+        ])
+        self.assertFalse(Projet.objects.get(pk=self.projet.pk).projet_en_arret)
+
+    def test_insere_reprise_puis_arret_dans_une_periode_d_arret(self):
+        self.inserer(date(2025, 2, 1), date(2025, 5, 1), 'A')
+        osa, osr = inserer_sequence_arret_reprise(
+            self.projet, date_arret=date(2025, 3, 20), date_reprise=date(2025, 3, 1),
+            reference_arret='OSA-B', reference_reprise='OSR-B',
+            date_publication=date(2025, 1, 1), mode='REPRISE_ARRET',
+        )
+        self.assertEqual(self.sequence(), [
+            ('OSC-001', 1), ('OSA-A', 2), ('OSR-B', 3), ('OSA-B', 4), ('OSR-A', 5),
+        ])
+        self.assertFalse(Projet.objects.get(pk=self.projet.pk).projet_en_arret)
+        self.assertEqual((osr.date_effet, osa.date_effet), (date(2025, 3, 1), date(2025, 3, 20)))
+
+    def test_reprise_puis_arret_refuse_hors_periode_d_arret(self):
+        self.inserer(date(2025, 2, 1), date(2025, 3, 1), 'A')
+        avant = self.sequence()
+        with self.assertRaises(ValidationError):
+            inserer_sequence_arret_reprise(
+                self.projet, date_arret=date(2025, 4, 20), date_reprise=date(2025, 4, 1),
+                reference_arret='OSA-X', reference_reprise='OSR-X',
+                date_publication=date(2025, 1, 1), mode='REPRISE_ARRET',
+            )
+        with self.assertRaises(ValidationError):
+            inserer_sequence_arret_reprise(
+                self.projet, date_arret=date(2025, 2, 10), date_reprise=date(2025, 2, 20),
+                reference_arret='OSA-Y', reference_reprise='OSR-Y',
+                date_publication=date(2025, 1, 1), mode='REPRISE_ARRET',
+            )
+        self.assertEqual(self.sequence(), avant)
+
+    def test_refuse_chevauchement_et_annule_tout(self):
+        self.inserer(date(2025, 2, 1), date(2025, 3, 1), 'A')
+        avant = self.sequence()
+        with self.assertRaises(ValidationError):
+            self.inserer(date(2025, 2, 10), date(2025, 3, 10), 'X')
+        with self.assertRaises(ValidationError):
+            self.inserer(date(2025, 1, 5), date(2025, 1, 20), 'Y')
+        with self.assertRaises(ValidationError):
+            self.inserer(date(2025, 5, 1), date(2025, 5, 1), 'Z')
+        self.assertEqual(self.sequence(), avant)
+
+    def test_refuse_si_attachement_non_brouillon_couvre_la_periode(self):
+        self.create_attachement(1, date(2025, 1, 10), date(2025, 1, 31), statut='VALIDE')
+        with self.assertRaises(ValidationError):
+            self.inserer(date(2025, 1, 15), date(2025, 1, 20), 'A')
+
+    def test_normaliser_supprime_trous_et_doublons(self):
+        self.create_os('OSA', date(2025, 2, 1))
+        self.create_os('OSR', date(2025, 3, 1))
+        OrdreService.objects.filter(reference='OSA-2025-02-01').update(ordre_sequence=5)
+        OrdreService.objects.filter(reference='OSR-2025-03-01').update(ordre_sequence=5)
+        normaliser_sequence(self.projet)
+        self.assertEqual([n for _, n in self.sequence()], [1, 2, 3])
+
 
 class AttachementCumulativeQuantityTests(AttachementTestData, TestCase):
     def test_quantities_are_cumulative_and_can_be_reduced_to_zero(self):

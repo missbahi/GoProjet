@@ -301,6 +301,8 @@ os_urlpatterns = [
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/details/', os_views.details_ordre_service, name='details_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/notifier/', os_views.notifier_ordre_service, name='notifier_ordre_service'),
     path('projet/<int:projet_id>/ordre-service/<int:ordre_id>/annuler/', os_views.annuler_ordre_service, name='annuler_ordre_service'),
+    path('projet/<int:projet_id>/ordres-service/inserer-arret-reprise/', os_views.inserer_sequence_arret_reprise_view, name='inserer_sequence_arret_reprise'),
+    path('projet/<int:projet_id>/ordres-service/corriger-sequence/', os_views.corriger_sequence_os, name='corriger_sequence_os'),
     path('api/projets/<int:projet_id>/jours-decoules/', os_views.api_jours_decoules, name='api_jours_decoules'),
 ]
 

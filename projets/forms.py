@@ -1510,6 +1510,23 @@ class OrdreServiceForm(forms.ModelForm):
     def clean_unite_extension(self):
         return self.cleaned_data.get('unite_extension') or 'JOURS'
 
+class InsertionSequenceArretRepriseForm(forms.Form):
+    mode = forms.ChoiceField(
+        label="Type d'insertion",
+        choices=[
+            ('ARRET_REPRISE', "Arrêt puis reprise (pendant une période de travaux)"),
+            ('REPRISE_ARRET', "Reprise puis arrêt (à l'intérieur d'une période d'arrêt)"),
+        ],
+        initial='ARRET_REPRISE',
+    )
+    date_arret = forms.DateField(label="Date d'effet de l'arrêt", widget=forms.DateInput(attrs={'type': 'date'}))
+    date_reprise = forms.DateField(label="Date d'effet de la reprise", widget=forms.DateInput(attrs={'type': 'date'}))
+    reference_arret = forms.CharField(label="Référence OS d'arrêt", max_length=50)
+    reference_reprise = forms.CharField(label="Référence OS de reprise", max_length=50)
+    date_publication = forms.DateField(label="Date de publication", widget=forms.DateInput(attrs={'type': 'date'}))
+    description = forms.CharField(label="Motif / description", required=False, widget=forms.Textarea(attrs={'rows': 2}))
+
+
 class DocumentAdministratifForm(forms.ModelForm):
     """
     Formulaire pour ajouter/modifier un document administratif.

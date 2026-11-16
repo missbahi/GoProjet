@@ -23,8 +23,9 @@ from django.urls import reverse
 from django.views import View
 
 from projets.decorators import can_view_projet, est_observateur, modules_projet_required, projets_accessibles
-from projets.forms import DocumentAdministratifForm, OrdreServiceForm
+from projets.forms import DocumentAdministratifForm, InsertionSequenceArretRepriseForm, OrdreServiceForm
 from projets.models import DocumentAdministratif, OrdreService, Projet, TypeOrdreService
+from projets.services.os_sequence import inserer_sequence_arret_reprise, normaliser_sequence
 from projets.utils.navigation import crumb, project_crumbs
 from django.views.decorators.http import require_POST
 
@@ -468,16 +469,10 @@ def ordres_service(request, projet_id):
     elif not projet.ordres_service.filter(type_os__code='OSC', statut='NOTIFIE').exists():
         codes_autorises = ['OSC']
     else:
-        dernier_os = projet.ordres_service.filter(statut='NOTIFIE').exclude(
-            type_os__code='OSVD',
-        ).order_by('-ordre_sequence').first()
-        dernier_os_type = dernier_os.type_os.code if dernier_os and dernier_os.type_os else None
-        if dernier_os_type in ['OSC', 'OSR']:
-            codes_autorises = ['OSA', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
-        elif dernier_os_type == 'OSA':
-            codes_autorises = ['OSR', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
-        else:
-            codes_autorises = ['OSA', 'OSR', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
+        codes_autorises = (
+            ['OSR', 'OSC10', 'OSV', 'OSVD', 'AUTRE'] if projet.projet_en_arret
+            else ['OSA', 'OSC10', 'OSV', 'OSVD', 'AUTRE']
+        )
 
     types_disponibles = TypeOrdreService.objects.filter(code__in=codes_autorises).prefetch_related('precedent_obligatoire')
     context = {
@@ -646,6 +641,39 @@ def notifier_ordre_service(request, projet_id, ordre_id):
 
         except Exception as e:
             messages.error(request, f"Erreur inattendue: {e}")
+    return redirect('projets:ordres_service', projet_id=projet.id)
+
+
+@modules_projet_required
+@require_POST
+def inserer_sequence_arret_reprise_view(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    form = InsertionSequenceArretRepriseForm(request.POST)
+    if not form.is_valid():
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{form.fields[field].label}: {error}")
+        return redirect('projets:ordres_service', projet_id=projet.id)
+    try:
+        osa, osr = inserer_sequence_arret_reprise(projet, **form.cleaned_data)
+    except ValidationError as e:
+        for message in e.messages:
+            messages.error(request, f"Insertion impossible : {message}")
+    else:
+        messages.success(
+            request,
+            f"Séquence insérée : {osa.reference} (n° {osa.ordre_sequence}) et "
+            f"{osr.reference} (n° {osr.ordre_sequence}). La numérotation a été recalculée.",
+        )
+    return redirect('projets:ordres_service', projet_id=projet.id)
+
+
+@modules_projet_required
+@require_POST
+def corriger_sequence_os(request, projet_id):
+    projet = get_object_or_404(Projet, id=projet_id)
+    normaliser_sequence(projet)
+    messages.success(request, "La numérotation des ordres de service a été corrigée (1 à n).")
     return redirect('projets:ordres_service', projet_id=projet.id)
 
 

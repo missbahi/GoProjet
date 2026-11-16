@@ -57,3 +57,55 @@
     50%  { transform: scale(1.15); color: var(--accent-success); }
     100% { transform: scale(1); }
 }
+
+/* Aide métier et insertion de séquence OSA/OSR */
+.os-info-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--accent-primary);
+    cursor: pointer;
+    font: inherit;
+}
+
+.os-info-button:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 3px;
+}
+
+.os-help-dialog {
+    width: min(720px, calc(100vw - 2rem));
+    max-height: 85vh;
+    overflow: auto;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-default);
+    border-radius: .75rem;
+    background: var(--bg-surface);
+    color: var(--text-primary);
+}
+
+.os-help-dialog::backdrop {
+    background: rgba(0, 0, 0, .5);
+}
+
+.os-help-dialog h4 {
+    margin-top: 1rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+}
+
+.os-help-dialog p,
+.os-help-dialog li {
+    margin-top: .4rem;
+    font-size: .875rem;
+}
+
+.os-help-dialog ul {
+    list-style: disc;
+    padding-left: 1.25rem;
+}

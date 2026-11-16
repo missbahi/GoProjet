@@ -15,10 +15,38 @@
         </h1>
         <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
         <p class="text-sm flex items-center gap-2" style="color: var(--text-secondary);">
-            <i class="fas fa-info-circle"></i>
             Gestion des ordres de service avec contraintes métier
+            <button type="button" class="os-info-button" aria-label="Comprendre la logique des ordres de service"
+                    title="Comprendre la logique des ordres de service"
+                    onclick="document.getElementById('os-help-dialog').showModal()">
+                <i class="fas fa-info-circle" aria-hidden="true"></i>
+            </button>
         </p>
     </div>
+
+    <dialog id="os-help-dialog" class="os-help-dialog" aria-labelledby="os-help-title">
+        <div class="flex items-center justify-between">
+            <h3 id="os-help-title" class="app-section-title">Logique métier des ordres de service</h3>
+            <button type="button" class="app-action-btn" aria-label="Fermer l'aide" title="Fermer"
+                    onclick="document.getElementById('os-help-dialog').close()">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </div>
+        <h4>Cycle de vie</h4>
+        <p><strong>Brouillon</strong> : modifiable, sans effet sur les délais. <strong>Notifié</strong> : validé, il produit ses effets (délai, périodes d'arrêt). <strong>Annulé</strong> : ignoré dans les calculs.</p>
+        <h4>Ordre des types</h4>
+        <ul>
+            <li><strong>OSN</strong> (approbation) puis <strong>OSC</strong> (commencement) : uniques et obligatoires en premier. L'OSC est verrouillé après le premier attachement.</li>
+            <li><strong>OSA</strong> (arrêt) et <strong>OSR</strong> (reprise) alternent strictement : OSA, OSR, OSA, OSR… Une reprise exige un arrêt avant elle ; deux arrêts de suite sont interdits.</li>
+            <li><strong>OSC10</strong>, <strong>OSV</strong>, <strong>OSVD</strong> et <strong>Autre</strong> peuvent s'intercaler librement après le commencement ; l'OSVD prolonge le délai (plafond de six mois cumulés pour la circulaire 09/2022).</li>
+        </ul>
+        <h4>Numéro de séquence et dates</h4>
+        <p>Le numéro (n°) est l'ordre dans le projet. La <strong>date d'effet</strong> prime pour les calculs : jours découlés, durée d'arrêt et fin prévisionnelle. Le numéro doit rester cohérent avec les dates.</p>
+        <h4>Insérer une séquence OSA et OSR</h4>
+        <p>Pour ajouter un arrêt et sa reprise à l'intérieur d'une séquence existante, utilisez « Insérer une séquence OSA et OSR ». Deux cas sont possibles : <strong>arrêt puis reprise</strong> pendant une période de travaux (entre une reprise et l'arrêt suivant), ou <strong>reprise puis arrêt</strong> à l'intérieur d'une période d'arrêt, ce qui scinde l'arrêt en deux (cas exceptionnel : l'arrêt reprend après une reprise intermédiaire). Les deux OS sont créés ensemble, notifiés, placés selon leurs dates, et la numérotation est recalculée. L'opération est refusée si elle rompt l'alternance, précède le commencement ou couvre un attachement déjà établi.</p>
+        <h4>Réparer la numérotation</h4>
+        <p>Outil de secours, rarement nécessaire : l'insertion renumérote déjà automatiquement. Il remet les numéros de 1 à n sans trou ni doublon (après l'annulation d'un OS, par exemple), en conservant l'ordre actuel.</p>
+    </dialog>
 
     {# ═══════ Section Calcul jours découlés ═══════ #}
     <div class="app-card p-4 mb-6">
@@ -131,6 +159,98 @@
     <div id="os-add-panel" class="doc-add-panel {% if ordre_a_modifier or not ordres_service %}open{% endif %}">
         {% include "projets/ordres_service/_os_form_panel.html" %}
     </div>
+
+    {# ═══════ Insertion d'une séquence OSA + OSR ═══════ #}
+    {% if projet.projet_demarre %}
+    <details id="os-insertion-details" class="app-card p-4 mb-6" {% if request.GET.inserer %}open{% endif %}>
+        <summary class="cursor-pointer font-semibold flex items-center gap-2" style="color: var(--accent-primary);">
+            <i class="fas fa-pause-circle"></i>
+            Insérer une séquence OSA et OSR
+            <button type="button" id="os-insertion-close" class="goplan-toolbar-btn ml-auto" data-observer-safe
+                    aria-label="Fermer le formulaire sans enregistrer" title="Fermer sans enregistrer">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+        </summary>
+        <p class="text-xs md:text-sm mt-3" style="color: var(--text-secondary);">
+            Crée ensemble un OS d'arrêt et un OS de reprise notifiés, placés dans la séquence selon leurs dates d'effet.
+        </p>
+        <form method="POST" action="{% url 'projets:inserer_sequence_arret_reprise' projet.id %}" class="space-y-4 mt-3">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="md:col-span-2">
+                    <label for="ins_mode" class="app-modal-label">Type d'insertion *</label>
+                    <select id="ins_mode" name="mode" class="app-modal-input" required>
+                        <option value="ARRET_REPRISE">Arrêt puis reprise (pendant une période de travaux)</option>
+                        <option value="REPRISE_ARRET">Reprise puis arrêt (à l'intérieur d'une période d'arrêt)</option>
+                    </select>
+                    <p class="text-xs mt-1" style="color: var(--text-muted);">
+                        « Reprise puis arrêt » scinde un arrêt existant : la date de reprise doit précéder la date d'arrêt et les deux doivent se situer pendant l'arrêt.
+                    </p>
+                </div>
+                <div data-ins-field="ref_arret" style="order: 1;">
+                    <label for="ins_ref_arret" class="app-modal-label">Référence OS d'arrêt *</label>
+                    <input type="text" id="ins_ref_arret" name="reference_arret" class="app-modal-input" maxlength="50" required>
+                </div>
+                <div data-ins-field="ref_reprise" style="order: 2;">
+                    <label for="ins_ref_reprise" class="app-modal-label">Référence OS de reprise *</label>
+                    <input type="text" id="ins_ref_reprise" name="reference_reprise" class="app-modal-input" maxlength="50" required>
+                </div>
+                <div data-ins-field="date_arret" style="order: 3;">
+                    <label for="ins_date_arret" class="app-modal-label">Date d'effet de l'arrêt *</label>
+                    <input type="date" id="ins_date_arret" name="date_arret" class="app-modal-input" required>
+                </div>
+                <div data-ins-field="date_reprise" style="order: 4;">
+                    <label for="ins_date_reprise" class="app-modal-label">Date d'effet de la reprise *</label>
+                    <input type="date" id="ins_date_reprise" name="date_reprise" class="app-modal-input" required>
+                </div>
+                <div style="order: 5;">
+                    <label for="ins_date_pub" class="app-modal-label">Date de publication *</label>
+                    <input type="date" id="ins_date_pub" name="date_publication" class="app-modal-input" required>
+                </div>
+                <div style="order: 6;">
+                    <label for="ins_desc" class="app-modal-label">Motif</label>
+                    <textarea id="ins_desc" name="description" rows="2" class="app-modal-input"></textarea>
+                </div>
+            </div>
+            <button type="submit" class="app-btn-primary">
+                <i class="fas fa-plus-circle"></i> Insérer la séquence
+            </button>
+        </form>
+        <script>
+            (function () {
+                const mode = document.getElementById('ins_mode');
+                const orders = {
+                    ARRET_REPRISE: {ref_arret: 1, ref_reprise: 2, date_arret: 3, date_reprise: 4},
+                    REPRISE_ARRET: {ref_reprise: 1, ref_arret: 2, date_reprise: 3, date_arret: 4},
+                };
+                function apply() {
+                    document.querySelectorAll('[data-ins-field]').forEach(function (el) {
+                        el.style.order = orders[mode.value][el.dataset.insField];
+                    });
+                }
+                mode.addEventListener('change', apply);
+                apply();
+                document.getElementById('os-insertion-close').addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const details = document.getElementById('os-insertion-details');
+                    details.querySelector('form').reset();
+                    apply();
+                    details.open = false;
+                });
+            })();
+        </script>
+        <form method="POST" action="{% url 'projets:corriger_sequence_os' projet.id %}" class="mt-3">
+            {% csrf_token %}
+            <p class="text-xs mb-2" style="color: var(--text-muted);">
+                L'insertion renumérote déjà automatiquement la séquence. Ce bouton est un outil de secours : à n'utiliser que si la numérotation présente un trou (après l'annulation d'un OS, par exemple) ou une incohérence héritée de données anciennes.
+            </p>
+            <button type="submit" class="app-btn-secondary text-xs md:text-sm">
+                <i class="fas fa-sort-numeric-down"></i> Réparer la numérotation (cas exceptionnel)
+            </button>
+        </form>
+    </details>
+    {% endif %}
 
     {# ═══════ Liste des ordres ═══════ #}
     {% if ordres_service %}
