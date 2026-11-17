@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.7.1"
+APP_VERSION = "2.7.2"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,15 @@ APP_VERSION = "2.7.1"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.7.2": {
+        "date": "2026-11-17",
+        "titre": "Mot de passe oublié sécurisé",
+        "highlights": [
+            "La réinitialisation ne révèle plus si une adresse possède un compte",
+            "Nombre de demandes de réinitialisation limité",
+        ],
+        "niveau": "info",
+    },
     "2.7.1": {
         "date": "2026-11-16",
         "titre": "Tâches : notifications et visibilité",

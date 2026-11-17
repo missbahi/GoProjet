@@ -1,5 +1,6 @@
 from django.contrib import messages
-from django.shortcuts import render
+from django.core.cache import cache
+from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
 from django.contrib.auth import views as auth_views
 from projets.decorators import est_observateur
@@ -28,16 +29,25 @@ class CustomPasswordResetView(auth_views.PasswordResetView):
     subject_template_name = 'authentification/password_reset_subject.txt'
     success_url = reverse_lazy('password_reset_done')
 
+    MAX_DEMANDES = 5
+    FENETRE = 3600
+
+    def _limite_atteinte(self, email):
+        ip = self.request.META.get('REMOTE_ADDR', '')
+        for cle in (f'pwreset:ip:{ip}', f'pwreset:mail:{email.lower()}'):
+            cache.add(cle, 0, self.FENETRE)
+            try:
+                if cache.incr(cle) > self.MAX_DEMANDES:
+                    return True
+            except ValueError:
+                cache.set(cle, 1, self.FENETRE)
+        return False
+
     def form_valid(self, form):
-        email = form.cleaned_data['email']
-        from django.contrib.auth.models import User
-        if not User.objects.filter(email__iexact=email, is_active=True).exists():
-            messages.warning(
-                self.request,
-                "Aucun compte actif n'est associé à cet email. "
-                "Vérifiez l'adresse ou contactez l'administrateur."
-            )
-            return self.form_invalid(form)
+        # Réponse identique que le compte existe ou non (pas d'énumération) ;
+        # au-delà du plafond, l'e-mail n'est simplement pas envoyé.
+        if self._limite_atteinte(form.cleaned_data['email']):
+            return redirect(self.get_success_url())
         return super().form_valid(form)
 
 

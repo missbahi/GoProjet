@@ -98,6 +98,7 @@ MIDDLEWARE = [
 
 # Configuration d'authentification
 LOGIN_URL = 'login'
+PASSWORD_RESET_TIMEOUT = 3 * 24 * 3600
 LOGIN_REDIRECT_URL = 'projets:landing'
 LOGOUT_REDIRECT_URL = 'projets:apropos'
 
