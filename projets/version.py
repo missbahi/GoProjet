@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.7.2"
+APP_VERSION = "2.7.3"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,14 @@ APP_VERSION = "2.7.2"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.7.3": {
+        "date": "2026-11-17",
+        "titre": "Envoi des e-mails",
+        "highlights": [
+            "Les e-mails de l'application partent désormais du domaine vérifié goprojet.ma",
+        ],
+        "niveau": "info",
+    },
     "2.7.2": {
         "date": "2026-11-17",
         "titre": "Mot de passe oublié sécurisé",
