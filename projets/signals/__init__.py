@@ -14,5 +14,6 @@ from .files_handler import *
 from .tache_notifications import *
 from .tache_echeances import *
 from .validation_notifications import *
+from .revision import *
 
 

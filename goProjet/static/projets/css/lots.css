@@ -26,6 +26,292 @@
 }
 .app-btn:hover { opacity: 0.9; }
 
+.formule-revision-carte,
+.formule-revision-carte > *,
+.formule-revision-texte {
+    min-width: 0;
+    max-width: 100%;
+}
+
+.formule-revision-texte {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 0.25rem 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: thin;
+}
+
+.formule-revision-texte .katex-display {
+    margin: 0;
+    text-align: center;
+}
+
+.formule-revision-texte .katex {
+    max-width: none;
+}
+
+.formule-revision-texte--predefinie .katex {
+    font-size: 0.82em;
+}
+
+.formule-revision-texte--predefinie {
+    text-align: center;
+}
+
+.formule-revision-carte--predefinie {
+    overflow: hidden;
+}
+
+.formules-predefinies-toggle > summary {
+    list-style: none;
+}
+
+.formules-predefinies-toggle > summary::-webkit-details-marker {
+    display: none;
+}
+
+.formules-predefinies-toggle > summary .fa-chevron-down {
+    transition: transform 0.15s ease;
+}
+
+.formules-predefinies-toggle[open] > summary .fa-chevron-down {
+    transform: rotate(180deg);
+}
+
+@media (max-width: 640px) {
+    .formule-revision-texte--predefinie .katex {
+        font-size: 0.7em;
+    }
+}
+
+.revision-index-tableview {
+    --tv-row-color: #f8f6ef;
+    --tv-text-color: #24485a;
+    --tv-header-color: #f0ede5;
+    --tv-header-text-color: #24485a;
+    --tv-border-color: #a9cad6;
+    --tv-title-color: #24485a;
+    --tv-active-color: #7baec1;
+    --tv-selection-color: #d8e2e4;
+    --tv-amount-color: #15803d;
+    width: 100%;
+    max-width: 100%;
+    max-height: 72vh;
+    overflow: auto;
+    border: 1px solid var(--tv-border-color, var(--border-default));
+    background: var(--tv-row-color);
+}
+
+.revision-index-tableview .table-view-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: fixed;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: var(--tv-font-size, 12px);
+    color: var(--tv-text-color, var(--text-primary));
+}
+
+.revision-index-tableview .table-view-table th,
+.revision-index-tableview .table-view-table td {
+    box-sizing: border-box;
+    border: 0 solid var(--tv-border-color);
+    border-right-width: 1px;
+    border-bottom-width: 1px;
+    vertical-align: middle;
+}
+
+.revision-index-tableview .table-view-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    min-width: 96px;
+    height: 62px;
+    padding: 5px 7px;
+    background: var(--tv-header-color);
+    color: var(--tv-header-text-color);
+    text-align: center;
+    font-weight: 700;
+}
+
+.revision-index-tableview .table-view-table thead th:first-child {
+    left: 0;
+    z-index: 6;
+    min-width: 150px;
+    text-align: left;
+}
+
+.revision-index-resize-handle {
+    position: absolute;
+    z-index: 7;
+    top: 0;
+    right: -4px;
+    width: 10px;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: col-resize;
+    touch-action: none;
+}
+
+.revision-index-resize-handle::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    bottom: 8px;
+    left: 4px;
+    width: 1px;
+    background: color-mix(in srgb, var(--tv-border-color) 75%, transparent);
+}
+
+.revision-index-resize-handle:hover::after,
+.revision-index-resize-handle:focus-visible::after {
+    width: 3px;
+    background: var(--tv-active-color);
+}
+
+.revision-index-resize-handle:focus-visible {
+    outline: 2px solid var(--tv-active-color);
+    outline-offset: -2px;
+}
+
+.revision-index-tableview .table-view-table .tv-frozen {
+    position: sticky;
+    left: 0;
+}
+
+.revision-index-tableview .table-view-table tbody .tv-frozen {
+    z-index: 2;
+    min-width: 150px;
+    max-width: 150px;
+    padding: 5px 8px;
+    background: var(--tv-header-color);
+    text-align: left;
+}
+
+.revision-index-tableview .table-view-table tbody td {
+    min-width: 96px;
+    max-width: 96px;
+    height: var(--tv-row-height, 34px);
+    padding: 2px;
+    background: var(--tv-row-color);
+}
+
+.revision-index-symbole,
+.revision-index-tableview .tv-row-header small {
+    display: block;
+}
+
+.revision-index-symbole {
+    color: var(--tv-title-color, var(--accent-primary));
+    font-weight: 700;
+}
+
+.revision-index-tableview .tv-row-header small {
+    max-width: 130px;
+    overflow: hidden;
+    color: var(--text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 400;
+}
+
+.revision-index-statut {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 1px 3px;
+    border: 1px solid var(--tv-border-color);
+    border-radius: 0.25rem;
+    background: #fffdf8;
+    color: var(--tv-text-color);
+    font-size: 10px;
+}
+
+.revision-index-cell {
+    position: relative;
+}
+
+.revision-index-cell input {
+    width: 100%;
+    height: 29px;
+    border: 0;
+    outline: 0;
+    padding: 3px 7px;
+    background: transparent;
+    color: var(--tv-amount-color);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.revision-index-cell input::-webkit-outer-spin-button,
+.revision-index-cell input::-webkit-inner-spin-button {
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.revision-index-cell:focus-within {
+    box-shadow: inset 0 0 0 2px var(--tv-active-color);
+}
+
+.revision-index-cell.is-missing {
+    background: #fff4d6;
+}
+
+.revision-index-add-column,
+.revision-index-add-column-cell {
+    min-width: 42px !important;
+    width: 42px !important;
+    max-width: 42px !important;
+    text-align: center;
+}
+
+.revision-index-add-row td {
+    padding: 4px 8px;
+    text-align: left;
+}
+
+.revision-index-add-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--tv-active-color);
+    cursor: pointer;
+}
+
+.revision-index-add-row .revision-index-add-button {
+    border-radius: 4px;
+}
+
+.revision-index-new-label {
+    width: 130px;
+    height: 27px;
+    border: 1px solid var(--tv-border-color);
+    background: #fffdf8;
+    color: var(--tv-text-color);
+    padding: 2px 5px;
+}
+
+.revision-index-new-month {
+    width: 100%;
+    margin-top: 4px;
+    border: 1px solid var(--tv-border-color);
+    background: #fffdf8;
+    color: var(--tv-text-color);
+    font-size: 10px;
+}
+
 /* ══════════════════════════════════════════════════════════════
    Overlay de chargement (aperçu bordereau)
    ══════════════════════════════════════════════════════════════ */

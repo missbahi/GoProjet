@@ -1,0 +1,235 @@
+{% load static formatters %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Note de calcul de la révision — {{ attachement.numero }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        :root { color: #24485a; font-family: "Segoe UI", Arial, sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #e7edf0; }
+        .note-page {
+            width: min(1120px, calc(100% - 24px));
+            margin: 12px auto;
+            padding: 28px 32px 40px;
+            background: #f8f6ef;
+            box-shadow: 0 8px 30px rgba(36,72,90,.18);
+        }
+        .toolbar {
+            position: sticky; top: 0; z-index: 10; display: flex; justify-content: flex-end;
+            padding: 10px 16px; background: #24485a; color: white;
+        }
+        .toolbar button {
+            border: 0; border-radius: 5px; padding: 8px 14px;
+            background: #f0ede5; color: #24485a; font: inherit; cursor: pointer;
+        }
+        .entete { display: flex; justify-content: space-between; gap: 24px; border-bottom: 2px solid #24485a; padding-bottom: 14px; }
+        h1 { margin: 18px 0 4px; text-align: center; font-size: 22px; }
+        .sous-titre { margin: 0 0 24px; text-align: center; color: #566f79; }
+        h2 { margin: 24px 0 8px; color: #24485a; font-size: 16px; }
+        .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 24px; }
+        .meta div { display: flex; gap: 8px; }
+        .meta dt { min-width: 145px; font-weight: 700; }
+        .meta dd { margin: 0; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th, td { border: 1px solid #a9cad6; padding: 5px 7px; vertical-align: middle; }
+        th { background: #f0ede5; text-align: center; font-weight: 700; }
+        td.number { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        td.center { text-align: center; }
+        .overflow { width: 100%; overflow-x: auto; }
+        .index-table th:first-child, .index-table td:first-child { position: sticky; left: 0; z-index: 1; }
+        .index-table th:first-child { z-index: 2; }
+        .index-table td:first-child { background: #f0ede5; text-align: left; font-weight: 700; }
+        .provisoire { color: #9a6700; font-weight: 700; }
+        .definitif { color: #15803d; font-weight: 700; }
+        .formule-carte { margin: 8px 0; padding: 10px 14px; border: 1px solid #a9cad6; background: #fffdf8; overflow-x: auto; }
+        .formule-code { font-weight: 700; }
+        .total-final { margin-top: 14px; padding: 12px; background: #d8e2e4; text-align: right; font-size: 17px; font-weight: 700; }
+        .termes { color: #566f79; font-size: 11px; }
+        .page-break { break-before: page; }
+        @media print {
+            @page { size: A4 landscape; margin: 10mm; }
+            body { background: white; }
+            .note-page { width: auto; margin: 0; padding: 0; box-shadow: none; }
+            .toolbar { display: none; }
+            thead { display: table-header-group; }
+            tr, .formule-carte { break-inside: avoid; }
+            .overflow { overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button type="button" onclick="window.print()"><i>Imprimer / PDF</i></button>
+    </div>
+    <main class="note-page">
+        <header class="entete">
+            <div>
+                <strong>{{ projet.maitre_ouvrage }}</strong><br>
+                {{ projet.nom }}
+            </div>
+            <div style="text-align:right">
+                Marché n° {{ projet.numero }}<br>
+                Attachement {{ attachement.numero }}
+            </div>
+        </header>
+
+        <h1>Calcul de la révision des prix</h1>
+        <p class="sous-titre">
+            Période du {{ attachement.date_debut_periode|date:"d/m/Y" }}
+            au {{ attachement.date_fin_periode|date:"d/m/Y" }}
+        </p>
+
+        <h2>1. Informations du projet</h2>
+        <dl class="meta">
+            <div><dt>Objet</dt><dd>{{ projet.objet }}</dd></div>
+            <div><dt>Maître d'ouvrage</dt><dd>{{ projet.maitre_ouvrage }}</dd></div>
+            <div><dt>Entreprise</dt><dd>{{ projet.entreprise|default:"—" }}</dd></div>
+            <div><dt>Mois de référence M0</dt><dd>{{ projet.mois_base_revision|date:"m/Y" }}</dd></div>
+            <div><dt>Date du calcul</dt><dd>{{ attachement.date_calcul_revision|date:"d/m/Y H:i" }}</dd></div>
+            <div><dt>Statut des index</dt><dd>{% if attachement.detail_calcul_revision.provisoire %}Calcul provisoire{% else %}Définitif{% endif %}</dd></div>
+        </dl>
+
+        <h2>2. Formules appliquées</h2>
+        {% for formule in formules %}
+        <div class="formule-carte">
+            <span class="formule-code">{{ formule.code }} — {{ formule.libelle }}</span>
+            <div data-formule-latex="{{ formule.formule_latex }}">{{ formule.formule_latex }}</div>
+        </div>
+        {% empty %}
+        <p>Aucune formule enregistrée.</p>
+        {% endfor %}
+
+        <h2>3. Index utilisés et valeurs mensuelles</h2>
+        <div class="overflow">
+            <table class="index-table">
+                <thead>
+                    <tr>
+                        <th>Index</th>
+                        {% for mois in mois_indexes %}<th>{{ mois|date:"m/Y" }}</th>{% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in grille_indexes %}
+                    <tr>
+                        <td>{{ ligne.index.symbole }}</td>
+                        {% for valeur in ligne.cellules %}
+                        <td class="number">
+                            {% if valeur %}
+                                {{ valeur.valeur }}
+                                <br>
+                                <span class="{% if valeur.statut == 'IND_PRO' %}provisoire{% else %}definitif{% endif %}">
+                                    {% if valeur.statut == 'IND_PRO' %}P{% else %}D{% endif %}
+                                </span>
+                            {% else %}—{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="termes">P : provisoire · D : définitif.</p>
+
+        <h2>4. Coefficients de révision</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr><th>Mois</th><th>Formule</th><th>Cr</th><th>Détail des termes</th><th>Statut</th></tr>
+                </thead>
+                <tbody>
+                    {% for coefficient in coefficients %}
+                    <tr>
+                        <td class="center">{{ coefficient.mois|date:"m/Y" }}</td>
+                        <td>{{ coefficient.formule }}</td>
+                        <td class="number">{{ coefficient.cr }}</td>
+                        <td>
+                            {% for terme in coefficient.termes %}
+                                {{ terme.expression }} :
+                                {% for index in terme.indices %}
+                                    {{ index.symbole }}0={{ index.base }} ;
+                                    {{ index.symbole }}={{ index.courant }}{% if not forloop.last %} · {% endif %}
+                                {% endfor %}
+                                → rapport {{ terme.rapport }}<br>
+                            {% endfor %}
+                        </td>
+                        <td class="center {% if coefficient.provisoire %}provisoire{% else %}definitif{% endif %}">
+                            {% if coefficient.provisoire %}Provisoire{% else %}Définitif{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2>5. Calcul par mois et par ligne — montants HT</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mois</th><th>Ligne du bordereau</th><th>Formule</th>
+                        <th>Montant de base HT</th><th>Cr</th>
+                        <th>Contribution des index HT</th><th>Révision HT</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in details_lignes %}
+                    <tr>
+                        <td class="center">{{ ligne.mois|date:"m/Y" }}</td>
+                        <td>
+                            {{ ligne.ligne }}
+                            {% if ligne.nombre_lignes_descendantes > 1 %}
+                                <span class="termes">({{ ligne.nombre_lignes_descendantes }} lignes)</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ ligne.formule }}</td>
+                        <td class="number">{{ ligne.montant_ht|format_french_number }}</td>
+                        <td class="number">{{ ligne.cr }}</td>
+                        <td>
+                            {% for terme in ligne.termes %}
+                                <span class="formule-code">{{ terme.expression }}</span>
+                                → {{ terme.contribution_revision_ht }} DH HT<br>
+                            {% endfor %}
+                        </td>
+                        <td class="number">{{ ligne.revision_ht|format_french_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2>6. Récapitulatif mensuel des révisions — HT</h2>
+        <table>
+            <thead><tr><th>Mois</th><th>Révision HT</th></tr></thead>
+            <tbody>
+                {% for total in totaux_mois %}
+                <tr>
+                    <td class="center">{{ total.mois|date:"m/Y" }}</td>
+                    <td class="number">{{ total.revision_ht|format_french_number }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr><th>Total des révisions HT</th><th class="number">{{ total_revision_ht|format_french_number }}</th></tr>
+            </tfoot>
+        </table>
+        <div class="total-final">
+            Total de la révision de l'attachement : {{ total_revision_ht|format_french_number }} DH HT
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js" defer></script>
+    <script>
+        window.addEventListener('load', function () {
+            document.querySelectorAll('[data-formule-latex]').forEach(function (element) {
+                katex.render(element.dataset.formuleLatex, element, {
+                    displayMode: true,
+                    throwOnError: false,
+                    strict: 'ignore'
+                });
+            });
+        });
+    </script>
+</body>
+</html>

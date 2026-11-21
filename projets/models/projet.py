@@ -133,6 +133,15 @@ class Dossier(models.Model):
 
 # ------------------------ Projet ---------------------------- #
 class Projet(models.Model):
+    class NatureRevision(models.TextChoices):
+        TRAVAUX = 'TRAVAUX', _('Travaux')
+        APPROVISIONNEMENT = 'APPROVISIONNEMENT', _('Approvisionnement')
+        APPROVISIONNEMENT_PIED_OEUVRE = (
+            'APPROVISIONNEMENT_PIED_OEUVRE',
+            _("Approvisionnement à pied d'œuvre"),
+        )
+        MIXTE = 'MIXTE', _('Mixte')
+
     TYPE_PROJET = [
         ('VRD', 'Voirie et Réseaux Divers'),
         ('ROUTE', 'Route'),
@@ -194,6 +203,39 @@ class Projet(models.Model):
     localisation = models.CharField(_("Localisation"), max_length=200)
     users = models.ManyToManyField(settings.AUTH_USER_MODEL, verbose_name=_("Utilisateurs"), blank=True, related_name='projets')
     revisable = models.BooleanField(_("Revisable"), default=False, null=True, blank=True)
+    nature_revision = models.CharField(
+        _("Nature pour la révision des prix"),
+        max_length=40,
+        choices=NatureRevision.choices,
+        default=NatureRevision.TRAVAUX,
+        help_text=_(
+            "Détermine notamment si la révision est ventilée selon les travaux "
+            "ou la date effective d'approvisionnement."
+        ),
+    )
+    methode_arrondi_revision = models.CharField(
+        _("Méthode d'arrêt du coefficient"),
+        max_length=12,
+        choices=[
+            ("TRONCATURE", _("Troncature à la 4e décimale")),
+            ("ARRONDI", _("Arrondi mathématique à la 4e décimale")),
+        ],
+        default="TRONCATURE",
+    )
+    politique_index_revision = models.CharField(
+        _("Politique de calcul des index"),
+        max_length=30,
+        choices=[
+            ("DEFINITIF_SEULEMENT", _("Définitif seulement")),
+            ("PROVISOIRE_ET_REPORT_M2", _("Provisoire avec report M+2")),
+        ],
+        default="PROVISOIRE_ET_REPORT_M2",
+    )
+    appliquer_report_m_plus_2 = models.BooleanField(
+        _("Reporter l'index M+2 au-delà"),
+        default=True,
+        help_text=_("À utiliser lorsqu'aucun bulletin plus récent n'est disponible."),
+    )
     montant = models.DecimalField(_("Montant estimé (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
     montant_soumission = models.DecimalField(_("Montant de la soumission (DH)"), max_digits=12, decimal_places=2, null=True, blank=True)
     taux_tva = models.DecimalField(
@@ -228,6 +270,30 @@ class Projet(models.Model):
     def __str__(self):
         return f"{self.nom} ({self.numero})"
 
+    @property
+    def os_commencement(self):
+        return (
+            self.ordres_service.filter(
+                type_os__code="OSC",
+                statut="NOTIFIE",
+                date_effet__isnull=False,
+            )
+            .order_by("date_effet", "ordre_sequence", "pk")
+            .first()
+        )
+
+    @property
+    def revision_prix_disponible(self):
+        return bool(self.revisable and self.os_commencement)
+
+    @property
+    def mois_base_revision(self):
+        return self.epoque_base
+
+    @mois_base_revision.setter
+    def mois_base_revision(self, valeur):
+        self.epoque_base = valeur
+
     def ajouter_delai(self, date_depart):
         if not date_depart or not self.delai or self.delai <= 0:
             return date_depart
@@ -246,6 +312,8 @@ class Projet(models.Model):
     
     def save(self, *args, **kwargs):
         update_flags = kwargs.pop('update_flags', True)
+        if self.epoque_base and self.epoque_base.day != 1:
+            self.epoque_base = self.epoque_base.replace(day=1)
         if self.date_creation and timezone.is_naive(self.date_creation):
             self.date_creation = timezone.make_aware(
                 self.date_creation,
@@ -1259,12 +1327,57 @@ class LigneBordereau(models.Model):
     est_titre = models.BooleanField(_("Est un titre"), default=False)
     expanded = models.BooleanField(_("Ligne développée"), default=True)
     ordre_affichage = models.IntegerField(_("Ordre d'affichage"), default=0)
-        
+
+    # formule de révision attachée à CETTE ligne (ou héritée du parent)
+    formule_revision = models.ForeignKey(
+        'FormuleRevision',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='lignes_bordereau',
+        verbose_name=_("Formule de révision"),
+        help_text=_("Laisser vide pour hériter de la formule du parent. "
+                    "Si renseignée, elle s'applique à cette ligne et à toutes ses descendantes.")
+    )
+
     class Meta:
         verbose_name = _("Ligne de bordereau")
         verbose_name_plural = _("Lignes de bordereau")
         ordering = ['ordre_affichage', 'id']
-    
+
+    @property
+    def formule_revision_effective(self):
+        """
+        Retourne la formule applicable à cette ligne :
+        - la sienne si définie
+        - sinon celle du parent le plus proche (remontée récursive)
+        - None si aucune
+        """
+        if self.formule_revision_id:
+            return self.formule_revision
+        parent = self.parent
+        while parent is not None:
+            if parent.formule_revision_id:
+                return parent.formule_revision
+            parent = parent.parent
+        return None
+
+    @property
+    def est_revisable(self):
+        return self.formule_revision_effective is not None
+
+    def clean(self):
+        super().clean()
+        if (
+            self.formule_revision_id
+            and self.formule_revision.projet_id != self.lot.projet_id
+        ):
+            raise ValidationError({
+                "formule_revision": _(
+                    "La formule de révision doit appartenir au même projet que la ligne."
+                )
+            })
+
     @property
     def montant(self):
         if self.enfants.exists():

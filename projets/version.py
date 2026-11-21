@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.7.3"
+APP_VERSION = "2.8.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,17 @@ APP_VERSION = "2.7.3"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.8.0": {
+        "date": "2026-11-21",
+        "titre": "Révision des prix et barres d'outils partagées",
+        "highlights": [
+            "Nouveau module de révision des prix : formules prédéfinies, affectation aux lignes principales et contrôle de couverture",
+            "Saisie matricielle des index avec copier-coller, mois extensibles, statuts définitifs/provisoires et contrôles de fraîcheur",
+            "Calcul d'un ou de tous les attachements, prise en compte des arrêts/reprises et notes de calcul imprimables",
+            "Barres d'outils factorisées pour le bordereau, les attachements, le contrôle et le chiffre d'affaires",
+        ],
+        "niveau": "info",
+    },
     "2.7.3": {
         "date": "2026-11-17",
         "titre": "Envoi des e-mails",

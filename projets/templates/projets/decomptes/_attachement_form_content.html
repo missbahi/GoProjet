@@ -1,4 +1,4 @@
-{% load static navigation %}
+{% load static navigation editor_toolbar %}
 {% load formatters %}
 {% breadcrumb %}
  
@@ -141,9 +141,9 @@
         </div>
         <!-- Contenu principal -->
             <p data-planning-fullscreen-error role="alert" class="app-alert app-alert-error" hidden></p>
-            <div class="attachment-editor-toolbar" role="toolbar" aria-label="Actions de l'attachement">
-                <div class="attachment-editor-actions">
-                    <div class="attachment-editor-action-group" role="group" aria-label="Affichage">
+            {% editor_toolbar "Actions de l'attachement" "attachment-editor-toolbar" %}
+                <div class="editor-toolbar__actions attachment-editor-actions">
+                    {% toolbar_group "Affichage" "attachment-editor-action-group" %}
                     <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
                             title="Passer en plein écran (Échap pour quitter)"
                             aria-label="Passer en plein écran" aria-pressed="false">
@@ -153,26 +153,26 @@
                             aria-label="Réduire toutes les lignes filles" title="Réduire toutes les lignes filles" disabled>
                         <i class="fas fa-compress-alt" aria-hidden="true"></i>
                     </button>
-                    </div>
+                    {% end_toolbar_group %}
                     {% if not is_edition or attachement.est_validable %}
-                    <div class="attachment-editor-action-group" role="group" aria-label="Enregistrement">
+                    {% toolbar_group "Enregistrement" "attachment-editor-action-group" %}
                         <button type="button" id="save-btn" class="goplan-toolbar-btn"
                                 title="{% if correction_exceptionnelle %}Vérifier la correction{% elif is_edition %}Modifier l'attachement{% else %}Créer l'attachement{% endif %}"
                                 aria-label="{% if correction_exceptionnelle %}Vérifier la correction{% elif is_edition %}Modifier l'attachement{% else %}Créer l'attachement{% endif %}">
                             <i class="fas fa-save" aria-hidden="true"></i>
                         </button>
-                    </div>
+                    {% end_toolbar_group %}
                     {% endif %}
                 <!-- Boutons de validation -->
                 {% if is_edition and validation_directe %}
-                <div class="attachment-editor-action-group" role="group" aria-label="Validation">
+                {% toolbar_group "Validation" "attachment-editor-action-group" %}
                     <button type="submit" form="attachement-form" name="action" value="valider"
                             class="goplan-toolbar-btn" title="Valider" aria-label="Valider">
                         <i class="fas fa-check" aria-hidden="true"></i>
                     </button>
-                </div>
+                {% end_toolbar_group %}
                 {% elif is_edition and not correction_exceptionnelle %}
-                <div class="attachment-editor-action-group" role="group" aria-label="Validation">
+                {% toolbar_group "Validation" "attachment-editor-action-group" %}
                     {% if attachement.est_validable %}
                         <!-- Attachement en cours de validation -->
                         <button onclick="window.location.href='{% url 'projets:validation_attachement' attachement.id %}'" 
@@ -214,24 +214,24 @@
                             <i class="fas fa-info-circle" aria-hidden="true"></i>
                         </button>
                     {% endif %}
-                </div>
+                {% end_toolbar_group %}
                 {% endif %}
                     {% if peut_corriger_exceptionnellement and not correction_exceptionnelle %}
-                    <div class="attachment-editor-action-group" role="group" aria-label="Correction exceptionnelle">
+                    {% toolbar_group "Correction exceptionnelle" "attachment-editor-action-group" %}
                         <a href="?correction=1" class="goplan-toolbar-btn"
                            title="Accès exceptionnel de correction" aria-label="Accès exceptionnel de correction">
                             <i class="fas fa-user-shield" aria-hidden="true"></i>
                         </a>
-                    </div>
+                    {% end_toolbar_group %}
                     {% endif %}
                         {% if is_edition and attachement.peut_supprimer %}
-                    <div class="attachment-editor-action-group" role="group" aria-label="Suppression">
+                    {% toolbar_group "Suppression" "attachment-editor-action-group" %}
                         <button type="button" id="delete-btn" class="goplan-toolbar-btn" title="Supprimer" aria-label="Supprimer">
                             <i class="fas fa-trash" aria-hidden="true"></i>
                         </button>
-                    </div>
+                    {% end_toolbar_group %}
                         {% endif %}
-                </div>
+                {% end_editor_toolbar %}
                 <div id="selectionSumDisplay" class="selection-sum-display" role="status" aria-live="polite"></div>
             </div>
         <div class="content-section">

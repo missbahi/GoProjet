@@ -3559,3 +3559,44 @@
     list-style: none;
 }
 .attachment-trace-steps li + li { margin-top: 0.35rem; }
+ .revision-global-loading[hidden] {
+    display: none;
+ }
+
+.revision-global-loading {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(36, 72, 90, 0.58);
+    backdrop-filter: blur(3px);
+}
+
+.revision-global-loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    min-width: 280px;
+    padding: 1.5rem 2rem;
+    border: 1px solid #a9cad6;
+    border-radius: 12px;
+    background: #f8f6ef;
+    color: #24485a;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.22);
+    text-align: center;
+}
+
+.revision-global-loading-card i {
+    margin-bottom: 0.4rem;
+    color: #15803d;
+    font-size: 2rem;
+}
+
+.revision-global-loading-card span {
+    color: #566f79;
+    font-size: 0.875rem;
+}

@@ -14,6 +14,7 @@ from .views.task_views import views as task_views
 from .views.notification_views import views as notification_views
 from .views.os_views import views as os_views
 from .views.lot_views import views as lot_views
+from .views import revision_views
 from .views.suivi_views import views as suivi_views
 from .views.attachement_views import views as attachement_views
 from .views.atelier_views import views as atelier_views
@@ -105,6 +106,41 @@ projets_urlpatterns = [
     path('modifier_projet_modal/<int:projet_id>/', project_views.modifier_projet_modal, name='modifier_projet_modal'),
     # Gestion des lots et du bordereau des prix
     path('projet/<int:projet_id>/lots/', lot_views.lots_projet, name='lots_projet'),
+    path(
+        'projet/<int:projet_id>/revision-prix/',
+        revision_views.gestion_revision_prix,
+        name='gestion_revision_prix',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/formule/',
+        revision_views.creer_formule_revision,
+        name='creer_formule_revision',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/mois-base/',
+        revision_views.enregistrer_mois_base_revision,
+        name='enregistrer_mois_base_revision',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/index/',
+        revision_views.enregistrer_valeurs_indexes,
+        name='enregistrer_valeurs_indexes',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/formule/<int:formule_id>/',
+        revision_views.modifier_formule_revision,
+        name='modifier_formule_revision',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/formule/<int:formule_id>/supprimer/',
+        revision_views.supprimer_formule_revision,
+        name='supprimer_formule_revision',
+    ),
+    path(
+        'projet/<int:projet_id>/revision-prix/affectations/',
+        revision_views.affecter_formules_revision,
+        name='affecter_formules_revision',
+    ),
 
     path('projet/<int:projet_id>/lot/<int:lot_id>/modifier/', lot_views.modifier_lot, name='modifier_lot'),
     path('projet/<int:projet_id>/lot/<int:lot_id>/supprimer/', lot_views.supprimer_lot, name='supprimer_lot'),
@@ -249,6 +285,26 @@ attachement_urlpatterns = [
     path('projet/<int:projet_id>/attachements/ajouter/', attachement_views.ajouter_attachement, name='ajouter_attachement'),
     path('attachements/modifier/<int:attachement_id>/', attachement_views.modifier_attachement, name='modifier_attachement'),
     path('attachements/<int:attachement_id>/', attachement_views.detail_attachement, name='detail_attachement'),
+    path(
+        'attachements/<int:attachement_id>/revision-prix/calculer/',
+        attachement_views.calculer_revision_attachement_vue,
+        name='calculer_revision_attachement',
+    ),
+    path(
+        'attachements/<int:attachement_id>/revision-prix/note-calcul/',
+        attachement_views.note_calcul_revision_attachement,
+        name='note_calcul_revision_attachement',
+    ),
+    path(
+        'projet/<int:projet_id>/attachements/revision-prix/calculer-tous/',
+        attachement_views.calculer_tous_attachements_revision,
+        name='calculer_tous_attachements_revision',
+    ),
+    path(
+        'projet/<int:projet_id>/attachements/revision-prix/rapport/',
+        attachement_views.rapport_revision_tous_attachements,
+        name='rapport_revision_tous_attachements',
+    ),
     path('attachements/<int:attachement_id>/tracabilite-validation/', attachement_views.tracabilite_validation_attachement, name='tracabilite_validation_attachement'),
     path('attachements/<int:attachement_id>/changer-statut/', attachement_views.changer_statut_attachement, name='changer_statut_attachement'),
     path('attachements/supprimer/<int:attachement_id>/', attachement_views.supprimer_attachement, name='supprimer_attachement'),

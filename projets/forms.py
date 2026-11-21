@@ -23,6 +23,7 @@ from .models import (
     AffectationRessource, Location, Transport, SousTraitance, Consommable,
     Fourniture, CategorieCharge, RessourceAffectee,
     ReleveMateriel, SuiviExecution,
+    FormuleRevision, TermeFormule,
 )
  
 from django.contrib.auth.models import User
@@ -217,6 +218,112 @@ class AvatarUpdateForm(forms.ModelForm):
         
         return avatar
 
+class FormuleRevisionForm(forms.ModelForm):
+    class Meta:
+        model = FormuleRevision
+        fields = ['code', 'libelle', 'k', 'est_index_global']
+        widgets = {
+            'code': forms.TextInput(attrs={'class': 'app-modal-input'}),
+            'libelle': forms.TextInput(attrs={'class': 'app-modal-input'}),
+            'k': forms.NumberInput(attrs={
+                'class': 'app-modal-input', 'step': '0.0001', 'min': '0.15', 'max': '1',
+            }),
+            'est_index_global': forms.CheckboxInput(),
+        }
+
+
+class MoisBaseRevisionForm(forms.ModelForm):
+    epoque_base = forms.DateField(
+        required=True,
+        input_formats=['%Y-%m', '%Y-%m-%d'],
+        label="Mois de base",
+        widget=forms.DateInput(attrs={
+            'class': 'app-modal-input',
+            'type': 'month',
+        }, format='%Y-%m'),
+    )
+    confirmer_modification = forms.BooleanField(
+        required=False,
+        label="Je confirme cette date de référence",
+    )
+
+    class Meta:
+        model = Projet
+        fields = ['epoque_base']
+
+    def __init__(self, *args, **kwargs):
+        self.os_commencement = kwargs.pop('os_commencement', None)
+        super().__init__(*args, **kwargs)
+        self.avertissement_confirmation = ""
+
+    def clean(self):
+        cleaned = super().clean()
+        mois_base = cleaned.get('epoque_base')
+        osc = self.os_commencement
+        if mois_base:
+            mois_base = mois_base.replace(day=1)
+            cleaned['epoque_base'] = mois_base
+            if not osc or not osc.date_effet:
+                self.add_error(
+                    'epoque_base',
+                    "Un OS de commencement notifié avec une date d'effet est requis.",
+                )
+                return cleaned
+
+            mois_osc = osc.date_effet.replace(day=1)
+            if mois_base >= mois_osc:
+                self.add_error(
+                    'epoque_base',
+                    "Le mois de base doit être antérieur au mois de l'OS de commencement.",
+                )
+                return cleaned
+
+            ancien = self.instance.epoque_base
+            modification = ancien is not None and ancien != mois_base
+            ecart_mois = (
+                (mois_osc.year - mois_base.year) * 12
+                + mois_osc.month - mois_base.month
+            )
+            ancien_ecart = ecart_mois > 6
+            if modification:
+                self.avertissement_confirmation = (
+                    "Cette modification remplacera le mois de base unique de toutes "
+                    "les formules du projet."
+                )
+            elif ancien_ecart:
+                self.avertissement_confirmation = (
+                    "Le mois de base précède l'OS de commencement de plus de six mois."
+                )
+            if (modification or ancien_ecart) and not cleaned.get(
+                'confirmer_modification'
+            ):
+                self.add_error(
+                    'confirmer_modification',
+                    self.avertissement_confirmation
+                    or "Veuillez confirmer cette date de référence.",
+                )
+        return cleaned
+
+
+class TermeFormuleForm(forms.ModelForm):
+    class Meta:
+        model = TermeFormule
+        fields = [
+            'type_terme', 'coefficient', 'index_simple',
+            'index_composite_a', 'index_composite_b',
+        ]
+        widgets = {
+            'type_terme': forms.Select(attrs={'class': 'app-modal-input'}),
+            'coefficient': forms.NumberInput(attrs={
+                'class': 'app-modal-input', 'step': '0.0001', 'min': '0.0001',
+                'max': '1',
+            }),
+            'index_simple': forms.Select(attrs={'class': 'app-modal-input'}),
+            'index_composite_a': forms.Select(attrs={'class': 'app-modal-input'}),
+            'index_composite_b': forms.Select(attrs={'class': 'app-modal-input'}),
+        }
+
+
 class ProjetForm(forms.ModelForm):
 
     # Style CSS commun pour tous les champs
@@ -226,7 +333,8 @@ class ProjetForm(forms.ModelForm):
         fields = [
             'dossier', 'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
             'delai', 'unite_delai', 'avancement', 'statut', 'montant', 'montant_soumission', 'taux_tva',
-            'localisation', 'entreprise', 'revisable'
+            'localisation', 'entreprise', 'revisable', 'nature_revision',
+            'methode_arrondi_revision', 'politique_index_revision', 'appliquer_report_m_plus_2'
         ]
         widgets = {
             'dossier': forms.Select(attrs={'placeholder': 'Dossier du projet'}),
@@ -247,6 +355,10 @@ class ProjetForm(forms.ModelForm):
             'entreprise': forms.Select(attrs={'placeholder': 'Nom de l\'entreprise'}),
             'revisable': forms.CheckboxInput(attrs={'class': 'hidden peer', 'id': 'revisable-toggle'
             }),
+            'nature_revision': forms.Select(),
+            'methode_arrondi_revision': forms.Select(),
+            'politique_index_revision': forms.Select(),
+            'appliquer_report_m_plus_2': forms.CheckboxInput(),
             
         }
 
@@ -963,7 +1075,6 @@ class ResponsableTacheChoiceField(forms.ModelChoiceField):
         from projets.task_policy import libelle_responsable
         return libelle_responsable(obj)
 
-
 class TacheForm(forms.ModelForm):
     class Meta:
         model = Tache
@@ -1235,7 +1346,6 @@ class CorrectionExceptionnelleAttachementForm(forms.Form):
                 self.add_error('date_fin_periode', error.message_dict['date_fin_periode'])
         return cleaned
 
-
 class CorrectionPeriodesAttachementForm(forms.Form):
     motif = forms.CharField(label="Motif de la correction", widget=forms.Textarea(attrs={'rows': 3}))
     instantane = forms.CharField(widget=forms.HiddenInput)
@@ -1309,7 +1419,6 @@ class CorrectionPeriodesAttachementForm(forms.Form):
             if fin == date.max:
                 self.add_error(fin_key, "Cette date est trop éloignée.")
         return cleaned
-
 
 class DecompteForm(forms.ModelForm):
     montant_revision_prix = forms.DecimalField(
@@ -1525,7 +1634,6 @@ class InsertionSequenceArretRepriseForm(forms.Form):
     reference_reprise = forms.CharField(label="Référence OS de reprise", max_length=50)
     date_publication = forms.DateField(label="Date de publication", widget=forms.DateInput(attrs={'type': 'date'}))
     description = forms.CharField(label="Motif / description", required=False, widget=forms.Textarea(attrs={'rows': 2}))
-
 
 class DocumentAdministratifForm(forms.ModelForm):
     """

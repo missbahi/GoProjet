@@ -177,6 +177,28 @@
                     </div>
                 </div>
                 {% endif %}
+
+                {# ═══════════ Révision des prix ═══════════ #}
+                {% if indicateur_revision %}
+                <div class="dashboard-module-card">
+                    <div class="dashboard-module-icon"><i class="fas fa-percent"></i></div>
+                    <h4 class="dashboard-module-title">Révision des prix</h4>
+                    <div class="mt-auto">
+                        {% if indicateur_revision.statut == 'PRET' %}
+                            <p class="dashboard-no-data">Configuration complète</p>
+                        {% elif not projet.mois_base_revision %}
+                            <p class="dashboard-no-data">Le mois de base de la révision doit être renseigné</p>
+                        {% elif not indicateur_revision.details.nombre_formules %}
+                            <p class="dashboard-no-data">Les formules de révision sont absentes</p>
+                        {% else %}
+                            <p class="dashboard-no-data">Des prix du bordereau manquent de formule de révision</p>
+                        {% endif %}
+                        <a href="{% url 'projets:gestion_revision_prix' projet.id %}" class="btn-access w-full justify-center">
+                            <i class="fas fa-arrow-right"></i><span>Accéder</span>
+                        </a>
+                    </div>
+                </div>
+                {% endif %}
                 
                 {# ═══════════ Documents ═══════════ #}
                 {% if 'documents' not in modules_desactives %}

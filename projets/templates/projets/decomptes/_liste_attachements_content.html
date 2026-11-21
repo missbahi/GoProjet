@@ -22,6 +22,17 @@
         </p>
       </div>
       {% if attachements %}
+      {% if revision_prete %}
+      <form method="post"
+            action="{% url 'projets:calculer_tous_attachements_revision' projet.id %}"
+            data-calcul-revision-tous>
+          {% csrf_token %}
+          <button type="submit" class="app-btn-primary">
+              <i class="fas fa-calculator"></i>
+              Calculer la révision de tous les attachements
+          </button>
+      </form>
+      {% endif %}
       <a href="{% url 'projets:apercu_impression_attachements' projet.id %}" target="_blank" rel="noopener"
          hx-boost="false" class="app-btn-secondary"
          style="background-color: var(--accent-warning); color: var(--text-inverse);">
@@ -41,6 +52,18 @@
             <span class="app-badge app-badge-info">{{ projet.get_statut_display }}</span>
         </div>
     </section>
+
+    <div class="revision-global-loading"
+         data-calcul-revision-overlay
+         role="status"
+         aria-live="polite"
+         hidden>
+        <div class="revision-global-loading-card">
+            <i class="fas fa-circle-notch fa-spin" aria-hidden="true"></i>
+            <strong>Calcul de la révision en cours</strong>
+            <span>Traitement de tous les attachements…</span>
+        </div>
+    </div>
 
     <!-- Ajout : page dédiée (formulaire avec bordereau) -->
     <a href="{% url 'projets:ajouter_attachement' projet.id %}" class="doc-toggle-btn">
@@ -163,6 +186,20 @@
                                             class="app-action-btn" style="color: var(--accent-green);"
                                             title="Valider" aria-label="Valider {{ attachement.numero }}">
                                         <i class="fas fa-check" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                {% endif %}
+                                {% if revision_prete %}
+                                <form method="post"
+                                      action="{% url 'projets:calculer_revision_attachement' attachement.id %}"
+                                      title="Calculer la révision des prix">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="app-action-btn"
+                                            style="color: var(--accent-primary);"
+                                            title="Calculer la révision des prix"
+                                            aria-label="Calculer la révision de {{ attachement.numero }}">
+                                        <i class="fas fa-percent" aria-hidden="true"></i>
                                     </button>
                                 </form>
                                 {% endif %}

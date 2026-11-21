@@ -1,0 +1,20 @@
+{% extends "projets/home/base_project.html" %}
+{% load static %}
+
+{% block title %}Révision des prix – {{ projet.nom }}{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'projets/css/lots.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+{% endblock %}
+
+{% block content %}
+    {% include "projets/revision/_revision_prix_content.html" %}
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="{% static 'projets/js/revision-formules.js' %}" defer></script>
+{% endblock %}

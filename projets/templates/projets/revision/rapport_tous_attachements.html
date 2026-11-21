@@ -1,0 +1,235 @@
+{% load static formatters %}
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <title>Révision de tous les attachements — {{ projet.nom }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <style>
+        :root { color:#24485a; font-family:"Segoe UI",Arial,sans-serif; }
+        body { margin:0; background:#e7edf0; }
+        .toolbar { position:sticky; top:0; z-index:10; padding:10px 16px; background:#24485a; text-align:right; }
+        .toolbar button { border:0; border-radius:5px; padding:8px 14px; background:#f0ede5; color:#24485a; }
+        main { width:min(1180px,calc(100% - 24px)); margin:12px auto; padding:28px; background:#f8f6ef; box-shadow:0 8px 30px rgba(36,72,90,.18); }
+        h1 { text-align:center; font-size:22px; margin:0 0 5px; }
+        h2 { margin:25px 0 8px; font-size:16px; }
+        .meta { text-align:center; color:#566f79; margin-bottom:22px; }
+        .overflow { overflow:auto; max-width:100%; }
+        table { width:100%; border-collapse:collapse; font-size:12px; background:#f8f6ef; }
+        th,td { border:1px solid #a9cad6; padding:5px 7px; }
+        th { background:#f0ede5; }
+        .left { text-align:left; }
+        .number { text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+        .center { text-align:center; }
+        .total { font-weight:700; background:#d8e2e4; }
+        .formula { border:1px solid #a9cad6; margin:6px 0; padding:8px; overflow-x:auto; }
+        .notice { padding:9px 12px; background:#fff4d6; border:1px solid #e2bf59; }
+        @media print {
+            @page { size:A4 landscape; margin:10mm; }
+            body { background:#fff; }
+            .toolbar { display:none; }
+            main { width:auto; margin:0; padding:0; box-shadow:none; }
+            thead { display:table-header-group; }
+            tr,.formula { break-inside:avoid; }
+            .overflow { overflow:visible; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <!-- Toolbar for printing -->
+        <button type="button" onclick="window.history.back()">Retour</button>
+        <button type="button" onclick="window.print()">Imprimer / PDF</button>
+    </div>
+    <main>
+        <h1>Calcul de la révision des prix</h1>
+        <h2>1. Informations du projet</h2>
+        <table>
+            <tbody>
+                <tr><th>Projet</th><td>{{ projet.nom }}</td><th>Marché</th><td>{{ projet.numero }}</td></tr>
+                <tr><th>Maître d'ouvrage</th><td>{{ projet.maitre_ouvrage }}</td><th>Objet</th><td>{{ projet.objet }}</td></tr>
+                <tr><th>Mois de référence M0</th><td>{{ projet.mois_base_revision|date:"m/Y" }}</td><th>OS de commencement</th><td>{{ projet.os_commencement.date_effet|date:"d/m/Y" }}</td></tr>
+            </tbody>
+        </table>
+
+        <h2>2. Formules utilisées</h2>
+        {% for formule in formules %}
+        <div class="formula">
+            <strong>{{ formule.libelle }}</strong>
+            <div data-formule-latex="{{ formule.formule_latex }}">{{ formule.formule_latex }}</div>
+        </div>
+        {% endfor %}
+
+        <h2>3. Valeurs des index</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Index</th>
+                        {% for colonne in colonnes_indexes %}
+                        <th>
+                            {{ colonne.mois|date:"m/Y" }}{% if colonne.mois == projet.mois_base_revision %} *{% endif %}<br>
+                            <small>{% if colonne.statut == 'IND_PRO' %}Provisoire{% else %}Définitif{% endif %}</small>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in grille_indexes %}
+                    <tr>
+                        <th>{{ ligne.index.symbole }}</th>
+                        {% for valeur in ligne.cellules %}
+                        <td class="number">
+                            {% if valeur %}{{ valeur.valeur }}{% else %}—{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="meta" style="text-align:left; margin:6px 0 0;">
+            * Mois de référence M0 : valeurs de base définitives utilisées au dénominateur des formules.
+        </p>
+
+        <h2>4. Attachements — HT</h2>
+        <div class="overflow">
+            <table>
+                <thead><tr><th>Attachement</th><th>Période</th><th>Montant cumulé HT</th><th>Montant partiel HT</th><th>Révision HT</th></tr></thead>
+                <tbody>
+                    {% for item in attachements %}
+                    <tr>
+                        <td>{{ item.attachement.numero }}</td>
+                        <td class="center">{{ item.attachement.date_debut_periode|date:"d/m/Y" }} — {{ item.attachement.date_fin_periode|date:"d/m/Y" }}</td>
+                        <td class="number">{{ item.montant_cumule|format_french_number }}</td>
+                        <td class="number">{{ item.montant_partiel|format_french_number }}</td>
+                        <td class="number">{{ item.revision_ht|format_french_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if afficher_prorata %}
+        <h3>Ventilation des montants partiels par mois — HT</h3>
+        <p>La ventilation exclut les jours compris dans les périodes d'arrêt notifiées par OSA jusqu'à l'OSR.</p>
+        <div class="overflow">
+            <table>
+                <thead><tr><th>Attachement</th><th>Mois</th><th>Ligne principale</th><th>Formule</th><th>Jours travaillés</th><th>Montant HT</th></tr></thead>
+                <tbody>
+                    {% for ligne in partiels %}
+                    <tr>
+                        <td>{{ ligne.attachement.numero }}</td>
+                        <td class="center">{{ ligne.mois|date:"m/Y" }}</td>
+                        <td>{{ ligne.ligne }}</td>
+                        <td>{{ ligne.formule }}</td>
+                        <td class="number">{{ ligne.jours_travailles }}</td>
+                        <td class="number">{{ ligne.montant_ht|format_french_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <h2>5. Montants relatifs aux formules — HT</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr><th>Formule</th>{% for mois in mois_travaux %}<th>{{ mois|date:"m/Y" }}</th>{% endfor %}<th>Total formule</th></tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignes_montants_base %}
+                    <tr>
+                        <th class="left">{{ ligne.formule.libelle }}</th>
+                        {% for montant in ligne.cellules %}<td class="number">{{ montant|format_french_number }}</td>{% endfor %}
+                        <td class="number total">{{ ligne.total_ht|format_french_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total">
+                        <th>Total mois</th>
+                        {% for montant in totaux_montants_base_mois %}
+                        <th class="number">{{ montant|format_french_number }}</th>
+                        {% endfor %}
+                        <th></th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <h2>6. Coefficients P / P0 par formule et par mois</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Formule</th>
+                        {% for mois in mois_travaux %}
+                        <th>{{ mois|date:"m/Y" }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignes_coefficients %}
+                    <tr>
+                        <th class="left">{{ ligne.formule.libelle }}</th>
+                        {% for coefficient in ligne.cellules %}
+                        <td class="number">
+                            {% if coefficient %}
+                                {{ coefficient.cr }}
+                                <!-- {% if coefficient.provisoire %}
+                                    <br><small>Provisoire</small>
+                                {% endif %} -->
+                            {% else %}—{% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <h2>7. Montants révisés par formule et par mois — HT</h2>
+        <div class="overflow">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Formule</th>
+                        {% for mois in mois_travaux %}<th>{{ mois|date:"m/Y" }}</th>{% endfor %}
+                        <th>Total formule</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ligne in lignes_revisions %}
+                    <tr>
+                        <th class="left">{{ ligne.formule.libelle }}</th>
+                        {% for montant in ligne.cellules %}<td class="number">{{ montant|format_french_number }}</td>{% endfor %}
+                        <td class="number total">{{ ligne.total_ht|format_french_number }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="total">
+                        <th>Total mois</th>
+                        {% for montant in totaux_revisions_mois %}<th class="number">{{ montant|format_french_number }}</th>{% endfor %}
+                        <th class="number" title="Total des révisions HT">
+                            {{ total_revision_ht|format_french_number }}<br>
+                            <!-- <small>TOTAL RÉVISIONS</small> -->
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <p class="notice">Tous les montants sont exprimés en DH hors taxes.</p>
+    </main>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script>
+        window.addEventListener('load', function () {
+            document.querySelectorAll('[data-formule-latex]').forEach(function (element) {
+                katex.render(element.dataset.formuleLatex, element, { displayMode:true, throwOnError:false, strict:'ignore' });
+            });
+        });
+    </script>
+</body>
+</html>

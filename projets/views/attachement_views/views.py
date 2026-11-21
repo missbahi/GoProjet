@@ -36,6 +36,14 @@ from projets.models import (
 )
 from projets.utils.navigation import crumb, project_crumbs
 from projets.services.attachement_service import DonneesAttachementInvalides, enregistrer_lignes_attachement
+from projets.services.revision_readiness import (
+    controle_indexes_revision,
+    indicateur_revision_tableau_bord,
+)
+from projets.services.revision_service import (
+    ErreurCalculRevision,
+    calculer_revision_attachement,
+)
 from projets.views.lot_views.views import _est_ligne_titre_bordereau, _iter_lignes_bordereau_hierarchiques
 from projets.views.os_views.views import download_document
 
@@ -61,6 +69,8 @@ def _verifier_acces_attachement(request, attachement, statuts_autorises=None):
 @modules_projet_required
 def liste_attachements(request, projet_id):
     projet = get_object_or_404(Projet, id=projet_id)
+    indicateur_revision = indicateur_revision_tableau_bord(projet)
+    controle_indexes = controle_indexes_revision(projet)
     attachements = Attachement.objects.filter(projet=projet).order_by('sequence')
     for attachement in attachements:
         attachement.peut_devalider = attachement.peut_etre_reouvert_par(request.user)
@@ -70,6 +80,11 @@ def liste_attachements(request, projet_id):
         'attachements': attachements,
         'validation_directe': peut_valider_directement(request.user, projet),
         'peut_corriger_exceptionnellement': peut_gerer_projet(request.user),
+        'revision_prete': bool(
+            indicateur_revision
+            and indicateur_revision.statut == 'PRET'
+            and controle_indexes['pret']
+        ),
         'breadcrumb_items': project_crumbs(projet, crumb("Attachements")),
     }
     if request.headers.get('HX-Request'):
@@ -536,6 +551,8 @@ def modifier_attachement(request, attachement_id):
 @modules_projet_required
 def detail_attachement(request, attachement_id):
     attachement = get_object_or_404(Attachement, id=attachement_id)
+    indicateur_revision = indicateur_revision_tableau_bord(attachement.projet)
+    controle_indexes = controle_indexes_revision(attachement.projet)
     lots = LotProjet.objects.filter(projet=attachement.projet).order_by('id')
     lots_data = []
     montant_total = Decimal('0.00')
@@ -585,9 +602,427 @@ def detail_attachement(request, attachement_id):
         'montant_total': montant_total,
         'total_lots': len(lots_data),
         'total_lignes': total_lignes,
+        'revision_prete': bool(
+            indicateur_revision
+            and indicateur_revision.statut == 'PRET'
+            and controle_indexes['pret']
+        ),
         'breadcrumb_items': _crumbs_attachements(attachement.projet, crumb(f"Attachement {attachement.numero}")),
     }
     return render(request, 'projets/decomptes/detail_attachement.html', context)
+
+
+@modules_projet_required
+@require_POST
+def calculer_revision_attachement_vue(request, attachement_id):
+    attachement = get_object_or_404(
+        Attachement.objects.select_related('projet'),
+        pk=attachement_id,
+    )
+    _verifier_acces_attachement(request, attachement)
+    try:
+        montant, detail = calculer_revision_attachement(attachement)
+    except ErreurCalculRevision as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(
+            request,
+            f"Révision calculée : {montant:.2f} DH HT.",
+        )
+        if detail["provisoire"]:
+            messages.warning(
+                request,
+                "Le résultat utilise un ou plusieurs index provisoires et "
+                "devra être régularisé.",
+            )
+        if not detail["indices_a_jour"]:
+            dernier = detail["dernier_mois_definitif"]
+            messages.warning(
+                request,
+                "Les index définitifs ne sont pas à jour"
+                + (f" ; dernier mois : {dernier}." if dernier else "."),
+            )
+    return redirect('projets:detail_attachement', attachement_id=attachement.pk)
+
+
+@modules_projet_required
+def note_calcul_revision_attachement(request, attachement_id):
+    from projets.models import FormuleRevision, IndexReference, IndexValeur
+
+    attachement = get_object_or_404(
+        Attachement.objects.select_related('projet'),
+        pk=attachement_id,
+    )
+    _verifier_acces_attachement(request, attachement)
+    if not attachement.date_calcul_revision:
+        messages.warning(
+            request,
+            "Calculez d'abord la révision des prix de cet attachement.",
+        )
+        return redirect('projets:detail_attachement', attachement_id=attachement.pk)
+
+    calcul = attachement.detail_calcul_revision or {}
+    formules_codes = {
+        ligne['formule'] for ligne in calcul.get('lignes', [])
+        if ligne.get('formule')
+    }
+    formules = list(
+        FormuleRevision.objects.filter(
+            projet=attachement.projet,
+            code__in=formules_codes,
+        ).prefetch_related(
+            'termes__index_simple',
+            'termes__index_composite_a',
+            'termes__index_composite_b',
+        ).order_by('code')
+    )
+    mois = []
+    if attachement.projet.mois_base_revision:
+        mois.append(attachement.projet.mois_base_revision)
+    for ligne in calcul.get('lignes', []):
+        for detail in ligne.get('mois', []):
+            if detail.get('mois'):
+                valeur = date.fromisoformat(detail['mois'])
+                if valeur not in mois:
+                    mois.append(valeur)
+    mois.sort()
+    index_ids = {
+        index_id
+        for formule in formules
+        for terme in formule.termes.all()
+        for index_id in terme.index_ids
+        if index_id
+    }
+    indexes = list(IndexReference.objects.filter(pk__in=index_ids).order_by('symbole'))
+    valeurs = {
+        (valeur.index_id, valeur.mois): valeur
+        for valeur in IndexValeur.objects.filter(
+            index_id__in=index_ids,
+            mois__in=mois,
+        )
+    }
+    grille_indexes = [{
+        'index': index,
+        'cellules': [
+            valeurs.get((index.pk, mois_index)) for mois_index in mois
+        ],
+    } for index in indexes]
+
+    coefficients = []
+    details_lignes = []
+    totaux_mois = {}
+    coefficient_vus = set()
+    for ligne in calcul.get('lignes', []):
+        for detail in ligne.get('mois', []):
+            cle = (ligne.get('formule'), detail.get('mois'), detail.get('cr'))
+            if cle not in coefficient_vus:
+                coefficient_vus.add(cle)
+                coefficients.append({
+                    'mois': date.fromisoformat(detail['mois']),
+                    'formule': ligne.get('formule'),
+                    'cr': Decimal(detail.get('cr') or '0'),
+                    'provisoire': detail.get('provisoire', False),
+                    'termes': detail.get('termes', []),
+                })
+            montant_ht = Decimal(detail.get('montant_ht') or '0')
+            revision_ht = Decimal(detail.get('revision_ht') or '0')
+            details_lignes.append({
+                'mois': date.fromisoformat(detail['mois']),
+                'ligne': ligne.get('ligne'),
+                'nombre_lignes_descendantes': ligne.get(
+                    'nombre_lignes_descendantes', 1,
+                ),
+                'formule': ligne.get('formule'),
+                'montant_ht': montant_ht,
+                'cr': Decimal(detail.get('cr') or '0'),
+                'revision_ht': revision_ht,
+                'termes': detail.get('termes', []),
+            })
+            totaux_mois.setdefault(detail['mois'], Decimal('0.00'))
+            totaux_mois[detail['mois']] += revision_ht
+
+    return render(
+        request,
+        'projets/revision/note_calcul_revision.html',
+        {
+            'attachement': attachement,
+            'projet': attachement.projet,
+            'formules': formules,
+            'mois_indexes': mois,
+            'grille_indexes': grille_indexes,
+            'coefficients': coefficients,
+            'details_lignes': details_lignes,
+            'totaux_mois': [
+                {'mois': date.fromisoformat(mois_valeur), 'revision_ht': montant}
+                for mois_valeur, montant in sorted(totaux_mois.items())
+            ],
+            'total_revision_ht': attachement.montant_revision_prix,
+        },
+    )
+
+
+def _rapport_revision_tous_attachements(projet):
+    from projets.models import FormuleRevision, IndexReference, IndexValeur
+    from projets.services.revision_readiness import controle_indexes_revision
+
+    attachements = list(
+        Attachement.objects.filter(projet=projet)
+        .prefetch_related('lignes_attachement')
+        .order_by('sequence')
+    )
+    cumul = Decimal('0')
+    lignes_cumulees = []
+    lignes_partielles = []
+    coefficients = {}
+    revisions = {}
+    formules_codes = set()
+    afficher_prorata = False
+    for attachement in attachements:
+        montant_cumule = attachement.total_montant_ht
+        cumul += attachement.total_montant_ht - (
+            attachement.get_previous_attachement().total_montant_ht
+            if attachement.get_previous_attachement() else Decimal('0')
+        )
+        lignes_cumulees.append({
+            'attachement': attachement,
+            'montant_cumule': montant_cumule,
+            'montant_partiel': attachement.montant_situation,
+            'revision_ht': attachement.montant_revision_prix,
+        })
+        detail = attachement.detail_calcul_revision or {}
+        for ligne in detail.get('lignes', []):
+            formule = ligne.get('formule')
+            formules_codes.add(formule)
+            mois_attachement = []
+            for part in ligne.get('mois', []):
+                mois = date.fromisoformat(part['mois'])
+                mois_attachement.append(mois)
+                montant_ht = Decimal(part.get('montant_ht') or '0')
+                revision_ht = Decimal(part.get('revision_ht') or '0')
+                cle_coeff = (mois, formule)
+                coefficients[cle_coeff] = {
+                    'mois': mois,
+                    'formule': formule,
+                    'cr': Decimal(part.get('cr') or '0'),
+                    'provisoire': part.get('provisoire', False),
+                }
+                cle_revision = (mois, formule)
+                revisions[cle_revision] = (
+                    revisions.get(cle_revision, Decimal('0')) + revision_ht
+                )
+                lignes_partielles.append({
+                    'attachement': attachement,
+                    'mois': mois,
+                    'ligne': ligne.get('ligne'),
+                    'formule': formule,
+                    'montant_ht': montant_ht,
+                    'jours_travailles': part.get('jours_travailles'),
+                })
+            afficher_prorata = afficher_prorata or len(set(mois_attachement)) > 1
+
+    controle = controle_indexes_revision(projet)
+    formules = list(
+        FormuleRevision.objects.filter(
+            projet=projet, code__in=formules_codes,
+        ).prefetch_related(
+            'termes__index_simple',
+            'termes__index_composite_a',
+            'termes__index_composite_b',
+        ).order_by('code')
+    )
+    mois_osc = (
+        projet.os_commencement.date_effet.replace(day=1)
+        if projet.os_commencement else None
+    )
+    dernier_mois_attachement = (
+        max(item.date_fin_periode for item in attachements).replace(day=1)
+        if attachements else None
+    )
+    mois_travaux = []
+    if mois_osc and dernier_mois_attachement:
+        curseur = mois_osc
+        while curseur <= dernier_mois_attachement:
+            mois_travaux.append(curseur)
+            curseur = (
+                date(curseur.year + 1, 1, 1)
+                if curseur.month == 12
+                else curseur.replace(month=curseur.month + 1)
+            )
+    index_ids = {
+        index_id
+        for formule in formules
+        for terme in formule.termes.all()
+        for index_id in terme.index_ids
+        if index_id
+    }
+    indexes = list(IndexReference.objects.filter(pk__in=index_ids).order_by('symbole'))
+    valeurs = {
+        (valeur.index_id, valeur.mois): valeur
+        for valeur in IndexValeur.objects.filter(
+            index_id__in=index_ids,
+            mois__in=controle['mois_tableur'],
+        )
+    }
+    mois = sorted(controle['mois_tableur'])
+    colonnes_indexes = []
+    for mois_courant in mois:
+        statuts_mois = {
+            valeur.statut
+            for (index_id, valeur_mois), valeur in valeurs.items()
+            if valeur_mois == mois_courant
+        }
+        colonnes_indexes.append({
+            'mois': mois_courant,
+            'statut': (
+                'IND_PRO' if 'IND_PRO' in statuts_mois else 'IND_DEF'
+            ),
+        })
+    mois_revision = sorted({cle[0] for cle in revisions})
+    recap_revision = []
+    for mois_courant in mois_revision:
+        valeurs_formules = [{
+            'formule': formule,
+            'revision_ht': revisions.get(
+                (mois_courant, formule.code), Decimal('0'),
+            ),
+        } for formule in formules]
+        recap_revision.append({
+            'mois': mois_courant,
+            'formules': valeurs_formules,
+            'total_ht': sum(
+                (valeur['revision_ht'] for valeur in valeurs_formules),
+                Decimal('0'),
+            ),
+        })
+    montants_base = {}
+    for ligne in lignes_partielles:
+        cle = (ligne['formule'], ligne['mois'])
+        montants_base[cle] = (
+            montants_base.get(cle, Decimal('0')) + ligne['montant_ht']
+        )
+    lignes_coefficients = [{
+        'formule': formule,
+        'cellules': [
+            coefficients.get((mois_courant, formule.code)) for mois_courant in mois_travaux
+        ],
+    } for formule in formules]
+    lignes_montants_base = [{
+        'formule': formule,
+        'cellules': [
+            montants_base.get((formule.code, mois_courant), Decimal('0'))
+            for mois_courant in mois_travaux
+        ],
+        'total_ht': sum(
+            (
+                montant for (code, _), montant in montants_base.items()
+                if code == formule.code
+            ),
+            Decimal('0'),
+        ),
+    } for formule in formules]
+    lignes_revisions = [{
+        'formule': formule,
+        'cellules': [
+            revisions.get((mois_courant, formule.code), Decimal('0'))
+            for mois_courant in mois_travaux
+        ],
+        'total_ht': sum(
+            (
+                montant for (mois_courant, code), montant in revisions.items()
+                if code == formule.code
+            ),
+            Decimal('0'),
+        ),
+    } for formule in formules]
+    return {
+        'projet': projet,
+        'attachements': lignes_cumulees,
+        'partiels': lignes_partielles if afficher_prorata else [],
+        'afficher_prorata': afficher_prorata,
+        'formules': formules,
+        'mois_indexes': mois,
+        'colonnes_indexes': colonnes_indexes,
+        'mois_travaux': mois_travaux,
+        'grille_indexes': [{
+            'index': index,
+            'cellules': [valeurs.get((index.pk, mois_courant)) for mois_courant in mois],
+        } for index in indexes],
+        'coefficients': [coefficients[cle] for cle in sorted(coefficients)],
+        'lignes_coefficients': lignes_coefficients,
+        'lignes_montants_base': lignes_montants_base,
+        'totaux_montants_base_mois': [
+            sum(
+                (montants_base.get((formule.code, mois_courant), Decimal('0'))
+                 for formule in formules),
+                Decimal('0'),
+            )
+            for mois_courant in mois_travaux
+        ],
+        'lignes_revisions': lignes_revisions,
+        'totaux_revisions_mois': [
+            sum(
+                (revisions.get((mois_courant, formule.code), Decimal('0'))
+                 for formule in formules),
+                Decimal('0'),
+            )
+            for mois_courant in mois_travaux
+        ],
+        'recap_revision': recap_revision,
+        'total_revision_ht': sum(
+            (ligne['total_ht'] for ligne in recap_revision), Decimal('0'),
+        ),
+        'totaux_formules': [{
+            'formule': formule,
+            'total_ht': sum(
+                (
+                    montant for (mois_courant, code), montant in revisions.items()
+                    if code == formule.code
+                ),
+                Decimal('0'),
+            ),
+        } for formule in formules],
+    }
+
+
+@modules_projet_required
+@require_POST
+@transaction.atomic
+def calculer_tous_attachements_revision(request, projet_id):
+    projet = get_object_or_404(Projet, pk=projet_id)
+    attachements = list(
+        Attachement.objects.filter(projet=projet)
+        .select_for_update()
+        .order_by('sequence')
+    )
+    if not attachements:
+        messages.warning(request, "Aucun attachement à calculer.")
+        return redirect('projets:liste_attachements', projet_id=projet.pk)
+    try:
+        for attachement in attachements:
+            calculer_revision_attachement(attachement)
+    except ErreurCalculRevision as error:
+        transaction.set_rollback(True)
+        messages.error(request, f"Calcul global interrompu : {error}")
+        return redirect('projets:liste_attachements', projet_id=projet.pk)
+    messages.success(
+        request,
+        f"Révision calculée pour {len(attachements)} attachement(s).",
+    )
+    return redirect(
+        'projets:rapport_revision_tous_attachements',
+        projet_id=projet.pk,
+    )
+
+
+@modules_projet_required
+def rapport_revision_tous_attachements(request, projet_id):
+    projet = get_object_or_404(Projet, pk=projet_id)
+    contexte = _rapport_revision_tous_attachements(projet)
+    return render(
+        request,
+        'projets/revision/rapport_tous_attachements.html',
+        contexte,
+    )
 
 
 def tracabilite_validation_attachement(request, attachement_id):

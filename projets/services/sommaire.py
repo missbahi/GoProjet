@@ -189,11 +189,24 @@ def _grandes_lignes(lignes, total_lot):
     for ligne in retenues:
         valeur = montant(ligne)
         resultat.append({
-            'numero': ligne['numero'], 'designation': ligne['designation'], 'ht': valeur,
+            'id': ligne['id'], 'numero': ligne['numero'], 'designation': ligne['designation'],
+            'ht': valeur,
             'part': valeur / total_lot * CENT if total_lot else None,
             'nb_sous_lignes': len(enfants.get(ligne['id'], [])),
         })
     return titres, resultat
+
+
+def lignes_principales_lot(lot):
+    """Lignes principales détectées avec la même règle que le sommaire observateur."""
+    lignes = list(
+        lot.lignes.order_by('ordre_affichage', 'id').values(
+            'id', 'parent_id', 'numero', 'designation', 'montant_calcule',
+        )
+    )
+    total_lot = sum((ligne['montant_calcule'] or ZERO for ligne in lignes), ZERO)
+    titres, principales = _grandes_lignes(lignes, total_lot)
+    return titres, principales
 
 
 def synthese_lots(projet):

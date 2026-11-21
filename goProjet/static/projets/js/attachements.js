@@ -159,6 +159,22 @@
     // ── Délégation ─────────────────────────────────────────────
     document.addEventListener('submit', event => {
         const form = event.target;
+        if (form.matches('form[data-calcul-revision-tous]')) {
+            const overlay = document.querySelector('[data-calcul-revision-overlay]');
+            const bouton = form.querySelector('button[type="submit"]');
+            if (overlay) {
+                overlay.hidden = false;
+                overlay.setAttribute('aria-busy', 'true');
+                document.body.style.overflow = 'hidden';
+            }
+            if (bouton) {
+                bouton.disabled = true;
+                bouton.setAttribute('aria-disabled', 'true');
+                bouton.querySelector('i')?.classList.add('fa-spin');
+            }
+            form.setAttribute('aria-busy', 'true');
+            return;
+        }
         if (form.matches('form[data-attachment-confirm]')
             && !window.confirm(form.dataset.attachmentConfirm)) {
             event.preventDefault();
@@ -200,6 +216,23 @@
         if (event.detail.target && event.detail.target.id === 'main-content'
             && document.querySelector('.attachment-dialog.is-open')) {
             document.body.style.overflow = '';
+        }
+    });
+
+    window.addEventListener('pageshow', () => {
+        document.body.style.overflow = '';
+        const overlay = document.querySelector('[data-calcul-revision-overlay]');
+        if (overlay) {
+            overlay.hidden = true;
+            overlay.removeAttribute('aria-busy');
+        }
+        const form = document.querySelector('form[data-calcul-revision-tous]');
+        const bouton = form?.querySelector('button[type="submit"]');
+        if (form) form.removeAttribute('aria-busy');
+        if (bouton) {
+            bouton.disabled = false;
+            bouton.removeAttribute('aria-disabled');
+            bouton.querySelector('i')?.classList.remove('fa-spin');
         }
     });
 })();

@@ -1,11 +1,9 @@
-{% load static navigation %}
+{% load static navigation editor_toolbar %}
 {% load formatters %}
 {% breadcrumb %}
  
-<div class="attachment-workflow-page 
-     attachment-page--fiche_controle" 
-     data-fiche-controle-editor 
-     data-fullscreen-document 
+<div class="attachment-workflow-page attachment-page--fiche_controle"
+     data-fiche-controle-editor data-fullscreen-document
      data-family="project" 
      data-page-title="Fiche de contrôle" 
      data-page-icon="fa-clipboard-list">
@@ -63,16 +61,16 @@
         </div>
 
         <p data-planning-fullscreen-error class="app-alert app-alert-error no-print" role="alert" hidden></p>
-        <div class="ca-selection-toolbar no-print" role="toolbar" aria-label="Actions de la fiche de contrôle">
-                <div class="ca-toolbar-actions">
-                    <div class="ca-toolbar-group" role="group" aria-label="Plein écran">
+        {% editor_toolbar "Actions de la fiche de contrôle" "ca-selection-toolbar no-print" %}
+                <div class="editor-toolbar__actions ca-toolbar-actions">
+                    {% toolbar_group "Plein écran" "ca-toolbar-group" %}
                         <button type="button" class="goplan-toolbar-btn" data-planning-fullscreen data-observer-safe
                                 aria-label="Passer en plein écran" aria-pressed="false"
                                 title="Passer en plein écran (Échap pour quitter)">
                             <i class="fas fa-expand" aria-hidden="true"></i>
                         </button>
-                    </div>
-                    <div class="ca-toolbar-group" role="group" aria-label="Affichage et aide">
+                    {% end_toolbar_group %}
+                    {% toolbar_group "Affichage et aide" "ca-toolbar-group" %}
                         <button type="button" id="fiche-toggle-expanded-all" class="goplan-toolbar-btn" data-observer-safe
                                 aria-label="Développer ou réduire toutes les lignes filles"
                                 title="Développer ou réduire toutes les lignes filles" disabled>
@@ -82,14 +80,14 @@
                                 aria-label="Aide à la consultation" title="Aide à la consultation" aria-controls="fiche-help-dialog">
                             <i class="fas fa-info" aria-hidden="true"></i>
                         </button>
-                    </div>
-                    <div class="ca-toolbar-group" role="group" aria-label="Impression">
+                    {% end_toolbar_group %}
+                    {% toolbar_group "Impression" "ca-toolbar-group" %}
                         <button type="button" onclick="window.print()" class="goplan-toolbar-btn" data-observer-safe
                                 aria-label="Imprimer la fiche" title="Imprimer la fiche">
                             <i class="fas fa-print" aria-hidden="true"></i>
                         </button>
-                    </div>
-                    <div class="ca-toolbar-group ca-toolbar-fields" role="group" aria-label="Attachement">
+                    {% end_toolbar_group %}
+                    {% toolbar_group "Attachement" "ca-toolbar-group ca-toolbar-fields" %}
                         <div class="ca-toolbar-field ca-toolbar-field--attachement">
                             <label for="attachement-select">Attachement</label>
                             <select id="attachement-select" class="form-control">
@@ -105,10 +103,10 @@
                                 <span class="sr-only">Chargement de la fiche de contrôle…</span>
                             </span>
                         </div>
-                    </div>
+                    {% end_toolbar_group %}
                 </div>
                 <div id="selectionSumDisplay" class="selection-sum-display ca-selection-sum" role="status" aria-live="polite"></div>
-        </div>
+        {% end_editor_toolbar %}
 
         <div class="fiche-editor app-card ca-compact-form no-print">
             <div id="fiche-tableview-error" class="app-alert app-alert-error" role="alert" hidden></div>

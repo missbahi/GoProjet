@@ -37,6 +37,14 @@ class Attachement(models.Model):
     statut = models.CharField(max_length=15, choices=STATUT_ATTACHEMENT, default='BROUILLON')
     observations = models.TextField(blank=True, verbose_name="Observations")
     montant_ht = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Montant HT", default=Decimal('0.00'))
+    montant_revision_prix = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        verbose_name=_("Révision des prix calculée"),
+    )
+    detail_calcul_revision = models.JSONField(default=dict, blank=True)
+    date_calcul_revision = models.DateTimeField(null=True, blank=True)
 
     fichier = models.FileField(upload_to='attachements/%Y/%m/', null=True, blank=True)
     original_filename = models.CharField(max_length=255, blank=True, verbose_name="Nom de fichier original")

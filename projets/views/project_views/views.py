@@ -25,6 +25,7 @@ from projets.models import (
 from projets.utils.utils import render_page_or_fragment
 from projets.utils.navigation import project_crumbs
 from projets.services.avancement_projet import avancement_ttc
+from projets.services.revision_readiness import indicateur_revision_tableau_bord
 
 
 @superuser_required
@@ -287,6 +288,7 @@ def supprimer_projet(request, projet_id):
 @can_view_projet
 def dashboard_projet(request, projet_id):
     projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
+    indicateur_revision = indicateur_revision_tableau_bord(projet)
     rapports_journaliers = projet.rapports_journaliers.all()
     dernier_rapport_journalier = rapports_journaliers.first()
     situations_mensuelles = projet.situations_mensuelles.all()
@@ -373,6 +375,7 @@ def dashboard_projet(request, projet_id):
     return render(request, template, {
         'can_handler': can_handler,
         'projet': projet,
+        'indicateur_revision': indicateur_revision,
         'breadcrumb_items': project_crumbs(projet),
         'lots': lots,
         'montant_total': montant_total_formate,

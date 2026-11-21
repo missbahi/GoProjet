@@ -53,6 +53,23 @@
                     <i class="fas fa-edit"></i>
                     Modifier
                 </a>
+                {% if revision_prete %}
+                <form method="post"
+                      action="{% url 'projets:calculer_revision_attachement' attachement.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-percent"></i>
+                        {% if attachement.date_calcul_revision %}Recalculer la révision{% else %}Calculer la révision{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+                {% if attachement.date_calcul_revision %}
+                <a href="{% url 'projets:note_calcul_revision_attachement' attachement.id %}"
+                   target="_blank" rel="noopener" class="btn btn-success">
+                    <i class="fas fa-file-lines"></i>
+                    Note de calcul
+                </a>
+                {% endif %}
                 
                 <button onclick="exportPDF()" class="btn btn-success">
                     <i class="fas fa-file-pdf"></i>
@@ -131,6 +148,28 @@
                 </div> 
             </div>
         </section>
+
+        {% if attachement.date_calcul_revision %}
+        <section class="info-card no-print" style="border-left: 4px solid var(--accent-primary);">
+            <div class="info-item">
+                <i class="fas fa-percent info-icon" style="color: var(--accent-primary);"></i>
+                <div class="info-content">
+                    <div class="info-label">Dernière révision calculée</div>
+                    <div class="info-value">
+                        {{ attachement.montant_revision_prix|format_french_number }} DH HT
+                        <span style="color: var(--text-muted);">
+                            · {{ attachement.date_calcul_revision|date:"d/m/Y H:i" }}
+                        </span>
+                    </div>
+                    {% if attachement.detail_calcul_revision.provisoire %}
+                    <p class="text-sm mt-1" style="color: var(--accent-warning);">
+                        Calcul provisoire utilisant un ou plusieurs index provisoires.
+                    </p>
+                    {% endif %}
+                </div>
+            </div>
+        </section>
+        {% endif %}
 
         <!-- Résumé financier -->
         <!-- <section class="summary-card no-print">

@@ -1,0 +1,442 @@
+{% load navigation l10n %}
+
+{% breadcrumb %}
+
+<div data-family="project" class="max-w-6xl mx-auto"
+     data-revision-projet-id="{{ projet.id }}"
+     data-page-title="Révision des prix"
+     data-page-icon="fa-percent">
+    <div class="mb-6">
+        <h1 class="app-section-title mb-2">
+            <i class="fas fa-percent mr-2"></i>
+            Révision des prix
+        </h1>
+        <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
+        <p class="text-sm" style="color: var(--text-secondary);">
+            Créez les formules puis affectez-les aux lignes principales des lots.
+        </p>
+    </div>
+
+    {% if configuration_revision_prete %}
+    <div class="app-card p-4 md:p-6 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+         style="border-left: 4px solid var(--accent-success);">
+        <div>
+            <h2 class="font-semibold" style="color: var(--accent-success);">
+                <i class="fas fa-circle-check mr-2"></i>Configuration complète
+            </h2>
+            <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                Toutes les lignes principales du bordereau sont couvertes.
+                L’éditeur reste disponible pour modifier ou supprimer une formule.
+            </p>
+        </div>
+        <a href="{% url 'projets:liste_attachements' projet.id %}"
+           class="app-btn-primary justify-center whitespace-nowrap">
+            <i class="fas fa-calculator mr-2"></i>Calculer sur les attachements
+        </a>
+    </div>
+    {% endif %}
+
+    <details class="app-card p-4 md:p-6 mb-6" {% if controle_indexes.erreurs %}open{% endif %}>
+        <summary class="flex items-center justify-between gap-3 cursor-pointer">
+            <div>
+                <h2 class="text-lg font-semibold" style="color: var(--accent-primary);">
+                    Index et bulletins
+                </h2>
+                <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                    Dernier attachement : {{ controle_indexes.dernier_attachement_mois|date:"m/Y"|default:"Aucun" }}
+                    · Dernier bulletin : {{ controle_indexes.dernier_bulletin_disponible|date:"m/Y"|default:"Aucun" }}
+                </p>
+            </div>
+            <span class="app-badge {% if controle_indexes.pret %}app-badge-success{% else %}app-badge-warning{% endif %}">
+                {% if controle_indexes.pret %}À jour{% else %}À compléter{% endif %}
+            </span>
+        </summary>
+
+        {% if controle_indexes.erreurs %}
+        <div class="mt-4 app-alert app-alert-warning">
+            <ul class="list-disc pl-5">
+                {% for erreur in controle_indexes.erreurs %}<li>{{ erreur }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if indexes_revision %}
+        <form method="post"
+              action="{% url 'projets:enregistrer_valeurs_indexes' projet.id %}"
+              class="mt-4 space-y-4">
+            {% csrf_token %}
+            <div>
+                <label class="app-modal-label" for="source_bulletin">Source du bulletin</label>
+                <input type="text" id="source_bulletin" name="source_bulletin"
+                       class="app-modal-input" placeholder="Bulletin, référence, lien…">
+            </div>
+
+            <div class="revision-index-tableview table-view-scroll">
+                <table class="table-view-table" role="grid" aria-label="Valeurs des index par mois">
+                    <thead>
+                        <tr>
+                            <th class="tv-frozen" data-colonne-index="0">
+                                <span>Index</span>
+                                <button type="button"
+                                        class="revision-index-resize-handle"
+                                        aria-label="Redimensionner la colonne Index"
+                                        title="Redimensionner"></button>
+                            </th>
+                            {% for colonne in statuts_mois %}
+                            <th data-colonne-index="{{ forloop.counter }}"
+                                data-mois-code="{{ colonne.mois|date:'Ym' }}">
+                                <span>{{ colonne.mois|date:"m/Y" }}</span>
+                                <select name="statut_mois_{{ colonne.mois|date:'Ym' }}"
+                                        class="revision-index-statut"
+                                        aria-label="Statut {{ colonne.mois|date:'m/Y' }}">
+                                    <option value="IND_DEF" {% if colonne.statut == 'IND_DEF' %}selected{% endif %}>Définitif</option>
+                                    <option value="IND_PRO" {% if colonne.statut == 'IND_PRO' %}selected{% endif %}>Provisoire</option>
+                                </select>
+                                <button type="button"
+                                        class="revision-index-resize-handle"
+                                        aria-label="Redimensionner {{ colonne.mois|date:'m/Y' }}"
+                                        title="Redimensionner"></button>
+                            </th>
+                            {% endfor %}
+                            <th class="revision-index-add-column">
+                                <button type="button"
+                                        class="revision-index-add-button"
+                                        data-add-index-column
+                                        aria-label="Ajouter un mois"
+                                        title="Ajouter un mois">
+                                    <i class="fas fa-plus-circle"></i>
+                                </button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ligne in grille_indexes %}
+                        <tr>
+                            <th class="tv-row-header tv-frozen" scope="row"
+                                data-index-id="{{ ligne.index.id }}">
+                                <span class="revision-index-symbole">{{ ligne.index.symbole }}</span>
+                                <small>{{ ligne.index.libelle|default:"—" }}</small>
+                            </th>
+                            {% for cellule in ligne.cellules %}
+                            <td class="revision-index-cell is-numeric {% if not cellule.valeur %}is-missing{% endif %}">
+                                <input type="number"
+                                       name="valeur_index_{{ ligne.index.id }}_{{ cellule.mois|date:'Ym' }}"
+                                       value="{{ cellule.valeur.valeur|unlocalize|default:'' }}"
+                                       step="0.0001" min="0"
+                                       aria-label="{{ ligne.index.symbole }} {{ cellule.mois|date:'m/Y' }}"
+                                       inputmode="decimal">
+                            </td>
+                            {% endfor %}
+                            <td class="revision-index-add-column-cell"></td>
+                        </tr>
+                        {% endfor %}
+                        <tr class="revision-index-add-row">
+                            <td colspan="{{ statuts_mois|length|add:'2' }}">
+                                <button type="button"
+                                        class="revision-index-add-button"
+                                        data-add-index-row
+                                        aria-label="Ajouter un index"
+                                        title="Ajouter un index">
+                                    <i class="fas fa-plus-circle"></i>
+                                    <span>Ajouter un index</span>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-sm" data-index-paste-status role="status"
+               style="color: var(--text-muted);">
+                Collage Excel : sélectionnez une cellule puis collez une plage de valeurs.
+            </p>
+            <button type="submit" class="app-btn-primary">
+                <i class="fas fa-save mr-2"></i>Enregistrer les index
+            </button>
+        </form>
+        {% endif %}
+    </details>
+
+    <div class="app-card p-4 md:p-6 mb-6">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+            <div>
+                <h2 class="text-lg font-semibold" style="color: var(--accent-primary);">
+                    Mois de base unique
+                </h2>
+                <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                    OS de commencement : {{ os_commencement.date_effet|date:"d/m/Y" }}
+                </p>
+                {% if projet.mois_base_revision %}
+                    <p class="text-sm mt-1" style="color: var(--text-secondary);">
+                        Mois actuellement appliqué à toutes les formules :
+                        <strong>{{ projet.mois_base_revision|date:"m/Y" }}</strong>
+                    </p>
+                {% else %}
+                    <p class="text-sm mt-1" style="color: var(--accent-warning);">
+                        Aucun mois de base n'est encore renseigné.
+                    </p>
+                {% endif %}
+            </div>
+            <form method="post" id="revision-formule-form"
+                  action="{% url 'projets:enregistrer_mois_base_revision' projet.id %}"
+                  class="w-full md:max-w-md space-y-3">
+                {% csrf_token %}
+                {% if mois_base_form.non_field_errors %}
+                    <div class="text-sm" style="color: var(--accent-danger);">{{ mois_base_form.non_field_errors }}</div>
+                {% endif %}
+                <div>
+                    <label class="app-modal-label" for="{{ mois_base_form.epoque_base.id_for_label }}">
+                        {{ mois_base_form.epoque_base.label }}
+                    </label>
+                    {{ mois_base_form.epoque_base }}
+                    {% if mois_base_form.epoque_base.errors %}
+                        <div class="text-sm" style="color: var(--accent-danger);">{{ mois_base_form.epoque_base.errors }}</div>
+                    {% endif %}
+                </div>
+                <div>
+                    <label class="text-sm flex items-start gap-2" style="color: var(--text-secondary);">
+                        {{ mois_base_form.confirmer_modification }}
+                        <span>
+                            {{ mois_base_form.confirmer_modification.label }}
+                            {% if projet.mois_base_revision %}
+                                — requis pour modifier une valeur existante
+                            {% endif %}
+                        </span>
+                    </label>
+                    {% if mois_base_form.confirmer_modification.errors %}
+                        <div class="text-sm mt-1" style="color: var(--accent-danger);">
+                            {{ mois_base_form.confirmer_modification.errors }}
+                        </div>
+                    {% endif %}
+                    <p class="text-xs mt-1" style="color: var(--accent-warning);">
+                        Une confirmation est demandée si cette date remplace la date existante
+                        ou précède l'OS de commencement de plus de six mois.
+                    </p>
+                </div>
+                <button type="submit" class="app-btn-primary w-full justify-center">
+                    <i class="fas fa-save mr-2"></i>
+                    {% if projet.mois_base_revision %}Modifier le mois de base{% else %}Enregistrer le mois de base{% endif %}
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if projet.mois_base_revision %}
+    {% if formules_predefinies %}
+    <details class="app-card p-4 md:p-6 mb-6 formules-predefinies-toggle">
+        <summary class="flex items-center justify-between gap-3 cursor-pointer">
+            <h2 class="text-lg font-semibold" style="color: var(--accent-primary);">
+                Formules prédéfinies
+            </h2>
+            <span class="app-btn-secondary formules-toggle-label" aria-hidden="true">
+                <i class="fas fa-chevron-down"></i>
+            </span>
+        </summary>
+        <div id="formules-predefinies-liste"
+             class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+            {% for predefinie in formules_predefinies %}
+            <div class="p-3 rounded-lg border formule-revision-carte formule-revision-carte--predefinie"
+                 style="border-color: var(--border-default);">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <h3 class="font-semibold">{{ predefinie.libelle }}</h3>
+                        <div class="mt-2 formule-revision-texte formule-revision-texte--predefinie"
+                             data-formule-latex="{{ predefinie.latex }}">
+                            {{ predefinie.latex }}
+                        </div>
+                    </div>
+                    <a href="?preset={{ predefinie.code }}"
+                       class="app-btn-secondary whitespace-nowrap">
+                        {% if preset_selectionne == predefinie.code %}Sélectionnée{% else %}Utiliser{% endif %}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </details>
+    {% endif %}
+
+    <details class="mb-6 app-card" {% if preset_selectionne or formule_form.errors or formule_a_modifier %}open{% endif %}>
+        <summary class="p-4 md:p-6 cursor-pointer font-semibold" style="color: var(--accent-primary);">
+            <i class="fas {% if formule_a_modifier %}fa-pen{% else %}fa-plus-circle{% endif %} mr-2"></i>
+            {% if formule_a_modifier %}Modifier {{ formule_a_modifier.code }}{% else %}Créer une formule{% endif %}
+        </summary>
+        <form method="post"
+              action="{% if formule_a_modifier %}{% url 'projets:modifier_formule_revision' projet.id formule_a_modifier.id %}{% else %}{% url 'projets:creer_formule_revision' projet.id %}{% endif %}"
+              class="p-4 md:p-6 pt-0 space-y-4">
+            {% csrf_token %}
+            {% if formule_form.non_field_errors %}
+                <div class="app-alert app-alert-error">{{ formule_form.non_field_errors }}</div>
+            {% endif %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {% for champ in formule_form %}
+                <div>
+                    <label class="app-modal-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                    {{ champ }}
+                    {% if champ.errors %}<div class="text-sm text-red-600">{{ champ.errors }}</div>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="border-t pt-4" style="border-color: var(--border-default);">
+                <h3 class="font-semibold mb-3">Termes de la formule</h3>
+                {{ termes_formset.management_form }}
+                <div class="space-y-3">
+                    {% for terme in termes_formset %}
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+                        {{ terme.id }}
+                        {% for champ in terme.visible_fields %}
+                        <div>
+                            <label class="app-modal-label" for="{{ champ.id_for_label }}">{{ champ.label }}</label>
+                            {{ champ }}
+                            {% if champ.errors %}<div class="text-sm text-red-600">{{ champ.errors }}</div>{% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="app-card p-3" style="background: var(--bg-tertiary);">
+                <p class="text-xs uppercase font-semibold mb-2" style="color: var(--text-muted);">
+                    Aperçu de la formule
+                </p>
+                <div id="revision-formule-apercu"
+                     class="formule-revision-texte"></div>
+            </div>
+
+            <button type="submit" class="app-btn-primary">
+                <i class="fas fa-save mr-2"></i>
+                {% if formule_a_modifier %}Enregistrer les modifications{% else %}Créer la formule{% endif %}
+            </button>
+        </form>
+    </details>
+
+    {% if formules %}
+    <div class="space-y-4 mb-6">
+        {% for formule in formules %}
+        <div class="app-card p-4 md:p-6 formule-revision-carte">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                    <h3 class="text-lg font-semibold" style="color: var(--accent-primary);">
+                        {{ formule.code }}{% if formule.libelle %} — {{ formule.libelle }}{% endif %}
+                    </h3>
+                    <p class="text-sm" style="color: var(--text-secondary);">
+                        k = {{ formule.k }} · Mois de base {{ projet.mois_base_revision|date:"m/Y" }}
+                    </p>
+                </div>
+                <div class="text-sm text-right" style="color: var(--text-muted);">
+                    {{ formule.termes.count }} terme{{ formule.termes.count|pluralize }}
+                    <a href="{% url 'projets:modifier_formule_revision' projet.id formule.id %}"
+                       class="app-btn-secondary ml-2">
+                        <i class="fas fa-pen mr-1"></i>Modifier
+                    </a>
+                </div>
+            </div>
+            <form method="post"
+                  action="{% url 'projets:supprimer_formule_revision' projet.id formule.id %}"
+                  class="mt-4 pt-3 border-t flex flex-col md:flex-row md:items-center md:justify-between gap-3"
+                  style="border-color: var(--border-default);">
+                {% csrf_token %}
+                {% if formule.nombre_lignes_affectees %}
+                    <label class="text-sm flex items-start gap-2" style="color: var(--accent-warning);">
+                        <input type="checkbox" name="confirmer_suppression" class="mt-1">
+                        <span>
+                            Cette formule est affectée à {{ formule.nombre_lignes_affectees }} ligne{{ formule.nombre_lignes_affectees|pluralize }}.
+                            Confirmer leur retrait avant suppression.
+                        </span>
+                    </label>
+                {% else %}
+                    <span class="text-sm" style="color: var(--text-muted);">Aucune ligne n'utilise cette formule.</span>
+                {% endif %}
+                <button type="submit"
+                        class="app-btn"
+                        style="background-color: var(--accent-danger); color: var(--text-inverse);">
+                    <i class="fas fa-trash mr-2"></i>Supprimer
+                </button>
+            </form>
+            <div class="mt-3 flex flex-wrap gap-2">
+                {% for terme in formule.termes.all %}
+<!--                     <span class="px-3 py-1 rounded-full text-sm"
+                          style="background: var(--bg-tertiary); color: var(--text-primary);">
+                        {{ terme.coefficient }}
+                        {% if terme.type_terme == 'SIMPLE' %}
+                            × {{ terme.index_simple.symbole }}
+                        {% else %}
+                            × {{ terme.index_composite_a.symbole }} (1 + {{ terme.index_composite_b.symbole }})
+                        {% endif %}
+                    </span> -->
+                {% empty %}
+                    <span style="color: var(--accent-warning);">Aucun terme</span>
+                {% endfor %}
+            </div>
+            <div class="mt-4 overflow-x-auto formule-revision-texte"
+                 data-formule-latex="{{ formule.formule_latex }}">
+                {{ formule.formule_latex }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="app-card p-6 text-center mb-6">
+        <i class="fas fa-percent text-4xl mb-3" style="color: var(--text-muted);"></i>
+        <p class="dashboard-no-data">Les formules de révision sont absentes</p>
+    </div>
+    {% endif %}
+    {% else %}
+    <div class="app-card p-6 text-center mb-6">
+        <i class="fas fa-calendar-circle-exclamation text-4xl mb-3" style="color: var(--accent-warning);"></i>
+        <p class="dashboard-no-data">Renseignez et confirmez le mois de base avant de gérer les formules.</p>
+    </div>
+    {% endif %}
+
+    {% if projet.mois_base_revision %}
+    <form method="post" action="{% url 'projets:affecter_formules_revision' projet.id %}">
+        {% csrf_token %}
+        <div class="flex items-center justify-between gap-3 mb-4">
+            <h2 class="text-lg md:text-xl font-semibold" style="color: var(--accent-primary);">
+                Affectation aux lignes principales
+            </h2>
+            <button type="submit" class="app-btn-primary" {% if not formules %}disabled{% endif %}>
+                <i class="fas fa-link mr-2"></i>Enregistrer les affectations
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            {% for lot_data in lots_data %}
+            <div class="app-card p-4 md:p-6">
+                <h3 class="text-lg font-semibold mb-1" style="color: var(--accent-primary);">
+                    <i class="fas fa-cube mr-2"></i>{{ lot_data.lot.nom }}
+                </h3>
+                {% if lot_data.titres %}
+                    <p class="text-sm mb-4" style="color: var(--text-muted);">{{ lot_data.titres }}</p>
+                {% endif %}
+                {% if lot_data.lignes_principales %}
+                    <div class="space-y-3">
+                        {% for ligne in lot_data.lignes_principales %}
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center border-t pt-3"
+                             style="border-color: var(--border-default);">
+                            <div class="md:col-span-2">
+                                <span class="font-medium">{{ ligne.numero }}</span>
+                                <span>{{ ligne.designation }}</span>
+                            </div>
+                            <select name="formule_ligne_{{ ligne.id }}" class="app-modal-input">
+                                <option value="">Sans formule</option>
+                                {% for formule in formules %}
+                                    <option value="{{ formule.id }}"
+                                            {% if ligne.instance.formule_revision_id == formule.id %}selected{% endif %}>
+                                        {{ formule.code }}{% if formule.libelle %} — {{ formule.libelle }}{% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="dashboard-no-data">Aucune ligne principale détectée dans ce lot.</p>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </form>
+    {% endif %}
+</div>
