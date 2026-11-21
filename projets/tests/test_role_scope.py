@@ -271,6 +271,44 @@ class RoleScopeTests(AttachementTestData, TestCase):
         self.projet.refresh_from_db()
         self.assertEqual(self.projet.dossier_id, self.dossier.pk)
 
+    def test_project_modal_preserves_revision_configuration_not_rendered(self):
+        self.projet.nature_revision = "APPROVISIONNEMENT_PIED_OEUVRE"
+        self.projet.methode_arrondi_revision = "ARRONDI"
+        self.projet.politique_index_revision = "DEFINITIF_SEULEMENT"
+        self.projet.appliquer_report_m_plus_2 = False
+        self.projet.save()
+        data = model_to_dict(self.projet, fields=ProjetForm._meta.fields)
+        data = {field: value for field, value in data.items() if value is not None}
+        data.update(
+            dossier=self.dossier.pk,
+            nom="Projet modifié",
+            objet="Objet modifié",
+            date_debut="2025-01-10",
+            delai="12",
+        )
+        self.client.force_login(self.chef)
+
+        response = self.client.post(
+            reverse("projets:modifier_projet_modal", args=[self.projet.pk]),
+            data,
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["success"])
+        self.projet.refresh_from_db()
+        self.assertEqual(self.projet.nom, "Projet modifié")
+        self.assertEqual(
+            self.projet.nature_revision,
+            "APPROVISIONNEMENT_PIED_OEUVRE",
+        )
+        self.assertEqual(self.projet.methode_arrondi_revision, "ARRONDI")
+        self.assertEqual(
+            self.projet.politique_index_revision,
+            "DEFINITIF_SEULEMENT",
+        )
+        self.assertFalse(self.projet.appliquer_report_m_plus_2)
+
     def test_local_dossier_metadata_cannot_reassign_users_or_projects(self):
         self.client.force_login(self.responsable)
         url = reverse('projets:modifier_dossier', args=[self.dossier.pk])

@@ -333,8 +333,7 @@ class ProjetForm(forms.ModelForm):
         fields = [
             'dossier', 'type_projet', 'nom', 'maitre_ouvrage', 'numero', 'objet', 'date_debut',
             'delai', 'unite_delai', 'avancement', 'statut', 'montant', 'montant_soumission', 'taux_tva',
-            'localisation', 'entreprise', 'revisable', 'nature_revision',
-            'methode_arrondi_revision', 'politique_index_revision', 'appliquer_report_m_plus_2'
+            'localisation', 'entreprise', 'revisable'
         ]
         widgets = {
             'dossier': forms.Select(attrs={'placeholder': 'Dossier du projet'}),
@@ -355,11 +354,6 @@ class ProjetForm(forms.ModelForm):
             'entreprise': forms.Select(attrs={'placeholder': 'Nom de l\'entreprise'}),
             'revisable': forms.CheckboxInput(attrs={'class': 'hidden peer', 'id': 'revisable-toggle'
             }),
-            'nature_revision': forms.Select(),
-            'methode_arrondi_revision': forms.Select(),
-            'politique_index_revision': forms.Select(),
-            'appliquer_report_m_plus_2': forms.CheckboxInput(),
-            
         }
 
     def __init__(self, *args, **kwargs):
