@@ -217,6 +217,26 @@ class RoleScopeTests(AttachementTestData, TestCase):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(lots).status_code, 200)
 
+    def test_revision_price_respects_user_module_availability(self):
+        self.assertIn("revision_prix", dict(MODULE_CHOICES))
+        target = self.actor('membre-revision', 'CHEF_PROJET')
+        self.projet.users.add(target)
+        target.profile.modules_desactives = ["revision_prix"]
+        target.profile.save(update_fields=["modules_desactives"])
+        self.client.force_login(target)
+
+        url = reverse(
+            "projets:gestion_revision_prix",
+            args=[self.projet.pk],
+        )
+        self.assertEqual(self.client.get(url).status_code, 403)
+        self.assertNotContains(
+            self.client.get(
+                reverse("projets:dashboard", args=[self.projet.pk]),
+            ),
+            url,
+        )
+
     def test_journal_acces_reserve_au_super_admin(self):
         target = self.actor('membre-journal', 'CHEF_PROJET')
         self.projet.users.add(target)

@@ -86,6 +86,18 @@ MODULES = {
             'supprimer_decompte', 'calcul_retard_decompte', 'attachements_ajouter_decompte',
         },
     },
+    'revision_prix': {
+        'label': 'Révision des prix',
+        'routes': {
+            'gestion_revision_prix', 'creer_formule_revision',
+            'modifier_formule_revision', 'supprimer_formule_revision',
+            'affecter_formules_revision', 'enregistrer_mois_base_revision',
+            'enregistrer_valeurs_indexes',
+            'calculer_revision_attachement', 'note_calcul_revision_attachement',
+            'calculer_tous_attachements_revision',
+            'rapport_revision_tous_attachements',
+        },
+    },
     'ca': {
         'label': "Chiffre d'affaires mensuel",
         'routes': {

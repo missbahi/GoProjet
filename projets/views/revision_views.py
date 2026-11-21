@@ -9,7 +9,11 @@ from django.utils import timezone
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from projets.decorators import chef_projet_required, consultation_projet_required
+from projets.decorators import (
+    chef_projet_required,
+    consultation_projet_required,
+    est_observateur,
+)
 from projets.forms import FormuleRevisionForm, MoisBaseRevisionForm, TermeFormuleForm
 from projets.models import FormuleRevision, LigneBordereau, Projet, TermeFormule
 from projets.models.revision import (
@@ -201,6 +205,7 @@ def gestion_revision_prix(request, projet_id):
     contexte = _contexte_revision(
         projet, preset_code=request.GET.get("preset"),
     )
+    contexte["peut_modifier_revision"] = not est_observateur(request.user)
     if request.headers.get('HX-Request'):
         return render(
             request,
@@ -249,6 +254,7 @@ def modifier_formule_revision(request, projet_id, formule_id):
         termes_formset = TermeFormuleFormSet(instance=formule, prefix="termes")
 
     contexte = _contexte_revision(projet, formule_form, termes_formset)
+    contexte["peut_modifier_revision"] = True
     contexte["formule_a_modifier"] = formule
     return render(
         request,
@@ -349,6 +355,7 @@ def creer_formule_revision(request, projet_id):
         if formule_form.is_valid() and termes_formset.is_valid():
             formule_form.add_error(None, error)
         contexte = _contexte_revision(projet, formule_form, termes_formset)
+        contexte["peut_modifier_revision"] = True
         return render(
             request,
             'projets/revision/gestion_revision_prix.html',
@@ -427,6 +434,7 @@ def enregistrer_mois_base_revision(request, projet_id):
         )
         return redirect('projets:gestion_revision_prix', projet_id=projet.pk)
     contexte = _contexte_revision(projet, mois_base_form=formulaire)
+    contexte["peut_modifier_revision"] = True
     return render(
         request,
         'projets/revision/gestion_revision_prix.html',

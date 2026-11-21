@@ -24,6 +24,8 @@ READ_VIEWS = {
         'detail_attachement', 'tracabilite_validation_attachement',
         'liste_decomptes', 'detail_decompte', 'calcul_retard_decompte', 'fiche_controle',
         'ordres_service', 'details_ordre_service', 'api_jours_decoules', 'download_document',
+        'gestion_revision_prix', 'note_calcul_revision_attachement',
+        'rapport_revision_tous_attachements',
         'liste_notifications', 'notification_panel', 'notifications_non_lues_api',
         'notification_data_api', 'profile_modal', 'password_modal', 'serve_avatar',
         'manifest', 'serviceworker', 'sommaire', 'sommaire_projet', 'sommaire_onglet',

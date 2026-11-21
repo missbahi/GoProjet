@@ -179,7 +179,7 @@
                 {% endif %}
 
                 {# ═══════════ Révision des prix ═══════════ #}
-                {% if indicateur_revision %}
+                {% if indicateur_revision and 'revision_prix' not in modules_desactives %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-percent"></i></div>
                     <h4 class="dashboard-module-title">Révision des prix</h4>

@@ -18,7 +18,7 @@ from projets.forms import UtilisateurCreationForm
 from projets.models import (
     Attachement, CategorieCharge, ChiffreAffaire, DepenseSituationMensuelle, DocumentAdministratif, Dossier,
     LigneAttachement, LigneBordereau, LotProjet, Notification, Projet, ProcessValidation,
-    RessourceAffectee, SituationMensuelle,
+    OrdreService, RessourceAffectee, SituationMensuelle, TypeOrdreService,
     StockSituationMensuelle,
 )
 from projets.observer_access import (
@@ -217,6 +217,53 @@ class ObservateurTests(AttachementTestData, TestCase):
             for method in ('post', 'put', 'patch', 'delete'):
                 with self.subTest(route=route.name, method=method):
                     self.assertEqual(getattr(self.client, method)(url).status_code, 403)
+
+    def test_revision_prix_is_readable_but_not_editable(self):
+        self.projet.revisable = True
+        self.projet.epoque_base = date(2025, 1, 1)
+        self.projet.save()
+        type_osc, _ = TypeOrdreService.objects.get_or_create(
+            code="OSC",
+            defaults={
+                "nom": "OS de commencement",
+                "description": "Commencement",
+                "ordre_min": 1,
+                "ordre_max": 1,
+                "unique_dans_projet": True,
+            },
+        )
+        OrdreService.objects.bulk_create([OrdreService(
+            projet=self.projet,
+            type_os=type_osc,
+            reference="OSC-OBS",
+            titre="Commencement",
+            description="Commencement",
+            date_publication=date(2025, 2, 1),
+            date_effet=date(2025, 2, 1),
+            statut="NOTIFIE",
+            ordre_sequence=1,
+        )])
+        url = reverse(
+            "projets:gestion_revision_prix",
+            args=[self.projet.pk],
+        )
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Enregistrer les index")
+        self.assertNotContains(response, "Créer une formule")
+        self.assertNotContains(response, "Modifier le mois de base")
+
+        self.assertEqual(
+            self.client.post(
+                reverse(
+                    "projets:enregistrer_valeurs_indexes",
+                    args=[self.projet.pk],
+                ),
+                {},
+            ).status_code,
+            403,
+        )
 
     def test_get_mutation_admin_and_user_management_are_denied_even_with_staff_flag(self):
         self.user.is_staff = True
