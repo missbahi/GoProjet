@@ -46,7 +46,7 @@ def landing(request):
 
 
 @login_required
-def home(request):
+def home_backup(request):
     today = timezone.localdate()
     profile = request.user.profile
     projets_utilisateur = projets_accessibles(request.user)
@@ -142,6 +142,16 @@ def home(request):
 
     return render(request, 'projets/home/home.html', context)
 
+from projets.services.home_contexte import construire_contexte_home
+
+
+@login_required
+def home(request):
+    today = timezone.localdate()
+    ctx = construire_contexte_home(request.user, today)
+    if request.headers.get('HX-Request'):
+        return render(request, 'projets/home/_home_content.html', ctx)
+    return render(request, 'projets/home/home.html', ctx)
 
 @login_required
 @require_POST

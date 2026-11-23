@@ -31,7 +31,7 @@
       <input type="text" name="{{ depense_form.unite.html_name }}" id="{{ depense_form.unite.auto_id }}"
              value="{{ depense_form.unite.value|default_if_none:'' }}"
              class="app-modal-input depense-unite cursor-not-allowed" readonly
-             style="background-color: var(--bg-elevated);">
+      >
     {% else %}
       {{ depense_form.unite }}
     {% endif %}

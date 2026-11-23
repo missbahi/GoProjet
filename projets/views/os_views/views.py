@@ -62,6 +62,8 @@ def get_projet_from_instance(instance):
         return instance.processValidation.attachement.projet
     elif hasattr(instance, 'situation'):
         return instance.situation.projet
+    elif hasattr(instance, 'rapport'):
+        return instance.rapport.projet
     return None
 
 

@@ -1,9 +1,9 @@
-
 <div data-family="app"
      data-page-title="Tableau de bord"
      data-page-icon="fa-home">
     {% include "includes/_role_scope_notice.html" %}
     <div class="w-full">
+
         <!-- Titre et description -->
         <div class="mb-4 md:mb-6">
             <h1 class="text-lg md:text-2xl font-bold" style="color: var(--text-primary);">
@@ -12,6 +12,7 @@
             <p class="text-sm md:text-base mt-1" style="color: var(--text-secondary);">
                 Pilotez vos travaux, suivez votre production et maîtrisez votre performance.
             </p>
+            {% if indicateurs_home %}
             <p class="text-sm mt-2" style="color: var(--text-secondary);">
                 Données au {{ date_indicateurs|date:"d/m/Y" }}. Avancement de production HT :
                 cumul du dernier CA (brouillons inclus), sinon dernier attachement validé, rapporté au bordereau HT.
@@ -19,6 +20,7 @@
                 CA et attachements sont présentés séparément et ne s'additionnent pas.
                 Montants en DH, hors taxes.
             </p>
+            {% endif %}
             {% if nb_projets_en_retard %}
             <p class="text-sm mt-2" style="color: var(--accent-warning);">
                 {{ nb_projets_en_retard }} projet{{ nb_projets_en_retard|pluralize }} en cours / arrêt avec échéance dépassée.
@@ -32,7 +34,8 @@
             {% endif %}
         </div>
 
-        <!-- Cartes de résumé -->
+        {# ═══════════ Cartes de résumé — module ca / attachements ═══════════ #}
+        {% if resume_cartes %}
         <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 md:gap-6 mb-4 md:mb-6">
             {% for carte in resume_cartes %}
             <div class="dashboard-card mobile-card rounded-lg shadow p-4 md:p-6 transition transform hover:scale-105"
@@ -62,8 +65,10 @@
             </div>
             {% endfor %}
         </div>
+        {% endif %}
 
-        <!-- Projets récents -->
+        {# ═══════════ Projets récents — module ca / attachements ═══════════ #}
+        {% if projets_recents %}
         <div class="rounded-lg shadow mb-6" style="background-color: var(--bg-surface);">
             <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
                 <h2 class="text-lg font-semibold" style="color: var(--accent-green);">
@@ -164,9 +169,13 @@
                 </a>
             </div>
         </div>
+        {% endif %}
 
-        <!-- Graphiques et échéances -->
+        {# ═══════════ Graphiques et échéances ═══════════ #}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            {# Graphique — module ca / attachements #}
+            {% if chart_data %}
             <div class="lg:col-span-2 rounded-lg shadow" style="background-color: var(--bg-surface);">
                 <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid var(--border-default);">
                     <h2 class="text-lg font-semibold" style="color: var(--accent-green);">
@@ -182,8 +191,11 @@
                         style="width: 100%; height: 100%;"></div>
                 </div>
             </div>
+            {% endif %}
 
-            <div class="rounded-lg shadow flex flex-col h-full" style="background-color: var(--bg-surface);">
+            {# Échéances — module taches #}
+            {% if 'taches' in modules_actifs %}
+            <div class="rounded-lg shadow flex flex-col h-full {% if not chart_data %}lg:col-span-3{% endif %}" style="background-color: var(--bg-surface);">
                 <div class="flex items-center justify-between p-4" style="border-bottom: 1px solid var(--border-default);">
                     <h2 class="text-lg font-semibold" style="color: var(--accent-green);">
                         <i class="fas fa-calendar-alt mr-2"></i> Échéances à venir
@@ -223,6 +235,7 @@
                     </a>
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

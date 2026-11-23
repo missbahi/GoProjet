@@ -49,33 +49,40 @@
                 <div class="space-y-2">
                     <div><strong style="color: var(--text-primary);">Délai :</strong> {{ projet.delai_formate }}</div>
                     <div><strong style="color: var(--text-primary);">Date de début :</strong> {{ projet.date_debut|date:"d/m/Y" }}</div>
-                    {% for lot in lots %}
+                    {# Les lots ne sont chargés que si un module financier est actif #}
+                    {% for lot in lots|default_if_none:'' %}
                         <div><strong style="color: var(--text-primary);">{{ lot.nom }} :</strong> {{ lot.montant_formate }} DH</div>
                     {% endfor %}
                 </div>
             </div>
 
+            {# Bloc financier : uniquement si lots/montant_total sont dans le contexte #}
+            {% if montant_total is not None or avancement_production %}
             <div class="mt-4 pt-4" style="border-top: 1px solid var(--border-default);">
                 <div class="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-2 font-bold text-base md:text-lg"
                     style="color: var(--accent-warning);">
                     <span><strong>Montant Marché TTC :</strong> {{ montant_total|default:"0.00" }} DH</span>
                     <span class="hidden md:inline" aria-hidden="true">|</span>
                     <span><strong>CA cumulé TTC :</strong>
-                        {% if avancement_production.montant_ttc != None %}{{ avancement_production.montant_ttc|floatformat:"2g" }} DH{% else %}Non disponible{% endif %}
+                        {% if avancement_production and avancement_production.montant_ttc != None %}{{ avancement_production.montant_ttc|floatformat:"2g" }} DH{% else %}Non disponible{% endif %}
                     </span>
                     <span class="hidden md:inline" aria-hidden="true">|</span>
                     <span><strong>Avancement :</strong>
-                        {% if avancement_production.pourcentage != None %}{{ avancement_production.pourcentage|floatformat:1 }} %{% else %}Non disponible{% endif %}
+                        {% if avancement_production and avancement_production.pourcentage != None %}{{ avancement_production.pourcentage|floatformat:1 }} %{% else %}Non disponible{% endif %}
                     </span>
                 </div>
+                {% if avancement_production %}
                 <p class="text-xs mt-2" style="color: var(--text-secondary);">
                     Source : {{ avancement_production.source }}{% if avancement_production.provisoire %} (provisoire){% endif %}.
                     TVA actuelle de chaque lot appliquée au cumul ; avancement = cumul TTC / marché TTC.
                 </p>
+                {% endif %}
             </div>
+            {% endif %}
         </div>
 
-        <!-- Pilotage du délai contractuel -->
+        {# ═══════════ Pilotage du délai contractuel — module OS ═══════════ #}
+        {% if 'os' in modules_actifs and delai_pilotage %}
         <section class="dashboard-delay-section mb-4 md:mb-6">
             <div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
                 style="border-bottom: 1px solid var(--border-default);">
@@ -94,25 +101,24 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0"
-                style="divide-color: var(--border-default);">
-                <div class="px-4 py-3">
+            <div class="dashboard-delay-metrics">
+                <div class="dashboard-delay-metric">
                     <div class="text-xs uppercase" style="color: var(--text-muted);">Début OSC</div>
                     <div class="mt-1 font-semibold" style="color: var(--text-primary);">
                         {% if delai_pilotage.osc %}{{ delai_pilotage.osc.date_effet|date:'d/m/Y' }}{% else %}Non notifié{% endif %}
                     </div>
                 </div>
-                <div class="px-4 py-3">
+                <div class="dashboard-delay-metric">
                     <div class="text-xs uppercase" style="color: var(--text-muted);">Délai initial</div>
                     <div class="mt-1 font-semibold" style="color: var(--text-primary);">{{ projet.delai_formate }}</div>
                 </div>
-                <div class="px-4 py-3">
+                <div class="dashboard-delay-metric">
                     <div class="text-xs uppercase" style="color: var(--text-muted);">Extensions</div>
                     <div class="mt-1 font-semibold" style="color: var(--text-primary);">
                         {{ delai_pilotage.jours_extension }} jour{{ delai_pilotage.jours_extension|pluralize }}
                     </div>
                 </div>
-                <div class="px-4 py-3">
+                <div class="dashboard-delay-metric">
                     <div class="text-xs uppercase" style="color: var(--text-muted);">Fin prévisionnelle</div>
                     <div class="mt-1 font-semibold {% if delai_pilotage.statut == 'RETARD' %}text-red{% elif delai_pilotage.statut == 'ALERTE' %}text-amber{% else %}text-cyan{% endif %}">
                         {% if delai_pilotage.date_fin %}{{ delai_pilotage.date_fin|date:'d/m/Y' }}{% else %}Non déterminée{% endif %}
@@ -127,15 +133,14 @@
                     {% if delai_pilotage.jours_ecoules is not None %}
                         <span><strong style="color: var(--text-primary);">{{ delai_pilotage.jours_ecoules }}</strong> jours effectifs</span>
                     {% endif %}
-                    {% if 'os' not in modules_desactives %}
                     <a href="{% url 'projets:ordres_service' projet.id %}"
                     class="font-semibold" style="color: var(--accent-primary);">
                         Voir les OS <i class="fas fa-arrow-right ml-1"></i>
                     </a>
-                    {% endif %}
                 </div>
             </div>
         </section>
+        {% endif %}
 
         <!-- Modules du projet -->
         <div class="project-dashboard-card mb-4 md:mb-6">
@@ -148,7 +153,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
 
                 {# ═══════════ Lots et Bordereaux ═══════════ #}
-                {% if 'lots' not in modules_desactives %}
+                {% if 'lots' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-cubes"></i></div>
                     <h4 class="dashboard-module-title">Lots et Bordereaux</h4>
@@ -179,7 +184,7 @@
                 {% endif %}
 
                 {# ═══════════ Révision des prix ═══════════ #}
-                {% if indicateur_revision and 'revision_prix' not in modules_desactives %}
+                {% if indicateur_revision and 'revision_prix' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-percent"></i></div>
                     <h4 class="dashboard-module-title">Révision des prix</h4>
@@ -199,9 +204,9 @@
                     </div>
                 </div>
                 {% endif %}
-                
+
                 {# ═══════════ Documents ═══════════ #}
-                {% if 'documents' not in modules_desactives %}
+                {% if 'documents' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-paperclip"></i></div>
                     <h4 class="dashboard-module-title">Documents administratifs</h4>
@@ -222,7 +227,7 @@
                 {% endif %}
 
                 {# ═══════════ Ordres de service ═══════════ #}
-                {% if 'os' not in modules_desactives %}
+                {% if 'os' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-file-contract"></i></div>
                     <h4 class="dashboard-module-title">Ordres de services</h4>
@@ -243,7 +248,7 @@
                 {% endif %}
 
                 {# ═══════════ Situations mensuelles ═══════════ #}
-                {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' and 'situations' not in modules_desactives %}
+                {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' and 'situations' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-calendar-check"></i></div>
                     <h4 class="dashboard-module-title">Situations mensuelles</h4>
@@ -270,7 +275,7 @@
                 {% endif %}
 
                 {# ═══════════ Attachements ═══════════ #}
-                {% if 'attachements' not in modules_desactives %}
+                {% if 'attachements' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-file-invoice-dollar"></i></div>
                     <h4 class="dashboard-module-title">Attachements</h4>
@@ -291,7 +296,7 @@
                 {% endif %}
 
                 {# ═══════════ Suivi d'exécution ═══════════ #}
-                {% if 'suivi' not in modules_desactives %}
+                {% if 'suivi' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-chart-line"></i></div>
                     <h4 class="dashboard-module-title">Suivi d'exécution</h4>
@@ -312,14 +317,14 @@
                 {% endif %}
 
                 {% if projet.dossier and projet.dossier.activite == 'TRAVAUX' %}
-                {# ═══════════ Affectation des ressources (TRAVAUX) ═══════════ #}
-                {% if 'ressources' not in modules_desactives %}
+                {# ═══════════ Ressources (TRAVAUX) ═══════════ #}
+                {% if 'ressources' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-boxes-packing"></i></div>
                     <h4 class="dashboard-module-title">Ressources</h4>
                     <p class="dashboard-module-desc">Suivi des ressources affectées au projet</p>
                     <div class="mt-auto">
-                        <p class="dashboard-no-data">{{ projet.ressources_affectees.count }} affectée{{ projet.ressources_affectees.count|pluralize }}</p>
+                        <p class="dashboard-no-data">{{ ressources_count|default:projet.ressources_affectees.count }} affectée{{ ressources_count|default:projet.ressources_affectees.count|pluralize }}</p>
                         <a href="{% url 'projets:ressources_projet' projet.id %}" class="btn-access  w-full justify-center">
                             <i class="fas fa-arrow-right"></i><span>Accéder</span>
                         </a>
@@ -328,7 +333,7 @@
                 {% endif %}
 
                 {# ═══════════ Rapports journaliers (TRAVAUX) ═══════════ #}
-                {% if 'rapports_journaliers' not in modules_desactives %}
+                {% if 'rapports_journaliers' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-calendar-day"></i></div>
                     <h4 class="dashboard-module-title">Rapports journaliers</h4>
@@ -351,9 +356,9 @@
                     </div>
                 </div>
                 {% endif %}
-                
+
                 {# ═══════════ Ateliers ═══════════ #}
-                {% if 'ateliers' not in modules_desactives %}
+                {% if 'ateliers' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-people-group"></i></div>
                     <h4 class="dashboard-module-title">Ateliers</h4>
@@ -376,7 +381,7 @@
                 {% endif %}
 
                 {# ═══════════ Fiche de contrôle ═══════════ #}
-                {% if 'fiche_controle' not in modules_desactives %}
+                {% if 'fiche_controle' in modules_actifs %}
                 <div class="dashboard-module-card">
                     <div class="dashboard-module-icon"><i class="fas fa-clipboard-check"></i></div>
                     <h4 class="dashboard-module-title">Fiche de Contrôle d'attachements</h4>
@@ -400,7 +405,7 @@
         </div>
 
         <!-- Section Décomptes -->
-        {% if 'decomptes' not in modules_desactives %}
+        {% if afficher_decomptes and 'decomptes' in modules_actifs %}
         <div class="project-dashboard-card">
             <div class="flex justify-between items-center mb-4 md:mb-6 flex-col sm:flex-row gap-3">
                 <h3 class="text-lg md:text-xl font-semibold flex items-center gap-2"
@@ -483,13 +488,11 @@
                     {% endfor %}
                 </div>
 
-                {% if decomptes_recents %}
-                    <div class="text-center mt-4 md:mt-6">
-                        <a href="{% url 'projets:liste_decomptes' projet.id %}" class="app-btn-secondary w-full sm:w-auto">
-                            Voir tous les décomptes ({{ total_decomptes }})
-                        </a>
-                    </div>
-                {% endif %}
+                <div class="text-center mt-4 md:mt-6">
+                    <a href="{% url 'projets:liste_decomptes' projet.id %}" class="app-btn-secondary w-full sm:w-auto">
+                        Voir tous les décomptes ({{ total_decomptes }})
+                    </a>
+                </div>
 
             {% else %}
                 <div class="text-center py-6 md:py-8">

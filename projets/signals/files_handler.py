@@ -10,7 +10,7 @@ from projets.models import (
     FichierSuivi,
     OrdreService,
     ProcessValidation,
-    RapportJournalier,
+    DocumentRapportJournalier,
     SituationMensuelle,
     DocumentSituationMensuelle,
 )
@@ -25,9 +25,9 @@ def delete_document(sender, instance, **kwargs):
     delete_file_field(instance)
 
 
-@receiver(post_delete, sender=RapportJournalier)
+@receiver(post_delete, sender=DocumentRapportJournalier)
 def delete_rapport_document(sender, instance, **kwargs):
-    delete_file_field(instance, field_name='document')
+    delete_file_field(instance, field_name='fichier')
 
 
 @receiver(post_delete, sender=SituationMensuelle)
@@ -46,7 +46,7 @@ def delete_situation_document_file(sender, instance, **kwargs):
 @receiver(pre_save, sender=OrdreService)
 @receiver(pre_save, sender=ProcessValidation)
 @receiver(pre_save, sender=EtapeValidation)
-@receiver(pre_save, sender=RapportJournalier)
+@receiver(pre_save, sender=DocumentRapportJournalier)
 @receiver(pre_save, sender=DocumentSituationMensuelle)
 def handle_file_update(sender, instance, **kwargs):
     """

@@ -253,8 +253,8 @@
             {% for predefinie in formules_predefinies %}
             <div class="p-3 rounded-lg border formule-revision-carte formule-revision-carte--predefinie"
                  style="border-color: var(--border-default);">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div class="min-w-0 flex-1 w-full">
                         <h3 class="font-semibold">{{ predefinie.libelle }}</h3>
                         <div class="mt-2 formule-revision-texte formule-revision-texte--predefinie"
                              data-formule-latex="{{ predefinie.latex }}">
@@ -262,7 +262,7 @@
                         </div>
                     </div>
                     {% if peut_modifier_revision %}<a href="?preset={{ predefinie.code }}"
-                       class="app-btn-secondary whitespace-nowrap">
+                       class="app-btn-secondary w-full sm:w-auto justify-center whitespace-nowrap shrink-0">
                         {% if preset_selectionne == predefinie.code %}Sélectionnée{% else %}Utiliser{% endif %}
                     </a>{% endif %}
                 </div>

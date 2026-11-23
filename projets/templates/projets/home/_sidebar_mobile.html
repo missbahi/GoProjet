@@ -32,6 +32,9 @@
         <div class="mb-6">
             <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Menu Principal</p>
             <ul class="space-y-2 text-lg">
+
+                {# 1. Tableau de bord — module home #}
+                {% if 'home' in modules_actifs %}
                 <li>
                     <a href="{% url 'projets:home' %}"
                         hx-get="{% url 'projets:home' %}"
@@ -44,6 +47,9 @@
                         <span>Tableau de bord</span>
                     </a>
                 </li>
+                {% endif %}
+
+                {# 2 et 3. Sommaire + Guide — observateur seul #}
                 {% if observer_readonly %}
                 <li>
                     <a href="{% url 'projets:sommaire' %}"
@@ -64,6 +70,8 @@
                     </a>
                 </li>
                 {% endif %}
+
+                {# 4. Projets — tout le monde #}
                 <li>
                     <a href="{% url 'projets:liste_projets' %}"
                         hx-get="{% url 'projets:liste_projets' %}"
@@ -76,6 +84,25 @@
                         <span>Projets</span>
                     </a>
                 </li>
+
+                {# 5. Plannings — module goplan (AJOUTÉ sur mobile) #}
+                {% if 'goplan' in modules_actifs %}
+                <li>
+                    <a href="{% url 'goplan:liste_plans' %}"
+                        hx-get="{% url 'goplan:liste_plans' %}"
+                        hx-target="#main-content"
+                        hx-swap="innerHTML swap:150ms settle:150ms show:top"
+                        hx-push-url="true"
+                        hx-indicator="#htmx-progress"
+                        class="sidebar-item {% if 'plans' in request.resolver_match.url_name %}active{% endif %}">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Plannings</span>
+                    </a>
+                </li>
+                {% endif %}
+
+                {# 6. Gestion des Tâches — module taches #}
+                {% if 'taches' in modules_actifs %}
                 <li>
                     <a href="{% url 'projets:liste_taches' %}"
                         hx-get="{% url 'projets:liste_taches' %}"
@@ -88,6 +115,7 @@
                         <span>Gestion des Tâches</span>
                     </a>
                 </li>
+                {% endif %}
             </ul>
         </div>
 
@@ -95,6 +123,8 @@
         <div class="mb-6">
             <p class="text-xs uppercase font-semibold my-3 sidebar-section-title">Paramètres</p>
             <ul class="space-y-2 text-lg">
+
+                {# 7. Dossiers — superuser seul #}
                 {% if user.is_superuser %}
                 <li>
                     <a href="{% url 'projets:gerer_dossiers' %}"
@@ -109,6 +139,7 @@
                     </a>
                 </li>
                 {% elif user.profile.role == 'ADMIN_DOSSIER' and dossier_actif %}
+                {# 8. Mon dossier — admin dossier (Option A validée) #}
                 <li>
                     <a href="{% url 'projets:modifier_dossier' dossier_actif.pk %}"
                        class="sidebar-item">
@@ -117,6 +148,8 @@
                     </a>
                 </li>
                 {% endif %}
+
+                {# 9. Utilisateurs — tout sauf Pointeur et Observateur (Option 2) #}
                 {% if can_manage_users %}
                 <li>
                     <a href="{% url 'projets:liste_utilisateurs' %}"
@@ -140,13 +173,13 @@
          ═══════════════════════════════════════════════════════════ -->
     <div class="p-4" style="border-top: 1px solid var(--border-default);">
 
-        <!-- À propos -->
+        {# 10. À propos — tout le monde #}
         <a href="{% url 'projets:apropos' %}" class="sidebar-item">
             <i class="fas fa-info-circle"></i>
             <span>À propos</span>
         </a>
 
-        <!-- Configuration -->
+        {# 11. Configuration — gérant dossier + superuser #}
         {% if can_configure_dossier %}
         <a href="{% url 'projets:data_view' %}"
            class="sidebar-item mt-2 {% if 'data_view' in request.resolver_match.url_name %}active{% endif %}">
@@ -154,7 +187,8 @@
             <span>Configuration</span>
         </a>
         {% endif %}
-        <!-- ⚡ Version  -->
+
+        {# 12. Version #}
         <div class="mt-3 pt-2 text-center text-xs"
              style="color: var(--text-muted); opacity: 0.5; font-size: 0.7rem; letter-spacing: 0.05em;">
             <i class="fas fa-code-branch mr-1"></i>

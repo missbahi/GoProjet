@@ -350,6 +350,7 @@ class RevisionModelsTests(TestCase):
         self.assertIn("katex", response.content.decode())
         self.assertIn("formule-revision-texte", response.content.decode())
         self.assertIn("formules-predefinies-toggle", response.content.decode())
+        self.assertIn("w-full sm:w-auto justify-center", response.content.decode())
 
     def test_mois_base_unique_est_controle_et_confirme(self):
         admin = get_user_model().objects.create_superuser(

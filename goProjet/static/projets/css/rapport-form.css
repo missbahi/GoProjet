@@ -7,7 +7,7 @@
      - ajouter_rapport_journalier.html
 
    Contient :
-     1. Upload area (document joint)
+     1. Sélection classique du document joint
      2. Document existant
      3. Accordéon catégories (dépenses/stocks)
      4. Formulaire (inputs, tables)
@@ -17,46 +17,127 @@
 
 
 /* ══════════════════════════════════════════════════════════════
-   1. UPLOAD AREA — Document joint
+   1. CHAMP FICHIER — Document joint
    ══════════════════════════════════════════════════════════════ */
-.rapport-upload-area {
+.rapport-classic-file {
+    max-width: 42rem;
+}
+
+.rapport-classic-file input[type="file"] {
+    cursor: pointer;
+}
+
+.rapport-paper-section {
+    padding: 1rem;
+    border: 1px solid #7baec1;
+    border-radius: 0.5rem;
+    background: #d9edf3;
+    color: #24485a;
+}
+
+.rapport-paper-section > .overflow-x-auto {
+    background: #f8f6ef;
+}
+
+/* Travaux : conteneur accordéon */
+#travaux-container {
+    padding: 0;
+    border-color: #7baec1;
+    background: #d9edf3;
+}
+
+#travaux-container > .categorie-toggle {
+    background: #cfe5ed;
+    color: #24485a;
+}
+
+#travaux-container #travaux-body {
+    background: #f8f6ef;
+}
+
+#travaux-container table {
+    border-collapse: collapse;
+    background: #f8f6ef;
+    font-size: 0.8125rem;
+}
+
+#travaux-container thead {
+    background: #e7f1f5;
+}
+
+#travaux-container th {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #8eb6c7;
+    color: #376b82;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+#travaux-container td {
+    padding: 0.125rem 0.5rem;
+    border-bottom: 1px solid #a9cad6;
+    color: #24485a;
+}
+
+#travaux-container input {
     box-sizing: border-box;
-    display: flex;
-    min-height: 150px;
     width: 100%;
-    flex-direction: column;
+    height: 30px !important;
+    min-height: 30px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #24485a;
+    padding: 0.2rem 0.25rem;
+    font: inherit;
+    line-height: 1.1;
+    box-shadow: none;
+}
+
+#travaux-container input:focus {
+    outline: 0;
+    border-bottom: 2px solid #5e9eb6;
+    box-shadow: none;
+}
+
+#travaux-container .category-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.75rem 1rem 0.25rem;
+}
+
+#travaux-container .travaux-add-btn,
+#travaux-container .travail-delete-btn {
+    display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 0.35rem;
-    cursor: pointer;
-    border: 2px dashed var(--border-strong);
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    text-align: center;
-    background-color: var(--bg-elevated);
-    transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+    border: 1px solid #5e9eb6;
+    border-radius: 0.375rem;
+    color: #376b82;
+    background: #e7f1f5;
 }
 
-.rapport-upload-area:hover,
-.rapport-upload-area:focus-within,
-.rapport-upload-area.border-cyan-400 {
-    border-color: var(--accent-primary);
-    background-color: rgba(34, 211, 238, 0.08);
+#travaux-container .travaux-add-btn {
+    width: 2rem;
+    height: 2rem;
 }
 
-.rapport-upload-area:active {
-    transform: scale(0.995);
+#travaux-container .travail-delete-btn {
+    width: 1.75rem;
+    height: 1.75rem;
 }
 
-.rapport-upload-area .file-icon {
-    margin-bottom: 0.35rem;
-    font-size: 2rem;
+/* Documents joints : conteneur accordéon */
+#documents-container > .categorie-toggle {
+    background: var(--bg-elevated);
 }
 
-.rapport-upload-area.hidden {
-    display: none;
+#documents-container #documents-body {
+    padding: 1rem;
 }
-
 
 /* ══════════════════════════════════════════════════════════════
    2. DOCUMENT EXISTANT (mode modification)
@@ -207,6 +288,248 @@
 .rapport-form table tbody td {
     padding: 0.25rem 0.5rem;
     color: var(--text-primary);
+}
+
+/* Dépenses : reprise du thème papier des situations mensuelles */
+#depenses-categories > [data-depense-categorie] {
+    border-color: #7baec1;
+    background: #d9edf3;
+}
+
+#depenses-categories > [data-depense-categorie] > .categorie-toggle {
+    background: #cfe5ed;
+    color: #24485a;
+}
+
+#depenses-categories [id^="depense-table-"] {
+    padding: 0;
+    background: #f8f6ef;
+    color: #24485a;
+}
+
+#depenses-categories [id^="depense-table-"] table {
+    border-collapse: collapse;
+    background: #f8f6ef;
+    font-size: 0.8125rem;
+}
+
+#depenses-categories [id^="depense-table-"] thead {
+    background: #e7f1f5;
+    color: #376b82;
+}
+
+#depenses-categories [id^="depense-table-"] thead th {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #8eb6c7;
+    color: #376b82;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+#depenses-categories [id^="depense-table-"] tbody tr {
+    border-color: #a9cad6;
+}
+
+#depenses-categories [id^="depense-table-"] td {
+    padding: 0.125rem 0.5rem;
+}
+
+#depenses-categories [id^="depense-table-"] input:not([type="hidden"]),
+#depenses-categories [id^="depense-table-"] select {
+    box-sizing: border-box;
+    height: 30px !important;
+    min-height: 30px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #24485a;
+    padding: 0.2rem 0.25rem;
+    font: inherit;
+    line-height: 1.1;
+    box-shadow: none;
+}
+
+#depenses-categories [id^="depense-table-"] .depense-unite[readonly] {
+    background: transparent;
+    color: #24485a;
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+#depenses-categories [id^="depense-table-"] .depense-montant {
+    color: #24485a;
+    font: inherit;
+}
+
+#depenses-categories .depense-referentiel-bar {
+    display: flex;
+    min-height: 46px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #a9cad6;
+    background: #f8f6ef;
+}
+
+#depenses-categories .depense-referentiel-label {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0.35rem;
+    color: #527889;
+    font-size: 0.75rem;
+}
+
+#depenses-categories .depense-referentiel-label strong {
+    overflow: hidden;
+    color: #24485a;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#depenses-categories .depense-bdd-button {
+    flex: 0 0 auto;
+    margin: 0;
+    border-color: #5e9eb6;
+    background: #e7f1f5;
+    color: #376b82;
+}
+
+#depenses-categories [id^="depense-table-"] input:not([type="hidden"]):focus,
+#depenses-categories [id^="depense-table-"] select:focus {
+    outline: 0;
+    border-bottom: 2px solid #5e9eb6;
+    box-shadow: none;
+}
+
+#depenses-categories .category-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 1rem;
+}
+
+#depenses-categories .situation-presets {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    margin: 0;
+    padding: 0;
+    border: 1px solid #5e9eb6;
+    border-radius: 0.375rem;
+    background: #e7f1f5;
+    color: #376b82;
+}
+
+#depenses-categories .situation-presets:hover {
+    background: #d6e9f0;
+}
+
+#depenses-categories .situation-presets:focus-visible {
+    outline: 2px solid #5e9eb6;
+    outline-offset: 2px;
+}
+
+/* Stock : mêmes surfaces et champs que les dépenses */
+#stocks-container {
+    border-color: #7baec1;
+    background: #d9edf3;
+}
+
+#stocks-container > .categorie-toggle {
+    background: #cfe5ed;
+    color: #24485a;
+}
+
+#stock-table {
+    padding: 0;
+    background: #f8f6ef;
+    color: #24485a;
+}
+
+#stock-table table {
+    border-collapse: collapse;
+    background: #f8f6ef;
+    font-size: 0.8125rem;
+}
+
+#stock-table thead {
+    background: #e7f1f5;
+}
+
+#stock-table thead th {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #8eb6c7;
+    color: #376b82;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+#stock-table tbody tr {
+    border-bottom: 1px solid #a9cad6;
+}
+
+#stock-table td {
+    padding: 0.125rem 0.5rem;
+    color: #24485a;
+}
+
+#stock-table input:not([type="hidden"]) {
+    box-sizing: border-box;
+    height: 30px !important;
+    min-height: 30px !important;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: #24485a;
+    padding: 0.2rem 0.25rem;
+    font: inherit;
+    line-height: 1.1;
+    box-shadow: none;
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+#stock-table input::-webkit-outer-spin-button,
+#stock-table input::-webkit-inner-spin-button {
+    margin: 0;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+#stock-table input:not([type="hidden"]):focus {
+    outline: 0;
+    border-bottom: 2px solid #5e9eb6;
+    box-shadow: none;
+}
+
+#stock-table .stock-add-btn {
+    display: inline-flex;
+    width: 2rem;
+    height: 2rem;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #5e9eb6;
+    border-radius: 0.375rem;
+    background: #e7f1f5;
+}
+
+#stock-table .stock-add-btn:hover {
+    background: #d6e9f0;
+}
+
+#stock-table .category-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.75rem 1rem 1rem;
 }
 
 /* Montant de la ligne dépense */
@@ -416,11 +739,6 @@
 
     .rapport-document-button {
         flex: 1;
-    }
-
-    .rapport-upload-area {
-        padding: 1rem;
-        min-height: 120px;
     }
 
     .modal-bdd-body td,

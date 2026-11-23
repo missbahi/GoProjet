@@ -12,11 +12,10 @@ from django.core.validators import RegexValidator
 from projets.utils.icones import choix_icones
 from projets.catalogues import CatalogueDossierFormMixin
 
-# from projets.models.revision import RevisionPrix
-
 from .models import (
     Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
     Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
+    LigneTravailRapportJournalier,
     StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
     DocumentAdministratif, StockSituationMensuelle, DocumentSituationMensuelle,
     RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
@@ -101,7 +100,6 @@ class BordereauAppearanceForm(forms.Form):
         for field in self.fields.values():
             field.widget.attrs.setdefault('class', 'app-modal-input')
 
-
 class FrenchDecimalField(forms.DecimalField):
     def to_python(self, value):
         if isinstance(value, str):
@@ -124,7 +122,6 @@ class SuiviExecutionForm(forms.ModelForm):
 
 class SuiviFilesInput(forms.ClearableFileInput):
     allow_multiple_selected = True
-
 
 class SuiviFilesField(forms.FileField):
     def __init__(self, *args, **kwargs):
@@ -151,7 +148,6 @@ class SuiviFilesField(forms.FileField):
         if errors:
             raise forms.ValidationError(errors)
         return cleaned
-
 
 class SuiviExecutionAjoutForm(SuiviExecutionForm):
     fichiers = SuiviFilesField(
@@ -231,7 +227,6 @@ class FormuleRevisionForm(forms.ModelForm):
             'est_index_global': forms.CheckboxInput(),
         }
 
-
 class MoisBaseRevisionForm(forms.ModelForm):
     epoque_base = forms.DateField(
         required=True,
@@ -304,7 +299,6 @@ class MoisBaseRevisionForm(forms.ModelForm):
                 )
         return cleaned
 
-
 class TermeFormuleForm(forms.ModelForm):
     class Meta:
         model = TermeFormule
@@ -322,7 +316,6 @@ class TermeFormuleForm(forms.ModelForm):
             'index_composite_a': forms.Select(attrs={'class': 'app-modal-input'}),
             'index_composite_b': forms.Select(attrs={'class': 'app-modal-input'}),
         }
-
 
 class ProjetForm(forms.ModelForm):
 
@@ -607,7 +600,6 @@ def materiels_affectes_projet(projet):
         projet=projet, categorie_charge__code='MATERIEL', actif=True,
     ).values('objet_id')
     return Materiel.objects.filter(dossier=projet.dossier, pk__in=ressources).select_related('type_materiel').order_by('designation')
-
 
 class AffectationRessourceForm(forms.ModelForm):
     """
@@ -1731,15 +1723,14 @@ class DocumentAdministratifForm(forms.ModelForm):
 class RapportJournalierForm(forms.ModelForm):
     class Meta:
         model = RapportJournalier
-        fields = ['date', 'meteo', 'temperature', 'travaux_realises', 'evenements', 'observations', 'redacteur']
+        fields = ['date', 'meteo', 'temperature', 'evenements', 'observations', 'redacteur']
         widgets = {
             'date': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'form-control'
             }),
-            'travaux_realises': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'evenements': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
-            'observations': forms.Textarea(attrs={'rows': 2, 'class': 'form-control'}),
+            'evenements': forms.Textarea(attrs={'rows': 1, 'class': 'form-control'}),
+            'observations': forms.Textarea(attrs={'rows': 1, 'class': 'form-control'}),
         }
 
     def __init__(self, *args, projet=None, **kwargs):
@@ -1775,19 +1766,37 @@ class RapportJournalierForm(forms.ModelForm):
                     'Un rapport journalier existe déjà pour ce projet à cette date.',
                 )
 
-        fichier = self.files.get('document')
-        if fichier:
+        fichiers = list(self.files.getlist('documents'))
+        camera = self.files.get('document_camera')
+        if camera:
+            fichiers.append(camera)
+        for fichier in fichiers:
             if fichier.size > 10 * 1024 * 1024:
-                raise forms.ValidationError('Le document ne doit pas dépasser 10 Mo.')
-            extensions_autorisees = {
+                raise forms.ValidationError(
+                    f'Le document « {fichier.name} » dépasse 10 Mo.'
+                )
+            if os.path.splitext(fichier.name)[1].lower() not in {
                 '.pdf', '.doc', '.docx', '.xls', '.xlsx',
                 '.jpg', '.jpeg', '.png', '.gif',
-            }
-            if os.path.splitext(fichier.name)[1].lower() not in extensions_autorisees:
+            }:
                 raise forms.ValidationError(
-                    'Type de document non supporté.'
+                    f'Type de document non supporté : « {fichier.name} ».'
                 )
         return cleaned_data
+
+class LigneTravailRapportJournalierForm(forms.ModelForm):
+    class Meta:
+        model = LigneTravailRapportJournalier
+        fields = ['designation', 'quantite', 'unite', 'observations', 'ordre']
+        widgets = {
+            'designation': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantite': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.001', 'min': '0',
+            }),
+            'unite': forms.TextInput(attrs={'class': 'form-control'}),
+            'observations': forms.TextInput(attrs={'class': 'form-control'}),
+            'ordre': forms.HiddenInput(),
+        }
 
 class DepenseRapportJournalierForm(forms.ModelForm):
     categorie = forms.CharField(required=False, widget=forms.HiddenInput())
@@ -2130,7 +2139,6 @@ class DepenseRapportJournalierBaseFormSet(BaseInlineFormSet):
         kwargs['projet'] = self.instance.projet if self.instance.projet_id else None
         return kwargs
 
-
 DepenseRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier, DepenseRapportJournalier,
     form=DepenseRapportJournalierForm, formset=DepenseRapportJournalierBaseFormSet,
@@ -2140,6 +2148,14 @@ DepenseRapportJournalierFormSet = forms.inlineformset_factory(
 StockRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier, StockRapportJournalier,
     form=StockRapportJournalierForm, extra=0, can_delete=True,
+)
+
+LigneTravailRapportJournalierFormSet = forms.inlineformset_factory(
+    RapportJournalier,
+    LigneTravailRapportJournalier,
+    form=LigneTravailRapportJournalierForm,
+    extra=0,
+    can_delete=True,
 )
 
 DepenseSituationMensuelleFormSet = forms.inlineformset_factory(

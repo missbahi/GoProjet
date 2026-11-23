@@ -286,7 +286,7 @@ def supprimer_projet(request, projet_id):
 
 @login_required
 @can_view_projet
-def dashboard_projet(request, projet_id):
+def dashboard_projet_backup(request, projet_id):
     projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
     indicateur_revision = indicateur_revision_tableau_bord(projet)
     rapports_journaliers = projet.rapports_journaliers.all()
@@ -396,3 +396,19 @@ def dashboard_projet(request, projet_id):
         'derniere_situation_mensuelle': derniere_situation_mensuelle,
         'ressources_count': projet.ressources_affectees.count(),
     })
+
+
+from projets.services.dashboard_contexte import construire_contexte_dashboard
+
+@login_required
+@can_view_projet
+def dashboard_projet(request, projet_id):
+    projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
+    ctx = construire_contexte_dashboard(request.user, projet)
+
+    template = (
+        'projets/dashboard_projet/_dashboard_fragment.html'
+        if request.headers.get('HX-Request')
+        else 'projets/dashboard_projet/dashboard.html'
+    )
+    return render(request, template, ctx)

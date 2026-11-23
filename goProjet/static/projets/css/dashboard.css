@@ -115,10 +115,51 @@
 
 /* ---------- Section Pilotage du délai ---------- */
 .dashboard-delay-section {
+    box-sizing: border-box;
     background-color: var(--bg-surface);
     border: 1px solid var(--border-default);
     border-radius: 0.5rem;
     overflow: hidden;
+}
+
+.dashboard-delay-metrics {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: 0.75rem 1rem;
+    border: 1px solid var(--border-default);
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.dashboard-delay-metric {
+    min-width: 0;
+    padding: 0.75rem 1rem;
+    border-right: 1px solid var(--border-default);
+    border-bottom: 1px solid var(--border-default);
+}
+
+.dashboard-delay-metric:nth-child(2n) {
+    border-right: 0;
+}
+
+.dashboard-delay-metric:nth-child(n + 3) {
+    border-bottom: 0;
+}
+
+@media (min-width: 640px) {
+    .dashboard-delay-metrics {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .dashboard-delay-metric,
+    .dashboard-delay-metric:nth-child(n + 3) {
+        border-right: 1px solid var(--border-default);
+        border-bottom: 0;
+    }
+
+    .dashboard-delay-metric:last-child {
+        border-right: 0;
+    }
 }
 
 .delay-status-badge {

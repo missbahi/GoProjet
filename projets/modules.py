@@ -1,6 +1,20 @@
 """Catalogue des modules activables par utilisateur (maintenance, mises à jour)."""
 
+from django.conf.locale import fr
+
+
 MODULES = {
+    'home': {
+        'label': 'Accueil',
+        'routes': {'home'},
+        # On redirige au lieu de 403
+        'redirect_on_disable': True,
+    },
+    'etat_decomptes_dashboard': {
+        'label': 'Section Décomptes (dashboard projet)',
+        'routes': set(),  # aucune URL à bloquer — c'est purement un flag d'affichage
+        'affichage_seulement': True,  # optionnel, pour documenter
+    },
     'lots': {
         'label': 'Lots et bordereaux',
         'routes': {
@@ -117,6 +131,13 @@ MODULES = {
     },
 }
 
+# Ordre de priorité pour choisir la destination de repli
+FALLBACK_ROUTE_PRIORITY = [
+    ('projets', 'liste_projets'),
+    ('projets', 'landing'),
+    ('projets', 'apropos'),
+]
+
 MODULE_CHOICES = [(key, module['label']) for key, module in MODULES.items()]
 
 
@@ -135,3 +156,26 @@ def modules_desactives(user):
     if user.is_superuser or profile is None:
         return frozenset()
     return frozenset(profile.modules_desactives or [])
+
+def module_redirige_si_desactive(module_key):
+    """True si la désactivation de ce module doit rediriger (pas de 403)."""
+    return bool(MODULES.get(module_key, {}).get('redirect_on_disable'))
+
+from django.urls import reverse, NoReverseMatch
+
+def destination_repli(user):
+    """
+    Première route accessible à l'utilisateur parmi les fallbacks,
+    en excluant les modules désactivés. Retourne un nom de route ou None.
+    """
+    desactives = modules_desactives(user)
+    for namespace, url_name in FALLBACK_ROUTE_PRIORITY:
+        module = module_pour_route(namespace, url_name)
+        if module and module in desactives:
+            continue
+        try:
+            reverse(f'{namespace}:{url_name}')
+        except NoReverseMatch:
+            continue
+        return f'{namespace}:{url_name}'
+    return None

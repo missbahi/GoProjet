@@ -23,7 +23,8 @@ class ActiviteTravauxMixin:
 
 
 def rapport_journalier_document_upload_path(instance, filename):
-    return f'rapports_journaliers/projet_{instance.projet_id}/{instance.date}/{filename}'
+    rapport = instance.rapport
+    return f'rapports_journaliers/projet_{rapport.projet_id}/{rapport.date}/{filename}'
 
 class RapportJournalier(ActiviteTravauxMixin, models.Model):
     projet = models.ForeignKey(
@@ -36,17 +37,9 @@ class RapportJournalier(ActiviteTravauxMixin, models.Model):
         max_digits=5, decimal_places=2, null=True, blank=True,
         verbose_name=_('Température')
     )
-    travaux_realises = models.TextField(blank=True, verbose_name=_('Travaux réalisés'))
     evenements = models.TextField(blank=True, verbose_name=_('Événements'))
     observations = models.TextField(blank=True, verbose_name=_('Observations'))
     redacteur = models.CharField(max_length=150, blank=True, verbose_name=_('Rédacteur'))
-    document = models.FileField(
-        _('Document'), upload_to=rapport_journalier_document_upload_path,
-        blank=True, null=True
-    )
-    original_filename = models.CharField(
-        max_length=255, blank=True, verbose_name=_('Nom de fichier original')
-    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -60,18 +53,66 @@ class RapportJournalier(ActiviteTravauxMixin, models.Model):
         return f'{self.projet.nom} - {self.date}'
 
     @property
-    def document_nom(self):
-        if self.original_filename:
-            return self.original_filename
-        elif self.document:
-            return os.path.basename(self.document.name)
-        return ''
-
-    @property
     def total_depenses(self):
         if hasattr(self, 'total_depenses_annotated'):
             return self.total_depenses_annotated
         return self.depenses.aggregate(total=Sum('montant'))['total'] or Decimal('0.00')
+
+
+class LigneTravailRapportJournalier(models.Model):
+    rapport = models.ForeignKey(
+        RapportJournalier,
+        on_delete=models.CASCADE,
+        related_name='lignes_travaux',
+        verbose_name=_('Rapport journalier'),
+    )
+    designation = models.CharField(max_length=500, verbose_name=_('Désignation'))
+    quantite = models.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        null=True,
+        blank=True,
+        verbose_name=_('Quantité'),
+    )
+    unite = models.CharField(max_length=20, blank=True, verbose_name=_('Unité'))
+    observations = models.TextField(blank=True, verbose_name=_('Observations'))
+    ordre = models.PositiveIntegerField(default=0, verbose_name=_('Ordre'))
+
+    class Meta:
+        ordering = ['ordre', 'pk']
+        verbose_name = _('Ligne de travaux réalisés')
+        verbose_name_plural = _('Lignes de travaux réalisés')
+
+    def __str__(self):
+        return self.designation
+
+
+class DocumentRapportJournalier(models.Model):
+    rapport = models.ForeignKey(
+        RapportJournalier,
+        on_delete=models.CASCADE,
+        related_name='documents_joints',
+        verbose_name=_('Rapport journalier'),
+    )
+    fichier = models.FileField(
+        _('Document'),
+        upload_to=rapport_journalier_document_upload_path,
+    )
+    original_filename = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name=_('Nom de fichier original'),
+    )
+    date_ajout = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date_ajout', 'pk']
+        verbose_name = _('Document du rapport journalier')
+        verbose_name_plural = _('Documents du rapport journalier')
+
+    @property
+    def nom(self):
+        return self.original_filename or os.path.basename(self.fichier.name)
 
 class CategorieDepenseTravaux(models.TextChoices):
     PERSONNEL = 'PERSONNEL', _('Personnel')

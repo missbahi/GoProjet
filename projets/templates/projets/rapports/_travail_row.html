@@ -1,0 +1,21 @@
+{% load l10n %}
+<tr>
+    {{ travail_form.id }}
+    {{ travail_form.ordre }}
+    <td>
+        {{ travail_form.designation }}
+        {% for error in travail_form.designation.errors %}<p class="text-xs text-red-600">{{ error }}</p>{% endfor %}
+    </td>
+    <td>{{ travail_form.quantite }}</td>
+    <td>{{ travail_form.unite }}</td>
+    <td>{{ travail_form.observations }}</td>
+    <td class="text-center">
+        <span class="hidden">{{ travail_form.DELETE }}</span>
+        <button type="button"
+                class="travail-delete-btn"
+                title="Supprimer la ligne"
+                aria-label="Supprimer la ligne">
+            <i class="fas fa-trash"></i>
+        </button>
+    </td>
+</tr>

@@ -45,7 +45,7 @@
                         <th class="text-left">Date</th>
                         <th class="text-left">Rédacteur</th>
                         <th class="text-left">Dépenses</th>
-                        <th class="text-left">Document</th>
+                        <th class="text-left">Documents</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -58,15 +58,19 @@
                             {{ rapport.total_depenses_annotated }} DH
                         </td>
                         <td>
-                            {% if rapport.document %}
-                            <a href="{% url 'projets:download_document' 'RapportJournalier' rapport.id %}?download=false"
-                               target="_blank"
-                               class="inline-flex items-center gap-2 max-w-[220px] truncate"
-                               style="color: var(--accent-primary);"
-                               title="Ouvrir le document">
-                                <i class="fas fa-file-pdf"></i>
-                                <span class="truncate">{{ rapport.document_nom }}</span>
-                            </a>
+                            {% if rapport.documents_joints.all %}
+                            <div class="flex flex-col gap-1">
+                                {% for document in rapport.documents_joints.all %}
+                                <a href="{% url 'projets:download_document' 'DocumentRapportJournalier' document.id %}?download=false"
+                                   target="_blank"
+                                   class="inline-flex items-center gap-2 max-w-[220px] truncate"
+                                   style="color: var(--accent-primary);"
+                                   title="Ouvrir {{ document.nom }}">
+                                    <i class="fas fa-file"></i>
+                                    <span class="truncate">{{ document.nom }}</span>
+                                </a>
+                                {% endfor %}
+                            </div>
                             {% else %}
                             <span style="color: var(--text-muted);">
                                 <i class="fas fa-file-circle-xmark mr-1"></i>Aucun document
@@ -88,7 +92,7 @@
                                 <form method="post"
                                       action="{% url 'projets:supprimer_rapport_journalier' projet.id rapport.id %}"
                                       class="inline"
-                                      onsubmit="return confirm('Supprimer ce rapport et son document ?');">
+                                      onsubmit="return confirm('Supprimer ce rapport et tous ses documents ?');">
                                     {% csrf_token %}
                                     <button type="submit"
                                             class="app-action-btn app-action-delete"

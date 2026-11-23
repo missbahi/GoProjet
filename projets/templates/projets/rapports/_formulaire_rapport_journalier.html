@@ -1,5 +1,5 @@
 {# projets/templates/projets/rapports/_formulaire_rapport_journalier.html #}
-{% load formatters %}
+{% load formatters static %}
 
 <div class="rapport-form fade-in">
     <form method="post"
@@ -11,7 +11,7 @@
         {# ═══════ Champs principaux ═══════ #}
         <div class="grid gap-3 md:grid-cols-3">
             {% for field in form %}
-            <div class="{% if field.name in 'travaux_realises,evenements,observations' %}md:col-span-3{% endif %}">
+            <div class="{% if field.name in 'evenements,observations' %}md:col-span-3{% endif %}">
                 <label for="{{ field.id_for_label }}" class="block text-sm mb-1"
                        style="color: var(--text-secondary);">{{ field.label }}</label>
 
@@ -30,73 +30,142 @@
             {% endfor %}
         </div>
 
-        {# ═══════ Document joint ═══════ #}
-        <div class="pt-4" style="border-top: 1px solid var(--border-default);">
-            <div class="flex items-center gap-2 mb-3">
-                <i class="fas fa-paperclip" style="color: var(--accent-primary);"></i>
-                <h4 class="text-sm font-medium" style="color: var(--accent-primary);">Document joint</h4>
-                <span class="text-xs" style="color: var(--text-muted);">(optionnel)</span>
-                {% if rapport and rapport.document %}
-                    <span class="ml-2 text-xs" style="color: var(--accent-success);">
-                        <i class="fas fa-check-circle"></i> Document existant
-                    </span>
-                {% endif %}
-            </div>
+        {# ═══════ Travaux réalisés ═══════ #}
+        <div class="rapport-paper-section rounded-lg overflow-hidden"
+            id="travaux-container"
+            data-total-forms-id="{{ travaux.management_form.TOTAL_FORMS.auto_id }}"
+            style="border: 1px solid var(--border-default);">
 
-            {% if rapport and rapport.document %}
-            <div class="rapport-existing-document app-card p-3 mb-3">
-                <div class="flex items-center gap-2 min-w-0">
-                    <i class="fas fa-file-pdf" style="color: var(--accent-danger);"></i>
-                    <span class="text-sm truncate" style="color: var(--text-primary);">{{ rapport.document_nom }}</span>
-                    <span class="text-xs hidden sm:inline" style="color: var(--text-muted);">
-                        ({{ rapport.document.size|filesizeformat }})
-                    </span>
+            <button type="button" class="categorie-toggle" data-target="travaux-body">
+                <span class="flex items-center gap-2 text-sm font-medium" style="color: var(--accent-primary);">
+                    <i class="fas fa-chevron-right toggle-icon{% if travaux.forms %} rotate-90{% endif %}"></i>
+                    <i class="fas fa-hammer"></i>
+                    Travaux réalisés
+                </span>
+                <span class="text-xs" style="color: var(--text-muted);">
+                    <span class="travaux-count">{{ travaux.forms|length }}</span> ligne(s)
+                </span>
+            </button>
+
+            <div class="{% if not travaux.forms %}hidden{% endif %}" id="travaux-body">
+                {{ travaux.management_form }}
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm rapport-travaux-table">
+                        <thead>
+                            <tr>
+                                <th>Désignation</th>
+                                <th class="w-28">Quantité</th>
+                                <th class="w-20">Unité</th>
+                                <th>Observations</th>
+                                <th class="w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="travaux-tbody">
+                            {% for travail_form in travaux %}
+                                {% include 'projets/rapports/_travail_row.html' %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="rapport-document-actions">
-                    <a href="{% url 'projets:download_document' 'RapportJournalier' rapport.id %}?download=false"
-                       target="_blank"
-                       class="rapport-document-button app-btn-primary text-xs">
-                        <i class="fas fa-eye"></i> Voir
-                    </a>
+                <div class="category-actions">
                     <button type="button"
-                            class="rapport-document-button text-xs app-btn"
-                            style="background-color: var(--accent-danger); color: var(--text-inverse);"
-                            onclick="if(confirm('Supprimer ce document ?')) document.getElementById('delete_document_form').submit();">
-                        <i class="fas fa-trash"></i> Supprimer
+                            class="situation-presets travaux-add-btn"
+                            title="Ajouter une ligne de travaux"
+                            aria-label="Ajouter une ligne de travaux">
+                        <img src="{% static 'icons/add_empty_line.png' %}"
+                            alt="" class="h-5 w-5" aria-hidden="true">
                     </button>
                 </div>
             </div>
-            {% endif %}
 
-            <label class="rapport-upload-area" id="rapportDropZone" for="rapportFileInput">
-                <div class="file-icon" style="color: var(--accent-primary);">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                </div>
-                <p class="text-sm" style="color: var(--text-primary);">
-                    <span style="color: var(--accent-primary); font-weight: 500;">Cliquez pour sélectionner</span>
-                    ou glissez-déposez
-                    {% if rapport and rapport.document %}
-                    <span class="block mt-1 text-xs" style="color: var(--accent-warning);">
-                        ⚠️ Le nouveau document remplacera l'ancien
-                    </span>
+            <template id="travail-empty-form-template">
+                {% include 'projets/rapports/_travail_row.html' with travail_form=travaux.empty_form %}
+            </template>
+        </div>
+
+        {# ═══════ Documents joints ═══════ #}
+        <div class="rounded-lg overflow-hidden"
+            id="documents-container"
+            style="border: 1px solid var(--border-default);">
+
+            <button type="button" class="categorie-toggle" data-target="documents-body">
+                <span class="flex items-center gap-2 text-sm font-medium" style="color: var(--accent-primary);">
+                    <i class="fas fa-chevron-right toggle-icon rotate-90"></i>
+                    <i class="fas fa-paperclip"></i>
+                    Documents joints
+                    <span class="text-xs font-normal" style="color: var(--text-muted);">(optionnel)</span>
+                    {% if rapport and rapport.documents_joints.exists %}
+                        <span class="ml-1 text-xs" style="color: var(--accent-success);">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
                     {% endif %}
-                </p>
-                <p class="text-xs mt-1" style="color: var(--text-muted);">
-                    PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (max 10 Mo)
-                </p>
-                <input type="file" name="document" id="rapportFileInput" class="hidden"
-                       accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif">
-            </label>
+                </span>
+                <span class="text-xs" style="color: var(--text-muted);">
+                    <span class="documents-count">
+                        {% if rapport %}{{ rapport.documents_joints.count }}{% else %}0{% endif %}
+                    </span> fichier(s)
+                </span>
+            </button>
 
-            <div id="rapportFileInfo" class="hidden app-card p-3 mt-3 flex items-center justify-between">
-                <div class="flex items-center gap-2 min-w-0">
-                    <i class="fas fa-file" style="color: var(--accent-primary);"></i>
-                    <span id="rapportFileName" class="text-sm truncate" style="color: var(--text-primary);"></span>
-                    <span id="rapportFileSize" class="text-xs hidden sm:inline" style="color: var(--text-muted);"></span>
+            <div id="documents-body" class="p-4">
+
+                {% if rapport %}
+                {% for document in rapport.documents_joints.all %}
+                <div class="rapport-existing-document app-card p-3 mb-3">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="fas fa-file" style="color: var(--accent-primary);"></i>
+                        <span class="text-sm truncate" style="color: var(--text-primary);">{{ document.nom }}</span>
+                        <span class="text-xs hidden sm:inline" style="color: var(--text-muted);">
+                            ({{ document.fichier.size|filesizeformat }})
+                        </span>
+                    </div>
+                    <div class="rapport-document-actions">
+                        <a href="{% url 'projets:download_document' 'DocumentRapportJournalier' document.id %}?download=false"
+                        target="_blank"
+                        class="rapport-document-button app-btn-primary text-xs">
+                            <i class="fas fa-eye"></i> Voir
+                        </a>
+                        <label class="app-btn-secondary text-xs">
+                            <input type="checkbox" name="supprimer_document" value="{{ document.id }}">
+                            Supprimer
+                        </label>
+                    </div>
                 </div>
-                <button type="button" class="app-action-btn" onclick="removeRapportFile()">
-                    <i class="fas fa-times"></i>
-                </button>
+                {% endfor %}
+                {% endif %}
+
+                <div class="rapport-classic-file">
+                    <label for="rapportFileInput" class="app-modal-label">Choisir un document</label>
+                    <input type="file"
+                        name="documents"
+                        id="rapportFileInput"
+                        class="app-modal-input"
+                        accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.gif"
+                        multiple>
+                    <label for="rapportCameraInput" class="app-modal-label mt-3">
+                        Prendre une photo
+                    </label>
+                    <input type="file"
+                        name="document_camera"
+                        id="rapportCameraInput"
+                        class="app-modal-input"
+                        accept="image/*"
+                        capture="environment">
+                    <p class="mt-1 text-xs" style="color: var(--text-muted);">
+                        Ajout multiple possible. PDF, DOC, DOCX, XLS, XLSX, JPG, PNG — 10 Mo par fichier.
+                    </p>
+                </div>
+
+                <div id="rapportFileInfo" class="hidden app-card p-3 mt-3 flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <i class="fas fa-file" style="color: var(--accent-primary);"></i>
+                        <span id="rapportFileName" class="text-sm truncate" style="color: var(--text-primary);"></span>
+                        <span id="rapportFileSize" class="text-xs hidden sm:inline" style="color: var(--text-muted);"></span>
+                    </div>
+                    <button type="button" class="app-action-btn" onclick="removeRapportFile()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -130,44 +199,48 @@
                     <div class="{% if not categorie_forms %}hidden{% endif %} p-3"
                          id="depense-table-{{ value }}">
 
-                        {% if can_manage_project %}
-                        <div class="flex items-center justify-between mb-2 pb-2"
-                             style="border-bottom: 1px solid var(--border-subtle);">
-                            <span class="text-xs" style="color: var(--text-muted);">
-                                <i class="fas fa-info-circle" style="color: var(--accent-warning);"></i>
-                                Référentiel : <strong style="color: var(--accent-warning);">{{ label }}</strong>
+                        <div class="depense-referentiel-bar">
+                            <span class="depense-referentiel-label">
+                                <i class="fas fa-info-circle"></i>
+                                Référentiel : <strong>{{ label }}</strong>
                             </span>
                             <button type="button"
                                     onclick="ouvrirModalBDD('{{ value }}', '{{ label|escapejs }}')"
-                                    class="app-btn-secondary text-xs">
+                                    class="app-btn-secondary text-xs depense-bdd-button">
                                 <i class="fas fa-database"></i> Consultation BDD
                             </button>
                         </div>
-                        {% endif %}
 
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr>
-                                    <th class="py-1 pr-2 text-left">Désignation</th>
-                                    <th class="py-1 pr-2 w-24 text-left">Quantité</th>
-                                    <th class="py-1 pr-2 w-20 text-left">Unité</th>
-                                    <th class="py-1 pr-2 w-28 text-left">PU</th>
-                                    <th class="py-1 pr-2 w-32 text-right">Montant</th>
-                                    <th class="py-1 w-10"></th>
-                                </tr>
-                            </thead>
-                            <tbody id="depense-tbody-{{ value }}">
-                                {% for depense_form in categorie_forms %}
-                                    {% include 'projets/rapports/_depense_row.html' with depense_form=depense_form options=options %}
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="py-1 pr-2 text-left">Désignation</th>
+                                        <th class="py-1 pr-2 w-24 text-left">Quantité</th>
+                                        <th class="py-1 pr-2 w-20 text-left">Unité</th>
+                                        <th class="py-1 pr-2 w-28 text-left">PU</th>
+                                        <th class="py-1 pr-2 w-32 text-right">Montant</th>
+                                        <th class="py-1 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="depense-tbody-{{ value }}">
+                                    {% for depense_form in categorie_forms %}
+                                        {% include 'projets/rapports/_depense_row.html' with depense_form=depense_form options=options %}
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
 
-                        <button type="button"
-                                class="depense-add-btn app-btn-secondary text-xs mt-2"
-                                data-categorie="{{ value }}">
-                            <i class="fas fa-plus"></i> Ajouter une ligne
-                        </button>
+                        <div class="category-actions">
+                            <button type="button"
+                                    class="situation-presets depense-add-btn"
+                                    data-categorie="{{ value }}"
+                                    title="Ajouter une ligne"
+                                    aria-label="Ajouter une ligne de dépense">
+                                <img src="{% static 'icons/add_empty_line.png' %}"
+                                     alt="" class="h-5 w-5" aria-hidden="true">
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -209,27 +282,35 @@
                     </span>
                 </button>
 
-                <div class="{% if not stocks.forms %}hidden{% endif %} p-3" id="stock-table">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr>
-                                <th class="py-1 pr-2 text-left">Désignation</th>
-                                <th class="py-1 pr-2 w-24 text-left">Unité</th>
-                                <th class="py-1 pr-2 w-28 text-left">Qté entrée</th>
-                                <th class="py-1 pr-2 w-28 text-left">Qté sortie</th>
-                                <th class="py-1 pr-2 w-28 text-left">Stock restant</th>
-                                <th class="py-1 w-10"></th>
-                            </tr>
-                        </thead>
-                        <tbody id="stock-tbody">
-                            {% for stock_form in stocks.forms %}
-                                {% include 'projets/rapports/_stock_row.html' with stock_form=stock_form %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                    <button type="button" id="stock-add-btn" class="app-btn-secondary text-xs mt-2">
-                        <i class="fas fa-plus"></i> Ajouter une ligne
-                    </button>
+                <div class="{% if not stocks.forms %}hidden{% endif %}" id="stock-table">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr>
+                                    <th class="py-1 pr-2 text-left">Désignation</th>
+                                    <th class="py-1 pr-2 w-24 text-left">Unité</th>
+                                    <th class="py-1 pr-2 w-28 text-left">Qté entrée</th>
+                                    <th class="py-1 pr-2 w-28 text-left">Qté sortie</th>
+                                    <th class="py-1 pr-2 w-28 text-left">Stock restant</th>
+                                    <th class="py-1 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="stock-tbody">
+                                {% for stock_form in stocks.forms %}
+                                    {% include 'projets/rapports/_stock_row.html' with stock_form=stock_form %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="category-actions">
+                        <button type="button" id="stock-add-btn"
+                                class="situation-presets stock-add-btn"
+                                title="Ajouter un mouvement de stock"
+                                aria-label="Ajouter un mouvement de stock">
+                            <img src="{% static 'icons/add_empty_line.png' %}"
+                                 alt="" class="h-5 w-5" aria-hidden="true">
+                        </button>
+                    </div>
                 </div>
             </div>
             <template id="stock-empty-form-template">
@@ -247,13 +328,6 @@
         </div>
     </form>
 
-    {% if rapport and rapport.document %}
-    <form id="delete_document_form" method="post"
-          action="{% url 'projets:supprimer_document_rapport_journalier' projet.id rapport.id %}"
-          class="hidden">
-        {% csrf_token %}
-    </form>
-    {% endif %}
 </div>
 
 {% include 'projets/rapports/_modal_bdd_consultation.html' %}

@@ -72,6 +72,7 @@ DOWNLOAD_SCOPES = {
     'fichiersuivi': 'suivi__projet_id',
     'rapportjournalier': 'projet_id',
     'situationmensuelle': 'projet_id',
+    'documentrapportjournalier': 'rapport__projet_id',
     'documentsituationmensuelle': 'situation__projet_id',
     'processvalidation': 'attachement__projet_id',
     'etapevalidation': 'processValidation__attachement__projet_id',

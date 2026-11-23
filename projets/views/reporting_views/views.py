@@ -23,10 +23,15 @@ from projets.forms import (
     DocumentSituationMensuelleFormSet, RecetteSituationMensuelleFormSet,
     RecetteSituationMensuelleInitialFormSet, RapportJournalierForm,
     SituationMensuelleForm, StockRapportJournalierFormSet,
+    LigneTravailRapportJournalierFormSet,
     StockSituationMensuelleFormSet,
 )
-from projets.models import (Projet, SituationMensuelle, RecetteSituationMensuelle, DepenseSituationMensuelle, 
-                            DocumentSituationMensuelle, StockSituationMensuelle, RapportJournalier)
+from projets.models import (
+    Projet, SituationMensuelle, RecetteSituationMensuelle,
+    DepenseSituationMensuelle, DocumentSituationMensuelle,
+    StockSituationMensuelle, RapportJournalier,
+    DocumentRapportJournalier,
+)
 from projets.models.projet import Dossier
 from projets.models import ChiffreAffaire
 from projets.services.chiffre_affaire import synchroniser_situation_ca
@@ -35,6 +40,24 @@ from projets.utils.navigation import crumb, project_crumbs
 
 
 logger = logging.getLogger(__name__)
+
+
+def _fichier_rapport_recu(request):
+    fichiers = list(request.FILES.getlist('documents'))
+    fichiers.extend(request.FILES.getlist('document'))
+    camera = request.FILES.get('document_camera')
+    if camera:
+        fichiers.append(camera)
+    return fichiers
+
+
+def _enregistrer_documents_rapport(request, rapport):
+    for fichier in _fichier_rapport_recu(request):
+        DocumentRapportJournalier.objects.create(
+            rapport=rapport,
+            fichier=fichier,
+            original_filename=fichier.name,
+        )
 
 
 def _format_validation_errors(validation_form):
@@ -139,7 +162,7 @@ def rapports_journaliers(request, projet_id):
         total_depenses_annotated=Coalesce(
             Sum('depenses__montant'), Value(Decimal('0.00'))
         )
-    ).prefetch_related('depenses')
+    ).prefetch_related('depenses', 'lignes_travaux', 'documents_joints')
 
     ctx = {
             'projet': projet,
@@ -166,12 +189,13 @@ def ajouter_rapport_journalier(request, projet_id):
     projet = _projet_travaux_or_403(projet_id)
     is_xhr = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    def _build_ctx(form, depenses, stocks, erreurs=False):
+    def _build_ctx(form, depenses, stocks, travaux, erreurs=False):
         return {
             'projet': projet,
             'form': form,
             'depenses': depenses,
             'stocks': stocks,
+            'travaux': travaux,
             'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
             'erreurs': erreurs,
             'breadcrumb_items': project_crumbs(
@@ -185,23 +209,27 @@ def ajouter_rapport_journalier(request, projet_id):
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
         depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet(request.POST)
+        travaux = LigneTravailRapportJournalierFormSet(request.POST)
 
-        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+        if (
+            form.is_valid()
+            and depenses.is_valid()
+            and stocks.is_valid()
+            and travaux.is_valid()
+        ):
             rapport = form.save(commit=False)
             rapport.projet = projet
-
-            fichier = request.FILES.get('document')
-            if fichier:
-                rapport.document = fichier
-                rapport.original_filename = fichier.name
 
             try:
                 with transaction.atomic():
                     rapport.save()
                     depenses.instance = rapport
                     stocks.instance = rapport
+                    travaux.instance = rapport
                     depenses.save()
                     stocks.save()
+                    travaux.save()
+                    _enregistrer_documents_rapport(request, rapport)
             except IntegrityError:
                 msg = 'Un rapport journalier existe déjà pour cette date dans ce projet.'
                 if is_xhr:
@@ -228,9 +256,11 @@ def ajouter_rapport_journalier(request, projet_id):
             error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
         if stocks.errors:
             error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
+        if travaux.errors:
+            error_messages.append(f"Travaux: {_format_validation_errors(travaux)}")
         messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
 
-        ctx = _build_ctx(form, depenses, stocks, erreurs=True)
+        ctx = _build_ctx(form, depenses, stocks, travaux, erreurs=True)
         if is_xhr:
             return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx, status=400)
         return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx, status=400)
@@ -243,8 +273,9 @@ def ajouter_rapport_journalier(request, projet_id):
     })
     depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
     stocks = StockRapportJournalierFormSet()
+    travaux = LigneTravailRapportJournalierFormSet()
 
-    ctx = _build_ctx(form, depenses, stocks)
+    ctx = _build_ctx(form, depenses, stocks, travaux)
 
     if is_xhr:
         return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx)
@@ -259,7 +290,9 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
             total_depenses_annotated=Coalesce(
                 Sum('depenses__montant'), Value(Decimal('0.00'))
             )
-        ).prefetch_related('depenses', 'stocks'),
+        ).prefetch_related(
+            'depenses', 'stocks', 'lignes_travaux', 'documents_joints',
+        ),
         id=rapport_id, projet=projet
     )
 
@@ -362,24 +395,27 @@ def formulaire_rapport_journalier(request, projet_id):
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
         depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet(request.POST)
+        travaux = LigneTravailRapportJournalierFormSet(request.POST)
         
-        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+        if (
+            form.is_valid()
+            and depenses.is_valid()
+            and stocks.is_valid()
+            and travaux.is_valid()
+        ):
             rapport = form.save(commit=False)
             rapport.projet = projet
-            
-            # Gestion du fichier
-            fichier = request.FILES.get('document')
-            if fichier:
-                rapport.document = fichier
-                rapport.original_filename = fichier.name
             
             try:
                 with transaction.atomic():
                     rapport.save()
                     depenses.instance = rapport
                     stocks.instance = rapport
+                    travaux.instance = rapport
                     depenses.save()
                     stocks.save()
+                    travaux.save()
+                    _enregistrer_documents_rapport(request, rapport)
             except IntegrityError:
                 messages.error(
                     request,
@@ -398,6 +434,8 @@ def formulaire_rapport_journalier(request, projet_id):
                 error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
             if stocks.errors:
                 error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
+            if travaux.errors:
+                error_messages.append(f"Travaux: {_format_validation_errors(travaux)}")
             
             messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
             return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
@@ -405,6 +443,7 @@ def formulaire_rapport_journalier(request, projet_id):
                 'form': form,
                 'depenses': depenses,
                 'stocks': stocks,
+                'travaux': travaux,
                 'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
                 'erreurs': True,
             })
@@ -417,6 +456,7 @@ def formulaire_rapport_journalier(request, projet_id):
         })
         depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet()
+        travaux = LigneTravailRapportJournalierFormSet()
     
     depenses_groupees = _grouper_depenses_par_categorie(depenses, projet=projet)
     
@@ -425,6 +465,7 @@ def formulaire_rapport_journalier(request, projet_id):
         'form': form,
         'depenses': depenses,
         'stocks': stocks,
+        'travaux': travaux,
         'depenses_groupees': depenses_groupees,
     })
 
@@ -435,13 +476,14 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
     rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
     is_xhr = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    def _build_ctx(form, depenses, stocks):
+    def _build_ctx(form, depenses, stocks, travaux):
         return {
             'projet': projet,
             'rapport': rapport,
             'form': form,
             'depenses': depenses,
             'stocks': stocks,
+            'travaux': travaux,
             'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
             'breadcrumb_items': project_crumbs(
                 projet,
@@ -456,17 +498,26 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
             request.POST, instance=rapport, form_kwargs={'projet': projet},
         )
         stocks = StockRapportJournalierFormSet(request.POST, instance=rapport)
+        travaux = LigneTravailRapportJournalierFormSet(
+            request.POST, instance=rapport,
+        )
 
-        if form.is_valid() and depenses.is_valid() and stocks.is_valid():
+        if (
+            form.is_valid()
+            and depenses.is_valid()
+            and stocks.is_valid()
+            and travaux.is_valid()
+        ):
             rapport = form.save(commit=False)
-            fichier = request.FILES.get('document')
             with transaction.atomic():
-                if fichier:
-                    rapport.document = fichier
-                    rapport.original_filename = fichier.name
                 rapport.save()
                 depenses.save()
                 stocks.save()
+                travaux.save()
+                _enregistrer_documents_rapport(request, rapport)
+                rapport.documents_joints.filter(
+                    pk__in=request.POST.getlist('supprimer_document'),
+                ).delete()
 
             msg = 'Rapport journalier modifié.'
             if is_xhr:
@@ -487,11 +538,12 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
                     'form': form.errors.get_json_data(),
                     'depenses': depenses.errors,
                     'stocks': stocks.errors,
+                    'travaux': travaux.errors,
                 },
             }, status=400)
         messages.error(request, msg)
         return render(request, 'projets/rapports/modifier_rapport_journalier.html',
-                      _build_ctx(form, depenses, stocks), status=400)
+                      _build_ctx(form, depenses, stocks, travaux), status=400)
 
     # GET
     form = RapportJournalierForm(instance=rapport)
@@ -499,8 +551,9 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
         form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
     depenses = DepenseRapportJournalierFormSet(instance=rapport, form_kwargs={'projet': projet})
     stocks = StockRapportJournalierFormSet(instance=rapport)
+    travaux = LigneTravailRapportJournalierFormSet(instance=rapport)
 
-    ctx = _build_ctx(form, depenses, stocks)
+    ctx = _build_ctx(form, depenses, stocks, travaux)
 
     if request.headers.get('HX-Request'):
         return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx)
@@ -535,10 +588,11 @@ def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
     is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
 
     if request.method == 'POST':
-        if rapport.document:
-            rapport.document = None
-            rapport.original_filename = ''
-            rapport.save(update_fields=['document', 'original_filename'])
+        document = rapport.documents_joints.filter(
+            pk=request.POST.get('document_id'),
+        ).first()
+        if document:
+            document.delete()
             msg = 'Document supprimé du rapport.'
         else:
             msg = 'Aucun document à supprimer.'
@@ -691,31 +745,38 @@ def upload_rapport_document(request, projet_id, rapport_id):
         messages.error(request, "Méthode non autorisée")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
-    fichier = request.FILES.get('document')
-    if not fichier:
+    fichiers = _fichier_rapport_recu(request)
+    if not fichiers:
         messages.error(request, "Aucun fichier sélectionné")
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
-    # Vérifier la taille (max 10MB)
-    if fichier.size > 10 * 1024 * 1024:
-        messages.error(request, "Le fichier ne doit pas dépasser 10MB")
-        return redirect('projets:suivi_execution', projet_id=projet_id)
-    
-    # Vérifier le type de fichier
     valid_extensions = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif']
-    ext = os.path.splitext(fichier.name)[1].lower()
-    if ext not in valid_extensions:
-        messages.error(request, f"Type de fichier non supporté. Utilisez: {', '.join(valid_extensions)}")
+    if any(fichier.size > 10 * 1024 * 1024 for fichier in fichiers):
+        messages.error(request, "Chaque fichier ne doit pas dépasser 10MB")
+        return redirect('projets:suivi_execution', projet_id=projet_id)
+    if any(
+        os.path.splitext(fichier.name)[1].lower() not in valid_extensions
+        for fichier in fichiers
+    ):
+        messages.error(
+            request,
+            f"Type de fichier non supporté. Utilisez: {', '.join(valid_extensions)}",
+        )
         return redirect('projets:suivi_execution', projet_id=projet_id)
     
     try:
-        # Supprimer l'ancien document s'il existe
-        # Sauvegarder le nouveau document
-        rapport.document = fichier
-        rapport.original_filename = fichier.name
-        rapport.save()
-        
-        messages.success(request, f"Document '{fichier.name}' ajouté avec succès au rapport du {rapport.date.strftime('%d/%m/%Y')}")
+        with transaction.atomic():
+            for fichier in fichiers:
+                DocumentRapportJournalier.objects.create(
+                    rapport=rapport,
+                    fichier=fichier,
+                    original_filename=fichier.name,
+                )
+        messages.success(
+            request,
+            f"{len(fichiers)} document(s) ajouté(s) au rapport du "
+            f"{rapport.date.strftime('%d/%m/%Y')}",
+        )
     except Exception as e:
         messages.error(request, f"Erreur lors de l'upload: {str(e)}")
     
