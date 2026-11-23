@@ -45,7 +45,7 @@
                            style="color: var(--text-primary);">
                             <i class="fas fa-user-circle mr-2"></i> Profil
                         </a>
-                        {% if can_manage_users %}
+                        {% if can_manage_users and 'utilisateurs' in modules_actifs %}
                         <a href="{% url 'projets:liste_utilisateurs' %}"
                            class="block px-4 py-2 text-sm app-navbar-item"
                            style="color: var(--text-primary);">

@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.8.1"
+APP_VERSION = "2.8.2"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,15 @@ APP_VERSION = "2.8.1"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.8.2": {
+        "date": "2026-11-22",
+        "titre": "Améliorations diverses",
+        "highlights": [
+            "Optimisations de performance et corrections de bugs mineurs",
+            "Amélioration de la gestion des utilisateurs et des modules",
+        ],
+        "niveau": "info",
+    },
     "2.8.1": {
         "date": "2026-11-21",
         "titre": "Correction de la modification des projets",

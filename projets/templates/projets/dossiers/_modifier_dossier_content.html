@@ -96,7 +96,6 @@
                         Tout sélectionner
                     </button>
                 </div>
-                {% endif %}
 
                 <div class="max-h-96 space-y-2 overflow-y-auto rounded-lg p-3"
                      style="border: 1px solid var(--border-default); background-color: var(--bg-main);">
@@ -122,9 +121,10 @@
                     <p class="mt-1 text-sm" style="color: var(--accent-danger);">{{ error }}</p>
                 {% endfor %}
             </div>
-
+            {% endif %}
             <!-- Boutons -->
-            <div class="flex flex-col sm:flex-row gap-3">
+            <div class="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4"
+                style="border-top: 1px solid var(--border-default); margin-top: 1rem;">
                 {% if user.is_superuser %}
                     {% url 'projets:gerer_dossiers' as retour_url %}
                 {% else %}
@@ -134,14 +134,13 @@
                 hx-get="{{ retour_url }}"
                 hx-target="#main-content"
                 hx-swap="innerHTML swap:150ms settle:150ms show:top"
-                hx-push-url="true"
                 hx-indicator="#htmx-progress"
-                class="dossier-cancel-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition flex-1">
+                class="dossier-cancel-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition sm:w-auto">
                     <i class="fas fa-arrow-left"></i> Annuler
                 </a>
 
                 <button type="submit"
-                        class="dossier-submit-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition flex-1">
+                        class="dossier-submit-btn inline-flex items-center justify-center gap-2 rounded-lg px-5 py-3 font-semibold transition sm:w-auto">
                     <i class="fas fa-save"></i> Enregistrer les modifications
                 </button>
             </div>

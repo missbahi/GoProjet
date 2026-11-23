@@ -49,7 +49,7 @@
                            class="block px-4 py-2 text-sm app-dropdown-item">
                             <i class="fas fa-user-circle mr-2"></i> Profil
                         </a>
-                        {% if can_manage_users %}
+                        {% if can_manage_users and 'utilisateurs' in modules_actifs %}
                         <a href="{% url 'projets:liste_utilisateurs' %}"
                            class="block px-4 py-2 text-sm app-dropdown-item">
                             <i class="fas fa-users-cog mr-2"></i> Utilisateurs

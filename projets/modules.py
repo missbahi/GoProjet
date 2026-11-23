@@ -10,6 +10,14 @@ MODULES = {
         # On redirige au lieu de 403
         'redirect_on_disable': True,
     },
+    'utilisateurs': {
+        'label': 'Gestion des utilisateurs',
+        'routes': {
+            'liste_utilisateurs', 'ajouter_utilisateur',
+            'modifier_utilisateur', 'supprimer_utilisateur',
+            'gerer_projets_utilisateur', 'journal_acces_utilisateur',
+        },
+    },
     'etat_decomptes_dashboard': {
         'label': 'Section Décomptes (dashboard projet)',
         'routes': set(),  # aucune URL à bloquer — c'est purement un flag d'affichage

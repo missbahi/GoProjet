@@ -150,7 +150,7 @@
                 {% endif %}
 
                 {# 9. Utilisateurs — tout sauf Pointeur et Observateur (Option 2) #}
-                {% if can_manage_users %}
+                {% if can_manage_users and 'utilisateurs' in modules_actifs %}
                 <li>
                     <a href="{% url 'projets:liste_utilisateurs' %}"
                         hx-get="{% url 'projets:liste_utilisateurs' %}"
