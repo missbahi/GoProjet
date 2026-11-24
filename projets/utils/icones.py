@@ -5,7 +5,7 @@ from django.contrib.staticfiles import finders
 
 ICONE_DIR = "images/materiels"
 EXTENSIONS = {".png", ".svg", ".jpg", ".jpeg", ".webp", ".avif", ".gif"}
-EXCLUS = {"default.avif"}  # fichier de fallback, pas un choix utilisateur
+EXCLUS = {"default.png"}  # fichier de fallback, pas un choix utilisateur
 
 _cache = None
 
@@ -31,7 +31,8 @@ def lister_icones_materiel(force=False):
 
 
 def choix_icones():
-    return [("", "— Aucune —")] + [
+    icons = [("", "— Aucune —")] + [
         (n, Path(n).stem.replace("-", " ").replace("_", " ").title())
         for n in lister_icones_materiel()
     ]
+    return icons
