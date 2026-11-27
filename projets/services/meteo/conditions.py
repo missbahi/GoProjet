@@ -1,5 +1,6 @@
 """Conditions météorologiques proposées dans les rapports journaliers.
 
+Catalogue sans dépendance (utilisé par le modèle et les formulaires).
 Les codes sont stockés dans ``RapportJournalier.meteo`` (CharField). Les anciennes
 saisies en texte libre restent valides : elles sont affichées telles quelles.
 """

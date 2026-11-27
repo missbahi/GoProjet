@@ -68,7 +68,9 @@
         {% endif %}
 
         {# ═══════════ Projets récents — module ca / attachements ═══════════ #}
-        {% if projets_recents %}
+        {# « is not None » : variable absente = modules désactivés (bloc masqué) ; #}
+        {# liste vide = aucun projet (bloc affiché avec « Aucun projet récent »). #}
+        {% if projets_recents is not None %}
         <div class="rounded-lg shadow mb-6" style="background-color: var(--bg-surface);">
             <div class="p-4" style="border-bottom: 1px solid var(--border-default);">
                 <h2 class="text-lg font-semibold" style="color: var(--accent-green);">

@@ -84,7 +84,7 @@ MODULES = {
     'rapports_journaliers': {
         'label': 'Rapports journaliers',
         'routes': {
-            'rapports_journaliers', 'ajouter_rapport_journalier',
+            'rapports_journaliers', 'ajouter_rapport_journalier', 'api_meteo_rapport', 'api_lignes_bpu_rapport',
             'detail_rapport_journalier', 'apercu_rapport_journalier', 'modifier_rapport_journalier',
             'supprimer_rapport_journalier',
         },

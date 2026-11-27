@@ -80,6 +80,7 @@
                 '/static/projets/js/suivi.js',
                 '/static/projets/js/rapports-form.js',
                 '/static/projets/js/rapports-bdd-modal.js',
+                '/static/projets/js/rapports-bpu-modal.js',
             ],
         },
     };

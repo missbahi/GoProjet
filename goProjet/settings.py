@@ -207,6 +207,13 @@ R2_REGION = os.environ.get('R2_REGION', 'auto')
 R2_ENDPOINT_URL = os.environ.get('R2_ENDPOINT_URL') or os.environ.get('AWS_S3_ENDPOINT_URL')
 USE_R2_DOCUMENTS = os.environ.get('USE_R2_DOCUMENTS', 'true').lower() == 'true'
 
+# --- MÉTÉO EN LIGNE (Open-Meteo, voir projets/services/meteo/open_meteo.py) ---
+# Désactivée par défaut : l'API gratuite est réservée à un usage non commercial.
+# Usage commercial : abonnement Open-Meteo et clé dans METEO_API_KEY.
+METEO_EN_LIGNE = os.environ.get('METEO_EN_LIGNE', 'false').lower() == 'true'
+METEO_API_KEY = os.environ.get('METEO_API_KEY', '')
+METEO_PAYS = os.environ.get('METEO_PAYS', 'MA')  # code ISO pour le géocodage
+
 # --- 12. CONFIGURATION PWA ---
 PWA_CONFIG = {
     'ENABLED': os.environ.get('PWA_ENABLED', 'True').lower() == 'true',

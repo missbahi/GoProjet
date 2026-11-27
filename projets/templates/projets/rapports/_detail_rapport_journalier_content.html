@@ -59,6 +59,7 @@
             <table class="app-table text-sm">
                 <thead>
                     <tr>
+                        <th>Prix BPU</th>
                         <th>Désignation</th>
                         <th>Quantité</th>
                         <th>Unité</th>
@@ -68,6 +69,7 @@
                 <tbody>
                     {% for ligne in rapport.lignes_travaux.all %}
                     <tr>
+                        <td class="whitespace-nowrap">{% if ligne.ligne_bordereau %}<span title="{{ ligne.ligne_bordereau.designation|truncatechars:120 }}" style="color: var(--accent-primary);"><i class="fas fa-link mr-1"></i>{{ ligne.ligne_bordereau.numero|default:"BPU" }}</span>{% else %}—{% endif %}</td>
                         <td>{{ ligne.designation }}</td>
                         <td>{{ ligne.quantite|default:"—" }}</td>
                         <td>{{ ligne.unite|default:"—" }}</td>

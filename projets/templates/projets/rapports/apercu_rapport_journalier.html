@@ -206,11 +206,12 @@
             {% if travaux %}
             <div class="table-wrap">
                 <table>
-                    <thead><tr><th style="width:6%">N°</th><th>Désignation</th><th class="num" style="width:13%">Quantité</th><th style="width:9%">Unité</th><th style="width:28%">Observations</th></tr></thead>
+                    <thead><tr><th style="width:6%">N°</th><th style="width:10%">Prix</th><th>Désignation</th><th class="num" style="width:13%">Quantité</th><th style="width:9%">Unité</th><th style="width:28%">Observations</th></tr></thead>
                     <tbody>
                         {% for ligne in travaux %}
                         <tr>
                             <td class="centre">{{ forloop.counter }}</td>
+                            <td>{{ ligne.ligne_bordereau.numero|default:"—" }}</td>
                             <td>{{ ligne.designation }}</td>
                             <td class="num">{% if ligne.quantite is not None %}{{ ligne.quantite|floatformat:"-2g" }}{% else %}—{% endif %}</td>
                             <td>{{ ligne.unite|default:"—" }}</td>

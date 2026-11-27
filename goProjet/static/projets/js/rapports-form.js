@@ -97,7 +97,12 @@
                 btn.style.outline = actif ? '2px solid var(--accent-primary)' : '';
             });
         }
-        select.addEventListener('change', refresh);
+        // « manuel » : choix de l'utilisateur, jamais écrasé par la météo en ligne.
+        let remplissageAuto = false;
+        select.addEventListener('change', () => {
+            if (!remplissageAuto) select.dataset.source = 'manuel';
+            refresh();
+        });
         picker?.querySelectorAll('.meteo-rapide').forEach(btn => {
             btn.addEventListener('click', () => {
                 select.value = btn.dataset.meteo;
@@ -105,6 +110,64 @@
             });
         });
         refresh();
+        initMeteoEnLigne(picker, select, valeur => {
+            remplissageAuto = true;
+            select.value = valeur;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            remplissageAuto = false;
+            select.dataset.source = 'auto';
+        });
+    }
+
+    /* Météo en ligne (Open-Meteo, activée côté serveur par METEO_EN_LIGNE) */
+    function initMeteoEnLigne(picker, select, choisir) {
+        const url = picker?.dataset.meteoUrl;
+        if (!url) return;
+        const form = select.form;
+        const dateInput = form?.querySelector('input[name="date"]');
+        const tempInput = form?.querySelector('input[name="temperature"]');
+        const bouton = picker.querySelector('.meteo-en-ligne');
+        const statut = picker.querySelector('.meteo-statut');
+        const nombre = v => (v === null || v === undefined) ? null : Math.round(v * 10) / 10;
+        let requete = 0;
+
+        async function charger(forcer) {
+            if (!dateInput?.value) return;
+            const numero = ++requete;
+            if (statut) statut.textContent = 'Recherche de la météo du jour…';
+            try {
+                const reponse = await fetch(`${url}?date=${encodeURIComponent(dateInput.value)}`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                });
+                const data = await reponse.json();
+                if (numero !== requete) return;  // une requête plus récente a été lancée
+                if (!data.success) {
+                    if (statut) statut.textContent = data.message || 'Météo en ligne indisponible.';
+                    return;
+                }
+                if (data.code && (forcer || select.dataset.source !== 'manuel')) choisir(data.code);
+                const max = nombre(data.temperature_max);
+                if (tempInput && max !== null && (forcer || !tempInput.value || tempInput.dataset.source === 'auto')) {
+                    tempInput.value = max;
+                    tempInput.dataset.source = 'auto';
+                }
+                if (statut) {
+                    const min = nombre(data.temperature_min);
+                    statut.textContent = `${data.lieu} : ${data.libelle || 'conditions non déterminées'}`
+                        + (max !== null ? ` · max ${max} °C` : '') + (min !== null ? ` / min ${min} °C` : '')
+                        + ` — ${data.attribution}`;
+                }
+            } catch (e) {
+                if (numero === requete && statut) statut.textContent = 'Météo en ligne indisponible.';
+            }
+        }
+
+        tempInput?.addEventListener('input', () => { tempInput.dataset.source = 'manuel'; });
+        bouton?.addEventListener('click', () => charger(true));
+        if (picker.dataset.meteoAuto) {
+            dateInput?.addEventListener('change', () => charger(false));
+            charger(false);
+        }
     }
 
     /* ═══════════════════════════════════════════════════════════
@@ -285,7 +348,25 @@
             });
         }
 
+        // Lien vers une ligne du bordereau : champ caché + badge « n° de prix ».
+        function lierBordereau(row, ligne) {
+            const champ = row.querySelector('input[name$="-ligne_bordereau"]');
+            const badge = row.querySelector('.travail-bpu-badge');
+            if (champ) champ.value = ligne ? String(ligne.id) : '';
+            if (badge) {
+                badge.classList.toggle('hidden', !ligne);
+                badge.title = ligne ? `Prix n° ${ligne.numero} du bordereau — ${ligne.designation}` : '';
+                const numero = badge.querySelector('.travail-bpu-numero');
+                if (numero) numero.textContent = ligne ? (ligne.numero || 'BPU') : '';
+            }
+        }
+
         function bindRow(row) {
+            const delier = row.querySelector('.travail-bpu-delier');
+            if (delier && !delier.dataset.bound) {
+                delier.dataset.bound = 'true';
+                delier.addEventListener('click', () => lierBordereau(row, null));
+            }
             const remove = row.querySelector('.travail-delete-btn');
             if (!remove || remove.dataset.bound) return;
             remove.dataset.bound = 'true';
@@ -314,14 +395,31 @@
             syncOrder();
             updateCount();
             row.querySelector('input:not([type="hidden"]), textarea, select')?.focus();
+            return row;
         }
 
         tbody.querySelectorAll('tr').forEach(bindRow);
         if (!addButton.dataset.bound) {
             addButton.dataset.bound = 'true';
-            addButton.addEventListener('click', addRow);
+            addButton.addEventListener('click', () => addRow());
         }
 
+        // Utilisé par la fenêtre « Lignes BPU » (rapports-bpu-modal.js).
+        container.ajouterLigneBPU = (ligne) => {
+            const corps = document.getElementById('travaux-body');
+            if (corps?.classList.contains('hidden')) {
+                corps.classList.remove('hidden');
+                container.querySelector('.categorie-toggle .toggle-icon')?.classList.add('rotate-90');
+            }
+            const row = addRow();
+            if (!row) return null;
+            lierBordereau(row, ligne);
+            const designation = row.querySelector('input[name$="-designation"]');
+            const unite = row.querySelector('input[name$="-unite"]');
+            if (designation) designation.value = ligne.designation.slice(0, 500);
+            if (unite) unite.value = (ligne.unite || '').slice(0, 20);
+            return row;
+        };
 
         syncOrder();
         updateCount();

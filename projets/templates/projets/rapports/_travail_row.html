@@ -1,10 +1,21 @@
-{% load l10n %}
 <tr>
     {{ travail_form.id }}
     {{ travail_form.ordre }}
+    {{ travail_form.ligne_bordereau }}
     <td>
+        {% with bpu=travail_form.instance.ligne_bordereau %}
+        <span class="travail-bpu-badge{% if not bpu %} hidden{% endif %}"
+              title="{% if bpu %}Prix n° {{ bpu.numero }} du bordereau — {{ bpu.designation|truncatechars:120 }}{% endif %}">
+            <i class="fas fa-link" aria-hidden="true"></i>
+            <span class="travail-bpu-numero">{% if bpu %}{{ bpu.numero|default:"BPU" }}{% endif %}</span>
+            <button type="button" class="travail-bpu-delier" title="Délier du bordereau" aria-label="Délier du bordereau">
+                <i class="fas fa-xmark"></i>
+            </button>
+        </span>
+        {% endwith %}
         {{ travail_form.designation }}
         {% for error in travail_form.designation.errors %}<p class="text-xs text-red-600">{{ error }}</p>{% endfor %}
+        {% for error in travail_form.ligne_bordereau.errors %}<p class="text-xs text-red-600">{{ error }}</p>{% endfor %}
     </td>
     <td>{{ travail_form.quantite }}</td>
     <td>{{ travail_form.unite }}</td>

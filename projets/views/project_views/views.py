@@ -1,15 +1,9 @@
-from decimal import Decimal
-from projets.models.profile import Profile
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Avg, ProtectedError, Q, Sum
-from django.db.models.functions import Coalesce
+from django.db.models import ProtectedError, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.urls import reverse
-from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from projets.decorators import (
@@ -18,14 +12,10 @@ from projets.decorators import (
     projets_accessibles, superuser_required,
 )
 from projets.forms import DossierForm, ProjetForm
-from projets.models import (
-    Attachement, Decompte, DocumentAdministratif, Dossier, Entreprise,
-    Notification, OrdreService, Projet, SuiviExecution,
-)
+from projets.models import Dossier, Notification, Projet
+from projets.models.profile import Profile
+from projets.services.dashboard_contexte import construire_contexte_dashboard
 from projets.utils.utils import render_page_or_fragment
-from projets.utils.navigation import project_crumbs
-from projets.services.avancement_projet import avancement_ttc
-from projets.services.revision_readiness import indicateur_revision_tableau_bord
 
 
 @superuser_required
@@ -283,122 +273,6 @@ def supprimer_projet(request, projet_id):
     projet.delete()
     return redirect('projets:liste_projets')
 
-
-@login_required
-@can_view_projet
-def dashboard_projet_backup(request, projet_id):
-    projet = get_object_or_404(Projet.objects.select_related('dossier'), id=projet_id)
-    indicateur_revision = indicateur_revision_tableau_bord(projet)
-    rapports_journaliers = projet.rapports_journaliers.all()
-    dernier_rapport_journalier = rapports_journaliers.first()
-    situations_mensuelles = projet.situations_mensuelles.all()
-    derniere_situation_mensuelle = situations_mensuelles.first()
-    lots = projet.lots.all()
-    montant_total = sum((lot.montant_total_ttc for lot in lots), Decimal('0'))
-    montant_total_formate = '{:,.2f}'.format(montant_total).replace(',', ' ') if montant_total else '0.00'
-
-    decomptes = Decompte.objects.filter(attachement__projet=projet)
-    total_decomptes = decomptes.count()
-    decomptes_payes = decomptes.filter(statut='PAYE').count()
-    decomptes_emis = decomptes.filter(statut='EMIS').count()
-    decomptes_retard = decomptes.filter(statut='EN_RETARD').count()
-    decomptes_recents = decomptes.order_by('-date_emission')[:5]
-    attachements = Attachement.objects.filter(projet=projet)
-    documents_administratifs = DocumentAdministratif.objects.filter(projet=projet)
-    ordre_services = OrdreService.objects.filter(projet=projet)
-    ordres_notifies = list(
-        ordre_services.filter(statut='NOTIFIE', date_effet__isnull=False)
-        .select_related('type_os')
-        .order_by('date_effet', 'ordre_sequence')
-    )
-    osc = min(
-        (ordre for ordre in ordres_notifies if ordre.type_os.code == 'OSC'),
-        key=lambda ordre: ordre.ordre_sequence,
-        default=None,
-    )
-    today = timezone.localdate()
-    avancement_production = avancement_ttc(projet, lots, montant_total, today)
-    date_fin_previsionnelle = projet.date_fin_previsionnelle(today)
-    jours_ecoules = projet.jours_decoules_depuis_demarrage(today)
-    date_fin_contractuelle = projet.ajouter_delai(osc.date_effet) if osc else None
-    jours_extension = (
-        (date_fin_previsionnelle - date_fin_contractuelle).days
-        if date_fin_previsionnelle and date_fin_contractuelle else 0
-    )
-    jours_avant_echeance = (
-        (date_fin_previsionnelle - today).days if date_fin_previsionnelle else None
-    )
-
-    if not projet.delai:
-        statut_delai = 'INCOMPLET'
-        libelle_delai = 'Délai à renseigner'
-        message_delai = 'Ajoutez le délai contractuel pour activer le suivi de l’échéance.'
-    elif not osc:
-        statut_delai = 'ATTENTE_OSC'
-        libelle_delai = 'OSC attendu'
-        message_delai = 'La date de fin sera calculée après notification de l’OS de commencement.'
-    elif jours_avant_echeance is not None and jours_avant_echeance < 0:
-        statut_delai = 'RETARD'
-        libelle_delai = f'{abs(jours_avant_echeance)} jour(s) de dépassement'
-        message_delai = 'L’échéance prévisionnelle est dépassée.'
-    elif projet.projet_en_arret:
-        statut_delai = 'ARRET'
-        libelle_delai = 'Chantier en arrêt'
-        message_delai = 'L’échéance sera recalculée après notification de l’OS de reprise.'
-    elif jours_avant_echeance is not None and jours_avant_echeance <= 30:
-        statut_delai = 'ALERTE'
-        libelle_delai = f'Échéance dans {jours_avant_echeance} jour(s)'
-        message_delai = 'La date de fin prévisionnelle approche.'
-    else:
-        statut_delai = 'NORMAL'
-        libelle_delai = 'Dans les délais'
-        message_delai = 'Aucune alerte de délai à ce jour.'
-
-    delai_pilotage = {
-        'osc': osc,
-        'date_fin': date_fin_previsionnelle,
-        'jours_ecoules': jours_ecoules,
-        'jours_extension': jours_extension,
-        'jours_avant_echeance': jours_avant_echeance,
-        'statut': statut_delai,
-        'libelle': libelle_delai,
-        'message': message_delai,
-    }
-    suivis_execution = SuiviExecution.objects.filter(projet=projet)
-    can_handler = peut_gerer_projet(request.user)
-
-    template = (
-        'projets/dashboard_projet/_dashboard_fragment.html'
-        if request.headers.get('HX-Request')
-        else 'projets/dashboard_projet/dashboard.html'
-    )
-    return render(request, template, {
-        'can_handler': can_handler,
-        'projet': projet,
-        'indicateur_revision': indicateur_revision,
-        'breadcrumb_items': project_crumbs(projet),
-        'lots': lots,
-        'montant_total': montant_total_formate,
-        'avancement_production': avancement_production,
-        'total_decomptes': total_decomptes,
-        'decomptes_payes': decomptes_payes,
-        'decomptes_emis': decomptes_emis,
-        'decomptes_retard': decomptes_retard,
-        'decomptes_recents': decomptes_recents,
-        'attachements': attachements,
-        'documents_administratifs': documents_administratifs,
-        'ordre_services': ordre_services,
-        'delai_pilotage': delai_pilotage,
-        'suivis_execution': suivis_execution,
-        'rapports_journaliers': rapports_journaliers,
-        'dernier_rapport_journalier': dernier_rapport_journalier,
-        'situations_mensuelles': situations_mensuelles,
-        'derniere_situation_mensuelle': derniere_situation_mensuelle,
-        'ressources_count': projet.ressources_affectees.count(),
-    })
-
-
-from projets.services.dashboard_contexte import construire_contexte_dashboard
 
 @login_required
 @can_view_projet

@@ -1,0 +1,76 @@
+{# projets/templates/projets/rapports/_modal_bpu.html — lignes chargées à l'ouverture par rapports-bpu-modal.js, #}
+{# pour la date saisie dans le formulaire (réalisé à date, rapport ouvert exclu). #}
+<div id="modalBPU"
+     class="modal-bdd"
+     data-url="{% url 'projets:api_lignes_bpu_rapport' projet.id %}"
+     {% if rapport %}data-rapport="{{ rapport.id }}"{% endif %}
+     onclick="if(event.target===this) fermerModalBPU();"
+     role="dialog" aria-modal="true" aria-labelledby="modalBPUTitle">
+
+    <div class="modal-bdd-card" style="max-width: 980px;">
+
+        <div class="modal-bdd-header">
+            <div class="modal-bdd-title">
+                <i class="fas fa-file-invoice"></i>
+                <div>
+                    <h3 id="modalBPUTitle" class="text-sm md:text-base">Lignes du bordereau des prix</h3>
+                    <p class="text-xs" style="color: var(--text-secondary);">
+                        Cochez les prestations réalisées ce jour : chaque ligne ajoutée reste liée à son prix.
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="fermerModalBPU()" class="app-modal-close" aria-label="Fermer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="modal-bdd-search">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs"
+                   style="color: var(--text-muted);"></i>
+                <input type="text" id="modalBPUSearch" placeholder="Rechercher un n° de prix, une désignation…"
+                       autocomplete="off">
+            </div>
+            <select id="modalBPULot" class="app-modal-input text-xs shrink-0" style="width:auto;" hidden>
+                <option value="">Tous les lots</option>
+            </select>
+        </div>
+
+        <div class="modal-bdd-body">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="text-center w-10">
+                            <input type="checkbox" id="modalBPUToutCocher" title="Tout cocher (lignes affichées)"
+                                   aria-label="Tout cocher">
+                        </th>
+                        <th class="text-left w-20">N°</th>
+                        <th class="text-left">Désignation</th>
+                        <th class="text-center w-16">Unité</th>
+                        <th class="text-right w-28">PU (DH)</th>
+                        <th class="text-right w-40"
+                            title="Réalisé à la date du rapport : dernier cumul officiel (attachement validé ou CA) + rapports postérieurs, hors rapport ouvert. Survolez une valeur pour le détail.">
+                            Réalisé à date / Marché
+                        </th>
+                    </tr>
+                </thead>
+                <tbody id="modalBPUTbody"></tbody>
+            </table>
+            <div id="modalBPUEmpty" class="hidden text-center py-8 text-xs"
+                 style="color: var(--text-secondary);">
+                <i class="fas fa-search-minus text-2xl mb-2 block" style="color: var(--text-muted);"></i>
+                Aucune ligne trouvée.
+            </div>
+        </div>
+
+        <div class="modal-bdd-footer">
+            <span class="text-xs" style="color: var(--text-secondary);" id="modalBPUCount"></span>
+            <div class="flex gap-2">
+                <button type="button" onclick="fermerModalBPU()" class="app-btn-secondary">Fermer</button>
+                <button type="button" id="modalBPUAjouter" class="app-btn-primary" disabled>
+                    <i class="fas fa-plus"></i> Ajouter la sélection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

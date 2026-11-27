@@ -362,7 +362,8 @@
     font: inherit;
 }
 
-#depenses-categories .depense-referentiel-bar {
+#depenses-categories .depense-referentiel-bar,
+#travaux-container .depense-referentiel-bar {
     display: flex;
     min-height: 46px;
     align-items: center;
@@ -373,7 +374,8 @@
     background: #f8f6ef;
 }
 
-#depenses-categories .depense-referentiel-label {
+#depenses-categories .depense-referentiel-label,
+#travaux-container .depense-referentiel-label {
     display: flex;
     min-width: 0;
     align-items: center;
@@ -382,14 +384,16 @@
     font-size: 0.75rem;
 }
 
-#depenses-categories .depense-referentiel-label strong {
+#depenses-categories .depense-referentiel-label strong,
+#travaux-container .depense-referentiel-label strong {
     overflow: hidden;
     color: #24485a;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
-#depenses-categories .depense-bdd-button {
+#depenses-categories .depense-bdd-button,
+#travaux-container .depense-bdd-button {
     flex: 0 0 auto;
     margin: 0;
     border-color: #5e9eb6;
@@ -759,4 +763,36 @@
    ══════════════════════════════════════════════════════════════ */
 .rapport-form .hidden {
     display: none !important;
+}
+/* Lien d'une ligne de travaux vers un prix du bordereau */
+#travaux-container .travail-bpu-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-bottom: 0.25rem;
+    padding: 0.1rem 0.25rem 0.1rem 0.45rem;
+    border: 1px solid #5e9eb6;
+    border-radius: 999px;
+    background: #e7f1f5;
+    color: #2c667e;
+    font-size: 0.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+#travaux-container .travail-bpu-badge.hidden {
+    display: none;
+}
+
+#travaux-container .travail-bpu-delier {
+    padding: 0 0.2rem;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.6;
+}
+
+#travaux-container .travail-bpu-delier:hover {
+    opacity: 1;
 }

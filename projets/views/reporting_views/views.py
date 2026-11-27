@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Case, IntegerField, Q, Sum, Value, When
+from django.db.models import Case, IntegerField, Prefetch, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -30,13 +30,15 @@ from projets.forms import (
 from projets.models import (
     Projet, SituationMensuelle, RecetteSituationMensuelle,
     DocumentSituationMensuelle, RapportJournalier,
-    DocumentRapportJournalier,
+    DocumentRapportJournalier, LigneBordereau, LigneTravailRapportJournalier,
 )
 from projets.models.projet import Dossier
 from projets.models import ChiffreAffaire
 from projets.services.chiffre_affaire import synchroniser_situation_ca
 from projets.models.suivi_projet import CategorieCharge
 from projets.utils.navigation import crumb, project_crumbs
+from projets.services.meteo.open_meteo import MeteoIndisponible, meteo_du_jour, meteo_en_ligne_active
+from projets.services.realise_bordereau import RealiseLigne, realise_par_ligne
 
 
 logger = logging.getLogger(__name__)
@@ -259,6 +261,39 @@ def _signaler_erreurs_rapport(request, form, depenses, stocks, travaux):
     messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
 
 
+def _lignes_bordereau_proposees(projet):
+    """Lignes du bordereau proposées dans « Lignes BPU » : hors titres, prix unitaire > 0."""
+    return LigneBordereau.objects.filter(lot__projet=projet, est_titre=False, prix_unitaire__gt=0)
+
+
+def _lignes_bpu(projet, date_ref, exclure_rapport_id=None):
+    """Lignes proposées, avec quantité du marché et réalisé à la date du rapport.
+
+    Réalisé : voir projets/services/realise_bordereau.py (cumul officiel le plus
+    récent + rapports postérieurs).
+    """
+    realise = realise_par_ligne(projet, date_ref, exclure_rapport_id=exclure_rapport_id)
+    vide = RealiseLigne()
+    lignes = (
+        _lignes_bordereau_proposees(projet)
+        .select_related('lot')
+        .order_by('lot__id', 'ordre_affichage', 'id')
+    )
+    return [
+        {
+            'id': ligne.pk,
+            'numero': ligne.numero or '',
+            'designation': ligne.designation,
+            'unite': ligne.unite or '',
+            'prix': str(ligne.prix_unitaire),
+            'quantite_marche': str(ligne.quantite),
+            'lot': ligne.lot.nom,
+            **realise.get(ligne.pk, vide).as_dict(),
+        }
+        for ligne in lignes
+    ]
+
+
 def _activites_projet(projet):
     """Activités déjà saisies dans le projet (suggestions du champ Activité)."""
     return list(
@@ -287,6 +322,8 @@ def ajouter_rapport_journalier(request, projet_id):
                 .only('id', 'date', 'activite').order_by('-date', '-id')[:15]
             ),
             'activites': _activites_projet(projet),
+            'meteo_en_ligne': meteo_en_ligne_active() and bool(projet.localisation),
+            'a_lignes_bpu': _lignes_bordereau_proposees(projet).exists(),
             'breadcrumb_items': project_crumbs(
                 projet,
                 crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
@@ -298,7 +335,7 @@ def ajouter_rapport_journalier(request, projet_id):
         form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
         depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet(request.POST)
-        travaux = LigneTravailRapportJournalierFormSet(request.POST)
+        travaux = LigneTravailRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
 
         if (
             form.is_valid()
@@ -352,7 +389,7 @@ def ajouter_rapport_journalier(request, projet_id):
     else:
         depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
         stocks = StockRapportJournalierFormSet()
-    travaux = LigneTravailRapportJournalierFormSet()
+    travaux = LigneTravailRapportJournalierFormSet(form_kwargs={'projet': projet})
 
     ctx = _build_ctx(form, depenses, stocks, travaux, source=source)
 
@@ -363,7 +400,11 @@ def ajouter_rapport_journalier(request, projet_id):
 def _rapport_journalier_complet(projet, rapport_id):
     return get_object_or_404(
         RapportJournalier.objects.prefetch_related(
-            'stocks', 'lignes_travaux', 'documents_joints',
+            'stocks', 'documents_joints',
+            Prefetch(
+                'lignes_travaux',
+                queryset=LigneTravailRapportJournalier.objects.select_related('ligne_bordereau'),
+            ),
         ),
         id=rapport_id, projet=projet
     )
@@ -388,6 +429,40 @@ def _depenses_groupees_rapport(rapport, projet):
             total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
             depenses_groupees.append((category.code, category.nom, depenses_categorie, total))
     return depenses_groupees, sum((d.montant for d in depenses), Decimal('0.00'))
+
+
+@login_required
+@can_edit_projet
+def api_lignes_bpu_rapport(request, projet_id):
+    """Lignes « BPU » du rapport (?date=AAAA-MM-JJ&rapport=<id à exclure du cumul>)."""
+    projet = _projet_travaux_or_403(projet_id)
+    try:
+        date_ref = date.fromisoformat(request.GET.get('date', ''))
+    except ValueError:
+        return JsonResponse({'success': False, 'message': 'Date invalide.'}, status=400)
+    exclure = request.GET.get('rapport')
+    exclure = int(exclure) if exclure and exclure.isdigit() else None
+    return JsonResponse({
+        'success': True,
+        'date': date_ref.isoformat(),
+        'lignes': _lignes_bpu(projet, date_ref, exclure_rapport_id=exclure),
+    })
+
+
+@login_required
+@can_edit_projet
+def api_meteo_rapport(request, projet_id):
+    """Météo en ligne d'une journée pour pré-remplir le rapport (?date=AAAA-MM-JJ)."""
+    projet = _projet_travaux_or_403(projet_id)
+    try:
+        jour = date.fromisoformat(request.GET.get('date', ''))
+    except ValueError:
+        return JsonResponse({'success': False, 'message': 'Date invalide.'}, status=400)
+    try:
+        meteo = meteo_du_jour(projet.localisation, jour)
+    except MeteoIndisponible as erreur:
+        return JsonResponse({'success': False, 'message': str(erreur)})
+    return JsonResponse({'success': True, **meteo.as_dict()})
 
 
 IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
@@ -532,6 +607,8 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
             'travaux': travaux,
             'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
             'activites': _activites_projet(projet),
+            'meteo_en_ligne': meteo_en_ligne_active() and bool(projet.localisation),
+            'a_lignes_bpu': _lignes_bordereau_proposees(projet).exists(),
             'breadcrumb_items': project_crumbs(
                 projet,
                 crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),

@@ -9,7 +9,7 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 
-from projets.meteo import meteo_icone, meteo_libelle
+from projets.services.meteo.conditions import meteo_icone, meteo_libelle
 
 from .projet import Projet
 from .ressources import EtatMateriel
@@ -84,6 +84,17 @@ class LigneTravailRapportJournalier(models.Model):
         on_delete=models.CASCADE,
         related_name='lignes_travaux',
         verbose_name=_('Rapport journalier'),
+    )
+    # Prix du bordereau correspondant (facultatif) : permet de cumuler le
+    # réalisé journalier par prix et de le comparer au marché / aux attachements.
+    # La désignation et l'unité restent recopiées (texte du rapport conservé).
+    ligne_bordereau = models.ForeignKey(
+        'projets.LigneBordereau',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='travaux_journaliers',
+        verbose_name=_('Ligne du bordereau'),
     )
     designation = models.CharField(max_length=500, verbose_name=_('Désignation'))
     quantite = models.DecimalField(

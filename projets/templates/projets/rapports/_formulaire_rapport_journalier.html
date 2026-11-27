@@ -20,7 +20,11 @@
                            value="{{ field.value|default:'' }}"
                            class="app-modal-input" {% if field.field.required %}required{% endif %}>
                 {% elif field.name == 'meteo' %}
-                    <div class="meteo-picker">
+                    <div class="meteo-picker"
+                         {% if meteo_en_ligne %}
+                         data-meteo-url="{% url 'projets:api_meteo_rapport' projet.id %}"
+                         {% if not rapport and not field.value %}data-meteo-auto="1"{% endif %}
+                         {% endif %}>
                         <div class="flex items-center gap-2">
                             <i class="fas fa-cloud-sun meteo-apercu w-6 text-center text-lg"
                                style="color: var(--accent-primary);" aria-hidden="true"></i>
@@ -35,7 +39,16 @@
                                 <span class="sr-only">{{ condition.libelle }}</span>
                             </button>
                             {% endfor %}
+                            {% if meteo_en_ligne %}
+                            <button type="button" class="meteo-en-ligne app-btn-secondary text-xs"
+                                    title="Remplir la météo et la température de la journée à {{ projet.localisation }}">
+                                <i class="fas fa-satellite-dish"></i> Météo du jour
+                            </button>
+                            {% endif %}
                         </div>
+                        {% if meteo_en_ligne %}
+                        <p class="meteo-statut mt-1 text-xs" style="color: var(--text-muted);" aria-live="polite"></p>
+                        {% endif %}
                         {{ form.meteo_icones|json_script:"meteo-icones" }}
                     </div>
                 {% else %}
@@ -99,6 +112,20 @@
 
             <div class="{% if not travaux.forms %}hidden{% endif %}" id="travaux-body">
                 {{ travaux.management_form }}
+                <div class="depense-referentiel-bar">
+                    <span class="depense-referentiel-label">
+                        <i class="fas fa-info-circle"></i>
+                        Lignes libres, ou prestations du <strong>bordereau</strong> du projet
+                    </span>
+                    {% if a_lignes_bpu %}
+                    <button type="button" onclick="ouvrirModalBPU()"
+                            class="app-btn-secondary text-xs depense-bdd-button">
+                        <i class="fas fa-file-invoice"></i> Lignes BPU
+                    </button>
+                    {% else %}
+                    <span class="text-xs" style="color: var(--text-muted);">Aucune ligne de bordereau à prix renseigné.</span>
+                    {% endif %}
+                </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm rapport-travaux-table">
                         <thead>
@@ -371,3 +398,6 @@
 </div>
 
 {% include 'projets/rapports/_modal_bdd_consultation.html' %}
+{% if a_lignes_bpu %}
+{% include 'projets/rapports/_modal_bpu.html' %}
+{% endif %}

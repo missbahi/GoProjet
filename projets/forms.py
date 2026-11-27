@@ -10,13 +10,13 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.validators import RegexValidator
 
 from projets.utils.icones import choix_icones
-from projets.meteo import METEO, METEO_CHOICES, METEO_RAPIDES
+from projets.services.meteo.conditions import METEO, METEO_CHOICES, METEO_RAPIDES
 from projets.catalogues import CatalogueDossierFormMixin
 
 from .models import (
     Client, Decompte, Dossier, Ingenieur, Profile, Projet, Entreprise, Tache,
     Attachement, OrdreService, RapportJournalier, DepenseRapportJournalier,
-    LigneTravailRapportJournalier,
+    LigneTravailRapportJournalier, LigneBordereau,
     StockRapportJournalier, SituationMensuelle, DepenseSituationMensuelle,
     DocumentAdministratif, StockSituationMensuelle, DocumentSituationMensuelle,
     RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
@@ -1823,24 +1823,11 @@ class RapportJournalierForm(forms.ModelForm):
                 )
         return cleaned_data
 
-class LigneTravailRapportJournalierForm(forms.ModelForm):
-    class Meta:
-        model = LigneTravailRapportJournalier
-        fields = ['designation', 'quantite', 'unite', 'observations', 'ordre']
-        widgets = {
-            'designation': forms.TextInput(attrs={'class': 'form-control'}),
-            'quantite': forms.NumberInput(attrs={
-                'class': 'form-control', 'step': '0.001', 'min': '0',
-            }),
-            'unite': forms.TextInput(attrs={'class': 'form-control'}),
-            'observations': forms.TextInput(attrs={'class': 'form-control'}),
-            'ordre': forms.HiddenInput(),
-        }
+class _ModelChoiceEnCacheField(forms.ModelChoiceField):
+    """ModelChoiceField résolu depuis un dictionnaire {pk: objet} préchargé.
 
-class _CategorieChargeEnCacheField(forms.ModelChoiceField):
-    """ModelChoiceField résolu depuis un dictionnaire {pk: catégorie} préchargé.
-
-    Évite une requête SQL par ligne de dépense lors de la validation du formset.
+    Évite une requête SQL par ligne lors de la validation d'un formset
+    (catégories des dépenses, lignes du bordereau des travaux).
     """
     cache = None
 
@@ -1855,9 +1842,36 @@ class _CategorieChargeEnCacheField(forms.ModelChoiceField):
             raise ValidationError(self.error_messages['invalid_choice'], code='invalid_choice')
 
 
+class LigneTravailRapportJournalierForm(forms.ModelForm):
+    ligne_bordereau = _ModelChoiceEnCacheField(
+        queryset=LigneBordereau.objects.none(), required=False, widget=forms.HiddenInput(),
+    )
+
+    class Meta:
+        model = LigneTravailRapportJournalier
+        fields = ['ligne_bordereau', 'designation', 'quantite', 'unite', 'observations', 'ordre']
+        widgets = {
+            'designation': forms.TextInput(attrs={'class': 'form-control'}),
+            'quantite': forms.NumberInput(attrs={
+                'class': 'form-control', 'step': '0.001', 'min': '0',
+            }),
+            'unite': forms.TextInput(attrs={'class': 'form-control'}),
+            'observations': forms.TextInput(attrs={'class': 'form-control'}),
+            'ordre': forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, lignes_bordereau=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        champ = self.fields['ligne_bordereau']
+        if lignes_bordereau is not None:
+            # Seules les lignes du bordereau du projet sont acceptées.
+            champ.cache = lignes_bordereau
+            champ.queryset = LigneBordereau.objects.filter(pk__in=list(lignes_bordereau))
+
+
 class DepenseRapportJournalierForm(forms.ModelForm):
     categorie = forms.CharField(required=False, widget=forms.HiddenInput())
-    categorie_charge = _CategorieChargeEnCacheField(
+    categorie_charge = _ModelChoiceEnCacheField(
         queryset=CategorieCharge.objects.none(), required=False, widget=forms.HiddenInput()
     )
 
@@ -2238,10 +2252,38 @@ StockRapportJournalierFormSet = forms.inlineformset_factory(
     form=StockRapportJournalierForm, extra=0, can_delete=True,
 )
 
+class LigneTravailRapportJournalierBaseFormSet(BaseInlineFormSet):
+    """Lignes de travaux ; les lignes du bordereau du projet sont chargées une fois."""
+
+    def __init__(self, *args, **kwargs):
+        if kwargs.get('queryset') is None:
+            kwargs['queryset'] = LigneTravailRapportJournalier.objects.select_related('ligne_bordereau')
+        super().__init__(*args, **kwargs)
+        self.projet = (
+            self.instance.projet if self.instance.projet_id
+            else self.form_kwargs.get('projet')
+        )
+        self.lignes_bordereau = (
+            {
+                ligne.pk: ligne for ligne in LigneBordereau.objects
+                .filter(lot__projet=self.projet, est_titre=False)
+                .only('id', 'numero', 'designation', 'unite', 'prix_unitaire', 'lot_id')
+            }
+            if self.projet else {}
+        )
+
+    def get_form_kwargs(self, index):
+        kwargs = super().get_form_kwargs(index)
+        kwargs.pop('projet', None)
+        kwargs['lignes_bordereau'] = self.lignes_bordereau
+        return kwargs
+
+
 LigneTravailRapportJournalierFormSet = forms.inlineformset_factory(
     RapportJournalier,
     LigneTravailRapportJournalier,
     form=LigneTravailRapportJournalierForm,
+    formset=LigneTravailRapportJournalierBaseFormSet,
     extra=0,
     can_delete=True,
 )

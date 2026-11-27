@@ -3,7 +3,7 @@
 
 {% block extra_css %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static 'projets/css/rapport-form.css' %}">
+    <link rel="stylesheet" href="{% static 'projets/css/rapport-form.css' %}?v={{ APP_VERSION }}">
 {% endblock %}
 
 {% block content %}
@@ -12,8 +12,9 @@
 
 {% block extra_js %}
     {{ block.super }}
-    {# Chargés via {% static %} (URL versionnée en production) avant le chargeur de famille HTMX, #}
-    {# pour que la version à jour l'emporte sur une copie en cache. #}
-    <script src="{% static 'projets/js/rapports-form.js' %}" defer></script>
-    <script src="{% static 'projets/js/rapports-bdd-modal.js' %}" defer></script>
+    {# ?v=APP_VERSION : chaque nouvelle version change l'URL, aucun cache (navigateur, #}
+    {# service worker) ne peut resservir une ancienne copie. Chargés avant le chargeur HTMX. #}
+    <script src="{% static 'projets/js/rapports-form.js' %}?v={{ APP_VERSION }}" defer></script>
+    <script src="{% static 'projets/js/rapports-bdd-modal.js' %}?v={{ APP_VERSION }}" defer></script>
+    <script src="{% static 'projets/js/rapports-bpu-modal.js' %}?v={{ APP_VERSION }}" defer></script>
 {% endblock %}
