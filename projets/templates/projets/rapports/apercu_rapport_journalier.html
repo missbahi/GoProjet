@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport journalier du {{ rapport.date|date:"d/m/Y" }} – {{ projet.nom }}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Palette reprise de l'aperçu des situations mensuelles */
+        :root {
+            --ink: #19394a; --muted: #617786; --line: #a9cad6; --line-soft: #d6e6ec;
+            --head: #e7f1f5; --head-strong: #2c667e; --paper: #fdfbf5;
+            --green: #356043; --green-soft: #dcebdc; --amber: #8a5a12; --amber-soft: #f7ecd6;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; background: #dce7eb; color: var(--ink);
+            font-family: Georgia, "Times New Roman", serif;
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+
+        /* ── Barre d'action (écran uniquement) ── */
+        .barre-action {
+            position: sticky; top: 0; z-index: 10;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .6rem;
+            padding: .65rem 1.1rem; background: #1f3b49; color: #eef5f7;
+            box-shadow: 0 2px 8px rgba(0,0,0,.25); font-family: Arial, sans-serif; font-size: .85rem;
+        }
+        .barre-action .groupe { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+        .barre-action a, .barre-action button {
+            display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .8rem;
+            border: 1px solid #4f7a8c; border-radius: 6px; background: transparent; color: #eef5f7;
+            font: inherit; text-decoration: none; cursor: pointer;
+        }
+        .barre-action a:hover, .barre-action button:hover { background: #2c4f60; }
+        .barre-action .desactive { opacity: .35; pointer-events: none; }
+        .barre-action .btn-imprimer { background: #4a7c59; border-color: #4a7c59; font-weight: 600; }
+        .barre-action .btn-imprimer:hover { background: #355b40; }
+        .segment { display: inline-flex; border: 1px solid #4f7a8c; border-radius: 6px; overflow: hidden; }
+        .segment span { padding: .45rem .6rem; color: #a9c4cf; }
+        .segment button { border: 0 !important; border-left: 1px solid #4f7a8c !important; border-radius: 0 !important; }
+        .segment button[aria-pressed="true"] { background: #eef5f7; color: #1f3b49; font-weight: 600; }
+
+        /* ── Feuille A4 ── */
+        .feuille {
+            width: 210mm; min-height: 297mm; margin: 1.5rem auto; padding: 14mm 14mm 12mm;
+            background: var(--paper); box-shadow: 0 8px 30px rgba(35,68,84,.18);
+            counter-reset: section;
+        }
+
+        /* En-tête + cartouche */
+        .entete { display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; padding-bottom: 4mm; border-bottom: 2px solid #6d9fb2; }
+        .entete .surtitre { margin: 0; font: 700 .7rem/1.2 Arial, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+        .entete h1 { margin: 1.5mm 0 2mm; font-size: 1.45rem; line-height: 1.15; }
+        .entete .objet { margin: 0 0 1.5mm; font-size: .8rem; color: var(--muted); }
+        .entete dl { display: grid; grid-template-columns: auto 1fr; gap: .5mm 3mm; margin: 0; font: .75rem/1.35 Arial, sans-serif; }
+        .entete dt { color: var(--muted); }
+        .entete dd { margin: 0; font-weight: 600; }
+        .cartouche { border: 1.5px solid var(--head-strong); align-self: start; font-family: Arial, sans-serif; }
+        .cartouche .numero { background: var(--head-strong); color: #fff; text-align: center; padding: 2mm; font-size: .72rem; letter-spacing: .1em; text-transform: uppercase; }
+        .cartouche .numero strong { display: block; font-size: 1.35rem; letter-spacing: 0; }
+        .cartouche .date { padding: 2.5mm 2mm; text-align: center; font-size: .82rem; font-weight: 700; border-bottom: 1px solid var(--line); }
+        .cartouche .redacteur { padding: 1.5mm 2mm; text-align: center; font-size: .7rem; color: var(--muted); }
+
+        /* Bandeau conditions */
+        .conditions { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 4mm; border: 1px solid var(--line); font-family: Arial, sans-serif; }
+        .conditions div { padding: 2mm 3mm; border-left: 1px solid var(--line); }
+        .conditions div:first-child { border-left: 0; }
+        .conditions span { display: block; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .conditions strong { font-size: .85rem; }
+        .conditions i { color: var(--head-strong); margin-right: 1mm; }
+
+        /* Sections numérotées automatiquement (les sections masquées ne comptent pas) */
+        .section { margin-top: 6mm; break-inside: auto; }
+        .section h2 {
+            display: flex; justify-content: space-between; align-items: baseline; gap: 4mm;
+            margin: 0 0 2mm; padding: 1.6mm 3mm; background: var(--head); border-left: 4px solid var(--head-strong);
+            font-size: .95rem; break-after: avoid;
+        }
+        .section h2::before { counter-increment: section; content: counter(section) ". "; margin-right: 1mm; }
+        .section h2 .titre { flex: 1; }
+        .section h2 .total { font: 700 .8rem Arial, sans-serif; white-space: nowrap; }
+        .neant { margin: 0; padding: 1mm 3mm; font-style: italic; color: var(--muted); font-size: .85rem; }
+        .texte { margin: 0; padding: 0 3mm; font-size: .88rem; line-height: 1.5; white-space: pre-line; }
+
+        /* Tableaux */
+        table { width: 100%; border-collapse: collapse; font: .75rem/1.35 Arial, sans-serif; }
+        thead { display: table-header-group; }
+        th { padding: 1.6mm 2mm; background: var(--head-strong); color: #fff; font-size: .64rem; letter-spacing: .05em; text-align: left; text-transform: uppercase; }
+        td { padding: 1.3mm 2mm; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+        tr { break-inside: avoid; }
+        tbody tr:nth-child(even) td { background: rgba(231,241,245,.45); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .centre { text-align: center; }
+        .categorie td { background: #eef5f7 !important; border-top: 1px solid #8eb6c7; font-weight: 700; color: #24485a; }
+        .categorie td:first-child { text-transform: uppercase; font-size: .68rem; letter-spacing: .04em; }
+        tfoot td { padding: 1.8mm 2mm; background: #1f3b49; color: #fff; font-weight: 700; }
+        .stock-negatif { color: #a23a2a; font-weight: 700; }
+
+        /* Modes d'affichage des montants */
+        .montants-synthese .ligne-depense { display: none; }
+        .montants-masques .section-depenses { display: none; }
+
+        /* Photos */
+        .photos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3mm; }
+        .photos figure { margin: 0; border: 1px solid var(--line); background: #fff; padding: 1.5mm; break-inside: avoid; }
+        .photos img { display: block; width: 100%; height: 62mm; object-fit: cover; background: var(--head); }
+        .photos figcaption { padding-top: 1mm; font: .65rem Arial, sans-serif; color: var(--muted); overflow-wrap: anywhere; }
+        .sans-photos .bloc-photos { display: none; }
+        .documents { margin: 2mm 0 0; padding-left: 7mm; font: .75rem/1.5 Arial, sans-serif; }
+
+        /* Signatures */
+        .signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4mm; margin-top: 8mm; break-inside: avoid; font-family: Arial, sans-serif; }
+        .signatures div { border: 1px solid var(--line); min-height: 30mm; padding: 2mm 3mm; }
+        .signatures span { display: block; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        .signatures strong { display: block; margin-top: 1mm; font-size: .78rem; }
+
+        .pied { margin-top: 6mm; padding-top: 2mm; border-top: 1px solid var(--line); display: flex; justify-content: space-between; font: italic .65rem Arial, sans-serif; color: var(--muted); }
+
+        @page {
+            size: A4 portrait; margin: 12mm 12mm 15mm;
+            {# Chaîne CSS : on retire les caractères qui la fermeraient au lieu de les échapper en HTML. #}
+            @bottom-left { content: "{% autoescape off %}{{ projet.nom|cut:'"'|cut:'\\'|cut:'<'|cut:'>' }}{% endautoescape %}"; font: italic 8pt Arial, sans-serif; color: #617786; }
+            @bottom-center { content: "Page " counter(page) " / " counter(pages); font: 600 8pt Arial, sans-serif; color: #19394a; }
+            @bottom-right { content: "Rapport journalier du {{ rapport.date|date:'d/m/Y' }}"; font: italic 8pt Arial, sans-serif; color: #617786; }
+        }
+        @media screen and (max-width: 820px) {
+            .feuille { width: auto; min-height: 0; margin: 0; padding: 6mm 4mm; }
+            .entete, .conditions, .signatures, .photos { grid-template-columns: 1fr; }
+            .conditions div { border-left: 0; border-top: 1px solid var(--line); }
+            .conditions div:first-child { border-top: 0; }
+            .table-wrap { overflow-x: auto; }
+            .table-wrap table { min-width: 560px; }
+        }
+        @media print {
+            html, body { background: #fff; }
+            .barre-action { display: none !important; }
+            .feuille { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; background: #fff; }
+            .pied { display: none; }
+            /* Version compacte : garder le bloc signatures sur la dernière page de contenu */
+            .entete { padding-bottom: 3mm; }
+            .conditions { margin-top: 3mm; }
+            .section { margin-top: 4mm; }
+            .section h2 { padding: 1.2mm 3mm; }
+            .signatures { margin-top: 5mm; }
+            .signatures div { min-height: 22mm; }
+        }
+    </style>
+</head>
+<body>
+    <nav class="barre-action" aria-label="Actions de l'aperçu">
+        <div class="groupe">
+            <a href="{% url 'projets:detail_rapport_journalier' projet.id rapport.id %}"><i class="fas fa-arrow-left"></i> Retour</a>
+            <a href="{% if precedent %}{% url 'projets:apercu_rapport_journalier' projet.id precedent.id %}{% else %}#{% endif %}"
+               class="{% if not precedent %}desactive{% endif %}" title="Rapport précédent{% if precedent %} ({{ precedent.date|date:'d/m/Y' }}){% endif %}">
+                <i class="fas fa-chevron-left"></i>
+            </a>
+            <strong>{{ rapport.date|date:"d/m/Y" }}</strong>
+            <a href="{% if suivant %}{% url 'projets:apercu_rapport_journalier' projet.id suivant.id %}{% else %}#{% endif %}"
+               class="{% if not suivant %}desactive{% endif %}" title="Rapport suivant{% if suivant %} ({{ suivant.date|date:'d/m/Y' }}){% endif %}">
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+        <div class="groupe">
+            <div class="segment" role="group" aria-label="Affichage des montants">
+                <span>Montants</span>
+                <button type="button" data-montants="detail" aria-pressed="true">Détail</button>
+                <button type="button" data-montants="synthese" aria-pressed="false">Synthèse</button>
+                <button type="button" data-montants="masques" aria-pressed="false">Masqués</button>
+            </div>
+            {% if photos %}
+            <button type="button" id="togglePhotos" aria-pressed="true"><i class="fas fa-image"></i> Photos</button>
+            {% endif %}
+            <button type="button" class="btn-imprimer" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
+        </div>
+    </nav>
+
+    <main class="feuille" id="rapportApercu">
+        <header class="entete">
+            <div>
+                <p class="surtitre">Rapport journalier de chantier</p>
+                <h1>{{ projet.nom }}</h1>
+                {% if projet.objet %}<p class="objet">{{ projet.objet|truncatechars:180 }}</p>{% endif %}
+                <dl>
+                    <dt>Marché n°</dt><dd>{{ projet.numero }}</dd>
+                    {% if projet.maitre_ouvrage %}<dt>Maître d'ouvrage</dt><dd>{{ projet.maitre_ouvrage }}</dd>{% endif %}
+                    {% if projet.localisation %}<dt>Localisation</dt><dd>{{ projet.localisation }}</dd>{% endif %}
+                </dl>
+            </div>
+            <div class="cartouche">
+                <div class="numero">Rapport n°<strong>{{ numero|stringformat:"03d" }}</strong></div>
+                <div class="date">{{ rapport.date|date:"l j F Y"|capfirst }}</div>
+                {% if rapport.activite %}<div class="date" style="font-weight:600;color:var(--head-strong)">{{ rapport.activite }}</div>{% endif %}
+                <div class="redacteur">Établi par {{ rapport.redacteur|default:"—" }}</div>
+            </div>
+        </header>
+
+        <section class="conditions" aria-label="Conditions du jour">
+            <div><span>Météo</span><strong><i class="fas {{ rapport.meteo_icone }}"></i>{{ rapport.meteo_libelle|default:"—" }}</strong></div>
+            <div><span>Température</span><strong><i class="fas fa-temperature-half"></i>{% if rapport.temperature is not None %}{{ rapport.temperature|floatformat:"-1" }} °C{% else %}—{% endif %}</strong></div>
+            <div><span>Travaux du jour</span><strong><i class="fas fa-hammer"></i>{{ travaux|length }} poste{{ travaux|length|pluralize }}</strong></div>
+        </section>
+
+        <section class="section">
+            <h2><span class="titre">Travaux réalisés</span></h2>
+            {% if travaux %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th style="width:6%">N°</th><th>Désignation</th><th class="num" style="width:13%">Quantité</th><th style="width:9%">Unité</th><th style="width:28%">Observations</th></tr></thead>
+                    <tbody>
+                        {% for ligne in travaux %}
+                        <tr>
+                            <td class="centre">{{ forloop.counter }}</td>
+                            <td>{{ ligne.designation }}</td>
+                            <td class="num">{% if ligne.quantite is not None %}{{ ligne.quantite|floatformat:"-2g" }}{% else %}—{% endif %}</td>
+                            <td>{{ ligne.unite|default:"—" }}</td>
+                            <td>{{ ligne.observations|default:"" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}<p class="neant">Néant.</p>{% endif %}
+        </section>
+
+        <section class="section">
+            <h2><span class="titre">Événements</span></h2>
+            {% if rapport.evenements %}<p class="texte">{{ rapport.evenements }}</p>{% else %}<p class="neant">Néant.</p>{% endif %}
+        </section>
+
+        <section class="section section-depenses">
+            <h2><span class="titre">Dépenses</span><span class="total">{{ total_depenses|floatformat:"2g" }} DH</span></h2>
+            {% if depenses_groupees %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Désignation</th><th class="num" style="width:11%">Qté</th><th style="width:9%">Unité</th><th class="num" style="width:15%">PU (DH)</th><th class="num" style="width:17%">Montant (DH)</th></tr></thead>
+                    <tbody>
+                        {% for code, label, depenses, total in depenses_groupees %}
+                        <tr class="categorie"><td colspan="4">{{ label }}</td><td class="num">{{ total|floatformat:"2g" }}</td></tr>
+                        {% for depense in depenses %}
+                        <tr class="ligne-depense">
+                            <td>{{ depense.designation }}</td>
+                            <td class="num">{{ depense.quantite|floatformat:"-2g" }}</td>
+                            <td>{{ depense.unite|default:"—" }}</td>
+                            <td class="num">{{ depense.prix_unitaire|floatformat:"2g" }}</td>
+                            <td class="num">{{ depense.montant|floatformat:"2g" }}</td>
+                        </tr>
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot><tr><td colspan="4">Total des dépenses du jour</td><td class="num">{{ total_depenses|floatformat:"2g" }}</td></tr></tfoot>
+                </table>
+            </div>
+            {% else %}<p class="neant">Aucune dépense enregistrée.</p>{% endif %}
+        </section>
+
+        <section class="section">
+            <h2><span class="titre">Mouvements de stock</span></h2>
+            {% if stocks %}
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Désignation</th><th style="width:10%">Unité</th><th class="num" style="width:15%">Entrée</th><th class="num" style="width:15%">Sortie</th><th class="num" style="width:17%">Stock restant</th></tr></thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr>
+                            <td>{{ stock.designation }}</td>
+                            <td>{{ stock.unite|default:"—" }}</td>
+                            <td class="num">{{ stock.quantite_entree|floatformat:"-2g" }}</td>
+                            <td class="num">{{ stock.quantite_sortie|floatformat:"-2g" }}</td>
+                            <td class="num{% if stock.stock_restant < 0 %} stock-negatif{% endif %}">{{ stock.stock_restant|floatformat:"-2g" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}<p class="neant">Néant.</p>{% endif %}
+        </section>
+
+        <section class="section">
+            <h2><span class="titre">Observations</span></h2>
+            {% if rapport.observations %}<p class="texte">{{ rapport.observations }}</p>{% else %}<p class="neant">Néant.</p>{% endif %}
+        </section>
+
+        {% if photos or autres_documents %}
+        <section class="section{% if not autres_documents %} bloc-photos{% endif %}">
+            <h2><span class="titre">Photos et documents joints</span></h2>
+            {% if photos %}
+            <div class="photos bloc-photos">
+                {% for photo in photos %}
+                <figure>
+                    <img src="{% url 'projets:download_document' 'DocumentRapportJournalier' photo.id %}?download=false"
+                         alt="{{ photo.nom }}" loading="eager">
+                    <figcaption>Photo {{ forloop.counter }} — {{ photo.nom }}</figcaption>
+                </figure>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% if autres_documents %}
+            <ul class="documents">
+                {% for document in autres_documents %}<li>{{ document.nom }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        <section class="signatures" aria-label="Signatures">
+            <div><span>Établi par</span><strong>{{ rapport.redacteur|default:"" }}</strong></div>
+            <div><span>Chef de chantier</span></div>
+            <div><span>Visa du maître d'œuvre</span></div>
+        </section>
+
+        <footer class="pied">
+            <span>Édité le {{ date_edition|date:"d/m/Y à H:i" }}</span>
+            <span>{{ projet.nom }} — Rapport n° {{ numero|stringformat:"03d" }}</span>
+        </footer>
+    </main>
+
+    <script>
+    (() => {
+        const apercu = document.getElementById('rapportApercu');
+        const CLE = 'rapportApercu.montants';
+
+        function appliquerMontants(mode) {
+            apercu.classList.remove('montants-synthese', 'montants-masques');
+            if (mode !== 'detail') apercu.classList.add('montants-' + mode);
+            document.querySelectorAll('[data-montants]').forEach(btn => {
+                btn.setAttribute('aria-pressed', String(btn.dataset.montants === mode));
+            });
+            try { localStorage.setItem(CLE, mode); } catch (e) { /* stockage indisponible */ }
+        }
+        document.querySelectorAll('[data-montants]').forEach(btn => {
+            btn.addEventListener('click', () => appliquerMontants(btn.dataset.montants));
+        });
+        let mode = 'detail';
+        try { mode = localStorage.getItem(CLE) || 'detail'; } catch (e) { /* défaut */ }
+        appliquerMontants(['detail', 'synthese', 'masques'].includes(mode) ? mode : 'detail');
+
+        const photos = document.getElementById('togglePhotos');
+        photos?.addEventListener('click', () => {
+            const masquees = apercu.classList.toggle('sans-photos');
+            photos.setAttribute('aria-pressed', String(!masquees));
+        });
+
+        const titre = document.title;
+        window.addEventListener('beforeprint', () => {
+            document.title = 'Rapport_journalier_{{ rapport.date|date:"Y-m-d" }}_{{ projet.nom|slugify }}';
+        });
+        window.addEventListener('afterprint', () => { document.title = titre; });
+    })();
+    </script>
+</body>
+</html>

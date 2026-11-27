@@ -1,4 +1,4 @@
-{% load formatters l10n %}
+{% load formatters %}
 <tr>
   {{ depense_form.id }}
   {% if force_categorie %}
@@ -10,14 +10,12 @@
 
   <td class="pr-2 py-1">
     {% if options %}
+      {# Options chargées à la demande par rapports-form.js depuis #referentiel-data-<catégorie> #}
       <select class="app-modal-input depense-ref-select">
         <option value="">— Sélectionner —</option>
-        {% for option in options %}
-          <option value="{{ option.designation }}"
-                  data-unite="{{ option.unite }}"
-                  data-prix="{{ option.prix|unlocalize }}"
-                  {% if depense_form.designation.value == option.designation %}selected{% endif %}>{{ option.designation }}</option>
-        {% endfor %}
+        {% if depense_form.designation.value %}
+          <option value="{{ depense_form.designation.value }}" selected>{{ depense_form.designation.value }}</option>
+        {% endif %}
       </select>
       <input type="hidden" name="{{ depense_form.designation.html_name }}" id="{{ depense_form.designation.auto_id }}" value="{{ depense_form.designation.value|default_if_none:'' }}">
     {% else %}

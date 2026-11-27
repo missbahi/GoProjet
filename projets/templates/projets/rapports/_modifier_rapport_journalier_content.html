@@ -24,6 +24,40 @@
         </p>
     </div>
 
+    {# ═══════ Reproduire un rapport existant (création uniquement) ═══════ #}
+    {% if not rapport and rapports_reproductibles %}
+    <form method="get" action="{% url 'projets:ajouter_rapport_journalier' projet.id %}"
+          class="app-card p-3 mb-4 flex flex-col sm:flex-row sm:items-center gap-2 text-sm">
+        <label for="reproduireDepuis" class="flex items-center gap-2 shrink-0" style="color: var(--text-secondary);">
+            <i class="fas fa-copy" style="color: var(--accent-primary);"></i>
+            Partir d'un rapport existant
+        </label>
+        <select name="depuis" id="reproduireDepuis" class="app-modal-input flex-1">
+            <option value="">— Nouveau rapport vierge —</option>
+            {% for r in rapports_reproductibles %}
+            <option value="{{ r.id }}" {% if source and source.id == r.id %}selected{% endif %}>
+                {{ r.date|date:"D d/m/Y" }}{% if r.activite %} — {{ r.activite }}{% endif %}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="app-btn-secondary shrink-0">
+            <i class="fas fa-clone"></i> Reproduire
+        </button>
+    </form>
+    {% endif %}
+
+    {% if source %}
+    <div class="rounded-lg p-3 mb-4 text-sm flex items-start gap-2" role="status"
+         style="border: 1px solid var(--accent-primary); background: color-mix(in srgb, var(--accent-primary) 8%, transparent);">
+        <i class="fas fa-circle-info mt-0.5" style="color: var(--accent-primary);"></i>
+        <span style="color: var(--text-primary);">
+            Pré-rempli à partir du rapport du <strong>{{ source.date|date:"d/m/Y" }}</strong>{% if source.activite %} ({{ source.activite }}){% endif %} :
+            dépenses et stocks reproduits, le stock restant devenant le point de départ.
+            <span style="color: var(--text-secondary);">Vérifiez les quantités avant d'enregistrer.</span>
+        </span>
+    </div>
+    {% endif %}
+
     {# ═══════ Actions ═══════ #}
     <div class="flex flex-wrap gap-2 mb-6">
         {% if rapport %}

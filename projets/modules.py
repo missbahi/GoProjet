@@ -84,9 +84,9 @@ MODULES = {
     'rapports_journaliers': {
         'label': 'Rapports journaliers',
         'routes': {
-            'rapports_journaliers', 'ajouter_rapport_journalier', 'formulaire_rapport_journalier',
-            'detail_rapport_journalier', 'modifier_rapport_journalier',
-            'supprimer_rapport_journalier', 'supprimer_document_rapport_journalier',
+            'rapports_journaliers', 'ajouter_rapport_journalier',
+            'detail_rapport_journalier', 'apercu_rapport_journalier', 'modifier_rapport_journalier',
+            'supprimer_rapport_journalier',
         },
     },
     'ateliers': {

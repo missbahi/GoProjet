@@ -1,5 +1,5 @@
 {# projets/templates/projets/rapports/_detail_rapport_journalier_content.html #}
-{% load static formatters navigation %}
+{% load formatters navigation %}
 
 {% breadcrumb %}
 
@@ -12,12 +12,21 @@
         <h1 class="app-section-title mb-2">
             <i class="fas fa-calendar-day mr-2"></i>
             Rapport du {{ rapport.date|date:"d/m/Y" }}
+            {% if rapport.activite %}<span class="text-base font-normal" style="color: var(--accent-primary);">— {{ rapport.activite }}</span>{% endif %}
         </h1>
         <h2 class="text-lg md:text-xl mb-2" style="color: var(--accent-green);">{{ projet.nom }}</h2>
     </div>
 
     {# ═══════ Actions ═══════ #}
     <div class="flex flex-wrap gap-2 mb-6">
+        <a href="{% url 'projets:apercu_rapport_journalier' projet.id rapport.id %}" class="app-btn-secondary"
+           hx-boost="false">
+            <i class="fas fa-print mr-1"></i> Aperçu avant impression
+        </a>
+        <a href="{% url 'projets:ajouter_rapport_journalier' projet.id %}?depuis={{ rapport.id }}" class="app-btn-secondary"
+           title="Nouveau rapport pré-rempli avec les dépenses et les stocks de celui-ci">
+            <i class="fas fa-clone mr-1"></i> Reproduire
+        </a>
         <a href="{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}" class="app-btn-primary">
             <i class="fas fa-pen-to-square mr-1"></i> Modifier
         </a>
@@ -33,7 +42,8 @@
 
     {# ═══════ Infos générales ═══════ #}
     <div class="app-card p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-sm mb-4">
-        <p><strong style="color: var(--text-primary);">Météo :</strong> {{ rapport.meteo|default:"—" }}</p>
+        <p><strong style="color: var(--text-primary);">Météo :</strong>
+            {% if rapport.meteo %}<i class="fas {{ rapport.meteo_icone }} mx-1" style="color: var(--accent-primary);"></i>{{ rapport.meteo_libelle }}{% else %}—{% endif %}</p>
         <p><strong style="color: var(--text-primary);">Température :</strong>
             {% if rapport.temperature %}{{ rapport.temperature }} °C{% else %}—{% endif %}</p>
         <p><strong style="color: var(--text-primary);">Rédacteur :</strong> {{ rapport.redacteur|default:"—" }}</p>
@@ -83,7 +93,7 @@
                style="color: var(--accent-primary);">
                 <i class="fas fa-file"></i>
                 <span>{{ document.nom }}</span>
-                <small style="color: var(--text-muted);">{{ document.fichier.size|filesizeformat }}</small>
+                {% if document.taille %}<small style="color: var(--text-muted);">{{ document.taille|filesizeformat }}</small>{% endif %}
             </a>
             {% endfor %}
         </div>
@@ -115,7 +125,7 @@
                 <i class="fas fa-coins mr-1"></i> Dépenses
             </h3>
             <span class="font-bold" style="color: var(--text-primary);">
-                {{ rapport.total_depenses|format_currency }}
+                {{ total_depenses|format_currency }}
             </span>
         </div>
 

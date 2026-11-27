@@ -10,6 +10,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.validators import RegexValidator
 
 from projets.utils.icones import choix_icones
+from projets.meteo import METEO, METEO_CHOICES, METEO_RAPIDES
 from projets.catalogues import CatalogueDossierFormMixin
 
 from .models import (
@@ -21,7 +22,7 @@ from .models import (
     RecetteSituationMensuelle, Personnel, Materiel, Atelier, TypeMateriel,
     AffectationRessource, Location, Transport, SousTraitance, Consommable,
     Fourniture, CategorieCharge, RessourceAffectee,
-    ReleveMateriel, SuiviExecution,
+    SuiviExecution,
     FormuleRevision, TermeFormule,
 )
  
@@ -1720,14 +1721,42 @@ class DocumentAdministratifForm(forms.ModelForm):
 
         return fichier
 
+RAPPORT_DOCUMENT_EXTENSIONS = {
+    '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.jpg', '.jpeg', '.png', '.gif',
+}
+RAPPORT_DOCUMENT_TAILLE_MAX = 10 * 1024 * 1024
+
+
+def fichiers_rapport_journalier(files):
+    """Fichiers joints envoyés avec un rapport journalier.
+
+    Source unique pour la validation (formulaire) et l'enregistrement (vue) :
+    un fichier ne peut pas être enregistré sans avoir été validé.
+    """
+    fichiers = list(files.getlist('documents'))
+    camera = files.get('document_camera')
+    if camera:
+        fichiers.append(camera)
+    return fichiers
+
+
 class RapportJournalierForm(forms.ModelForm):
+    meteo = forms.ChoiceField(
+        label=_('Météo'), required=False,
+        widget=forms.Select(attrs={'class': 'form-control', 'data-meteo-select': ''}),
+    )
+
     class Meta:
         model = RapportJournalier
-        fields = ['date', 'meteo', 'temperature', 'evenements', 'observations', 'redacteur']
+        fields = ['date', 'activite', 'redacteur', 'meteo', 'temperature', 'evenements', 'observations']
         widgets = {
             'date': forms.DateInput(attrs={
                 'type': 'date',
                 'class': 'form-control'
+            }),
+            'activite': forms.TextInput(attrs={
+                'class': 'form-control', 'list': 'activites-projet',
+                'placeholder': 'Ex. Voirie, Assainissement…', 'autocomplete': 'off',
             }),
             'evenements': forms.Textarea(attrs={'rows': 1, 'class': 'form-control'}),
             'observations': forms.Textarea(attrs={'rows': 1, 'class': 'form-control'}),
@@ -1738,7 +1767,17 @@ class RapportJournalierForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if self.projet is None:
             self.projet = getattr(self.instance, 'projet', None)
-        
+
+        # Météo : liste groupée de codes. Une ancienne saisie libre reste
+        # proposée (et sélectionnée) pour ne pas être perdue à la modification.
+        choix_meteo = [('', '— Choisir —')] + METEO_CHOICES
+        ancienne = self.instance.meteo
+        if ancienne and ancienne not in METEO:
+            choix_meteo.append(('Saisie précédente', [(ancienne, ancienne)]))
+        self.fields['meteo'].choices = choix_meteo
+        self.meteo_rapides = [METEO[code] for code in METEO_RAPIDES]
+        self.meteo_icones = {code: condition['icone'] for code, condition in METEO.items()}
+
         # Forcer le format de date ISO pour le champ HTML5 date
         if self.instance and self.instance.date:
             self.initial['date'] = self.instance.date.strftime('%Y-%m-%d')
@@ -1751,34 +1790,34 @@ class RapportJournalierForm(forms.ModelForm):
         if 'date' in self.fields:
             self.fields['date'].input_formats = ['%Y-%m-%d']
 
+    #: Champ POST par lequel l'utilisateur confirme un second rapport à la même date.
+    CHAMP_CONFIRMATION_DOUBLON = 'confirmer_doublon'
+
     def clean(self):
         cleaned_data = super().clean()
         date_rapport = cleaned_data.get('date')
+        # Rapports du projet déjà enregistrés à cette date (affichés dans l'avertissement).
+        self.doublons = []
         if date_rapport and self.projet:
             rapports_existants = RapportJournalier.objects.filter(
                 projet=self.projet, date=date_rapport
-            )
+            ).only('id', 'date', 'activite', 'redacteur')
             if self.instance.pk:
                 rapports_existants = rapports_existants.exclude(pk=self.instance.pk)
-            if rapports_existants.exists():
-                self.add_error(
-                    'date',
-                    'Un rapport journalier existe déjà pour ce projet à cette date.',
-                )
+            self.doublons = list(rapports_existants)
+            if self.doublons and not self.data.get(self.CHAMP_CONFIRMATION_DOUBLON):
+                self.add_error('date', ValidationError(
+                    'Un rapport existe déjà à cette date pour ce projet. '
+                    'Confirmez pour en créer un autre.',
+                    code='doublon',
+                ))
 
-        fichiers = list(self.files.getlist('documents'))
-        camera = self.files.get('document_camera')
-        if camera:
-            fichiers.append(camera)
-        for fichier in fichiers:
-            if fichier.size > 10 * 1024 * 1024:
+        for fichier in fichiers_rapport_journalier(self.files):
+            if fichier.size > RAPPORT_DOCUMENT_TAILLE_MAX:
                 raise forms.ValidationError(
                     f'Le document « {fichier.name} » dépasse 10 Mo.'
                 )
-            if os.path.splitext(fichier.name)[1].lower() not in {
-                '.pdf', '.doc', '.docx', '.xls', '.xlsx',
-                '.jpg', '.jpeg', '.png', '.gif',
-            }:
+            if os.path.splitext(fichier.name)[1].lower() not in RAPPORT_DOCUMENT_EXTENSIONS:
                 raise forms.ValidationError(
                     f'Type de document non supporté : « {fichier.name} ».'
                 )
@@ -1798,9 +1837,27 @@ class LigneTravailRapportJournalierForm(forms.ModelForm):
             'ordre': forms.HiddenInput(),
         }
 
+class _CategorieChargeEnCacheField(forms.ModelChoiceField):
+    """ModelChoiceField résolu depuis un dictionnaire {pk: catégorie} préchargé.
+
+    Évite une requête SQL par ligne de dépense lors de la validation du formset.
+    """
+    cache = None
+
+    def to_python(self, value):
+        if value in self.empty_values:
+            return None
+        if self.cache is None:
+            return super().to_python(value)
+        try:
+            return self.cache[int(value)]
+        except (KeyError, TypeError, ValueError):
+            raise ValidationError(self.error_messages['invalid_choice'], code='invalid_choice')
+
+
 class DepenseRapportJournalierForm(forms.ModelForm):
     categorie = forms.CharField(required=False, widget=forms.HiddenInput())
-    categorie_charge = forms.ModelChoiceField(
+    categorie_charge = _CategorieChargeEnCacheField(
         queryset=CategorieCharge.objects.none(), required=False, widget=forms.HiddenInput()
     )
 
@@ -1808,15 +1865,25 @@ class DepenseRapportJournalierForm(forms.ModelForm):
         model = DepenseRapportJournalier
         fields = ['categorie', 'categorie_charge', 'designation', 'quantite', 'unite', 'prix_unitaire', 'observations']
 
-    def __init__(self, *args, projet=None, **kwargs):
+    def __init__(self, *args, projet=None, categories_charge=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if projet is None and self.instance.rapport_id:
-            projet = self.instance.rapport.projet
-        categories = CategorieCharge.objects.none()
-        if projet and projet.dossier_id:
-            categories = CategorieCharge.objects.filter(dossier_id=projet.dossier_id).filter(
-                Q(actif=True) | Q(pk=self.instance.categorie_charge_id))
-        self.fields['categorie_charge'].queryset = categories
+        if categories_charge is None:
+            # Usage hors formset : chargement des catégories du dossier.
+            if projet is None and self.instance.rapport_id:
+                projet = self.instance.rapport.projet
+            categories_charge = (
+                list(CategorieCharge.objects.filter(dossier_id=projet.dossier_id))
+                if projet and projet.dossier_id else []
+            )
+        # Catégories actives, plus celle déjà portée par la ligne (même désactivée).
+        self._categories = {
+            category.pk: category for category in categories_charge
+            if category.actif or category.pk == self.instance.categorie_charge_id
+        }
+        self.fields['categorie_charge'].queryset = CategorieCharge.objects.filter(
+            pk__in=list(self._categories),
+        )
+        self.fields['categorie_charge'].cache = self._categories
         for name, field in self.fields.items():
             if name not in {'categorie', 'categorie_charge'}:
                 field.widget.attrs.setdefault('class', 'form-control')
@@ -1827,8 +1894,10 @@ class DepenseRapportJournalierForm(forms.ModelForm):
         categorie = cleaned_data.get('categorie')
         if categorie_charge:
             cleaned_data['categorie'] = categorie_charge.code[:30]
-        elif categorie:
-            cleaned_data['categorie_charge'] = self.fields['categorie_charge'].queryset.filter(code=categorie).first()
+        elif categorie and 'categorie_charge' not in self.errors:
+            cleaned_data['categorie_charge'] = next(
+                (c for c in self._categories.values() if c.code == categorie), None,
+            )
             if cleaned_data['categorie_charge'] is None:
                 self.add_error('categorie', 'Catégorie inconnue dans ce dossier.')
         return cleaned_data
@@ -2134,9 +2203,28 @@ class DepenseSituationMensuelleBaseFormSet(BaseInlineFormSet):
         super().__init__(*args, **kwargs)
 
 class DepenseRapportJournalierBaseFormSet(BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        # Passé via `queryset` (et non en surchargeant get_queryset) pour
+        # conserver le cache interne du formset.
+        if kwargs.get('queryset') is None:
+            kwargs['queryset'] = DepenseRapportJournalier.objects.select_related('categorie_charge')
+        super().__init__(*args, **kwargs)
+        # À la création, le rapport n'a pas encore de projet : on garde celui
+        # fourni par la vue via form_kwargs.
+        self.projet = (
+            self.instance.projet if self.instance.projet_id
+            else self.form_kwargs.get('projet')
+        )
+        dossier_id = self.projet.dossier_id if self.projet else None
+        # Une seule requête pour toutes les lignes du formset.
+        self.categories_charge = (
+            list(CategorieCharge.objects.filter(dossier_id=dossier_id)) if dossier_id else []
+        )
+
     def get_form_kwargs(self, index):
         kwargs = super().get_form_kwargs(index)
-        kwargs['projet'] = self.instance.projet if self.instance.projet_id else None
+        kwargs['projet'] = self.projet
+        kwargs['categories_charge'] = self.categories_charge
         return kwargs
 
 DepenseRapportJournalierFormSet = forms.inlineformset_factory(

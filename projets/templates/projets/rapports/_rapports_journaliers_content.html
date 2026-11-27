@@ -1,6 +1,5 @@
-{# projets/templates/projets/suivi/_rapports_journaliers_content.html #}
-{% load static navigation %}
-{% load static %}
+{# projets/templates/projets/rapports/_rapports_journaliers_content.html #}
+{% load navigation %}
 
 {% breadcrumb %}
 
@@ -33,7 +32,7 @@
         <div class="flex items-center justify-between gap-3 mb-4">
             <h2 class="text-lg font-semibold" style="color: var(--accent-primary);">Historique</h2>
             <span class="text-sm" style="color: var(--text-secondary);">
-                {{ rapports|length }} rapport{{ rapports|length|pluralize }}
+                {{ page_obj.paginator.count }} rapport{{ page_obj.paginator.count|pluralize }}
             </span>
         </div>
 
@@ -52,7 +51,12 @@
                 <tbody>
                 {% for rapport in rapports %}
                     <tr>
-                        <td class="whitespace-nowrap">{{ rapport.date|date:"d/m/Y" }}</td>
+                        <td class="whitespace-nowrap">
+                            {{ rapport.date|date:"d/m/Y" }}
+                            {% if rapport.activite %}
+                            <span class="block text-xs" style="color: var(--accent-primary);">{{ rapport.activite }}</span>
+                            {% endif %}
+                        </td>
                         <td>{{ rapport.redacteur|default:"—" }}</td>
                         <td class="whitespace-nowrap" style="color: var(--accent-warning);">
                             {{ rapport.total_depenses_annotated }} DH
@@ -84,6 +88,16 @@
                                    title="Consulter le rapport">
                                     <i class="fas fa-eye"></i>
                                 </a>
+                                <a href="{% url 'projets:apercu_rapport_journalier' projet.id rapport.id %}"
+                                   class="app-action-btn" hx-boost="false"
+                                   title="Aperçu avant impression">
+                                    <i class="fas fa-print"></i>
+                                </a>
+                                <a href="{% url 'projets:ajouter_rapport_journalier' projet.id %}?depuis={{ rapport.id }}"
+                                   class="app-action-btn"
+                                   title="Reproduire ce rapport (dépenses et stocks)">
+                                    <i class="fas fa-clone"></i>
+                                </a>
                                 <a href="{% url 'projets:modifier_rapport_journalier' projet.id rapport.id %}"
                                    class="app-action-btn app-action-edit"
                                    title="Modifier le rapport">
@@ -107,6 +121,28 @@
                 </tbody>
             </table>
         </div>
+
+        {% if page_obj.has_other_pages %}
+        <nav class="flex items-center justify-between gap-3 mt-4 text-sm" aria-label="Pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}"
+               hx-get="?page={{ page_obj.previous_page_number }}" hx-target="#main-content" hx-push-url="true"
+               class="app-btn-secondary">
+                <i class="fas fa-chevron-left"></i> Plus récents
+            </a>
+            {% else %}<span></span>{% endif %}
+            <span style="color: var(--text-secondary);">
+                Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"
+               hx-get="?page={{ page_obj.next_page_number }}" hx-target="#main-content" hx-push-url="true"
+               class="app-btn-secondary">
+                Plus anciens <i class="fas fa-chevron-right"></i>
+            </a>
+            {% else %}<span></span>{% endif %}
+        </nav>
+        {% endif %}
         {% else %}
         <div class="text-center py-12" style="color: var(--text-secondary);">
             <i class="fas fa-calendar-xmark text-3xl mb-3"></i>

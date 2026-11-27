@@ -19,6 +19,25 @@
                     <input type="date" name="{{ field.name }}" id="{{ field.id_for_label }}"
                            value="{{ field.value|default:'' }}"
                            class="app-modal-input" {% if field.field.required %}required{% endif %}>
+                {% elif field.name == 'meteo' %}
+                    <div class="meteo-picker">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-cloud-sun meteo-apercu w-6 text-center text-lg"
+                               style="color: var(--accent-primary);" aria-hidden="true"></i>
+                            {{ field }}
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-2" role="group" aria-label="Choix rapides météo">
+                            {% for condition in form.meteo_rapides %}
+                            <button type="button" class="meteo-rapide app-btn-secondary text-xs"
+                                    data-meteo="{{ condition.code }}" title="{{ condition.libelle }}"
+                                    aria-pressed="false">
+                                <i class="fas {{ condition.icone }}"></i>
+                                <span class="sr-only">{{ condition.libelle }}</span>
+                            </button>
+                            {% endfor %}
+                        </div>
+                        {{ form.meteo_icones|json_script:"meteo-icones" }}
+                    </div>
                 {% else %}
                     {{ field }}
                 {% endif %}
@@ -29,6 +48,37 @@
             </div>
             {% endfor %}
         </div>
+
+        <datalist id="activites-projet">
+            {% for activite in activites %}<option value="{{ activite }}">{% endfor %}
+        </datalist>
+
+        {# ═══════ Rapport déjà existant à cette date : confirmation explicite ═══════ #}
+        {% if form.doublons %}
+        <div class="rapport-doublon rounded-lg p-3 text-sm" role="alert"
+             style="border: 1px solid var(--accent-warning); background: color-mix(in srgb, var(--accent-warning) 10%, transparent);">
+            <p class="font-semibold flex items-center gap-2" style="color: var(--accent-warning);">
+                <i class="fas fa-triangle-exclamation"></i>
+                {{ form.doublons|length }} rapport{{ form.doublons|length|pluralize }} existe{{ form.doublons|length|pluralize:"nt" }} déjà le {{ form.cleaned_data.date|date:"d/m/Y" }}
+            </p>
+            <ul class="mt-2 ml-6 list-disc" style="color: var(--text-secondary);">
+                {% for doublon in form.doublons %}
+                <li>
+                    <a href="{% url 'projets:detail_rapport_journalier' projet.id doublon.id %}" target="_blank" rel="noopener"
+                       style="color: var(--accent-primary);">
+                        {{ doublon.activite|default:"Sans activité" }}</a>{% if doublon.redacteur %} — {{ doublon.redacteur }}{% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            <label class="mt-3 flex items-start gap-2 cursor-pointer" style="color: var(--text-primary);">
+                <input type="checkbox" name="confirmer_doublon" value="1" class="mt-1"
+                       {% if form.data.confirmer_doublon %}checked{% endif %}>
+                <span>Je confirme : ce rapport concerne une autre activité et doit être enregistré à la même date.
+                    <span class="block text-xs" style="color: var(--text-muted);">Pensez à renseigner le champ « Activité » pour les distinguer.</span>
+                </span>
+            </label>
+        </div>
+        {% endif %}
 
         {# ═══════ Travaux réalisés ═══════ #}
         <div class="rapport-paper-section rounded-lg overflow-hidden"
@@ -94,7 +144,7 @@
                     <i class="fas fa-paperclip"></i>
                     Documents joints
                     <span class="text-xs font-normal" style="color: var(--text-muted);">(optionnel)</span>
-                    {% if rapport and rapport.documents_joints.exists %}
+                    {% if documents %}
                         <span class="ml-1 text-xs" style="color: var(--accent-success);">
                             <i class="fas fa-check-circle"></i>
                         </span>
@@ -102,7 +152,7 @@
                 </span>
                 <span class="text-xs" style="color: var(--text-muted);">
                     <span class="documents-count">
-                        {% if rapport %}{{ rapport.documents_joints.count }}{% else %}0{% endif %}
+                        {{ documents|length }}
                     </span> fichier(s)
                 </span>
             </button>
@@ -110,13 +160,13 @@
             <div id="documents-body" class="p-4">
 
                 {% if rapport %}
-                {% for document in rapport.documents_joints.all %}
+                {% for document in documents %}
                 <div class="rapport-existing-document app-card p-3 mb-3">
                     <div class="flex items-center gap-2 min-w-0">
                         <i class="fas fa-file" style="color: var(--accent-primary);"></i>
                         <span class="text-sm truncate" style="color: var(--text-primary);">{{ document.nom }}</span>
                         <span class="text-xs hidden sm:inline" style="color: var(--text-muted);">
-                            ({{ document.fichier.size|filesizeformat }})
+                            {% if document.taille %}({{ document.taille|filesizeformat }}){% endif %}
                         </span>
                     </div>
                     <div class="rapport-document-actions">
@@ -248,17 +298,7 @@
                     {% include 'projets/rapports/_depense_row.html' with depense_form=depenses.empty_form force_categorie=value force_categorie_charge=category_id options=options %}
                 </template>
 
-                <script id="referentiel-data-{{ value }}" type="application/json">
-                [
-                    {% for opt in options %}
-                    {
-                        "designation": "{{ opt.designation|escapejs }}",
-                        "unite": "{{ opt.unite|escapejs }}",
-                        "prix": {{ opt.prix|stringformat:"f"|default:"0" }}
-                    }{% if not forloop.last %},{% endif %}
-                    {% endfor %}
-                ]
-                </script>
+                {% with json_id="referentiel-data-"|add:value %}{{ options|json_script:json_id }}{% endwith %}
                 {% endfor %}
             </div>
         </div>

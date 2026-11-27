@@ -98,17 +98,20 @@ def _utilisateurs_concernes(projet):
 def notifier_rapport_journalier(sender, instance, created, **kwargs):
     type_notif = 'NOUVEAU_RAPPORT_JOURNALIER' if created else 'RAPPORT_JOURNALIER_MODIFIE'
     titre = 'Nouveau rapport journalier' if created else 'Rapport journalier modifié'
-    for utilisateur in _utilisateurs_concernes(instance.projet):
-        Notification.objects.create(
+    projet = instance.projet
+    Notification.objects.bulk_create([
+        Notification(
             utilisateur=utilisateur,
-            projet=instance.projet,
+            projet=projet,
             type_notification=type_notif,
-            titre=f'{titre} - {instance.projet.nom}',
-            message=f'Le rapport du {instance.date:%d/%m/%Y} du projet {instance.projet.nom} est disponible.',
+            titre=f'{titre} - {projet.nom}',
+            message=f'Le rapport du {instance.date:%d/%m/%Y} du projet {projet.nom} est disponible.',
             action_url=f'/projet/{instance.projet_id}/rapports-journaliers/{instance.pk}/',
             objet_id=instance.pk,
             objet_type='rapport_journalier',
         )
+        for utilisateur in _utilisateurs_concernes(projet)
+    ])
 
 
 @receiver(pre_save, sender=SituationMensuelle)

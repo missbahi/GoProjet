@@ -9,6 +9,8 @@ from django.db.models import Sum
 from django.utils.translation import gettext_lazy as _
 
 
+from projets.meteo import meteo_icone, meteo_libelle
+
 from .projet import Projet
 from .ressources import EtatMateriel
 
@@ -32,6 +34,11 @@ class RapportJournalier(ActiviteTravauxMixin, models.Model):
         verbose_name=_('Projet')
     )
     date = models.DateField(verbose_name=_('Date'))
+    # Plusieurs rapports peuvent partager une date (un par activité du chantier).
+    activite = models.CharField(
+        max_length=100, blank=True, verbose_name=_('Activité'),
+        help_text=_("Distingue les rapports d'une même journée (ex. Voirie, Assainissement)."),
+    )
     meteo = models.CharField(max_length=100, blank=True, verbose_name=_('Météo'))
     temperature = models.DecimalField(
         max_digits=5, decimal_places=2, null=True, blank=True,
@@ -45,12 +52,24 @@ class RapportJournalier(ActiviteTravauxMixin, models.Model):
 
     class Meta:
         ordering = ['-date', '-id']
-        constraints = [
-            models.UniqueConstraint(fields=['projet', 'date'], name='unique_rapport_journalier_projet_date')
+        # Plus de contrainte d'unicité (projet, date) : un doublon de date est
+        # signalé à l'utilisateur, qui confirme pour le créer.
+        indexes = [
+            models.Index(fields=['projet', 'date'], name='rapport_journalier_projet_date'),
         ]
 
     def __str__(self):
-        return f'{self.projet.nom} - {self.date}'
+        suffixe = f' ({self.activite})' if self.activite else ''
+        return f'{self.projet.nom} - {self.date}{suffixe}'
+
+    @property
+    def meteo_libelle(self):
+        """Libellé lisible : code météo traduit, ou ancienne saisie libre telle quelle."""
+        return meteo_libelle(self.meteo)
+
+    @property
+    def meteo_icone(self):
+        return meteo_icone(self.meteo)
 
     @property
     def total_depenses(self):
@@ -102,6 +121,11 @@ class DocumentRapportJournalier(models.Model):
         max_length=255,
         blank=True,
         verbose_name=_('Nom de fichier original'),
+    )
+    # Taille mémorisée à l'upload : lire fichier.size interroge le stockage
+    # distant (R2/S3) à chaque affichage. Null pour les documents antérieurs.
+    taille = models.PositiveBigIntegerField(
+        null=True, blank=True, verbose_name=_('Taille (octets)'),
     )
     date_ajout = models.DateTimeField(auto_now_add=True)
 

@@ -1,13 +1,14 @@
 from decimal import Decimal
-from datetime import date
+from datetime import date, timedelta
 import logging
 import os
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Case, IntegerField, OuterRef, Q, Subquery, Sum, Value, When
+from django.db.models import Case, IntegerField, Q, Sum, Value, When
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -24,39 +25,32 @@ from projets.forms import (
     RecetteSituationMensuelleInitialFormSet, RapportJournalierForm,
     SituationMensuelleForm, StockRapportJournalierFormSet,
     LigneTravailRapportJournalierFormSet,
-    StockSituationMensuelleFormSet,
+    StockSituationMensuelleFormSet, fichiers_rapport_journalier,
 )
 from projets.models import (
     Projet, SituationMensuelle, RecetteSituationMensuelle,
-    DepenseSituationMensuelle, DocumentSituationMensuelle,
-    StockSituationMensuelle, RapportJournalier,
+    DocumentSituationMensuelle, RapportJournalier,
     DocumentRapportJournalier,
 )
 from projets.models.projet import Dossier
 from projets.models import ChiffreAffaire
 from projets.services.chiffre_affaire import synchroniser_situation_ca
-from projets.models.suivi_projet import CategorieCharge, CategorieDepenseTravaux
+from projets.models.suivi_projet import CategorieCharge
 from projets.utils.navigation import crumb, project_crumbs
 
 
 logger = logging.getLogger(__name__)
 
-
-def _fichier_rapport_recu(request):
-    fichiers = list(request.FILES.getlist('documents'))
-    fichiers.extend(request.FILES.getlist('document'))
-    camera = request.FILES.get('document_camera')
-    if camera:
-        fichiers.append(camera)
-    return fichiers
+RAPPORTS_PAR_PAGE = 30
 
 
 def _enregistrer_documents_rapport(request, rapport):
-    for fichier in _fichier_rapport_recu(request):
+    for fichier in fichiers_rapport_journalier(request.FILES):
         DocumentRapportJournalier.objects.create(
             rapport=rapport,
             fichier=fichier,
             original_filename=fichier.name,
+            taille=fichier.size,
         )
 
 
@@ -162,11 +156,13 @@ def rapports_journaliers(request, projet_id):
         total_depenses_annotated=Coalesce(
             Sum('depenses__montant'), Value(Decimal('0.00'))
         )
-    ).prefetch_related('depenses', 'lignes_travaux', 'documents_joints')
+    ).prefetch_related('documents_joints').order_by('-date', '-id')
+    page = Paginator(rapports, RAPPORTS_PAR_PAGE).get_page(request.GET.get('page'))
 
     ctx = {
             'projet': projet,
-            'rapports': rapports,
+            'rapports': page.object_list,
+            'page_obj': page,
             'breadcrumb_items': project_crumbs(projet, crumb("Rapports journaliers")),
         }
     
@@ -183,13 +179,101 @@ def _projet_travaux_or_403(projet_id):
         raise PermissionDenied("Ce suivi est réservé aux dossiers de travaux.")
     return projet
 
+def _date_rapport_par_defaut(projet, aujourd_hui=None):
+    """Date proposée pour un nouveau rapport.
+
+    Aujourd'hui s'il n'existe aucun rapport ; sinon le lendemain du dernier
+    rapport lorsque celui-ci appartient au mois en cours ; sinon aujourd'hui.
+    """
+    aujourd_hui = aujourd_hui or timezone.localdate()
+    derniere = (
+        RapportJournalier.objects.filter(projet=projet)
+        .order_by('-date').values_list('date', flat=True).first()
+    )
+    if derniere and (derniere.year, derniere.month) == (aujourd_hui.year, aujourd_hui.month):
+        return derniere + timedelta(days=1)
+    return aujourd_hui
+
+
+def _formsets_reproduits(rapport_source, projet):
+    """Formsets dépenses et stocks pré-remplis à partir d'un rapport existant.
+
+    Seules les dépenses et les stocks sont reproduits ; le stock restant du
+    rapport source devient le point de départ (entrées et sorties remises à zéro).
+    """
+    initial_depenses = [
+        {
+            'categorie': d.categorie,
+            'categorie_charge': d.categorie_charge_id,
+            'designation': d.designation,
+            'quantite': d.quantite,
+            'unite': d.unite,
+            'prix_unitaire': d.prix_unitaire,
+            'observations': d.observations,
+        }
+        for d in rapport_source.depenses.all()
+    ]
+    initial_stocks = [
+        {
+            'designation': s.designation,
+            'unite': s.unite,
+            'quantite_entree': Decimal('0'),
+            'quantite_sortie': Decimal('0'),
+            'stock_restant': s.stock_restant,
+        }
+        for s in rapport_source.stocks.all()
+    ]
+    depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet}, initial=initial_depenses)
+    depenses.extra = len(initial_depenses)
+    stocks = StockRapportJournalierFormSet(initial=initial_stocks)
+    stocks.extra = len(initial_stocks)
+    return depenses, stocks
+
+
+def _signaler_erreurs_rapport(request, form, depenses, stocks, travaux):
+    """Message utilisateur après un échec de validation du rapport."""
+    codes_formulaire = {
+        erreur.code for erreurs in form.errors.as_data().values() for erreur in erreurs
+    }
+    seulement_doublon = (
+        codes_formulaire == {'doublon'}
+        and not depenses.total_error_count()
+        and not stocks.total_error_count()
+        and not travaux.total_error_count()
+    )
+    if seulement_doublon:
+        messages.warning(
+            request,
+            'Un rapport existe déjà à cette date : cochez la confirmation pour en créer un autre.',
+        )
+        return
+    error_messages = []
+    if form.errors:
+        error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
+    if depenses.errors:
+        error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
+    if stocks.errors:
+        error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
+    if travaux.errors:
+        error_messages.append(f"Travaux: {_format_validation_errors(travaux)}")
+    messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
+
+
+def _activites_projet(projet):
+    """Activités déjà saisies dans le projet (suggestions du champ Activité)."""
+    return list(
+        RapportJournalier.objects.filter(projet=projet).exclude(activite='')
+        .order_by('activite').values_list('activite', flat=True).distinct()
+    )
+
+
 @login_required
 @can_edit_projet
 def ajouter_rapport_journalier(request, projet_id):
     projet = _projet_travaux_or_403(projet_id)
     is_xhr = request.headers.get('HX-Request') == 'true' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    def _build_ctx(form, depenses, stocks, travaux, erreurs=False):
+    def _build_ctx(form, depenses, stocks, travaux, source=None):
         return {
             'projet': projet,
             'form': form,
@@ -197,7 +281,12 @@ def ajouter_rapport_journalier(request, projet_id):
             'stocks': stocks,
             'travaux': travaux,
             'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
-            'erreurs': erreurs,
+            'source': source,
+            'rapports_reproductibles': (
+                RapportJournalier.objects.filter(projet=projet)
+                .only('id', 'date', 'activite').order_by('-date', '-id')[:15]
+            ),
+            'activites': _activites_projet(projet),
             'breadcrumb_items': project_crumbs(
                 projet,
                 crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
@@ -219,23 +308,15 @@ def ajouter_rapport_journalier(request, projet_id):
         ):
             rapport = form.save(commit=False)
             rapport.projet = projet
-
-            try:
-                with transaction.atomic():
-                    rapport.save()
-                    depenses.instance = rapport
-                    stocks.instance = rapport
-                    travaux.instance = rapport
-                    depenses.save()
-                    stocks.save()
-                    travaux.save()
-                    _enregistrer_documents_rapport(request, rapport)
-            except IntegrityError:
-                msg = 'Un rapport journalier existe déjà pour cette date dans ce projet.'
-                if is_xhr:
-                    return JsonResponse({'success': False, 'message': msg}, status=400)
-                messages.error(request, msg)
-                return redirect('projets:rapports_journaliers', projet_id=projet.id)
+            with transaction.atomic():
+                rapport.save()
+                depenses.instance = rapport
+                stocks.instance = rapport
+                travaux.instance = rapport
+                depenses.save()
+                stocks.save()
+                travaux.save()
+                _enregistrer_documents_rapport(request, rapport)
 
             msg = 'Rapport journalier enregistré avec succès.'
             if is_xhr:
@@ -248,55 +329,49 @@ def ajouter_rapport_journalier(request, projet_id):
             messages.success(request, msg)
             return redirect('projets:rapports_journaliers', projet_id=projet.id)
 
-        # Erreurs
-        error_messages = []
-        if form.errors:
-            error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
-        if depenses.errors:
-            error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
-        if stocks.errors:
-            error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
-        if travaux.errors:
-            error_messages.append(f"Travaux: {_format_validation_errors(travaux)}")
-        messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
-
-        ctx = _build_ctx(form, depenses, stocks, travaux, erreurs=True)
+        _signaler_erreurs_rapport(request, form, depenses, stocks, travaux)
+        ctx = _build_ctx(form, depenses, stocks, travaux)
         if is_xhr:
             return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx, status=400)
         return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx, status=400)
 
-    # GET — nouveau rapport
-    today = timezone.now().date()
+    # GET — nouveau rapport, éventuellement reproduit d'un rapport existant (?depuis=<id>)
+    source = None
+    if request.GET.get('depuis'):
+        source = get_object_or_404(
+            RapportJournalier.objects.prefetch_related('depenses', 'stocks'),
+            pk=request.GET['depuis'], projet=projet,
+        )
     form = RapportJournalierForm(initial={
-        'date': today.strftime('%Y-%m-%d'),
+        'date': _date_rapport_par_defaut(projet).strftime('%Y-%m-%d'),
+        'activite': source.activite if source else '',
         'redacteur': request.user.get_full_name() or request.user.username,
     })
-    depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
-    stocks = StockRapportJournalierFormSet()
+    if source:
+        depenses, stocks = _formsets_reproduits(source, projet)
+    else:
+        depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
+        stocks = StockRapportJournalierFormSet()
     travaux = LigneTravailRapportJournalierFormSet()
 
-    ctx = _build_ctx(form, depenses, stocks, travaux)
+    ctx = _build_ctx(form, depenses, stocks, travaux, source=source)
 
     if is_xhr:
         return render(request, 'projets/rapports/_modifier_rapport_journalier_content.html', ctx)
     return render(request, 'projets/rapports/modifier_rapport_journalier.html', ctx)
 
-@login_required
-@can_view_projet
-def detail_rapport_journalier(request, projet_id, rapport_id):
-    projet = _projet_travaux_or_403(projet_id)
-    rapport = get_object_or_404(
-        RapportJournalier.objects.annotate(
-            total_depenses_annotated=Coalesce(
-                Sum('depenses__montant'), Value(Decimal('0.00'))
-            )
-        ).prefetch_related(
-            'depenses', 'stocks', 'lignes_travaux', 'documents_joints',
+def _rapport_journalier_complet(projet, rapport_id):
+    return get_object_or_404(
+        RapportJournalier.objects.prefetch_related(
+            'stocks', 'lignes_travaux', 'documents_joints',
         ),
         id=rapport_id, projet=projet
     )
 
-    depenses = list(rapport.depenses.select_related('categorie_charge'))
+
+def _depenses_groupees_rapport(rapport, projet):
+    """Dépenses du rapport par catégorie : ([(code, nom, depenses, total)], total général)."""
+    depenses = list(rapport.depenses.all())
     categorie_ids = {d.categorie_charge_id for d in depenses if d.categorie_charge_id}
     categories = CategorieCharge.objects.filter(
         Q(actif=True) | Q(pk__in=categorie_ids), dossier_id=projet.dossier_id,
@@ -312,11 +387,59 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
         if depenses_categorie:
             total = sum((d.montant for d in depenses_categorie), Decimal('0.00'))
             depenses_groupees.append((category.code, category.nom, depenses_categorie, total))
+    return depenses_groupees, sum((d.montant for d in depenses), Decimal('0.00'))
+
+
+IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.gif', '.webp'}
+
+
+@login_required
+@can_view_projet
+def apercu_rapport_journalier(request, projet_id, rapport_id):
+    """Aperçu avant impression d'un rapport journalier (A4 portrait)."""
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = _rapport_journalier_complet(projet, rapport_id)
+    depenses_groupees, total_depenses = _depenses_groupees_rapport(rapport, projet)
+
+    documents = list(rapport.documents_joints.all())
+    photos = [d for d in documents if os.path.splitext(d.nom)[1].lower() in IMAGE_EXTENSIONS]
+    autres_documents = [d for d in documents if d not in photos]
+
+    # Ordre chronologique (date, id) : plusieurs rapports peuvent partager une date.
+    rapports_projet = RapportJournalier.objects.filter(projet=projet).only('id', 'date')
+    avant = Q(date__lt=rapport.date) | Q(date=rapport.date, id__lt=rapport.id)
+    apres = Q(date__gt=rapport.date) | Q(date=rapport.date, id__gt=rapport.id)
+    precedent = rapports_projet.filter(avant).order_by('-date', '-id').first()
+    suivant = rapports_projet.filter(apres).order_by('date', 'id').first()
+
+    return render(request, 'projets/rapports/apercu_rapport_journalier.html', {
+        'projet': projet,
+        'rapport': rapport,
+        'numero': rapports_projet.filter(avant).count() + 1,
+        'travaux': rapport.lignes_travaux.all(),
+        'depenses_groupees': depenses_groupees,
+        'total_depenses': total_depenses,
+        'stocks': rapport.stocks.all(),
+        'photos': photos,
+        'autres_documents': autres_documents,
+        'precedent': precedent,
+        'suivant': suivant,
+        'date_edition': timezone.localtime(),
+    })
+
+
+@login_required
+@can_view_projet
+def detail_rapport_journalier(request, projet_id, rapport_id):
+    projet = _projet_travaux_or_403(projet_id)
+    rapport = _rapport_journalier_complet(projet, rapport_id)
+    depenses_groupees, total_depenses = _depenses_groupees_rapport(rapport, projet)
 
     ctx = {
         'projet': projet,
         'rapport': rapport,
         'depenses_groupees': depenses_groupees,
+        'total_depenses': total_depenses,
         'breadcrumb_items': project_crumbs(
             projet,
             crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
@@ -329,145 +452,67 @@ def detail_rapport_journalier(request, projet_id, rapport_id):
     return render(request, 'projets/rapports/detail_rapport_journalier.html', ctx)
 
 def _referentiel_depenses(projet):
-    """Propose uniquement les ressources affectées au projet."""
-    def options_from_project(code):
-        return [
-            {
-                'designation': resource.designation,
-                'unite': resource.unite or '',
-                'prix': resource.tarif or Decimal('0.00'),
-            }
-            for resource in projet.ressources_affectees.filter(
-                categorie_charge__code=code,
-                categorie_charge__dossier_id=projet.dossier_id,
-                actif=True,
-            ).order_by('designation')
-        ]
+    """Ressources actives affectées au projet, groupées par catégorie (1 requête).
 
-    return {
-        CategorieDepenseTravaux.PERSONNEL: options_from_project('PERSONNEL'),
-        CategorieDepenseTravaux.MATERIEL: options_from_project('MATERIEL'),
-        CategorieDepenseTravaux.LOCATION: options_from_project('LOCATION'),
-        CategorieDepenseTravaux.SOUS_TRAITANCE: options_from_project('SOUS_TRAITANCE'),
-        CategorieDepenseTravaux.FOURNITURE: options_from_project('FOURNITURE'),
-        CategorieDepenseTravaux.CONSOMMABLE: options_from_project('CONSOMMABLE'),
-    }
+    Couvre toutes les catégories du dossier, y compris les catégories
+    personnalisées et le transport.
+    """
+    referentiel = {}
+    ressources = (
+        projet.ressources_affectees
+        .filter(actif=True, categorie_charge__dossier_id=projet.dossier_id)
+        .order_by('designation')
+        .values('categorie_charge_id', 'designation', 'unite', 'tarif')
+    )
+    for ressource in ressources:
+        referentiel.setdefault(ressource['categorie_charge_id'], []).append({
+            'designation': ressource['designation'],
+            'unite': ressource['unite'] or '',
+            'prix': str(ressource['tarif'] or Decimal('0.00')),
+        })
+    return referentiel
+
 
 def _grouper_depenses_par_categorie(depenses_formset, projet):
-    categories = list(CategorieCharge.objects.filter(actif=True, dossier_id=projet.dossier_id))
-    existing_ids = {
-        form.instance.categorie_charge_id
-        for form in depenses_formset.forms
-        if form.instance.categorie_charge_id
-    }
-    if existing_ids:
-        categories = list(CategorieCharge.objects.filter(
-            Q(actif=True) | Q(pk__in=existing_ids), dossier_id=projet.dossier_id,
-        ))
+    """Regroupe les lignes du formset par catégorie, avec total et référentiel.
+
+    Réutilise les catégories déjà chargées par le formset : aucune requête par ligne.
+    """
+    def categorie_id(form):
+        # Ligne enregistrée : instance ; ligne pré-remplie (reproduction) : initial.
+        return form.instance.categorie_charge_id or form.initial.get('categorie_charge')
+
+    def montant(form):
+        if form.instance.pk or form.is_bound:
+            return form.instance.montant or Decimal('0.00')
+        return (form.initial.get('quantite') or Decimal('0')) * (form.initial.get('prix_unitaire') or Decimal('0'))
+
+    existing_ids = {categorie_id(form) for form in depenses_formset.forms if categorie_id(form)}
+    categories = [
+        category for category in depenses_formset.categories_charge
+        if category.actif or category.pk in existing_ids
+    ]
+    par_id = {category.pk: category for category in categories}
     groupes = {category.code: [] for category in categories}
     for depense_form in depenses_formset.forms:
-        categorie = (
-            depense_form.instance.categorie_charge.code
-            if depense_form.instance.categorie_charge_id
-            else depense_form.instance.categorie
+        category = par_id.get(categorie_id(depense_form))
+        code = category.code if category else (
+            depense_form.instance.categorie or depense_form.initial.get('categorie')
         )
-        if categorie in groupes:
-            groupes[categorie].append(depense_form)
+        if code in groupes:
+            groupes[code].append(depense_form)
     referentiel = _referentiel_depenses(projet=projet)
     return [
         (
             category.code,
             category.nom,
             groupes[category.code],
-            sum((f.instance.montant or Decimal('0.00') for f in groupes[category.code]), Decimal('0.00')),
-            referentiel.get(category.code, []),
+            sum((montant(f) for f in groupes[category.code]), Decimal('0.00')),
+            referentiel.get(category.pk, []),
             category.pk,
         )
         for category in categories
     ]
-
-@login_required
-@can_edit_projet
-def formulaire_rapport_journalier(request, projet_id):
-    projet = _projet_travaux_or_403(projet_id)
-    
-    if request.method == 'POST':
-        form = RapportJournalierForm(request.POST, request.FILES, projet=projet)
-        depenses = DepenseRapportJournalierFormSet(request.POST, form_kwargs={'projet': projet})
-        stocks = StockRapportJournalierFormSet(request.POST)
-        travaux = LigneTravailRapportJournalierFormSet(request.POST)
-        
-        if (
-            form.is_valid()
-            and depenses.is_valid()
-            and stocks.is_valid()
-            and travaux.is_valid()
-        ):
-            rapport = form.save(commit=False)
-            rapport.projet = projet
-            
-            try:
-                with transaction.atomic():
-                    rapport.save()
-                    depenses.instance = rapport
-                    stocks.instance = rapport
-                    travaux.instance = rapport
-                    depenses.save()
-                    stocks.save()
-                    travaux.save()
-                    _enregistrer_documents_rapport(request, rapport)
-            except IntegrityError:
-                messages.error(
-                    request,
-                    'Un rapport journalier existe déjà pour cette date dans ce projet.',
-                )
-                return redirect('projets:rapports_journaliers', projet_id=projet.id)
-            
-            messages.success(request, 'Rapport journalier enregistré avec succès.')
-            return redirect('projets:rapports_journaliers', projet_id=projet.id)
-        else:
-            # Afficher les erreurs
-            error_messages = []
-            if form.errors:
-                error_messages.append(f"Formulaire: {_format_validation_errors(form)}")
-            if depenses.errors:
-                error_messages.append(f"Dépenses: {_format_validation_errors(depenses)}")
-            if stocks.errors:
-                error_messages.append(f"Stocks: {_format_validation_errors(stocks)}")
-            if travaux.errors:
-                error_messages.append(f"Travaux: {_format_validation_errors(travaux)}")
-            
-            messages.error(request, f"Erreurs: {'; '.join(error_messages)}")
-            return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
-                'projet': projet,
-                'form': form,
-                'depenses': depenses,
-                'stocks': stocks,
-                'travaux': travaux,
-                'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
-                'erreurs': True,
-            })
-    else:
-        # Initialiser avec la date au format ISO
-        today = timezone.now().date()
-        form = RapportJournalierForm(initial={
-            'date': today.strftime('%Y-%m-%d'),  # Format ISO explicite
-            'redacteur': request.user.get_full_name() or request.user.username
-        })
-        depenses = DepenseRapportJournalierFormSet(form_kwargs={'projet': projet})
-        stocks = StockRapportJournalierFormSet()
-        travaux = LigneTravailRapportJournalierFormSet()
-    
-    depenses_groupees = _grouper_depenses_par_categorie(depenses, projet=projet)
-    
-    return render(request, 'projets/rapports/_formulaire_rapport_journalier.html', {
-        'projet': projet,
-        'form': form,
-        'depenses': depenses,
-        'stocks': stocks,
-        'travaux': travaux,
-        'depenses_groupees': depenses_groupees,
-    })
 
 @login_required
 @can_edit_projet
@@ -480,11 +525,13 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
         return {
             'projet': projet,
             'rapport': rapport,
+            'documents': list(rapport.documents_joints.all()),
             'form': form,
             'depenses': depenses,
             'stocks': stocks,
             'travaux': travaux,
             'depenses_groupees': _grouper_depenses_par_categorie(depenses, projet=projet),
+            'activites': _activites_projet(projet),
             'breadcrumb_items': project_crumbs(
                 projet,
                 crumb("Rapports journaliers", "projets:rapports_journaliers", args=[projet.id]),
@@ -541,14 +588,12 @@ def modifier_rapport_journalier(request, projet_id, rapport_id):
                     'travaux': travaux.errors,
                 },
             }, status=400)
-        messages.error(request, msg)
+        _signaler_erreurs_rapport(request, form, depenses, stocks, travaux)
         return render(request, 'projets/rapports/modifier_rapport_journalier.html',
                       _build_ctx(form, depenses, stocks, travaux), status=400)
 
     # GET
     form = RapportJournalierForm(instance=rapport)
-    if rapport.date:
-        form.initial['date'] = rapport.date.strftime('%Y-%m-%d')
     depenses = DepenseRapportJournalierFormSet(instance=rapport, form_kwargs={'projet': projet})
     stocks = StockRapportJournalierFormSet(instance=rapport)
     travaux = LigneTravailRapportJournalierFormSet(instance=rapport)
@@ -579,30 +624,6 @@ def supprimer_rapport_journalier(request, projet_id, rapport_id):
     messages.success(request, msg)
     return redirect('projets:rapports_journaliers', projet_id=projet_id)
 
-
-@login_required
-@can_edit_projet
-def supprimer_document_rapport_journalier(request, projet_id, rapport_id):
-    projet = _projet_travaux_or_403(projet_id)
-    rapport = get_object_or_404(RapportJournalier, id=rapport_id, projet=projet)
-    is_xhr = request.headers.get('x-requested-with') == 'XMLHttpRequest'
-
-    if request.method == 'POST':
-        document = rapport.documents_joints.filter(
-            pk=request.POST.get('document_id'),
-        ).first()
-        if document:
-            document.delete()
-            msg = 'Document supprimé du rapport.'
-        else:
-            msg = 'Aucun document à supprimer.'
-
-        if is_xhr:
-            return JsonResponse({'success': True, 'message': msg})
-        messages.success(request, msg)
-
-    return redirect('projets:modifier_rapport_journalier',
-                    projet_id=projet_id, rapport_id=rapport_id)
 
 def _crumbs_situations(projet, *items):
     return project_crumbs(

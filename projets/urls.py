@@ -65,8 +65,8 @@ suivi_urlpatterns = [
     # Suivi d'exécution
     path('projet/<int:projet_id>/rapports-journaliers/ajouter/', reporting_views.ajouter_rapport_journalier, name='ajouter_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/', reporting_views.rapports_journaliers, name='rapports_journaliers'),
-    path('projet/<int:projet_id>/rapports-journaliers/formulaire/', reporting_views.formulaire_rapport_journalier, name='formulaire_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/', reporting_views.detail_rapport_journalier, name='detail_rapport_journalier'),
+    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/apercu/', reporting_views.apercu_rapport_journalier, name='apercu_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/modifier/', reporting_views.modifier_rapport_journalier, name='modifier_rapport_journalier'),
     path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/supprimer/', reporting_views.supprimer_rapport_journalier, name='supprimer_rapport_journalier'),
     
@@ -84,9 +84,6 @@ suivi_urlpatterns = [
     path('projet/<int:projet_id>/suivi/ajouter/', suivi_views.ajouter_suivi, name='ajouter_suivi'),
     path('projet/<int:projet_id>/suivi/supprimer/<int:suivi_id>/', suivi_views.supprimer_suivi, name='supprimer_suivi'),
     path('projet/<int:projet_id>/suivi/modifier/<int:suivi_id>/', suivi_views.modifier_suivi, name='modifier_suivi'),
-
-    # Suivi d'exécution - Suppression de document du rapport journalier
-    path('projet/<int:projet_id>/rapports-journaliers/<int:rapport_id>/supprimer-document/', reporting_views.supprimer_document_rapport_journalier, name='supprimer_document_rapport_journalier'),
 
     # Fichiers de suivi
     path('fichier_suivi/<int:fichier_id>/afficher/', suivi_views.afficher_fichier_suivi, name='afficher_fichier_suivi'),

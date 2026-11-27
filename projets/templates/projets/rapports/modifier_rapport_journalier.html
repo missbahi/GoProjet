@@ -12,5 +12,8 @@
 
 {% block extra_js %}
     {{ block.super }}
+    {# Chargés via {% static %} (URL versionnée en production) avant le chargeur de famille HTMX, #}
+    {# pour que la version à jour l'emporte sur une copie en cache. #}
     <script src="{% static 'projets/js/rapports-form.js' %}" defer></script>
+    <script src="{% static 'projets/js/rapports-bdd-modal.js' %}" defer></script>
 {% endblock %}

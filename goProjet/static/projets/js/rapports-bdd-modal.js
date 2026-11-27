@@ -31,24 +31,33 @@
             empty?.classList.add('hidden');
             if (count) count.textContent = `${list.length} élément(s) disponible(s)`;
 
+            // Construction par le DOM (textContent) : aucune donnée injectée en HTML.
+            const cellule = (texte, classe) => {
+                const td = document.createElement('td');
+                if (classe) td.className = classe;
+                td.textContent = texte;
+                return td;
+            };
             list.forEach(item => {
-                const tr = document.createElement('tr');
                 const prix = parseFloat(item.prix) || 0;
                 const prixFmt = prix.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' DH';
-                const safeD = (item.designation || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                const safeU = (item.unite || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                tr.innerHTML = `
-                    <td>${item.designation}</td>
-                    <td class="text-center">${item.unite || '-'}</td>
-                    <td class="text-right">${prixFmt}</td>
-                    <td class="text-center">
-                        <button type="button"
-                                onclick="ajouterDepuisModalBDD('${codeCategorie}', '${safeD}', '${safeU}', ${prix})"
-                                class="app-btn-primary text-xs">
-                            <i class="fas fa-plus mr-1"></i> Insérer
-                        </button>
-                    </td>
-                `;
+                const tr = document.createElement('tr');
+                tr.append(
+                    cellule(item.designation || ''),
+                    cellule(item.unite || '-', 'text-center'),
+                    cellule(prixFmt, 'text-right'),
+                );
+                const action = document.createElement('td');
+                action.className = 'text-center';
+                const bouton = document.createElement('button');
+                bouton.type = 'button';
+                bouton.className = 'app-btn-primary text-xs';
+                bouton.innerHTML = '<i class="fas fa-plus mr-1"></i> Insérer';
+                bouton.addEventListener('click', () => window.ajouterDepuisModalBDD(
+                    codeCategorie, item.designation || '', item.unite || '', prix,
+                ));
+                action.appendChild(bouton);
+                tr.appendChild(action);
                 tbody.appendChild(tr);
             });
         }
@@ -98,9 +107,16 @@
 
         const select = last.querySelector('.depense-ref-select');
         if (select) {
-            for (let i = 0; i < select.options.length; i++) {
-                if (select.options[i].value === designation) { select.selectedIndex = i; break; }
+            window.remplirSelectReferentiel?.(select, code);
+            // Filet de sécurité : si l'option est absente, on l'ajoute plutôt
+            // que de laisser le sélecteur sur « — Sélectionner — ».
+            if (![...select.options].some(o => o.value === designation)) {
+                const opt = new Option(designation, designation);
+                opt.dataset.unite = unite;
+                opt.dataset.prix = String(prix);
+                select.appendChild(opt);
             }
+            select.value = designation;
         }
         const d = last.querySelector('input[name$="-designation"]');
         const u = last.querySelector('input[name$="-unite"]');

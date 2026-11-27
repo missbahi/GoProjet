@@ -62,19 +62,90 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-       CORRECTION DES DATES (formats FR → ISO)
+       ACCORDÉONS (formulaire et détail)
        ═══════════════════════════════════════════════════════════ */
-    function fixDateInputs() {
-        document.querySelectorAll('input[type="date"]').forEach((input) => {
-            const v = input.value;
-            if (!v) return;
-            if (v.match(/^\d{2}\/\d{2}\/\d{4}$/) || v.match(/^\d{2}-\d{2}-\d{4}$/) || v.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
-                const sep = v.includes('/') ? '/' : (v.includes('-') ? '-' : '.');
-                const [d, m, y] = v.split(sep);
-                input.value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-            }
+    function initToggles() {
+        document.querySelectorAll('.categorie-toggle').forEach(btn => {
+            if (btn.dataset.bound) return;
+            btn.dataset.bound = 'true';
+            btn.addEventListener('click', () => {
+                const target = document.getElementById(btn.dataset.target);
+                if (!target) return;
+                target.classList.toggle('hidden');
+                btn.querySelector('.toggle-icon')?.classList.toggle('rotate-90');
+            });
         });
     }
+
+    /* ═══════════════════════════════════════════════════════════
+       MÉTÉO : icône de la condition choisie + choix rapides
+       ═══════════════════════════════════════════════════════════ */
+    function initMeteo() {
+        const select = document.querySelector('[data-meteo-select]');
+        if (!select || select.dataset.bound) return;
+        select.dataset.bound = 'true';
+        const picker = select.closest('.meteo-picker');
+        const apercu = picker?.querySelector('.meteo-apercu');
+        let icones = {};
+        try { icones = JSON.parse(document.getElementById('meteo-icones')?.textContent || '{}'); } catch (e) { icones = {}; }
+
+        function refresh() {
+            if (apercu) apercu.className = `fas ${icones[select.value] || 'fa-cloud-sun'} meteo-apercu w-6 text-center text-lg`;
+            picker?.querySelectorAll('.meteo-rapide').forEach(btn => {
+                const actif = btn.dataset.meteo === select.value;
+                btn.setAttribute('aria-pressed', String(actif));
+                btn.style.outline = actif ? '2px solid var(--accent-primary)' : '';
+            });
+        }
+        select.addEventListener('change', refresh);
+        picker?.querySelectorAll('.meteo-rapide').forEach(btn => {
+            btn.addEventListener('click', () => {
+                select.value = btn.dataset.meteo;
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+        });
+        refresh();
+    }
+
+    /* ═══════════════════════════════════════════════════════════
+       RÉFÉRENTIEL DES DÉPENSES (chargé à la demande)
+       Le HTML de chaque ligne ne contient que l'option enregistrée ;
+       la liste complète est lue une fois depuis #referentiel-data-<cat>.
+       ═══════════════════════════════════════════════════════════ */
+    const referentielCache = new Map();
+
+    function referentiel(cat) {
+        if (!referentielCache.has(cat)) {
+            let list = [];
+            const el = document.getElementById('referentiel-data-' + cat);
+            try { list = JSON.parse(el?.textContent || '[]'); } catch (e) { list = []; }
+            referentielCache.set(cat, list);
+        }
+        return referentielCache.get(cat);
+    }
+
+    function remplirSelectReferentiel(select, cat) {
+        if (!select || select.dataset.filled) return;
+        select.dataset.filled = 'true';
+        const courant = select.value;
+        const frag = document.createDocumentFragment();
+        frag.appendChild(new Option('— Sélectionner —', ''));
+        let trouve = false;
+        referentiel(cat).forEach(item => {
+            const opt = new Option(item.designation, item.designation);
+            opt.dataset.unite = item.unite || '';
+            opt.dataset.prix = item.prix || '0';
+            if (item.designation === courant) trouve = true;
+            frag.appendChild(opt);
+        });
+        // Désignation enregistrée mais retirée du référentiel : on la conserve.
+        if (courant && !trouve) {
+            frag.insertBefore(new Option(courant + ' (hors référentiel)', courant), frag.childNodes[1] || null);
+        }
+        select.replaceChildren(frag);
+        select.value = courant;
+    }
+    window.remplirSelectReferentiel = remplirSelectReferentiel;
 
     /* ═══════════════════════════════════════════════════════════
        DÉPENSES (dynamique par catégorie)
@@ -112,6 +183,10 @@
             const select = row.querySelector('.depense-ref-select');
             if (select && !select.dataset.bound) {
                 select.dataset.bound = 'true';
+                const remplir = () => remplirSelectReferentiel(select, cat);
+                select.addEventListener('focus', remplir);
+                select.addEventListener('mousedown', remplir);
+                select.addEventListener('touchstart', remplir, { passive: true });
                 select.addEventListener('change', function () {
                     const opt = select.options[select.selectedIndex];
                     const d = row.querySelector('input[name$="-designation"]');
@@ -169,7 +244,12 @@
 
         document.querySelectorAll('tbody[id^="depense-tbody-"]').forEach(tbody => {
             const cat = tbody.id.replace('depense-tbody-', '');
-            tbody.querySelectorAll('tr').forEach(r => attachRow(r, cat));
+            tbody.querySelectorAll('tr').forEach(r => {
+                attachRow(r, cat);
+                // Lignes pré-remplies (reproduction) : montant calculé côté client.
+                const m = r.querySelector('.depense-montant');
+                if (m) m.textContent = fmt(ligneMontant(r));
+            });
             updateCount(cat);
         });
 
@@ -179,17 +259,6 @@
             btn.addEventListener('click', () => addRow(btn.dataset.categorie));
         });
 
-        // Toggle catégories
-        document.querySelectorAll('.categorie-toggle').forEach(btn => {
-            if (btn.dataset.bound) return;
-            btn.dataset.bound = 'true';
-            btn.addEventListener('click', () => {
-                const target = document.getElementById(btn.dataset.target);
-                if (!target) return;
-                target.classList.toggle('hidden');
-                btn.querySelector('.toggle-icon')?.classList.toggle('rotate-90');
-            });
-        });
     }
 
     function initTravaux() {
@@ -252,19 +321,7 @@
             addButton.dataset.bound = 'true';
             addButton.addEventListener('click', addRow);
         }
-        container.addTravailRow = addRow;
 
-        // Toggle accordéon
-        const toggleBtn = container.querySelector('.categorie-toggle');
-        if (toggleBtn && !toggleBtn.dataset.bound) {
-            toggleBtn.dataset.bound = 'true';
-            toggleBtn.addEventListener('click', () => {
-                const target = document.getElementById(toggleBtn.dataset.target);
-                if (!target) return;
-                target.classList.toggle('hidden');
-                toggleBtn.querySelector('.toggle-icon')?.classList.toggle('rotate-90');
-            });
-        }
 
         syncOrder();
         updateCount();
@@ -343,6 +400,11 @@
         }
 
         function setValue(field, value) {
+            if (field.classList.contains('depense-ref-select')) {
+                remplirSelectReferentiel(
+                    field, field.closest('[data-depense-categorie]')?.dataset.depenseCategorie,
+                );
+            }
             field.value = value;
             field.dispatchEvent(new Event('input', {bubbles: true}));
             field.dispatchEvent(new Event('change', {bubbles: true}));
@@ -408,22 +470,12 @@
     }
 
     /* ═══════════════════════════════════════════════════════════
-    DOCUMENTS JOINTS — Toggle accordéon
+    DOCUMENTS JOINTS — compteur
     ═══════════════════════════════════════════════════════════ */
-    function initDocumentsToggle() {
+    function initDocumentsCount() {
         const container = document.getElementById('documents-container');
         if (!container) return;
 
-        const toggleBtn = container.querySelector('.categorie-toggle');
-        if (toggleBtn && !toggleBtn.dataset.bound) {
-            toggleBtn.dataset.bound = 'true';
-            toggleBtn.addEventListener('click', () => {
-                const target = document.getElementById(toggleBtn.dataset.target);
-                if (!target) return;
-                target.classList.toggle('hidden');
-                toggleBtn.querySelector('.toggle-icon')?.classList.toggle('rotate-90');
-            });
-        }
 
         // Met à jour le compteur quand un fichier est sélectionné
         const countEl = container.querySelector('.documents-count');
@@ -491,45 +543,33 @@
             updateCount();
         }
 
-        container.addStockRow = addRow;
         tbody.querySelectorAll('tr').forEach(attachRow);
-
-        const toggleBtn = container.querySelector('.categorie-toggle');
-        if (toggleBtn && !toggleBtn.dataset.bound) {
-            toggleBtn.dataset.bound = 'true';
-            toggleBtn.addEventListener('click', () => {
-                const target = document.getElementById(toggleBtn.dataset.target);
-                if (!target) return;
-                target.classList.toggle('hidden');
-                toggleBtn.querySelector('.toggle-icon')?.classList.toggle('rotate-90');
-            });
+        if (!addBtn.dataset.bound) {
+            addBtn.dataset.bound = 'true';
+            addBtn.addEventListener('click', addRow);
         }
-    }
 
-    document.addEventListener('click', (event) => {
-        const addButton = event.target.closest('#stock-add-btn');
-        if (!addButton) return;
-        event.preventDefault();
-        initStocks();
-        document.getElementById('stocks-container')?.addStockRow?.();
-    });
+    }
 
     /* ═══════════════════════════════════════════════════════════
        INIT
        ═══════════════════════════════════════════════════════════ */
     function initAll() {
+        initToggles();
+        initMeteo();
         initUpload();
-        fixDateInputs();
         initDepenses();
         initTravaux();
         initRapportGrid();
         initStocks();
-        initDocumentsToggle();   // ← ajout
+        initDocumentsCount();
     }
 
-    document.addEventListener('DOMContentLoaded', initAll);
-    document.addEventListener('rapportFormLoaded', () => setTimeout(initAll, 100));
-
-    window.reinitRapportForm = initAll;
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initAll);
+    } else {
+        initAll();
+    }
+    document.body.addEventListener('htmx:afterSettle', initAll);
 
 })();

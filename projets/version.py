@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.8.2"
+APP_VERSION = "2.9.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,19 @@ APP_VERSION = "2.8.2"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.9.0": {
+        "date": "2026-11-27",
+        "titre": "Rapports journaliers : impression, reproduction et météo",
+        "highlights": [
+            "Aperçu avant impression du rapport journalier : cartouche, photos, signatures, montants détaillés, en synthèse ou masqués",
+            "Reproduire un rapport existant : dépenses et stocks pré-remplis, le stock restant devient le point de départ",
+            "Date proposée automatiquement (lendemain du dernier rapport du mois) et plusieurs rapports possibles le même jour, distingués par activité",
+            "Choix de la météo dans une liste de conditions avec icônes et choix rapides",
+            "Correction : la création d'un rapport avec des dépenses fonctionne à nouveau",
+            "Formulaires et listes plus rapides (pagination, requêtes optimisées)",
+        ],
+        "niveau": "info",
+    },
     "2.8.2": {
         "date": "2026-11-22",
         "titre": "Améliorations diverses",
