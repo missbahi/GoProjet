@@ -19,7 +19,7 @@ class ProjectScopeMiddleware(MiddlewareMixin):
             personal = PERSONAL_VIEWS.get(match.namespace, set())
             if match.url_name not in personal | {'home', 'landing', 'apropos', 'liste_projets'}:
                 raise PermissionDenied(
-                    "Votre ancien rôle Chef de projet doit être réaffecté par l'Admin."
+                    "Votre rôle doit être attribué par l'Admin."
                 )
         verifier_perimetre_observateur(request, match)
         return None

@@ -6,7 +6,7 @@ from .version import APP_VERSION, get_versions_between
 def observer_access(request):
     from projets.decorators import (
         dossiers_accessibles, est_admin_dossier, est_directeur_projet,
-        est_observateur, est_pointeur,
+        est_observateur, est_pointeur, peut_gerer_utilisateurs,
         peut_creer_projet, peut_gerer_projet, peut_supprimer_projet,
     )
     from projets.observer_access import observer_url_patterns
@@ -20,9 +20,7 @@ def observer_access(request):
         'observer_readonly': readonly,
         'is_pointeur': pointeur,
         'observer_url_patterns': observer_url_patterns() if readonly else [],
-        'can_manage_users': request.user.is_authenticated and (
-            not pointeur and not readonly
-        ),
+        'can_manage_users': peut_gerer_utilisateurs(request.user),
         'can_configure_dossier': request.user.is_authenticated and (
             request.user.is_superuser or est_admin_dossier(request.user)
         ),

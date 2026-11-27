@@ -28,6 +28,7 @@ import logging
 from projets.decorators import (
     est_gerant,
     gestion_utilisateurs_required,
+    peut_gerer_utilisateurs,
     projets_accessibles,
 )
 from projets.forms import AvatarUpdateForm, UtilisateurCreationForm
@@ -266,6 +267,18 @@ def modifier_utilisateur(request, user_id):
         form.save()
         if target_user.pk == request.user.pk and form.cleaned_data.get('password'):
             update_session_auth_hash(request, target_user)
+        if form.renonce_admin:
+            # L'ancien administrateur peut avoir perdu l'accès à la liste des comptes.
+            messages.success(request, "Vous avez renoncé au rôle d'administrateur de dossier.")
+            request.user.profile.refresh_from_db()
+            destination = reverse(
+                'projets:liste_utilisateurs' if peut_gerer_utilisateurs(request.user) else 'projets:home'
+            )
+            if request.headers.get('HX-Request'):
+                response = HttpResponse(status=200)
+                response['HX-Redirect'] = destination
+                return response
+            return redirect(destination)
 
         modal_response = _user_modal_success(
             request, f"Utilisateur « {target_user.username} » modifié avec succès.",

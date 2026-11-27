@@ -42,7 +42,7 @@
         <div role="alert" class="text-red-600">{{ form_errors }}</div>
         {% endif %}
         {% if target_user.profile.role == 'A_RECLASSER' %}
-        <p role="status">Ancien Chef de projet : rôle à reclasser explicitement par l'Admin. Aucun accès aux projets avant reclassification.</p>
+        <p role="status">Rôle à attribuer : aucun accès aux projets tant qu'un rôle n'a pas été choisi.</p>
         {% endif %}
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -91,6 +91,13 @@
                         </option>
                     {% endfor %}
                 </select>
+                {% if target_user.pk == request.user.pk and target_user.profile.role == 'ADMIN_DOSSIER' %}
+                <p class="text-xs mt-1" style="color: var(--accent-warning);">
+                    <i class="fas fa-exchange-alt"></i>
+                    Passation : choisir un autre rôle vous retire l'administration du dossier,
+                    qui reste assurée par vos collègues administrateurs. Action définitive pour vous.
+                </p>
+                {% endif %}
             </div>
             {% endif %}
         </div>

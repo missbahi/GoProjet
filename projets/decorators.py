@@ -177,13 +177,18 @@ def est_pointeur(user):
     role = getattr(getattr(user, 'profile', None), 'role', None)
     return role == 'POINTEUR'
 
+def peut_gerer_utilisateurs(user):
+    """Accès à la gestion des comptes : même règle pour la vue et pour les menus."""
+    return bool(user.is_authenticated and (
+        user.is_superuser or est_admin_dossier(user) or est_directeur_projet(user)
+    ))
+
 def gestion_utilisateurs_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_authenticated:
             return login_required(view_func)(request, *args, **kwargs)
-        if not (request.user.is_superuser or est_admin_dossier(request.user)
-                or est_directeur_projet(request.user)):
+        if not peut_gerer_utilisateurs(request.user):
             raise PermissionDenied
         return view_func(request, *args, **kwargs)
     return _wrapped_view

@@ -60,35 +60,6 @@ class NotificationService:
             action_url=action_url
         )
     @staticmethod
-    def notifier_etape_validee(etape_validation):
-        """Notification quand une étape est validée"""
-        titre = f"Étape validée: {etape_validation.nom}"
-        message = f"L'étape '{etape_validation.nom}' a été validée par {etape_validation.valide_par.username}."
-        action_url = f"/projets/attachement/{etape_validation.processus_validation.attachement.id}/"
-        
-        # Notifier le chef de projet et l'admin
-        from django.contrib.auth.models import User
-        utilisateurs = User.objects.filter(
-            profile__role__in=['ADMIN', 'CHEF_PROJET'],
-            profile__projets=etape_validation.processus_validation.attachement.projet
-        ).distinct()
-        
-        notifications = []
-        for user in utilisateurs:
-            notification = NotificationService.creer_notification_personnalisee(
-                utilisateur=user,
-                type_notif='ETAPE_VALIDEE',
-                titre=titre,
-                message=message,
-                projet=etape_validation.processus_validation.attachement.projet,
-                niveau_urgence='FAIBLE',
-                action_url=action_url
-            )
-            notifications.append(notification)
-        
-        return notifications
-    
-    @staticmethod
     def notifier_document_a_signer(attachement, signataires):
         """Notification pour les documents à signer"""
         titre = f"Document à signer: {attachement.numero}"

@@ -1,7 +1,7 @@
 """Version de l'application et changelog."""
 
 # Bump cette valeur à chaque release notable
-APP_VERSION = "2.9.0"
+APP_VERSION = "2.10.0"
 
 # Semver : MAJOR.MINOR.PATCH
 # MAJOR = changement breaking / grosse feature
@@ -12,6 +12,18 @@ APP_VERSION = "2.9.0"
 # Changelog : le plus récent EN PREMIER
 # Une entrée = ce que voit l'utilisateur au login
 CHANGELOG = {
+    "2.10.0": {
+        "date": "2026-11-27",
+        "titre": "Lignes BPU dans les rapports et passation entre administrateurs",
+        "highlights": [
+            "Rapports journaliers : bouton « Lignes BPU » pour ajouter des prestations du bordereau, liées à leur prix",
+            "Réalisé à date par prix : dernier attachement validé ou CA, complété par les rapports journaliers postérieurs",
+            "Passation : un administrateur de dossier peut renoncer à son rôle s'il laisse un autre administrateur actif",
+            "Le menu Utilisateurs n'apparaît plus pour les rôles qui n'y ont pas accès",
+            "Les comptes créés hors de l'application n'ont aucun accès tant qu'un rôle ne leur est pas attribué",
+        ],
+        "niveau": "info",
+    },
     "2.9.0": {
         "date": "2026-11-27",
         "titre": "Rapports journaliers : impression, reproduction et météo",

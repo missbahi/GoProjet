@@ -43,7 +43,9 @@ class Profile(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
         related_name='comptes_crees',
     )
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='UTILISATEUR',)
+    # Rôle d'attente sans accès tant qu'un administrateur n'a pas attribué de vrai rôle
+    # (comptes créés hors du formulaire : admin Django, shell, createsuperuser).
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='A_RECLASSER',)
     tel = models.CharField( max_length=20, blank=True, null=True, verbose_name="Téléphone", help_text="Téléphone de contact",)
     avatar = models.ImageField(upload_to=avatar_upload_path, blank=True,)
     last_seen_version = models.CharField(

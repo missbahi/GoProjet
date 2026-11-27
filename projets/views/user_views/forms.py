@@ -6,7 +6,7 @@ from django.db import transaction
 from projets.models import Projet
 from projets.modules import MODULE_CHOICES
 from projets.user_policy import (
-    RETIRED_ROLES, dossiers_affectables, peut_agir_utilisateur,
+    RETIRED_ROLES, autres_admins_actifs, dossiers_affectables, peut_agir_utilisateur,
     roles_assignables, valider_dossiers_utilisateur,
 )
 
@@ -67,6 +67,11 @@ class UtilisateurModificationForm(forms.Form):
             elif role not in RETIRED_ROLES:
                 self.add_error('role', "Sélectionnez un rôle autorisé.")
         self.resulting_role = role
+        # Passation : un administrateur qui renonce à son rôle (seul cas permis par
+        # peut_agir_utilisateur) cède la gérance historique à un collègue actif.
+        self.renonce_admin = (
+            target.profile.role == 'ADMIN_DOSSIER' and role != 'ADMIN_DOSSIER'
+        )
         # A local administrator may promote an account, but must not reset its
         # password or deactivate it in the same request as the promotion.
         if role == 'ADMIN_DOSSIER' and not self.actor.is_superuser and target.pk != self.actor.pk:
@@ -92,8 +97,15 @@ class UtilisateurModificationForm(forms.Form):
                 permitted = self.fields['dossiers'].queryset
                 selected.extend(target.dossiers.exclude(pk__in=permitted.values('pk')))
             self.resulting_dossiers = selected
+        if self.renonce_admin:
+            # Les dossiers gérés deviennent des rattachements ordinaires.
+            self.resulting_dossiers = list(
+                {d.pk: d for d in [*self.resulting_dossiers, *target.dossiers_geres.all()]}.values()
+            )
         try:
-            valider_dossiers_utilisateur(target, role, self.resulting_dossiers)
+            valider_dossiers_utilisateur(
+                target, role, self.resulting_dossiers, gerance_cedee=self.renonce_admin,
+            )
         except ValidationError as exc:
             self.add_error(None, exc)
         # Moving an account must be explicit, not leave cross-dossier project
@@ -112,6 +124,12 @@ class UtilisateurModificationForm(forms.Form):
     @transaction.atomic
     def save(self):
         target = self.target
+        if self.renonce_admin:
+            successeur = autres_admins_actifs(target).order_by('pk').first()
+            for dossier in target.dossiers_geres.all():
+                dossier.utilisateurs.add(target)
+                dossier.gerant = successeur
+                dossier.save(update_fields=['gerant'])
         # This order permits an explicit observer -> single-dossier transition.
         if self.permissions['dossiers']:
             target.dossiers.set(self.resulting_dossiers)

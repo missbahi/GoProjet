@@ -29,8 +29,6 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 
 
-chef_projet_required = configuration_dossier_required
-categorie_charge_required = configuration_dossier_required
 
 
 def render(request, template, context=None, **kwargs):
@@ -55,31 +53,31 @@ def _global_admin(view):
         return view(request, *args, **kwargs)
     return wrapped
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_ingenieurs(request):
     ingenieurs = Ingenieur.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/ingenieurs.html', {'ingenieurs': ingenieurs})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_entreprises(request):
     entreprises = Entreprise.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/entreprises.html', {'entreprises': entreprises})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_clients(request):
     clients = Client.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/clients.html', {'clients': clients})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_personnel(request):
     personnel = Personnel.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/personnel.html', {'personnel': personnel})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_materiel(request):
     materiel = Materiel.objects.filter(dossier=request.dossier).select_related('type_materiel')
     types_materiel_actifs = TypeMateriel.objects.filter(actif=True).order_by('nom')
@@ -89,31 +87,31 @@ def partial_materiel(request):
     })
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_transports(request):
     transports = Transport.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/transport.html', {'transports': transports})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_locations(request):
     locations = Location.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/locations.html', {'locations': locations})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_sous_traitances(request):
     sous_traitances = SousTraitance.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/sous_traitances.html', {'sous_traitances': sous_traitances})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_consommables(request):
     consommables = Consommable.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/consommables.html', {'consommables': consommables})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def partial_fournitures(request):
     fournitures = Fourniture.objects.filter(dossier=request.dossier)
     return _render(request, 'projets/data/partials/fournitures.html', {'fournitures': fournitures})
@@ -252,7 +250,7 @@ def supprimer_type_materiel(request, type_materiel_id):
     messages.success(request, f'Type « {nom} » supprimé avec succès.')
     return redirect('projets:data_view')
 
-@categorie_charge_required
+@configuration_dossier_required
 def partial_categories_charges(request):
     categories = CategorieCharge.objects.filter(dossier=request.dossier)
     resource_modules = {
@@ -281,7 +279,7 @@ def partial_categories_charges(request):
     })
 
 
-@categorie_charge_required
+@configuration_dossier_required
 def ajouter_categorie_charge(request):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': 'Méthode non autorisée.'}, status=405)
@@ -293,7 +291,7 @@ def ajouter_categorie_charge(request):
 
 
 @require_POST
-@categorie_charge_required
+@configuration_dossier_required
 def modifier_categorie_charge(request, categorie_id):
     categorie = _objet(request, CategorieCharge, id=categorie_id)
     form = CategorieChargeForm(request.POST, instance=categorie, dossier=request.dossier)
@@ -321,7 +319,7 @@ def modifier_categorie_charge(request, categorie_id):
 
 
 @require_POST
-@categorie_charge_required
+@configuration_dossier_required
 def supprimer_categorie_charge(request, categorie_id):
     categorie = _objet(request, CategorieCharge, id=categorie_id)
     nom = categorie.nom
@@ -345,7 +343,7 @@ def supprimer_categorie_charge(request, categorie_id):
     return redirect('projets:data_view')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_ingenieur(request):
     if request.method == 'POST':
         form = IngenieurForm(request.POST, dossier=request.dossier)
@@ -361,7 +359,7 @@ def ajouter_ingenieur(request):
     return render(request, 'projets/data/partials/ingenieurs.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_ingenieur(request, ingenieur_id):
     ingenieur = _objet(request, Ingenieur, id=ingenieur_id)
     if request.method == 'POST':
@@ -376,7 +374,7 @@ def modifier_ingenieur(request, ingenieur_id):
 
 
 @require_POST
-@chef_projet_required
+@configuration_dossier_required
 def supprimer_ingenieur(request, ingenieur_id):
     ingenieur = _objet(request, Ingenieur, id=ingenieur_id)
 
@@ -407,7 +405,7 @@ def supprimer_ingenieur(request, ingenieur_id):
     return redirect('projets:data_view')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_client(request):
     if request.method == 'POST':
         form = ClientForm(request.POST, dossier=request.dossier)
@@ -423,7 +421,7 @@ def ajouter_client(request):
     return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_client(request, client_id):
     client = _objet(request, Client, id=client_id)
     if request.method == 'POST':
@@ -440,7 +438,7 @@ def modifier_client(request, client_id):
     return render(request, 'projets/data/partials/clients.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_client(request, client_id):
     client = _objet(request, Client, id=client_id)
@@ -451,7 +449,7 @@ def supprimer_client(request, client_id):
     return redirect('projets:partial_clients')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_entreprise(request):
     if request.method == 'POST':
         form = EntrepriseForm(request.POST, dossier=request.dossier)
@@ -467,7 +465,7 @@ def ajouter_entreprise(request):
     return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_entreprise(request, entreprise_id):
     entreprise = _objet(request, Entreprise, id=entreprise_id)
     if request.method == 'POST':
@@ -486,7 +484,7 @@ def modifier_entreprise(request, entreprise_id):
     return render(request, 'projets/data/partials/entreprises.html', {'form': form, 'entreprise': entreprise})
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_entreprise(request, entreprise_id):
     entreprise = _objet(request, Entreprise, id=entreprise_id)
@@ -497,7 +495,7 @@ def supprimer_entreprise(request, entreprise_id):
     return redirect('projets:partial_entreprises')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_personnel(request):
     if request.method == 'POST':
         form = PersonnelForm(request.POST, dossier=request.dossier)
@@ -513,7 +511,7 @@ def ajouter_personnel(request):
     return render(request, 'projets/data/partials/personnel.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_personnel(request, personnel_id):
     personnel = _objet(request, Personnel, id=personnel_id)
     if request.method == 'POST':
@@ -527,7 +525,7 @@ def modifier_personnel(request, personnel_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_personnel(request, personnel_id):
     personnel = _objet(request, Personnel, id=personnel_id)
@@ -538,7 +536,7 @@ def supprimer_personnel(request, personnel_id):
     return redirect('projets:partial_personnel')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_materiel(request):
     if request.method == 'POST':
         form = MaterielForm(request.POST, dossier=request.dossier)
@@ -554,7 +552,7 @@ def ajouter_materiel(request):
     return render(request, 'projets/data/partials/materiel.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_materiel(request, materiel_id):
     materiel = _objet(request, Materiel, id=materiel_id)
     if request.method == 'POST':
@@ -567,7 +565,7 @@ def modifier_materiel(request, materiel_id):
             return JsonResponse({'success': False, 'errors': form.errors.get_json_data()}, status=400)
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_materiel_masse(request):
     """Suppression en masse de matériels (POST JSON avec liste d'IDs)."""
@@ -620,7 +618,7 @@ def supprimer_materiel_masse(request):
         'deleted': n,
     })
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_materiel(request, materiel_id):
     from django.db.models import ProtectedError
@@ -679,7 +677,7 @@ def supprimer_materiel(request, materiel_id):
     messages.success(request, f"Matériel « {designation} » supprimé avec succès.")
     return redirect('projets:partial_materiel')
 
-@chef_projet_required
+@configuration_dossier_required
 def importer_materiels(request):
     """
     Import de matériels depuis un texte collé (Excel, CSV, etc.).
@@ -852,7 +850,7 @@ def importer_materiels(request):
         'total_lignes': len(lignes),
     })
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_transport(request):
     if request.method == 'POST':
         form = TransportForm(request.POST, dossier=request.dossier)
@@ -868,7 +866,7 @@ def ajouter_transport(request):
     return render(request, 'projets/data/partials/transport.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_transport(request, transport_id):
     transport = _objet(request, Transport, id=transport_id)
     if request.method == 'POST':
@@ -882,7 +880,7 @@ def modifier_transport(request, transport_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_transport(request, transport_id):
     transport = _objet(request, Transport, id=transport_id)
@@ -893,7 +891,7 @@ def supprimer_transport(request, transport_id):
     return redirect('projets:partial_transports')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_location(request):
     if request.method == 'POST':
         form = LocationForm(request.POST, dossier=request.dossier)
@@ -909,7 +907,7 @@ def ajouter_location(request):
     return render(request, 'projets/data/partials/locations.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_location(request, location_id):
     location = _objet(request, Location, id=location_id)
     if request.method == 'POST':
@@ -923,7 +921,7 @@ def modifier_location(request, location_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_location(request, location_id):
     location = _objet(request, Location, id=location_id)
@@ -934,7 +932,7 @@ def supprimer_location(request, location_id):
     return redirect('projets:partial_locations')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_sous_traitance(request):
     if request.method == 'POST':
         form = SousTraitanceForm(request.POST, dossier=request.dossier)
@@ -950,7 +948,7 @@ def ajouter_sous_traitance(request):
     return render(request, 'projets/data/partials/sous_traitances.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_sous_traitance(request, sous_traitance_id):
     sous_traitance = _objet(request, SousTraitance, id=sous_traitance_id)
     if request.method == 'POST':
@@ -964,7 +962,7 @@ def modifier_sous_traitance(request, sous_traitance_id):
     return JsonResponse({'error': 'Méthode non supportnée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_sous_traitance(request, sous_traitance_id):
     sous_traitance = _objet(request, SousTraitance, id=sous_traitance_id)
@@ -975,7 +973,7 @@ def supprimer_sous_traitance(request, sous_traitance_id):
     return redirect('projets:partial_sous_traitances')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_consommable(request):
     if request.method == 'POST':
         form = ConsommableForm(request.POST, dossier=request.dossier)
@@ -991,7 +989,7 @@ def ajouter_consommable(request):
     return render(request, 'projets/data/partials/consommables.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_consommable(request, consommable_id):
     consommable = _objet(request, Consommable, id=consommable_id)
     if request.method == 'POST':
@@ -1005,7 +1003,7 @@ def modifier_consommable(request, consommable_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_consommable(request, consommable_id):
     consommable = _objet(request, Consommable, id=consommable_id)
@@ -1016,7 +1014,7 @@ def supprimer_consommable(request, consommable_id):
     return redirect('projets:partial_consommables')
 
 
-@chef_projet_required
+@configuration_dossier_required
 def ajouter_fourniture(request):
     if request.method == 'POST':
         form = FournitureForm(request.POST, dossier=request.dossier)
@@ -1032,7 +1030,7 @@ def ajouter_fourniture(request):
     return render(request, 'projets/data/partials/fournitures.html', {'form': form})
 
 
-@chef_projet_required
+@configuration_dossier_required
 def modifier_fourniture(request, fourniture_id):
     fourniture = _objet(request, Fourniture, id=fourniture_id)
     if request.method == 'POST':
@@ -1046,7 +1044,7 @@ def modifier_fourniture(request, fourniture_id):
     return JsonResponse({'error': 'Méthode non supportée'}, status=400)
 
 
-@chef_projet_required
+@configuration_dossier_required
 @require_POST
 def supprimer_fourniture(request, fourniture_id):
     fourniture = _objet(request, Fourniture, id=fourniture_id)

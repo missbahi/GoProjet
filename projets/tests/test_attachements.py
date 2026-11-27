@@ -485,6 +485,8 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
 
     def test_unauthorized_role_or_project_cannot_validate(self):
         autre = User.objects.create_user(username='autre-validation')
+        autre.profile.role = 'CHEF_CHANTIER'  # membre sans droit de validation
+        autre.profile.save()
         self.dossier.utilisateurs.add(autre)
         self.projet.users.add(autre)
         self.client.force_login(autre)
@@ -538,6 +540,8 @@ class ValidationDirecteTravauxTests(AttachementTestData, TestCase):
             self.assertEqual(compte.statut, 'VALIDE')
             compte.delete()
         autre = User.objects.create_user(username='compte-non-chef')
+        autre.profile.role = 'CHEF_CHANTIER'  # membre sans droit de validation
+        autre.profile.save()
         self.dossier.utilisateurs.add(autre)
         self.projet.users.add(autre)
         self.client.force_login(autre)
