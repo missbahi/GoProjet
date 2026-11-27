@@ -6,7 +6,7 @@
 <div data-family="project"
      data-page-title="Ressources"
      data-page-icon="fa-boxes-packing"
-     class="max-w-6xl mx-auto">
+     class="mx-auto">
 
     <div class="mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-3">
         <div>
@@ -18,7 +18,7 @@
                 {{ total_ressources }} ressource{{ total_ressources|pluralize }} affectée{{ total_ressources|pluralize }}
             </p>
         </div>
-        {# ⚡ Bouton global retiré — l'ajout se fait par onglet #}
+        {# L'ajout se fait par onglet #}
     </div>
 
     {% if categories_data %}
@@ -40,7 +40,7 @@
     <div class="ressource-tab-panel{% if item.categorie.code != active_type %} hidden{% endif %}"
         id="tab-{{ item.categorie.code }}">
 
-        {# ⭐ Bouton Ajouter propre à chaque onglet, avec le contexte injecté #}
+        {#  Ajouter propre à chaque onglet, avec le contexte injecté #}
         <div class="mb-3 flex justify-end">
             <button type="button"
                     class="app-btn-primary"
@@ -63,11 +63,11 @@
                         <th class="text-left">Unité</th>
                         <th class="text-right">Tarif (DH)</th>
                         <th class="text-left">Début</th>
-                        <th class="text-left">Fin</th>
+                        <th class="text-left w-[10%]">Fin</th>
                         {% if item.categorie.code == 'MATERIEL' %}
                         <th class="text-left">Atelier</th>
                         {% endif %}
-                        <th class="text-center">Actions</th>
+                        <th class="text-center w-[12%]">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -100,9 +100,11 @@
                             {% endif %}
                         </td>
                         {% if item.categorie.code == 'MATERIEL' %}
-                        <td>
+                        <td class="max-w-[14rem]">
                             {% if r.atelier %}
-                                <span class="text-sm" style="color: var(--accent-green);">
+                                <span class="text-sm block truncate"
+                                    style="color: var(--accent-green);"
+                                    title="{{ r.atelier.code }} — {{ r.atelier.libelle }}">
                                     {{ r.atelier.code }} — {{ r.atelier.libelle }}
                                 </span>
                             {% else %}

@@ -45,7 +45,7 @@ def ressources_projet(request, projet_id):
         .order_by('ordre', 'nom')
     )
 
-    # ⭐ Type actif : ?type=MATERIEL ou premier par défaut
+    # Type actif : ?type=MATERIEL ou premier par défaut
     type_demande = (request.GET.get('type') or '').upper()
     codes_valides = {c.code for c in categories}
     active_type = type_demande if type_demande in codes_valides else (
